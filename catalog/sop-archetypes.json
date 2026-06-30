@@ -1,0 +1,221 @@
+{
+  "_meta": {
+    "description": "Canonical, machine-readable process ontology. THREE process tiers under the value chain: macro_process (S1–S12) → sop (canonical, deduped from role-sops-discovery.md §2) → archetype (activity A_.__). Tasks instantiate an archetype, so each task rolls up: archetype → sop → macro_process. Single source of truth for the pipeline.",
+    "hierarchy": "value_chain → macro_process (S1..S12) → sop (Sx.y) → archetype (A_.__) → task",
+    "sources": ["docs/role-sops-discovery.md", "docs/activity-archetypes.md"],
+    "verb_vocabulary": ["Definir", "Escribir", "Producir/Crear", "Grabar", "Editar", "Publicar", "Revisar/Aprobar", "Optimizar", "Configurar", "Integrar", "Medir/Analizar", "Coordinar/Seguir", "Capacitar", "Gestionar acceso"],
+    "status": "candidate"
+  },
+  "macro_processes": [
+    {"code": "S1", "name": "Narrativa & Oferta", "value_chain_order": 1, "cadence": "per-launch", "owner_roles": ["Copy", "Estratega", "Ejecutivo", "Director Comercial", "Contenido"], "note": "gate A1.5 is the bottleneck"},
+    {"code": "S2", "name": "Producción de Creativos (anuncios)", "value_chain_order": 2, "cadence": "per-campaign", "owner_roles": ["Copy", "PM", "Estratega", "Editor"], "note": "A2.7 (chase) dominates PM load"},
+    {"code": "S3", "name": "Optimización de Pauta", "value_chain_order": 4, "cadence": "weekly", "owner_roles": ["Ejecutivo", "Estratega"], "owner_gap": "Media Buyer / Trafficker (unfilled)"},
+    {"code": "S4", "name": "Contenido Orgánico", "value_chain_order": 5, "cadence": "daily/weekly", "owner_roles": ["Contenido", "Ejecutivo", "Estratega", "Setter"]},
+    {"code": "S5", "name": "Testimonios / Prueba Social", "value_chain_order": 6, "cadence": "ongoing", "owner_roles": ["Líder de Servicio", "Editor", "PM", "Copy", "Director Comercial"], "note": "most hand-off friction → formalize first"},
+    {"code": "S6", "name": "Calificación de Leads & Setter Ops", "value_chain_order": 7, "cadence": "per-campaign/weekly", "owner_roles": ["Director Comercial", "Operaciones", "Contenido", "Setter", "Líder de Servicio"]},
+    {"code": "S7", "name": "Funnel / Landing / Checkout", "value_chain_order": 3, "cadence": "per-launch", "owner_roles": ["Operaciones", "Technology", "Diseño", "Ejecutivo"]},
+    {"code": "S8", "name": "Métricas & Fuente de Verdad", "value_chain_order": 8, "cadence": "weekly", "owner_roles": ["Technology", "Ejecutivo", "Director Comercial", "PM"], "note": "converge on Paralelo"},
+    {"code": "S9", "name": "Lanzamiento / Masterclass", "value_chain_order": 9, "cadence": "per-launch", "owner_roles": ["PM", "Copy", "Estratega", "Operaciones"]},
+    {"code": "S10", "name": "Gobernanza de Tareas", "value_chain_order": 10, "cadence": "weekly/per-meeting", "owner_roles": ["Project Manager"]},
+    {"code": "S11", "name": "Producto / Plataforma (Paralelo)", "value_chain_order": null, "cadence": "roadmap", "owner_roles": ["Technology"], "status": "proposed-gap", "note": "G1 — unowned dev/product"},
+    {"code": "S12", "name": "Cierre & Retención (Closers)", "value_chain_order": null, "cadence": "weekly/reactive", "owner_roles": ["Director Comercial", "Closer"], "status": "proposed-gap", "note": "G2 — closing-side"}
+  ],
+  "gap_checklists": [
+    {"code": "G3", "name": "Gestión de Equipo / Roles", "note": "people-ops checklist, not a SOP"},
+    {"code": "G4", "name": "Accesos & Infraestructura de cuentas", "note": "cross-cutting prerequisite checklist"}
+  ],
+  "sops": [
+    {"code": "S1.1", "macro_process": "S1", "name": "Construcción de narrativa & oferta", "owner_roles": ["Copy", "Estratega", "Ejecutivo", "Contenido"]},
+    {"code": "S1.2", "macro_process": "S1", "name": "Empaquetado & lanzamiento de oferta (formatos / low-ticket)", "owner_roles": ["Director Comercial", "Copy"]},
+
+    {"code": "S2.1", "macro_process": "S2", "name": "Producción de creativos de anuncios (ángulos, copy, hooks, grabación)", "owner_roles": ["Copy", "Estratega", "PM"]},
+    {"code": "S2.2", "macro_process": "S2", "name": "Edición de audio/video de anuncios", "owner_roles": ["Editor"]},
+
+    {"code": "S3.1", "macro_process": "S3", "name": "Optimización & escalamiento de campañas", "owner_roles": ["Ejecutivo", "Estratega"], "note": "Media Buyer gap"},
+    {"code": "S3.2", "macro_process": "S3", "name": "Estructuración & documentación de campañas", "owner_roles": ["Estratega", "Ejecutivo"]},
+
+    {"code": "S4.1", "macro_process": "S4", "name": "Producción de contenido orgánico (reels/historias/horarios)", "owner_roles": ["Contenido", "Ejecutivo"]},
+    {"code": "S4.2", "macro_process": "S4", "name": "Estrategia & ángulos de contenido orgánico", "owner_roles": ["Copy", "Contenido"]},
+    {"code": "S4.3", "macro_process": "S4", "name": "Optimización de perfil & assets de conversión", "owner_roles": ["Contenido"]},
+
+    {"code": "S5.1", "macro_process": "S5", "name": "Sourcing & grabación de testimonios", "owner_roles": ["Líder de Servicio", "Copy", "Director Comercial", "PM"]},
+    {"code": "S5.2", "macro_process": "S5", "name": "Edición & publicación de testimonios", "owner_roles": ["Editor", "PM", "Operaciones"]},
+    {"code": "S5.3", "macro_process": "S5", "name": "Registro de casos de éxito (trazabilidad financiera)", "owner_roles": ["Operaciones", "Director Comercial"]},
+
+    {"code": "S6.1", "macro_process": "S6", "name": "Automatización ManyChat & tagging (audios CTO)", "owner_roles": ["Operaciones", "Contenido", "Ejecutivo"]},
+    {"code": "S6.2", "macro_process": "S6", "name": "Operación de setters (agendamiento, capacitación, chat)", "owner_roles": ["Director Comercial", "Setter", "Líder de Servicio"]},
+    {"code": "S6.3", "macro_process": "S6", "name": "Inteligencia de leads & avatar", "owner_roles": ["Director Comercial", "Contenido"]},
+
+    {"code": "S7.1", "macro_process": "S7", "name": "Build de landing & páginas", "owner_roles": ["Operaciones", "Ejecutivo", "Diseño"]},
+    {"code": "S7.2", "macro_process": "S7", "name": "Checkout & pasarela de pagos", "owner_roles": ["Operaciones", "Diseño"]},
+    {"code": "S7.3", "macro_process": "S7", "name": "VSL A/B & plataforma (Biturbo ↔ GHL)", "owner_roles": ["Technology", "Operaciones"]},
+
+    {"code": "S8.1", "macro_process": "S8", "name": "Alineación de data & fuente de verdad (Paralelo)", "owner_roles": ["Technology", "Ejecutivo"]},
+    {"code": "S8.2", "macro_process": "S8", "name": "Integridad & limpieza de datos de ventas", "owner_roles": ["Director Comercial"]},
+    {"code": "S8.3", "macro_process": "S8", "name": "Análisis & ingeniería inversa de conversiones", "owner_roles": ["Copy", "Estratega", "Setter"]},
+    {"code": "S8.4", "macro_process": "S8", "name": "Definición de KPIs & reportería", "owner_roles": ["PM", "Contenido"]},
+
+    {"code": "S9.1", "macro_process": "S9", "name": "Mapeo de estrategia de lanzamiento/masterclass", "owner_roles": ["PM", "Copy", "Estratega"]},
+    {"code": "S9.2", "macro_process": "S9", "name": "Dinámicas de cierre de mes", "owner_roles": ["Copy", "Director Comercial"]},
+
+    {"code": "S10.1", "macro_process": "S10", "name": "Gobernanza de tareas & seguimiento de reuniones", "owner_roles": ["Project Manager"]},
+    {"code": "S10.2", "macro_process": "S10", "name": "Organización de espacios de gestión", "owner_roles": ["Project Manager"]},
+
+    {"code": "S11.1", "macro_process": "S11", "name": "Desarrollo de features de Paralelo", "owner_roles": ["Technology"], "status": "proposed-gap"},
+    {"code": "S11.2", "macro_process": "S11", "name": "Integraciones & tracking de origen de ventas", "owner_roles": ["Technology"], "status": "proposed-gap"},
+    {"code": "S11.3", "macro_process": "S11", "name": "AI / Knowledge tools (Ask the Graph)", "owner_roles": ["Technology"], "status": "proposed-gap"},
+
+    {"code": "S12.1", "macro_process": "S12", "name": "Gestión de closers & cuotas", "owner_roles": ["Director Comercial"], "status": "proposed-gap"},
+    {"code": "S12.2", "macro_process": "S12", "name": "Manejo de objeciones & retención", "owner_roles": ["Director Comercial"], "status": "proposed-gap"},
+    {"code": "S12.3", "macro_process": "S12", "name": "Forecasting de ingresos", "owner_roles": ["Director Comercial"], "status": "proposed-gap"},
+    {"code": "S12.4", "macro_process": "S12", "name": "Provisión de data de trading a closers", "owner_roles": ["Líder de Servicio"], "status": "proposed-gap"}
+  ],
+  "archetypes": [
+    {"id": "A1.1", "sop": "S1.1", "verb": "Definir", "name": "Reformular narrativa / big idea / mecanismo único", "slots": ["proyecto"]},
+    {"id": "A1.2", "sop": "S1.1", "verb": "Escribir", "name": "Escribir guion de venta largo (VSL/PSL/SL/TSL)", "slots": ["tipo", "proyecto", "talento_grabador"]},
+    {"id": "A1.4", "sop": "S1.1", "verb": "Producir/Crear", "name": "Graficar escalera de valor", "slots": ["proyecto"]},
+    {"id": "A1.5", "sop": "S1.1", "verb": "Revisar/Aprobar", "name": "Revisar y aprobar narrativa (gate)", "slots": ["aprobador", "proyecto"], "is_gate": true},
+    {"id": "A1.6", "sop": "S1.1", "verb": "Definir", "name": "Definir ángulo de comunicación / posicionamiento", "slots": ["angulo"]},
+    {"id": "A1.3", "sop": "S1.2", "verb": "Definir", "name": "Adaptar/empaquetar oferta a un formato", "slots": ["formato", "proyecto"]},
+
+    {"id": "A2.1", "sop": "S2.1", "verb": "Definir", "name": "Definir/mapear ángulos y formatos de anuncios", "slots": ["proyecto"]},
+    {"id": "A2.2", "sop": "S2.1", "verb": "Escribir", "name": "Escribir copy de un lote de anuncios", "slots": ["cantidad", "angulo", "proyecto"]},
+    {"id": "A2.3", "sop": "S2.1", "verb": "Producir/Crear", "name": "Crear variaciones de hooks", "slots": ["cantidad", "base"]},
+    {"id": "A2.4", "sop": "S2.1", "verb": "Grabar", "name": "Grabar reels/videos de anuncio con talento", "slots": ["cantidad", "talento", "deadline"]},
+    {"id": "A2.6", "sop": "S2.1", "verb": "Producir/Crear", "name": "Producir anuncios con IA / voz IA", "slots": ["cantidad", "talento"]},
+    {"id": "A2.7", "sop": "S2.1", "verb": "Coordinar/Seguir", "name": "Coordinar/seguir grabación con talento", "slots": ["talento", "entregable"]},
+    {"id": "A2.5", "sop": "S2.2", "verb": "Editar", "name": "Editar audio/video de anuncios", "slots": ["n_hooks", "n_variaciones"]},
+
+    {"id": "A3.1", "sop": "S3.1", "verb": "Optimizar", "name": "Optimizar campañas (apagar perdedores / escalar ganadores)", "slots": ["proyecto"]},
+    {"id": "A3.2", "sop": "S3.1", "verb": "Optimizar", "name": "Ajustar presupuestos de pauta", "slots": ["direccion"]},
+    {"id": "A3.4", "sop": "S3.1", "verb": "Medir/Analizar", "name": "Monitorear rendimiento de anuncios", "slots": ["activos"]},
+    {"id": "A3.5", "sop": "S3.1", "verb": "Configurar", "name": "Apagar campañas/funnels obsoletos", "slots": ["campana"]},
+    {"id": "A3.3", "sop": "S3.2", "verb": "Configurar", "name": "Montar estructura publicitaria (ciclo)", "slots": ["periodo", "base"]},
+    {"id": "A3.6", "sop": "S3.2", "verb": "Producir/Crear", "name": "Documentar estructura de campañas (Loom)", "slots": ["destinatario"]},
+
+    {"id": "A4.1", "sop": "S4.1", "verb": "Producir/Crear", "name": "Producir reels orgánicos (cadencia)", "slots": ["cadencia", "talento"]},
+    {"id": "A4.5", "sop": "S4.1", "verb": "Coordinar/Seguir", "name": "Hacer cumplir horarios de publicación (enforcement)", "slots": ["talento", "hora_limite"]},
+    {"id": "A4.6", "sop": "S4.1", "verb": "Escribir", "name": "Escribir reels anzuelo", "slots": ["cantidad", "angulo"]},
+    {"id": "A4.2", "sop": "S4.2", "verb": "Definir", "name": "Diseñar estrategia de historias (CTAs/secuencias/horarios)", "slots": ["proyecto"]},
+    {"id": "A4.4", "sop": "S4.2", "verb": "Definir", "name": "Desarrollar ángulos de contenido orgánico", "slots": ["perfil_cliente"]},
+    {"id": "A4.3", "sop": "S4.3", "verb": "Optimizar", "name": "Optimizar perfil (posts anzuelo fijados, destacados)", "slots": ["cantidad", "proyecto"]},
+
+    {"id": "A5.1", "sop": "S5.1", "verb": "Coordinar/Seguir", "name": "Sourcing de testimonios (identificar/solicitar)", "slots": ["fuente", "proyecto"],
+      "inputs": [
+        {"title": "Casos de éxito candidatos", "description": "Clientes con resultados que califican para testimonio (fuente: {fuente}).", "io_type": "analytics_report", "is_required": true}
+      ],
+      "outputs": [
+        {"title": "Testimonios solicitados/confirmados", "description": "Registro de clientes contactados y su compromiso de dar testimonio para {proyecto}.", "io_type": "contact_info", "is_required": true,
+          "criteria": [
+            {"criterion": "Se identificaron y contactaron los candidatos a testimonio del proyecto {proyecto}.", "criterion_category": "completeness", "verification_method": "attested"},
+            {"criterion": "Quedó registrado quiénes aceptaron y el canal/fecha acordada.", "criterion_category": "completeness", "verification_method": "attested"}
+          ]}
+      ]},
+    {"id": "A5.2", "sop": "S5.1", "verb": "Grabar", "name": "Grabar testimonios", "slots": ["cantidad", "talento"],
+      "inputs": [
+        {"title": "Guion/preguntas del testimonio", "description": "Preguntas y lineamientos para la grabación.", "io_type": "documentation", "is_required": true}
+      ],
+      "outputs": [
+        {"title": "Grabaciones de testimonio", "description": "Videos crudos de {cantidad} testimonios con {talento}.", "io_type": "video_asset", "is_required": true,
+          "criteria": [
+            {"criterion": "Existen las grabaciones de los {cantidad} testimonios solicitados.", "criterion_category": "completeness", "verification_method": "attested"},
+            {"criterion": "Las grabaciones tienen calidad de audio/video suficiente para edición.", "criterion_category": "quality", "verification_method": "manual"}
+          ]}
+      ]},
+    {"id": "A5.3", "sop": "S5.2", "verb": "Editar", "name": "Editar testimonios", "slots": ["cantidad", "destino"],
+      "inputs": [
+        {"title": "Grabaciones crudas", "description": "Material crudo de testimonios a editar.", "io_type": "video_asset", "is_required": true}
+      ],
+      "outputs": [
+        {"title": "Testimonios editados", "description": "Testimonios editados listos para {destino}.", "io_type": "video_asset", "is_required": true,
+          "criteria": [
+            {"criterion": "Se editaron los {cantidad} testimonios.", "criterion_category": "completeness", "verification_method": "manual"},
+            {"criterion": "El formato/duración cumple los requisitos de {destino}.", "criterion_category": "format", "verification_method": "manual"}
+          ]}
+      ]},
+    {"id": "A5.4", "sop": "S5.2", "verb": "Publicar", "name": "Publicar testimonios", "slots": ["destino"],
+      "inputs": [
+        {"title": "Testimonios editados", "description": "Testimonios listos para publicar.", "io_type": "video_asset", "is_required": true}
+      ],
+      "outputs": [
+        {"title": "Testimonios publicados", "description": "Testimonios publicados y visibles en {destino}.", "io_type": "system_configuration", "is_required": true,
+          "criteria": [
+            {"criterion": "Los testimonios están publicados y visibles en {destino}.", "criterion_category": "completeness", "verification_method": "attested"}
+          ]}
+      ]},
+    {"id": "A5.5", "sop": "S5.3", "verb": "Configurar", "name": "Estructurar registro de casos de éxito (con trazabilidad financiera)", "slots": [],
+      "inputs": [
+        {"title": "Datos de resultados de clientes", "description": "Resultados y datos financieros de los casos de éxito.", "io_type": "analytics_report", "is_required": true}
+      ],
+      "outputs": [
+        {"title": "Registro de casos de éxito", "description": "Sistema/registro de casos de éxito con trazabilidad financiera.", "io_type": "system_configuration", "is_required": true,
+          "criteria": [
+            {"criterion": "El registro captura cada caso con su resultado y trazabilidad financiera.", "criterion_category": "completeness", "verification_method": "llm"},
+            {"criterion": "El sistema de registro está operativo y actualizable.", "criterion_category": "completeness", "verification_method": "attested"}
+          ]}
+      ]},
+
+    {"id": "A6.1", "sop": "S6.1", "verb": "Configurar", "name": "Implementar/configurar ManyChat", "slots": ["proyecto"]},
+    {"id": "A6.2", "sop": "S6.1", "verb": "Configurar", "name": "Configurar tags por etapa de conciencia", "slots": ["etapas"]},
+    {"id": "A6.3", "sop": "S6.1", "verb": "Configurar", "name": "Implementar sistema de audios CTO", "slots": ["etapas"]},
+    {"id": "A6.6", "sop": "S6.1", "verb": "Configurar", "name": "Diagnosticar/resolver fallas de chat", "slots": ["sintoma"]},
+    {"id": "A6.4", "sop": "S6.2", "verb": "Capacitar", "name": "Capacitar setters", "slots": ["setters", "tema"]},
+    {"id": "A6.5", "sop": "S6.2", "verb": "Coordinar/Seguir", "name": "Agendar llamadas (setter, cadencia)", "slots": ["meta"]},
+    {"id": "A6.7", "sop": "S6.3", "verb": "Medir/Analizar", "name": "Investigar avatar / inteligencia de leads", "slots": ["canal", "proyecto"]},
+
+    {"id": "A7.1", "sop": "S7.1", "verb": "Producir/Crear", "name": "Crear/duplicar landing page", "slots": ["proposito", "destino"]},
+    {"id": "A7.4", "sop": "S7.1", "verb": "Producir/Crear", "name": "Construir/actualizar página de testimonios", "slots": ["testimonios"]},
+    {"id": "A7.2", "sop": "S7.2", "verb": "Configurar", "name": "Implementar checkout (Hotmart/GHL)", "slots": ["plataforma", "oferta", "order_bumps"]},
+    {"id": "A7.5", "sop": "S7.2", "verb": "Integrar", "name": "Integrar pasarela de pagos", "slots": ["proveedor"]},
+    {"id": "A7.3", "sop": "S7.3", "verb": "Configurar", "name": "Configurar VSL A/B (Biturbo)", "slots": ["variantes"]},
+
+    {"id": "A8.1", "sop": "S8.1", "verb": "Integrar", "name": "Alinear data de métricas entre sistemas", "slots": ["sistemas", "alcance"],
+      "inputs": [
+        {"title": "Fuentes de datos a integrar", "description": "Datos/sistemas a consolidar ({sistemas}).", "io_type": "analytics_report", "is_required": true}
+      ],
+      "outputs": [
+        {"title": "Dashboard/medición del embudo", "description": "Sistema que consolida y mide el embudo ({alcance}).", "io_type": "system_configuration", "is_required": true,
+          "criteria": [
+            {"criterion": "El dashboard incluye las métricas clave del embudo (conversaciones, agendas, asistencias, ventas, cierres).", "criterion_category": "completeness", "verification_method": "llm"},
+            {"criterion": "El sistema está operativo e integra las fuentes en un solo lugar.", "criterion_category": "completeness", "verification_method": "attested"}
+          ]}
+      ]},
+    {"id": "A8.3", "sop": "S8.2", "verb": "Medir/Analizar", "name": "Limpiar / de-duplicar números de ventas", "slots": ["periodo"]},
+    {"id": "A8.2", "sop": "S8.3", "verb": "Medir/Analizar", "name": "Ingeniería inversa de conversiones", "slots": ["periodo"]},
+    {"id": "A8.6", "sop": "S8.3", "verb": "Medir/Analizar", "name": "Medir indicador puntual (AOV, origen de venta)", "slots": ["indicador"]},
+    {"id": "A8.4", "sop": "S8.4", "verb": "Definir", "name": "Definir métricas/KPIs y modelar volúmenes", "slots": ["objetivo_facturacion"]},
+    {"id": "A8.5", "sop": "S8.4", "verb": "Medir/Analizar", "name": "Especificar/entregar reportes requeridos", "slots": ["consumidor"]},
+
+    {"id": "A9.1", "sop": "S9.1", "verb": "Definir", "name": "Mapear estrategia de lanzamiento (mensajes, fases, grupos, diseño, landing)", "slots": ["evento"]},
+    {"id": "A9.2", "sop": "S9.1", "verb": "Definir", "name": "Mapear masterclass (correos, mensajes, cronograma)", "slots": ["fecha"]},
+    {"id": "A9.3", "sop": "S9.2", "verb": "Definir", "name": "Diseñar dinámica de cierre de mes (pico de ventas)", "slots": ["mes"]},
+
+    {"id": "A10.1", "sop": "S10.1", "verb": "Coordinar/Seguir", "name": "Aterrizar acta → tareas en plataforma", "slots": ["reunion"]},
+    {"id": "A10.2", "sop": "S10.1", "verb": "Coordinar/Seguir", "name": "Seguimiento/chase de entregable", "slots": ["responsable", "entregable"]},
+    {"id": "A10.3", "sop": "S10.1", "verb": "Medir/Analizar", "name": "Entregar reportes semanales de reuniones", "slots": ["responsable"]},
+    {"id": "A10.4", "sop": "S10.2", "verb": "Gestionar acceso", "name": "Organizar/separar espacios de gestión", "slots": ["espacios"]},
+
+    {"id": "A11.1", "sop": "S11.1", "verb": "Producir/Crear", "name": "Desarrollar feature de Paralelo (vistas por estado/miembro/cliente, taskboards, uploads de Drive)", "slots": ["feature"]},
+    {"id": "A11.2", "sop": "S11.2", "verb": "Integrar", "name": "Integrar sistema externo con Paralelo (Stripe/Biturbo/Cloud/Notion/Drive)", "slots": ["sistema"]},
+    {"id": "A11.3", "sop": "S11.2", "verb": "Configurar", "name": "Implementar tracking de origen de ventas (VSL/orgánico/CTR)", "slots": ["canal"]},
+    {"id": "A11.4", "sop": "S11.3", "verb": "Producir/Crear", "name": "Construir herramienta de IA / knowledge (Ask the Graph / skills)", "slots": ["herramienta"]},
+
+    {"id": "A12.1", "sop": "S12.1", "verb": "Definir", "name": "Definir cuotas y objetivos de ventas (semanales/mensuales)", "slots": ["periodo", "equipo"]},
+    {"id": "A12.2", "sop": "S12.1", "verb": "Capacitar", "name": "Alinear/capacitar a los closers (discurso, expectativas, desempeño)", "slots": ["tema"]},
+    {"id": "A12.3", "sop": "S12.2", "verb": "Definir", "name": "Diseñar protocolo de manejo de objeciones", "slots": ["objecion"]},
+    {"id": "A12.4", "sop": "S12.2", "verb": "Medir/Analizar", "name": "Analizar/mejorar retención y ascensión entre niveles (Academy→Mastermind)", "slots": ["niveles"]},
+    {"id": "A12.5", "sop": "S12.3", "verb": "Medir/Analizar", "name": "Modelar forecast de ingresos", "slots": ["periodo"]},
+    {"id": "A12.6", "sop": "S12.4", "verb": "Gestionar acceso", "name": "Proveer data de trading a closers", "slots": ["tipo_data"]},
+    {"id": "A12.7", "sop": "S12.2", "verb": "Configurar", "name": "Implementar encuesta de satisfacción/seguimiento de clientes", "slots": ["audiencia", "momento"],
+      "inputs": [
+        {"title": "Segmento de clientes a encuestar", "description": "Lista/segmento de clientes del programa ({audiencia}).", "io_type": "contact_info", "is_required": true}
+      ],
+      "outputs": [
+        {"title": "Encuesta de satisfacción implementada", "description": "Encuesta creada y distribuida a {audiencia} en {momento}, recolectando respuestas.", "io_type": "system_configuration", "is_required": true,
+          "criteria": [
+            {"criterion": "La encuesta cubre satisfacción, avance en el proceso y necesidades del cliente.", "criterion_category": "completeness", "verification_method": "llm"},
+            {"criterion": "La encuesta fue distribuida a {audiencia} y está recolectando respuestas.", "criterion_category": "completeness", "verification_method": "attested"}
+          ]}
+      ]}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "hermetico",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "export": "node scripts/export-all.js",
+    "export:json": "node scripts/export-tasks-json.js",
+    "export:by-role": "node scripts/export-by-role.js",
+    "export:by-due-date": "node scripts/export-by-due-date.js",
+    "viz": "node viz/server.js",
+    "viz:restart": "bash viz/restart.sh",
+    "viz:stop": "pkill -f viz/server.js || true"
+  },
+  "author": "",
+  "license": "ISC"
+}
