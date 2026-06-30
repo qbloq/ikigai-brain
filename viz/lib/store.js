@@ -71,6 +71,7 @@ function remove(id) {
 function seedIfEmpty() {
   if (list().length) return;
   create({ name: "Tareas", source: "tasks", component: "tasks", params: { open: "1", limit: "0" } });
+  create({ name: "Editor de IO", source: "tasks", component: "task-editor", params: { open: "1", limit: "0" } });
   create({ name: "Proyectos", source: "projects", params: {} });
   create({ name: "Equipo", source: "team", params: {} });
   create({

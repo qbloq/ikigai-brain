@@ -45,7 +45,21 @@ const SOURCES = {
   meetings: {
     label: "Reuniones",
     script: "bash/meetings/meetings.sh",
-    args: { project: "--project", status: "--status", limit: "--limit" },
+    args: {
+      project: "--project",
+      status: "--status",
+      from: "--from",
+      to: "--to",
+      limit: "--limit",
+      has_report: { flag: "--has-report", bool: true },
+    },
+  },
+  // Single team-meeting report (one JSON OBJECT = the report jsonb). `id` is a
+  // positional arg; emits {} (rows:[]) when the meeting has no report yet.
+  meeting_detail: {
+    label: "Detalle de reunión",
+    script: "bash/meetings/meeting_show.sh",
+    args: { id: { positional: true } },
   },
   // Financial KPI dashboard. Emits a single JSON OBJECT (not a row array) — the
   // `dashboard` component reads it as one record. Params: project + date range.
@@ -65,6 +79,15 @@ const SOURCES = {
     label: "Detalle de tarea",
     script: "bash/tasks/task_detail.sh",
     args: { id: { positional: true } },
+  },
+  // Reference data for the IO editor: { io_types[], artifact_types[] } as ONE
+  // JSON object. Static/reference → short cache (the editor fetches it per form
+  // render, so caching avoids re-querying the catalog on every IO edit).
+  io_catalog: {
+    label: "Catálogo IO",
+    script: "bash/tasks/io_catalog.sh",
+    args: {},
+    cache: 60_000,
   },
 };
 

@@ -54,7 +54,7 @@ function shell({ uis, activeId, paneHtml }) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>UI on-demand · Hermético</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0/bundles/datastar.js"></script>
+  <script type="module" src="/datastar.js"></script>
 </head>
 <body class="h-full">
   <div class="flex h-screen bg-white text-slate-900" data-signals="{name:'',source:'tasks'}">

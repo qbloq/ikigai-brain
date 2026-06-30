@@ -12,10 +12,37 @@
 // Run:  npm run viz   (PORT env overrides the default 4317)
 
 const http = require("node:http");
+const fs = require("node:fs");
+const path = require("node:path");
+const { execFileSync } = require("node:child_process");
 const store = require("./lib/store");
 const { shell, listPanel } = require("./lib/html");
-const { renderPane, renderTaskDetail } = require("./lib/components");
+const { renderPane, renderTaskDetail, renderTaskEditForm, renderMeetingDetail } = require("./lib/components");
+const { REPO_ROOT } = require("./lib/datasources");
 const { startSSE, patchElements } = require("./lib/sse");
+
+// Run the IO write script (the ONLY write path in the viz). Returns its parsed
+// JSON result ({ok, task_id, ...} or {ok:false, error}). Mirrors the read-only
+// data policy: nothing but a whitelisted bash/ script ever touches the DB.
+function runIoEdit(args) {
+  const script = path.join(REPO_ROOT, "bash", "tasks", "update_task_io.sh");
+  const parseLast = (s) => {
+    const line = String(s || "").trim().split("\n").filter(Boolean).pop();
+    if (!line) return null;
+    try {
+      return JSON.parse(line);
+    } catch {
+      return null;
+    }
+  };
+  try {
+    const out = execFileSync("bash", [script, ...args, "--json"], { encoding: "utf8", cwd: REPO_ROOT });
+    return parseLast(out) || { ok: true };
+  } catch (e) {
+    // fail() prints its JSON to stdout then exits non-zero (→ e.stdout).
+    return parseLast(e.stdout) || { ok: false, error: (e.stderr && String(e.stderr)) || e.message };
+  }
+}
 
 const PORT = Number(process.env.PORT) || 4317;
 
@@ -38,7 +65,7 @@ function readBody(req) {
 function withParamOverrides(ui, searchParams) {
   if (!ui) return ui;
   const params = { ...(ui.params || {}) };
-  for (const key of ["project", "from", "to", "macro", "status", "priority", "assignee", "due", "open", "limit"]) {
+  for (const key of ["project", "from", "to", "macro", "status", "priority", "assignee", "due", "open", "limit", "has_report"]) {
     const v = searchParams.get(key);
     if (v != null && v !== "") params[key] = v;
   }
@@ -51,7 +78,7 @@ function standalone(ui) {
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${ui ? ui.name : "UI no encontrada"} · Hermético</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0/bundles/datastar.js"></script>
+    <script type="module" src="/datastar.js"></script>
   </head><body class="h-full"><div class="flex h-screen bg-white text-slate-900">${pane}</div></body></html>`;
 }
 
@@ -62,6 +89,17 @@ const server = http.createServer(async (req, res) => {
   try {
     // --- health ---
     if (pathname === "/health") return send(res, 200, "ok", "text/plain");
+
+    // --- vendored static asset (Datastar bundle, served locally to avoid CDN/CORS) ---
+    if (pathname === "/datastar.js" && req.method === "GET") {
+      const file = path.join(__dirname, "public", "datastar.js");
+      const body = fs.readFileSync(file);
+      res.writeHead(200, {
+        "Content-Type": "text/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=86400",
+      });
+      return res.end(body);
+    }
 
     // --- full shell ---
     if (pathname === "/" && req.method === "GET") {
@@ -78,11 +116,55 @@ const server = http.createServer(async (req, res) => {
       return send(res, ui ? 200 : 404, standalone(ui));
     }
 
-    // --- SSE: render one task's detail into #task-detail ---
-    if (pathname.startsWith("/task/") && req.method === "GET") {
-      const id = decodeURIComponent(pathname.slice(6));
+    // --- task detail + IO editor (SSE patches #task-detail) ---
+    // GET  /task/:id              read-only detail panel
+    // GET  /task/:id/edit         editable IO form
+    // POST /task/:tid/io/add?kind=inputs|outputs            add a blank IO row
+    // POST /task/:tid/io/:ioId/field/:field?value=…         retype/rename/required
+    // POST /task/:tid/io/:ioId/delete                       remove an IO row
+    if (pathname.startsWith("/task/")) {
+      const seg = pathname.split("/").map((s) => decodeURIComponent(s)); // ["","task",id,...]
+      const id = seg[2] || "";
+      const rest = seg.slice(3);
+
+      if (req.method === "GET" && rest.length === 0) {
+        startSSE(res);
+        patchElements(res, renderTaskDetail(id));
+        return res.end();
+      }
+      if (req.method === "GET" && rest.length === 1 && rest[0] === "edit") {
+        startSSE(res);
+        patchElements(res, renderTaskEditForm(id));
+        return res.end();
+      }
+      if (req.method === "POST" && rest[0] === "io") {
+        const value = url.searchParams.get("value") ?? "";
+        let result = null;
+        if (rest[1] === "add") {
+          const kind = url.searchParams.get("kind") === "outputs" ? "output" : "input";
+          result = runIoEdit(["--add", kind, "--task", id]);
+        } else if (rest[1]) {
+          const ioId = rest[1];
+          if (rest[2] === "delete") {
+            result = runIoEdit(["--delete", "--io", ioId]);
+          } else if (rest[2] === "field") {
+            const flag = { title: "--title", io_type: "--io-type", artifact: "--artifact", required: "--required" }[rest[3]];
+            result = flag ? runIoEdit(["--io", ioId, flag, value]) : { ok: false, error: `Campo inválido: ${rest[3]}` };
+          }
+        }
+        const err = result && result.ok === false ? result.error : null;
+        startSSE(res);
+        patchElements(res, renderTaskEditForm(id, err));
+        return res.end();
+      }
+      return send(res, 404, "Not found", "text/plain");
+    }
+
+    // --- SSE: render one meeting's report into #meeting-detail ---
+    if (pathname.startsWith("/meeting/") && req.method === "GET") {
+      const id = decodeURIComponent(pathname.slice(9));
       startSSE(res);
-      patchElements(res, renderTaskDetail(id));
+      patchElements(res, renderMeetingDetail(id));
       return res.end();
     }
 

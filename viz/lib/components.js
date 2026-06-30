@@ -344,7 +344,7 @@ function taskCell(col, r) {
   return cell(r[col]);
 }
 
-function tasksTable(rows) {
+function tasksTable(rows, edit = false) {
   if (!rows.length) return '<p class="text-slate-500 italic">Sin resultados.</p>';
   const thead = TASK_COLS.map(
     (c) => `<th class="${c.align || "text-left"} ${c.w || ""} font-semibold px-3 py-2 border-b border-slate-200 sticky top-0 bg-slate-50">${escape(c.l)}</th>`
@@ -352,7 +352,7 @@ function tasksTable(rows) {
   const tbody = rows
     .map(
       (r) =>
-        `<tr data-on:click="$selectedTask='${escape(r.id)}'; $detailOpen=true; @get('/task/${escape(r.id)}')" data-indicator:loading data-class:row-sel="$selectedTask==='${escape(r.id)}'" class="cursor-pointer even:bg-slate-50/60 hover:bg-indigo-50">${TASK_COLS.map(
+        `<tr data-on:click="$selectedTask='${escape(r.id)}'; $detailOpen=true; @get('/task/${escape(r.id)}${edit ? "/edit" : ""}')" data-indicator:loading data-class:row-sel="$selectedTask==='${escape(r.id)}'" class="cursor-pointer even:bg-slate-50/60 hover:bg-indigo-50">${TASK_COLS.map(
           (c) =>
             `<td class="px-3 py-2 border-b border-slate-100 align-top ${c.align || ""} ${c.cls || ""}"${c.tip ? ` title="${escape(r[c.k] ?? "")}"` : ""}>${taskCell(c.k, r)}</td>`
         ).join("")}</tr>`
@@ -362,15 +362,19 @@ function tasksTable(rows) {
     <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
 }
 
-function selectCtl(signal, current, options, reget) {
+function selectCtl(signal, current, options, reget, indicator = "loadingtasks") {
   const opts = options
     .map(([v, l]) => `<option value="${escape(v)}"${String(v) === String(current) ? " selected" : ""}>${escape(l)}</option>`)
     .join("");
-  return `<select data-bind="${signal}" data-on:change="${reget}" data-indicator:loadingtasks
+  return `<select data-bind="${signal}" data-on:change="${reget}" data-indicator:${indicator}
     class="text-sm px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">${opts}</select>`;
 }
 
-function renderTasks(ui) {
+// Shared task master-detail. `edit=false` → read-only detail panel (renderTasks);
+// `edit=true` → editable IO form panel (renderTaskEditor). The only differences
+// are the row-click route (/task/:id vs /task/:id/edit), the detail-panel width,
+// and which panel renderer seeds #task-detail. Filters/list are identical.
+function tasksMasterDetail(ui, edit) {
   const p = ui.params || {};
   const head = `<header class="mb-4 flex items-baseline gap-3">
     <h1 class="text-xl font-semibold text-slate-800">${escape(ui.name)}</h1>
@@ -425,7 +429,7 @@ function renderTasks(ui) {
         <div id="tasks-loading" data-class:on="$loadingtasks" class="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-16 bg-white/50">
           <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
         </div>
-        <p class="text-xs text-slate-400 mb-2">${rows.length} tarea(s)</p>${tasksTable(rows)}
+        <p class="text-xs text-slate-400 mb-2">${rows.length} tarea(s)</p>${tasksTable(rows, edit)}
       </div>`;
 
   // master-detail inside the pane. #detail-wrap PERSISTS (never replaced by SSE)
@@ -436,7 +440,7 @@ function renderTasks(ui) {
   return `<section id="pane" class="flex-1 overflow-hidden flex" data-signals="{detailOpen:false,selectedTask:''}">
     <style>
       #detail-wrap{width:0;opacity:0;overflow:hidden;transition:width .3s ease-in-out,opacity .3s ease-in-out;}
-      #detail-wrap.is-open{width:24rem;opacity:1;border-left:1px solid rgb(226 232 240);}
+      #detail-wrap.is-open{width:${edit ? "34rem" : "24rem"};opacity:1;border-left:1px solid rgb(226 232 240);}
       #detail-loading,#tasks-loading{opacity:0;transition:opacity .2s ease;}
       #detail-loading.on,#tasks-loading.on{opacity:1;}
       tr.row-sel{background:rgb(238 242 255)!important;box-shadow:inset 3px 0 0 rgb(79 70 229);}
@@ -446,9 +450,17 @@ function renderTasks(ui) {
       <div id="detail-loading" data-class:on="$loading" class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/50">
         <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
       </div>
-      ${renderTaskDetail("")}
+      ${edit ? renderTaskEditForm("") : renderTaskDetail("")}
     </aside>
   </section>`;
+}
+
+function renderTasks(ui) {
+  return tasksMasterDetail(ui, false);
+}
+
+function renderTaskEditor(ui) {
+  return tasksMasterDetail(ui, true);
 }
 
 // ── task detail panel (#task-detail) ───────────────────────────────────────
@@ -593,6 +605,395 @@ function renderTaskDetail(id) {
   return panelShell(inner);
 }
 
+// ── editable IO panel (#task-detail, "task-editor" component) ───────────────
+// Editable form for one task's IO contract: per input/output you can retype the
+// io_type and artifact_type, rename, toggle required, and add/remove rows. Every
+// control persists immediately — one @post → update_task_io.sh (one txn) → the
+// server re-renders this whole fragment. Controls bind to per-row signals and
+// pass the chosen value (the type *id*) via the query string, mirroring the
+// read-only filters' proven `@get('…?x='+$sig)` idiom. Header is read-only.
+
+// A uuid is not a valid signal identifier (dashes, may start with a digit), so
+// strip to [a-z0-9] and prefix per field to namespace the row's signals.
+function idsig(id) {
+  return String(id).replace(/[^a-z0-9]/gi, "");
+}
+
+// The editor's inner SSE target. Fixed width (matches #detail-wrap.is-open 34rem)
+// so content doesn't reflow while the panel animates open/closed.
+function editPanelShell(inner) {
+  return `<div id="task-detail" class="w-[34rem] h-full overflow-y-auto">${inner}</div>`;
+}
+
+function ioTypeOpts(cat) {
+  return [["", "— sin tipo —"]].concat((cat.io_types || []).map((t) => [t.id, t.display_name]));
+}
+function artifactOpts(cat) {
+  return [["", "— sin artifact —"]].concat((cat.artifact_types || []).map((t) => [t.id, t.display_name]));
+}
+
+// A select bound to `signal`, initialized (via the `selected` option) to the
+// row's current type id; on change it @posts the chosen value.
+function editSelect(signal, current, options, post) {
+  const opts = options
+    .map(([v, l]) => `<option value="${escape(v)}"${String(v) === String(current ?? "") ? " selected" : ""}>${escape(l)}</option>`)
+    .join("");
+  return `<select data-bind="${signal}" data-on:change="${post}" data-indicator:loading
+    class="w-full text-sm px-2 py-1.5 rounded-md border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">${opts}</select>`;
+}
+
+function ioEditRow(row, kind, tid, cat) {
+  const sid = idsig(row.id);
+  const base = `/task/${escape(tid)}/io/${escape(row.id)}`;
+  const titlePost = `@post('${base}/field/title?value='+encodeURIComponent($t_${sid}))`;
+  const iotPost = `@post('${base}/field/io_type?value='+encodeURIComponent($iot_${sid}))`;
+  const artPost = `@post('${base}/field/artifact?value='+encodeURIComponent($art_${sid}))`;
+  const reqPost = `@post('${base}/field/required?value='+$req_${sid})`;
+  const delPost = `@post('${base}/delete')`;
+  return `<div class="rounded-lg border border-slate-200 p-3 mb-2 bg-white">
+    <div class="flex items-center gap-2 mb-2">
+      <input data-bind="t_${sid}" value="${escape(row.title || "")}" data-on:change="${titlePost}" data-indicator:loading
+        class="flex-1 text-sm font-medium px-2 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Título" />
+      <button data-on:click="${delPost}" data-indicator:loading title="Eliminar" class="shrink-0 text-slate-400 hover:text-red-600 px-1.5 text-lg leading-none">✕</button>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="block text-[11px] text-slate-400 mb-0.5">Tipo (IO)</label>${editSelect(`iot_${sid}`, row.io_type_id, ioTypeOpts(cat), iotPost)}</div>
+      <div><label class="block text-[11px] text-slate-400 mb-0.5">Artifact</label>${editSelect(`art_${sid}`, row.artifact_type_id, artifactOpts(cat), artPost)}</div>
+    </div>
+    <label class="flex items-center gap-2 text-xs text-slate-600 mt-2">
+      <input type="checkbox" data-bind="req_${sid}"${row.is_required ? " checked" : ""} data-on:change="${reqPost}" data-indicator:loading class="rounded border-slate-300" /> Requerido
+    </label>
+  </div>`;
+}
+
+// Seed every row's bound signals with its CURRENT values. Without this, Datastar
+// initializes each `data-bind` signal to empty and writes it back to the control,
+// wiping the server-rendered selection/value (selects show blank, checkbox clears).
+// data-signals uses if-missing semantics, so re-renders after an edit don't clobber
+// the user's in-flight choices. Mirrors how the read-only filters pre-seed signals.
+function editSignals(rows) {
+  const o = {};
+  for (const r of rows || []) {
+    const s = idsig(r.id);
+    o[`t_${s}`] = r.title || "";
+    o[`iot_${s}`] = r.io_type_id || "";
+    o[`art_${s}`] = r.artifact_type_id || "";
+    o[`req_${s}`] = !!r.is_required;
+  }
+  return o;
+}
+
+function ioEditSection(title, rows, kind, tid, cat) {
+  const list =
+    (rows || []).map((r) => ioEditRow(r, kind, tid, cat)).join("") ||
+    '<p class="text-xs text-slate-400 italic mb-2">— ninguno —</p>';
+  const addPost = `@post('/task/${escape(tid)}/io/add?kind=${kind}')`;
+  const noun = kind === "inputs" ? "input" : "output";
+  return `<div class="mb-5">
+    <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">${escape(title)} · ${(rows || []).length}</h3>
+    ${list}
+    <button data-on:click="${addPost}" data-indicator:loading class="text-xs text-indigo-600 hover:text-indigo-800 border border-dashed border-indigo-300 rounded-md px-2.5 py-1 mt-1">+ Agregar ${noun}</button>
+  </div>`;
+}
+
+function renderTaskEditForm(id, err) {
+  if (!id)
+    return editPanelShell(
+      `<div class="h-full flex items-center justify-center p-8 text-center text-sm text-slate-400"><p>Selecciona una tarea para editar su IO.</p></div>`
+    );
+  let d,
+    cat = { io_types: [], artifact_types: [] },
+    e2;
+  try {
+    d = fetchSource("task_detail", { id }).rows[0];
+    cat = fetchSource("io_catalog").rows[0] || cat;
+  } catch (e) {
+    e2 = e.message;
+  }
+  if (e2 || !d) {
+    return editPanelShell(
+      `<div class="p-5"><div class="rounded-lg border border-red-200 bg-red-50 text-red-700 p-3 text-sm">${escape(e2 || "Tarea no encontrada")}</div></div>`
+    );
+  }
+  const close = `<button data-on:click="$detailOpen=false; $selectedTask=''" class="ml-auto -mr-1 -mt-1 text-slate-400 hover:text-slate-600 text-lg leading-none" title="Cerrar">✕</button>`;
+  const errBanner = err
+    ? `<div class="rounded-lg border border-red-200 bg-red-50 text-red-700 p-2.5 text-xs mb-3">${escape(err)}</div>`
+    : "";
+  const header = `<div class="flex items-start gap-2 mb-1">${close}</div>
+    <h2 class="text-base font-semibold text-slate-800 mb-1 -mt-6 pr-6">${escape(d.title)}</h2>
+    <p class="text-xs text-slate-400 mb-4">${cell(d.project)} · editar contrato IO</p>`;
+  const signals = escape(JSON.stringify(editSignals([...(d.inputs || []), ...(d.outputs || [])])));
+  const inner = `<div class="p-5" data-signals="${signals}">
+    ${header}
+    ${errBanner}
+    ${ioEditSection("Inputs", d.inputs, "inputs", id, cat)}
+    ${ioEditSection("Outputs", d.outputs, "outputs", id, cat)}
+  </div>`;
+  return editPanelShell(inner);
+}
+
+// ── meetings component ─────────────────────────────────────────────────────
+// Master-detail over team meetings (bash/meetings/meetings.sh). Left: a list
+// with a filter bar (project / status / solo con reporte); clicking a row hits
+// GET /meeting/:id, which SSE-patches the #meeting-detail side panel with that
+// meeting's structured report. Mirrors the tasks component.
+
+const MEETING_STATUS_BADGE = {
+  completed: "bg-emerald-100 text-emerald-700",
+  ended: "bg-emerald-100 text-emerald-700",
+  processing: "bg-blue-100 text-blue-700",
+  scheduled: "bg-amber-100 text-amber-700",
+  cancelled: "bg-slate-200 text-slate-600",
+};
+const MEETING_STATUS_ES = {
+  completed: "Completada",
+  ended: "Finalizada",
+  processing: "Procesando",
+  scheduled: "Agendada",
+  cancelled: "Cancelada",
+};
+const MEETING_STATUS_OPTS = [
+  ["", "Estado: todos"],
+  ["completed", "Completada"],
+  ["processing", "Procesando"],
+  ["scheduled", "Agendada"],
+  ["ended", "Finalizada"],
+  ["cancelled", "Cancelada"],
+];
+
+const MEETING_COLS = [
+  { k: "name", l: "Reunión", w: "w-[44%]" },
+  { k: "start", l: "Fecha", w: "w-32", cls: "whitespace-nowrap" },
+  { k: "project", l: "Proyecto", w: "w-32" },
+  { k: "status", l: "Estado", w: "w-28" },
+  { k: "rep", l: "Rep", w: "w-12", align: "text-center" },
+];
+
+function meetingStatusBadge(v) {
+  const cls = MEETING_STATUS_BADGE[v] || "bg-slate-100 text-slate-600";
+  return `<span class="text-[11px] font-medium px-2 py-0.5 rounded-full ${cls}">${escape(MEETING_STATUS_ES[v] || v)}</span>`;
+}
+
+function repDot(v) {
+  return v === "Y" || v === true
+    ? '<span class="text-emerald-600" title="Tiene reporte">✓</span>'
+    : '<span class="text-slate-300" title="Sin reporte">—</span>';
+}
+
+function meetingCell(col, r) {
+  if (col === "status") return meetingStatusBadge(r[col]);
+  if (col === "rep") return repDot(r[col]);
+  return cell(r[col]);
+}
+
+function meetingsTable(rows) {
+  if (!rows.length) return '<p class="text-slate-500 italic">Sin resultados.</p>';
+  const thead = MEETING_COLS.map(
+    (c) => `<th class="${c.align || "text-left"} ${c.w || ""} font-semibold px-3 py-2 border-b border-slate-200 sticky top-0 bg-slate-50">${escape(c.l)}</th>`
+  ).join("");
+  const tbody = rows
+    .map(
+      (r) =>
+        `<tr data-on:click="$selectedMeeting='${escape(r.id)}'; $detailOpen=true; @get('/meeting/${escape(r.id)}')" data-indicator:loading data-class:row-sel="$selectedMeeting==='${escape(r.id)}'" class="cursor-pointer even:bg-slate-50/60 hover:bg-indigo-50">${MEETING_COLS.map(
+          (c) =>
+            `<td class="px-3 py-2 border-b border-slate-100 align-top ${c.align || ""} ${c.cls || ""}">${meetingCell(c.k, r)}</td>`
+        ).join("")}</tr>`
+    )
+    .join("");
+  return `<div class="overflow-auto rounded-lg border border-slate-200 max-h-[calc(100vh-12rem)]"><table class="w-full table-fixed text-sm border-collapse">
+    <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
+}
+
+function renderMeetings(ui) {
+  const p = ui.params || {};
+  const head = `<header class="mb-4 flex items-baseline gap-3">
+    <h1 class="text-xl font-semibold text-slate-800">${escape(ui.name)}</h1>
+    <a href="/u/${escape(ui.id)}" target="_blank" class="ml-auto text-xs text-indigo-600 hover:underline">abrir solo ↗</a>
+  </header>`;
+
+  let rows = [],
+    err;
+  try {
+    ({ rows } = fetchSource("meetings", p));
+  } catch (e) {
+    err = e.message;
+  }
+
+  let projectOpts = [["", "Proyecto: todos"]];
+  try {
+    projectOpts = projectOpts.concat(fetchSource("projects").rows.map((r) => [r.name, r.name]).filter(([n]) => n));
+  } catch {
+    /* keep the "todos" fallback */
+  }
+
+  const repOn = p.has_report === "1" || p.has_report === "true";
+  const reget =
+    `@get('/ui/${escape(ui.id)}?limit=0&status='+$mStatus` +
+    `+'&project='+encodeURIComponent($mProject)+'&has_report='+$mRep)`;
+  const sig = `{mStatus:'${escape(p.status || "")}',mProject:'${escape(p.project || "")}',mRep:${repOn}}`;
+
+  const controls = `<div class="flex flex-wrap items-center gap-2 mb-4" data-signals="${sig}">
+    ${selectCtl("mStatus", p.status || "", MEETING_STATUS_OPTS, reget, "loadingmeetings")}
+    ${selectCtl("mProject", p.project || "", projectOpts, reget, "loadingmeetings")}
+    <label class="flex items-center gap-2 text-sm text-slate-600 px-2">
+      <input type="checkbox" data-bind="mRep" data-on:change="${reget}" data-indicator:loadingmeetings class="rounded border-slate-300" /> Solo con reporte
+    </label>
+  </div>`;
+
+  const body = err
+    ? `<div class="rounded-lg border border-red-200 bg-red-50 text-red-700 p-4 text-sm">${escape(err)}</div>`
+    : `<div class="relative">
+        <div id="meetings-loading" data-class:on="$loadingmeetings" class="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-16 bg-white/50">
+          <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
+        </div>
+        <p class="text-xs text-slate-400 mb-2">${rows.length} reunión(es)</p>${meetingsTable(rows)}
+      </div>`;
+
+  return `<section id="pane" class="flex-1 overflow-hidden flex" data-signals="{detailOpen:false,selectedMeeting:''}">
+    <style>
+      #detail-wrap{width:0;opacity:0;overflow:hidden;transition:width .3s ease-in-out,opacity .3s ease-in-out;}
+      #detail-wrap.is-open{width:32rem;opacity:1;border-left:1px solid rgb(226 232 240);}
+      #detail-loading,#meetings-loading{opacity:0;transition:opacity .2s ease;}
+      #detail-loading.on,#meetings-loading.on{opacity:1;}
+      tr.row-sel{background:rgb(238 242 255)!important;box-shadow:inset 3px 0 0 rgb(79 70 229);}
+    </style>
+    <div class="flex-1 p-6 overflow-auto bg-slate-50">${head}${controls}${body}</div>
+    <aside id="detail-wrap" data-class:is-open="$detailOpen" class="relative shrink-0 bg-white">
+      <div id="detail-loading" data-class:on="$loading" class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/50">
+        <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
+      </div>
+      ${renderMeetingDetail("")}
+    </aside>
+  </section>`;
+}
+
+// ── meeting detail panel (#meeting-detail) ─────────────────────────────────
+// View-only render of one team meeting's structured report (the Spanish jsonb
+// from meeting_show.sh --json). Patched into #meeting-detail by /meeting/:id.
+
+function meetingPanelShell(inner) {
+  return `<div id="meeting-detail" class="w-[32rem] h-full overflow-y-auto">${inner}</div>`;
+}
+
+function meetingDetailEmpty() {
+  return meetingPanelShell(
+    `<div class="h-full flex items-center justify-center p-8 text-center text-sm text-slate-400">
+      <p>Selecciona una reunión para ver su reporte.</p>
+    </div>`
+  );
+}
+
+function prose(text) {
+  return `<p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">${escape(text)}</p>`;
+}
+
+function objectivesBlock(o) {
+  if (!o || typeof o !== "object") return "";
+  const row = (label, v) =>
+    v
+      ? `<div class="mb-2"><p class="text-[11px] font-semibold text-slate-400">${escape(label)}</p>${prose(v)}</div>`
+      : "";
+  const inner = row("Planteado", o.stated) + row("Logrado", o.achieved) + row("Sin resolver", o.unresolved);
+  return inner ? section("Objetivos", null, inner) : "";
+}
+
+function decisionsBlock(items) {
+  if (!items || !items.length) return "";
+  const inner = `<ul class="space-y-3">${items
+    .map(
+      (d) => `<li class="border-l-2 border-indigo-100 pl-3">
+        <p class="text-sm font-medium text-slate-800">${escape(d.topic || "—")}</p>
+        ${d.summary ? `<p class="text-xs text-slate-500 mt-0.5">${escape(d.summary)}</p>` : ""}
+        ${d.decision ? `<p class="text-sm text-slate-700 mt-1"><span class="text-[11px] font-semibold uppercase text-emerald-600">Decisión:</span> ${escape(d.decision)}</p>` : ""}
+        ${d.rationale ? `<p class="text-xs text-slate-400 mt-0.5 italic">${escape(d.rationale)}</p>` : ""}
+      </li>`
+    )
+    .join("")}</ul>`;
+  return section("Decisiones", items.length, inner);
+}
+
+function actionItemsBlock(items) {
+  if (!items || !items.length) return "";
+  const inner = `<ul class="space-y-2.5">${items
+    .map((a) => {
+      const prio = PRIORITY_DOT[a.priority];
+      const who = Array.isArray(a.assignedTo) ? a.assignedTo.join(", ") : a.assignedTo;
+      return `<li class="flex items-start gap-2">
+        ${prio ? `<span class="inline-block w-2.5 h-2.5 rounded-full ${prio.c} mt-1.5 shrink-0" title="${escape(prio.t)}"></span>` : '<span class="w-2.5 shrink-0"></span>'}
+        <div class="min-w-0">
+          <p class="text-sm text-slate-700">${escape(a.task)}</p>
+          <p class="text-xs text-slate-400">${who ? escape(who) : "—"}${a.dueDate ? ` · ${escape(a.dueDate)}` : ""}${a.dependencies && a.dependencies !== "Ninguna" ? ` · dep: ${escape(a.dependencies)}` : ""}</p>
+        </div>
+      </li>`;
+    })
+    .join("")}</ul>`;
+  return section("Action items", items.length, inner);
+}
+
+function blockersBlock(items) {
+  if (!items || !items.length) return "";
+  const inner = `<ul class="space-y-2.5">${items
+    .map(
+      (b) => `<li class="rounded-lg bg-red-50 border border-red-100 px-3 py-2">
+        <p class="text-sm text-slate-800">${escape(b.issue || "—")}</p>
+        ${b.status ? `<p class="text-xs text-red-600 mt-0.5">${escape(b.status)}</p>` : ""}
+        ${b.nextSteps ? `<p class="text-xs text-slate-500 mt-0.5">→ ${escape(b.nextSteps)}</p>` : ""}
+      </li>`
+    )
+    .join("")}</ul>`;
+  return section("Bloqueos críticos", items.length, inner);
+}
+
+function nextStepsBlock(o) {
+  if (!o || typeof o !== "object") return "";
+  const list = (label, v) => {
+    if (!v) return "";
+    const arr = Array.isArray(v) ? v : [v];
+    if (!arr.length) return "";
+    return `<div class="mb-2"><p class="text-[11px] font-semibold text-slate-400">${escape(label)}</p>
+      <ul class="list-disc list-inside text-sm text-slate-700 space-y-0.5">${arr.map((x) => `<li>${escape(x)}</li>`).join("")}</ul></div>`;
+  };
+  const inner = list("Próxima reunión", o.nextMeeting) + list("Puntos de revisión", o.reviewPoints) + list("Hitos clave", o.keyMilestones);
+  return inner ? section("Próximos pasos", null, inner) : "";
+}
+
+function renderMeetingDetail(id) {
+  if (!id) return meetingDetailEmpty();
+  let rep, err;
+  try {
+    const { rows } = fetchSource("meeting_detail", { id });
+    rep = rows[0];
+  } catch (e) {
+    err = e.message;
+  }
+  if (err) {
+    return meetingPanelShell(
+      `<div class="p-5"><div class="rounded-lg border border-red-200 bg-red-50 text-red-700 p-3 text-sm">${escape(err)}</div></div>`
+    );
+  }
+  const closeBtn = `<button data-on:click="$detailOpen=false; $selectedMeeting=''" class="ml-auto -mr-1 -mt-1 text-slate-400 hover:text-slate-600 text-lg leading-none" title="Cerrar">✕</button>`;
+  if (!rep || !Object.keys(rep).length) {
+    return meetingPanelShell(
+      `<div class="p-5"><div class="flex items-start mb-3">${closeBtn}</div>
+        <div class="rounded-lg border border-slate-200 bg-slate-50 text-slate-500 p-4 text-sm">Esta reunión aún no tiene reporte.</div></div>`
+    );
+  }
+  const header = `<div class="flex items-start gap-2 mb-1">${closeBtn}</div>
+    <h2 class="text-base font-semibold text-slate-800 mb-1 -mt-6 pr-6">${escape(rep.reportTitle || "Reporte")}</h2>
+    ${rep.reportSubtitle ? `<p class="text-sm text-slate-500 mb-4">${escape(rep.reportSubtitle)}</p>` : '<div class="mb-4"></div>'}`;
+
+  const inner = `<div class="p-5">
+    ${header}
+    ${rep.executiveSummary ? section("Resumen ejecutivo", null, prose(rep.executiveSummary)) : ""}
+    ${objectivesBlock(rep.meetingObjectives)}
+    ${decisionsBlock(rep.discussionPointsAndDecisions)}
+    ${actionItemsBlock(rep.actionItems)}
+    ${blockersBlock(rep.criticalIssuesAndBlockers)}
+    ${nextStepsBlock(rep.nextStepsAndFollowUp)}
+  </div>`;
+  return meetingPanelShell(inner);
+}
+
 // Render a saved UI spec into the pane HTML (a #pane element, id-matched by SSE).
 function renderPane(ui) {
   if (!ui) {
@@ -604,6 +1005,8 @@ function renderPane(ui) {
   if (ui.component === "dashboard") return renderDashboard(ui);
   if (ui.component === "sop-tree") return renderSopTree(ui);
   if (ui.component === "tasks") return renderTasks(ui);
+  if (ui.component === "task-editor") return renderTaskEditor(ui);
+  if (ui.component === "meetings") return renderMeetings(ui);
   let body;
   let meta = "";
   try {
@@ -623,4 +1026,4 @@ function renderPane(ui) {
   </section>`;
 }
 
-module.exports = { renderPane, renderTaskDetail, table, escape };
+module.exports = { renderPane, renderTaskDetail, renderTaskEditForm, renderMeetingDetail, table, escape };

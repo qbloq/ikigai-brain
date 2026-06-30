@@ -36,14 +36,22 @@ SELECT json_build_object(
      'sop', s.code, 'sop_name', s.name,
      'macro', mp.code, 'macro_name', mp.name) END,
   'inputs', coalesce((SELECT json_agg(json_build_object(
-       'title', i.title, 'io_type', it.display_name,
+       'id', i.id, 'title', i.title,
+       'io_type', it.display_name, 'io_type_id', i.io_type_id,
+       'artifact', at.display_name, 'artifact_type_id', i.artifact_type_id,
        'is_required', i.is_required, 'is_satisfied', i.is_satisfied) ORDER BY i.position)
-     FROM ikigaigm.task_inputs i LEFT JOIN ikigaigm.io_types it ON it.id=i.io_type_id
+     FROM ikigaigm.task_inputs i
+     LEFT JOIN ikigaigm.io_types it ON it.id=i.io_type_id
+     LEFT JOIN ikigaigm.artifact_types at ON at.id=i.artifact_type_id
      WHERE i.task_id=t.id), '[]'::json),
   'outputs', coalesce((SELECT json_agg(json_build_object(
-       'title', o.title, 'io_type', it.display_name,
+       'id', o.id, 'title', o.title,
+       'io_type', it.display_name, 'io_type_id', o.io_type_id,
+       'artifact', at.display_name, 'artifact_type_id', o.artifact_type_id,
        'is_required', o.is_required, 'is_delivered', o.is_delivered) ORDER BY o.position)
-     FROM ikigaigm.task_outputs o LEFT JOIN ikigaigm.io_types it ON it.id=o.io_type_id
+     FROM ikigaigm.task_outputs o
+     LEFT JOIN ikigaigm.io_types it ON it.id=o.io_type_id
+     LEFT JOIN ikigaigm.artifact_types at ON at.id=o.artifact_type_id
      WHERE o.task_id=t.id), '[]'::json),
   'criteria', coalesce((SELECT json_agg(json_build_object(
        'criterion', c.criterion, 'method', c.verification_method,

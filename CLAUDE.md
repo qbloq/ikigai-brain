@@ -30,6 +30,8 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 | `team.sh [--team NAME]` | List team members (the universe of assignees) with name, role, team, contact. |
 | `reassign.sh <id> --from M --to M` / `--add M` / `--remove M` / `--set M,M` **[WRITE]** | Change a task's assignees. M = id-prefix or name fragment. `--dry-run` to preview. |
 | `io_types.sh` | List the semantic IO types (with default artifact type) usable in task contracts. |
+| `io_catalog.sh` | One JSON object `{io_types[], artifact_types[]}` (with ids) — reference data for the viz IO editor's dropdowns. Read-only. |
+| `update_task_io.sh --io <id> [--title T] [--io-type NAME] [--artifact NAME] [--required true\|false]` / `--add input\|output --task <id>` / `--delete --io <id> [--cascade]` **[WRITE]** | Edit one IO row of a task: retype its `io_type`/`artifact_type` (accepts id, name, or display_name), rename, toggle required, or add/remove rows. One op per call, one transaction, before/after, `--dry-run`, `--json` (emits `task_id` for re-render). Deleting an output with acceptance criteria is blocked unless `--cascade`. Powers the viz IO editor. |
 | `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. See `-h`. |
 | `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. |
 | `cancel_task.sh <id> [--into <id>] [--reason "…"]` **[WRITE]** | Cancel a task (`status='cancelled'`), optionally recording a merge into another (`--into`) with an auditable comment trail on both. Nothing is deleted. `--dry-run` to preview. Use for dedup/merges (e.g. cross-project duplicates the per-project dedup misses). |
@@ -119,6 +121,8 @@ is the system to use — **do not** hand-write a one-off HTML file. A "UI" is a
 persisted *spec* (`{id, name, component, source, params}`), not frozen markup, so
 it always re-renders from live data. Node stdlib, **zero npm deps**;
 TailwindCSS (Play CDN) + **Datastar 1.0** over **SSE**. See [viz/README.md](viz/README.md).
+Datastar is **vendored** at `viz/public/datastar.js` and served at `/datastar.js`
+(not the CDN — avoids CDN/CORS); `viz/public/` is the static-asset dir.
 
 ```bash
 npm run viz                 # http://localhost:4317   (PORT=… overrides)
@@ -127,7 +131,11 @@ npm run viz                 # http://localhost:4317   (PORT=… overrides)
 - **Data only flows through `bash/ --json`** — same read-only policy as everything
   else. The whitelist of allowed sources + their CLI flags lives in
   [viz/lib/datasources.js](viz/lib/datasources.js) (`SOURCES`): `tasks`, `tasks_due`,
-  `projects`, `team`, `task_stats`, `meetings`, `dashboard`, `sops`. **Never** add SQL here.
+  `projects`, `team`, `task_stats`, `meetings` (now also `from`/`to`/`has-report`),
+  `meeting_detail` (one report OBJECT, from `meeting_show.sh --json`), `dashboard`,
+  `sops`, `task_detail` (one task OBJECT) and `io_catalog` (`{io_types[],
+  artifact_types[]}` for the IO editor). **Never** add SQL here. The one write
+  path (the IO editor) likewise shells out to a bash script, never inline SQL.
 - **Caching — the DB connection (~0.8s/query, remote) dominates render time.** A
   source opts into a short in-memory TTL cache with `cache: <ms>` in its `SOURCES`
   entry. Use it ONLY for reference/static data (`sops`, `projects`, `team` — 60s);
@@ -145,7 +153,9 @@ npm run viz                 # http://localhost:4317   (PORT=… overrides)
 - **Layout** is master-detail: left `#ui-list` (saved UIs + form), right `#pane`
   (selected UI). Datastar swaps fragments via SSE — no full reloads.
 - **Routes**: `GET /` (shell, `?ui=<id>` opens one) · `GET /u/:id` (standalone page)
-  · `GET /ui/:id` (SSE patch `#pane`) · `POST /ui` (create) · `GET /health`.
+  · `GET /ui/:id` (SSE patch `#pane`) · `GET /task/:id` & `GET /meeting/:id` (SSE
+  detail panels) · `GET /task/:id/edit` + `POST /task/:tid/io/...` (the IO editor —
+  see below) · `GET /datastar.js` (vendored bundle) · `POST /ui` · `GET /health`.
 - **Datastar 1.0 — colon syntax** (NOT v0.x dashes): `data-on:click`,
   `data-on:submit__prevent`, `data-bind="signal"`, `@get`/`@post`. SSE event is
   `datastar-patch-elements` (see [viz/lib/sse.js](viz/lib/sse.js)). **Validate
@@ -162,6 +172,29 @@ separate "abiertas"/"vencidas" UIs, since vencidas = `due=overdue` + `open`).
 The `tasks` pane is master-detail: clicking a row hits `GET /task/:id`, which
 SSE-patches a `#task-detail` side panel (header + IO + acceptance criteria,
 view-only) from the `task_detail` source; `GET /task/` (empty id) closes it.
+The `meetings` component is the same master-detail shape over team meetings:
+filter bar (project/status/solo-con-reporte) over the `meetings` source; clicking
+a row hits `GET /meeting/:id`, which SSE-patches a `#meeting-detail` panel (report
+summary/objectives/decisions/blockers, view-only) from the `meeting_detail` source.
+The `task-editor` component is the **editable** twin of `tasks` (seeded as the
+"Editor de IO" UI): same master list, but clicking a row hits `GET /task/:id/edit`,
+which SSE-patches `#task-detail` with an editable IO-contract form (rename, retype
+`io_type`/`artifact_type`, toggle required, add/remove inputs/outputs) built from
+`task_detail` + `io_catalog`. Both share `tasksMasterDetail(ui, edit)`; the
+read-only `renderTaskDetail` is unchanged. **This is the viz's only write path:**
+each control persists immediately via one `@post` (`POST /task/:tid/io/add` ·
+`.../io/:ioId/field/:field?value=` · `.../io/:ioId/delete`) → `update_task_io.sh`
+(one txn) → SSE re-render of the form. No SQL in the viz — writes go through the
+whitelisted bash script, same policy as reads. Bound controls (`data-bind`) must
+seed their signals via `data-signals` (current values) or Datastar blanks them.
+
+**Loaders:** master-detail components (`tasks`, `meetings`) show *transparent
+overlays* (`bg-white/50` + a spinner, with a `.2s` opacity transition) while data
+loads — one over the table, driven by `data-indicator:<signal>` on the filter
+controls (the `@get` re-fetch), and one over the `#detail-wrap` panel, driven by
+`data-indicator:loading` on the row click (the `GET /<thing>/:id` SSE patch).
+`selectCtl(...)` takes an `indicator` arg (default `loadingtasks`) for the table
+signal. Any new UI with a re-fetch or an SSE detail panel must include both.
 
 ## Tasks data model (schema `ikigaigm`)
 
