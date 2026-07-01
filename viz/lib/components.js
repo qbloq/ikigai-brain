@@ -4,6 +4,7 @@
 // just another case in renderUI().
 
 const { fetchSource } = require("./datasources");
+const { chipData } = require("./artifacts");
 
 function escape(s) {
   return String(s ?? "")
@@ -655,7 +656,7 @@ function editSelect(signal, current, options, post) {
   const opts = options
     .map(([v, l]) => `<option value="${escape(v)}"${String(v) === String(current ?? "") ? " selected" : ""}>${escape(l)}</option>`)
     .join("");
-  return `<select data-bind="${signal}" data-on:change="${post}" data-indicator:loading
+  return `<select id="ioc-${signal}" data-bind="${signal}" data-on:change="${post}" data-indicator:loading
     class="w-full text-sm px-2 py-1.5 rounded-md border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">${opts}</select>`;
 }
 
@@ -668,9 +669,13 @@ function ioEditRow(row, kind, tid, cat) {
   const reqPost = `@post('${base}/field/required?value='+$req_${sid})`;
   const delPost = `@post('${base}/delete')`;
   const bindPost = `@post('${base}/bind?value='+encodeURIComponent($ref_${sid}))`;
-  return `<div class="rounded-lg border border-slate-200 p-3 mb-2 bg-white">
+  // Stable ids (keyed by the row uuid) so Datastar's idiomorph matches each row —
+  // and each bound control — to itself across re-renders. Without them a row that
+  // changes size (e.g. gains the binding chip) mis-aligns siblings and one row's
+  // bound values bleed into another until the next full refresh.
+  return `<div id="ioerow-${sid}" class="rounded-lg border border-slate-200 p-3 mb-2 bg-white">
     <div class="flex items-center gap-2 mb-2">
-      <input data-bind="t_${sid}" value="${escape(row.title || "")}" data-on:change="${titlePost}" data-indicator:loading
+      <input id="iot-${sid}" data-bind="t_${sid}" value="${escape(row.title || "")}" data-on:change="${titlePost}" data-indicator:loading
         class="flex-1 text-sm font-medium px-2 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Título" />
       <div class="shrink-0 flex items-center">
         <button data-show="!$del_${sid}" data-on:click="$del_${sid}=true" title="Eliminar" class="text-slate-400 hover:text-red-600 px-1.5 text-lg leading-none">✕</button>
@@ -686,13 +691,13 @@ function ioEditRow(row, kind, tid, cat) {
       <div><label class="block text-[11px] text-slate-400 mb-0.5">Artifact</label>${editSelect(`art_${sid}`, row.artifact_type_id, artifactOpts(cat), artPost)}</div>
     </div>
     <label class="flex items-center gap-2 text-xs text-slate-600 mt-2">
-      <input type="checkbox" data-bind="req_${sid}"${row.is_required ? " checked" : ""} data-on:change="${reqPost}" data-indicator:loading class="rounded border-slate-300" /> Requerido
+      <input id="ioq-${sid}" type="checkbox" data-bind="req_${sid}"${row.is_required ? " checked" : ""} data-on:change="${reqPost}" data-indicator:loading class="rounded border-slate-300" /> Requerido
     </label>
     <div class="mt-2 pt-2 border-t border-slate-100">
       <label class="block text-[11px] text-slate-400 mb-0.5">Vínculo (instancia del artifact)</label>
-      ${bindingChip(row, base)}
+      ${bindingChip(row, base, cat)}
       <div class="flex items-center gap-1.5">
-        <input data-bind="ref_${sid}" placeholder="Pegar enlace o ID…" data-indicator:loading
+        <input id="ioref-${sid}" data-bind="ref_${sid}" placeholder="Pegar enlace o ID…" data-indicator:loading
           class="flex-1 text-xs px-2 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
         <button data-on:click="${bindPost}; $ref_${sid}=''" data-indicator:loading class="shrink-0 text-xs px-2.5 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Vincular</button>
       </div>
@@ -719,19 +724,26 @@ function editSignals(rows) {
   return o;
 }
 
-// Current-binding chip: shows the stored locator (link if it has a url) with a
-// desvincular (✕) action. Empty when the IO has no reference yet.
-function bindingChip(row, base) {
+// Current-binding chip: renders the bound instance via its per-artifact-type
+// component (icon + title/name + link) instead of a raw id. The title comes from
+// reference._resolved (cached at bind time). ↻ re-resolves (when there's a url),
+// ✕ desvincula. Empty when the IO has no reference yet.
+function bindingChip(row, base, cat) {
   const ref = row.reference;
   if (!ref || typeof ref !== "object" || Array.isArray(ref) || !Object.keys(ref).length) return "";
-  const label = ref.url || ref.file_id || ref.page_id || ref.id || ref.path || ref.query || JSON.stringify(ref);
-  const inner = ref.url
-    ? `<a href="${escape(ref.url)}" target="_blank" class="text-indigo-600 hover:underline truncate">${escape(label)}</a>`
-    : `<span class="font-mono text-slate-600 truncate">${escape(label)}</span>`;
+  const name = (cat.artifact_types || []).find((a) => a.id === row.artifact_type_id)?.name;
+  const { icon, label, href } = chipData(name, ref);
+  const inner = href
+    ? `<a href="${escape(href)}" target="_blank" class="text-indigo-600 hover:underline truncate">${escape(label)}</a>`
+    : `<span class="text-slate-600 truncate">${escape(label)}</span>`;
+  const reBtn = href
+    ? `<button data-on:click="@post('${base}/bind?value='+encodeURIComponent('${escape(href)}'))" data-indicator:loading title="Re-resolver" class="shrink-0 text-slate-400 hover:text-indigo-600 leading-none">↻</button>`
+    : "";
   return `<div class="flex items-center gap-1.5 mb-1 text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1">
-    <span class="shrink-0" title="Vinculado">🔗</span>
+    <span class="shrink-0" title="Vinculado">${icon}</span>
     ${inner}
-    <button data-on:click="@post('${base}/unbind')" data-indicator:loading title="Desvincular" class="ml-auto shrink-0 text-slate-400 hover:text-red-600 leading-none">✕</button>
+    ${reBtn}
+    <button data-on:click="@post('${base}/unbind')" data-indicator:loading title="Desvincular" class="shrink-0 text-slate-400 hover:text-red-600 leading-none">✕</button>
   </div>`;
 }
 

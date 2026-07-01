@@ -22,6 +22,20 @@ const { REPO_ROOT, fetchSource } = require("./lib/datasources");
 const meetico = require("./lib/meetico");
 const { startSSE, patchElements } = require("./lib/sse");
 
+// Best-effort human title from a meetico ResolvedArtifact: prefer explicit
+// metadata (Drive `name`, Notion `title`), else parse a web page's <title>.
+function resolvedTitle(r) {
+  if (!r) return null;
+  const m = r.metadata || {};
+  const meta = m.name || m.title || m.displayName;
+  if (meta) return String(meta).trim();
+  if (r.content_text) {
+    const t = /<title[^>]*>([^<]+)<\/title>/i.exec(r.content_text);
+    if (t) return t[1].trim();
+  }
+  return null;
+}
+
 // Locate one IO row within a task → { kind, artifact_type_id, project_id }.
 // Used by the bind route to derive the meetico request from just (tid, ioId).
 function locateIo(tid, ioId) {
@@ -177,7 +191,11 @@ const server = http.createServer(async (req, res) => {
               const prev = await meetico.bindPreview(body).catch(() => null);
               await meetico.bind(loc.kind, ioId, body);
               const r = prev && prev.resolved;
-              if (r && r.exists) notice = { kind: "ok", text: `Vinculado ✓ ${r.url || r.metadata?.name || r.metadata?.title || ""}`.trim() };
+              // Cache the resolved title/url into the reference so the chip shows
+              // the instance name without re-resolving on every render.
+              const title = resolvedTitle(r);
+              runIoEdit(["--io", ioId, "--ref-merge", JSON.stringify({ _resolved: { title, url: (r && r.url) || null, exists: !!(r && r.exists) } })]);
+              if (r && r.exists) notice = { kind: "ok", text: `Vinculado ✓ ${title || r.url || ""}`.trim() };
               else if (r && r.error) notice = { kind: "warn", text: `Vinculado, pero no resolvió: ${r.error}` };
               else notice = { kind: "ok", text: "Vinculado ✓" };
             } catch (e) {
