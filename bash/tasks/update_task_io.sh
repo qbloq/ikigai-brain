@@ -27,7 +27,7 @@ source "$(dirname "$0")/../lib/common.sh"
 
 io="" task="" add="" del="" cascade="" dry=""
 declare -A set_provided=()
-title="" iotype="" artifact="" required=""
+title="" iotype="" artifact="" required="" refmerge=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --io)       io="${2//\'/}"; shift 2 ;;
@@ -40,6 +40,7 @@ while [[ $# -gt 0 ]]; do
     --artifact) artifact="$2"; set_provided[artifact]=1; shift 2 ;;
     --required) required="$2"; set_provided[required]=1; shift 2 ;;
     --ref-clear) set_provided[refclear]=1; shift ;;
+    --ref-merge) refmerge="$2"; set_provided[refmerge]=1; shift 2 ;;
     --dry-run)  dry=1; shift ;;
     --json)     FORMAT=json; shift ;;
     -h|--help)  sed -n '2,33p' "$0"; exit 0 ;;
@@ -55,7 +56,7 @@ fail() { # message
   if is_json; then printf '{"ok":false,"error":%s}\n' "$(json_str "$1")"; else echo "$1" >&2; fi
   exit 1
 }
-json_str() { node -e 'process.stdout.write(JSON.stringify(process.argv[1]))' "$1"; }
+json_str() { node -e 'process.stdout.write(JSON.stringify(process.argv[1]))' -- "$1"; }
 
 # Resolve an io_type/artifact_type reference (id, name or display_name) to its
 # id. Echoes the id, or empty if no match. Caller decides if empty is an error.
@@ -167,6 +168,14 @@ fi
 if [[ -n "${set_provided[refclear]:-}" ]]; then
   # Clear the binding locator (the reference jsonb), column depends on kind.
   [[ "$kind" == "output" ]] && sets+=("deliverable_reference = '{}'::jsonb") || sets+=("artifact_reference = '{}'::jsonb")
+fi
+if [[ -n "${set_provided[refmerge]:-}" ]]; then
+  # Shallow-merge a JSON object into the reference jsonb (e.g. a `_resolved`
+  # cache of the resolved title/url), preserving the parser-written locator.
+  node -e 'const o=JSON.parse(process.argv[1]);if(!o||typeof o!=="object"||Array.isArray(o))process.exit(1)' "$refmerge" 2>/dev/null || fail "--ref-merge must be a JSON object"
+  refcol=artifact_reference; [[ "$kind" == "output" ]] && refcol=deliverable_reference
+  sets+=("$refcol = coalesce($refcol,'{}'::jsonb) || :'v_refmerge'::jsonb")
+  vargs+=(-v "v_refmerge=$refmerge")
 fi
 
 setclause="$(IFS=,; echo "${sets[*]}")"
