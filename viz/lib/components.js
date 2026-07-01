@@ -554,6 +554,32 @@ function section(title, count, inner) {
   </div>`;
 }
 
+// The Actividad → SOP card (archetype id + name/verb, with its macro › sop path).
+// Shared by the read-only detail panel and the IO editor. `a` is d.archetype
+// (null when the task is untagged → renders nothing).
+function activityBlock(a) {
+  if (!a) return "";
+  return `<div class="mb-5 rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2">
+    <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-400">Actividad</p>
+    <p class="text-sm text-slate-800"><span class="font-mono text-xs text-indigo-600">${escape(a.id)}</span> · ${escape(a.name)}${a.verb ? ` <span class="text-xs text-slate-400">(${escape(a.verb)})</span>` : ""}</p>
+    ${a.sop ? `<p class="text-xs text-slate-400 mt-0.5">${escape(a.macro)} ${escape(a.macro_name || "")} › ${escape(a.sop)} ${escape(a.sop_name || "")}</p>` : ""}
+  </div>`;
+}
+
+// Inline ID chip for the editor subtitle: shows only the short prefix, with an
+// icon button that copies the FULL uuid to the clipboard (clipboard → check on
+// success). Needs the `cp` signal seeded in the form's data-signals.
+function idCopy(uuid, shortid) {
+  const u = escape(uuid);
+  return `<span class="inline-flex items-center gap-1 align-middle">
+    <span class="font-mono text-slate-500">${escape(shortid)}</span>
+    <button data-on:click="navigator.clipboard.writeText('${u}'); $cp=true; setTimeout(() => $cp=false, 1200)" title="Copiar ID completo" class="text-slate-400 hover:text-indigo-600 leading-none">
+      <svg data-show="!$cp" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      <svg data-show="$cp" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+    </button>
+  </span>`;
+}
+
 function renderTaskDetail(id) {
   if (!id) return taskDetailEmpty();
   let d, err;
@@ -585,18 +611,9 @@ function renderTaskDetail(id) {
       <div class="flex gap-2"><dt class="text-slate-400 w-24 shrink-0">Creada</dt><dd class="text-slate-700">${dueFmt(d.created)}</dd></div>
     </dl>`;
 
-  const a = d.archetype;
-  const activity = a
-    ? `<div class="mb-5 rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2">
-        <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-400">Actividad</p>
-        <p class="text-sm text-slate-800"><span class="font-mono text-xs text-indigo-600">${escape(a.id)}</span> · ${escape(a.name)}${a.verb ? ` <span class="text-xs text-slate-400">(${escape(a.verb)})</span>` : ""}</p>
-        ${a.sop ? `<p class="text-xs text-slate-400 mt-0.5">${escape(a.macro)} ${escape(a.macro_name || "")} › ${escape(a.sop)} ${escape(a.sop_name || "")}</p>` : ""}
-      </div>`
-    : "";
-
   const inner = `<div class="p-5">
     ${header}
-    ${activity}
+    ${activityBlock(d.archetype)}
     ${section("Inputs", (d.inputs || []).length, ioList(d.inputs, "is_satisfied", "satisfecho", "pendiente"))}
     ${section("Outputs", (d.outputs || []).length, ioList(d.outputs, "is_delivered", "entregado", "pendiente"))}
     ${section("Validación", (d.criteria || []).length, criteriaList(d.criteria))}
@@ -650,11 +667,19 @@ function ioEditRow(row, kind, tid, cat) {
   const artPost = `@post('${base}/field/artifact?value='+encodeURIComponent($art_${sid}))`;
   const reqPost = `@post('${base}/field/required?value='+$req_${sid})`;
   const delPost = `@post('${base}/delete')`;
+  const bindPost = `@post('${base}/bind?value='+encodeURIComponent($ref_${sid}))`;
   return `<div class="rounded-lg border border-slate-200 p-3 mb-2 bg-white">
     <div class="flex items-center gap-2 mb-2">
       <input data-bind="t_${sid}" value="${escape(row.title || "")}" data-on:change="${titlePost}" data-indicator:loading
         class="flex-1 text-sm font-medium px-2 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Título" />
-      <button data-on:click="${delPost}" data-indicator:loading title="Eliminar" class="shrink-0 text-slate-400 hover:text-red-600 px-1.5 text-lg leading-none">✕</button>
+      <div class="shrink-0 flex items-center">
+        <button data-show="!$del_${sid}" data-on:click="$del_${sid}=true" title="Eliminar" class="text-slate-400 hover:text-red-600 px-1.5 text-lg leading-none">✕</button>
+        <span data-show="$del_${sid}" class="inline-flex items-center gap-1.5 text-xs whitespace-nowrap">
+          <span class="text-slate-500">¿Eliminar?</span>
+          <button data-on:click="${delPost}" data-indicator:loading class="px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Sí</button>
+          <button data-on:click="$del_${sid}=false" class="px-2 py-0.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-50">No</button>
+        </span>
+      </div>
     </div>
     <div class="grid grid-cols-2 gap-2">
       <div><label class="block text-[11px] text-slate-400 mb-0.5">Tipo (IO)</label>${editSelect(`iot_${sid}`, row.io_type_id, ioTypeOpts(cat), iotPost)}</div>
@@ -663,6 +688,15 @@ function ioEditRow(row, kind, tid, cat) {
     <label class="flex items-center gap-2 text-xs text-slate-600 mt-2">
       <input type="checkbox" data-bind="req_${sid}"${row.is_required ? " checked" : ""} data-on:change="${reqPost}" data-indicator:loading class="rounded border-slate-300" /> Requerido
     </label>
+    <div class="mt-2 pt-2 border-t border-slate-100">
+      <label class="block text-[11px] text-slate-400 mb-0.5">Vínculo (instancia del artifact)</label>
+      ${bindingChip(row, base)}
+      <div class="flex items-center gap-1.5">
+        <input data-bind="ref_${sid}" placeholder="Pegar enlace o ID…" data-indicator:loading
+          class="flex-1 text-xs px-2 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        <button data-on:click="${bindPost}; $ref_${sid}=''" data-indicator:loading class="shrink-0 text-xs px-2.5 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Vincular</button>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -679,8 +713,26 @@ function editSignals(rows) {
     o[`iot_${s}`] = r.io_type_id || "";
     o[`art_${s}`] = r.artifact_type_id || "";
     o[`req_${s}`] = !!r.is_required;
+    o[`del_${s}`] = false; // inline "¿Eliminar?" confirm toggle for this row
+    o[`ref_${s}`] = ""; // the "pegar enlace/ID" binding input
   }
   return o;
+}
+
+// Current-binding chip: shows the stored locator (link if it has a url) with a
+// desvincular (✕) action. Empty when the IO has no reference yet.
+function bindingChip(row, base) {
+  const ref = row.reference;
+  if (!ref || typeof ref !== "object" || Array.isArray(ref) || !Object.keys(ref).length) return "";
+  const label = ref.url || ref.file_id || ref.page_id || ref.id || ref.path || ref.query || JSON.stringify(ref);
+  const inner = ref.url
+    ? `<a href="${escape(ref.url)}" target="_blank" class="text-indigo-600 hover:underline truncate">${escape(label)}</a>`
+    : `<span class="font-mono text-slate-600 truncate">${escape(label)}</span>`;
+  return `<div class="flex items-center gap-1.5 mb-1 text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1">
+    <span class="shrink-0" title="Vinculado">🔗</span>
+    ${inner}
+    <button data-on:click="@post('${base}/unbind')" data-indicator:loading title="Desvincular" class="ml-auto shrink-0 text-slate-400 hover:text-red-600 leading-none">✕</button>
+  </div>`;
 }
 
 function ioEditSection(title, rows, kind, tid, cat) {
@@ -696,7 +748,8 @@ function ioEditSection(title, rows, kind, tid, cat) {
   </div>`;
 }
 
-function renderTaskEditForm(id, err) {
+// notice: a string (→ error) OR { kind: 'ok'|'warn'|'err', text } for the banner.
+function renderTaskEditForm(id, notice) {
   if (!id)
     return editPanelShell(
       `<div class="h-full flex items-center justify-center p-8 text-center text-sm text-slate-400"><p>Selecciona una tarea para editar su IO.</p></div>`
@@ -716,15 +769,22 @@ function renderTaskEditForm(id, err) {
     );
   }
   const close = `<button data-on:click="$detailOpen=false; $selectedTask=''" class="ml-auto -mr-1 -mt-1 text-slate-400 hover:text-slate-600 text-lg leading-none" title="Cerrar">✕</button>`;
-  const errBanner = err
-    ? `<div class="rounded-lg border border-red-200 bg-red-50 text-red-700 p-2.5 text-xs mb-3">${escape(err)}</div>`
-    : "";
+  const n = typeof notice === "string" ? { kind: "err", text: notice } : notice;
+  const NOTE_CLS = {
+    ok: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    warn: "border-amber-200 bg-amber-50 text-amber-700",
+    err: "border-red-200 bg-red-50 text-red-700",
+  };
+  const errBanner =
+    n && n.text ? `<div class="rounded-lg border ${NOTE_CLS[n.kind] || NOTE_CLS.err} p-2.5 text-xs mb-3 break-words">${escape(n.text)}</div>` : "";
   const header = `<div class="flex items-start gap-2 mb-1">${close}</div>
     <h2 class="text-base font-semibold text-slate-800 mb-1 -mt-6 pr-6">${escape(d.title)}</h2>
-    <p class="text-xs text-slate-400 mb-4">${cell(d.project)} · editar contrato IO</p>`;
-  const signals = escape(JSON.stringify(editSignals([...(d.inputs || []), ...(d.outputs || [])])));
+    <p class="text-xs text-slate-400 mb-3">${cell(d.project)} · ${idCopy(d.uuid || id, d.id || id)}</p>`;
+  const sigObj = Object.assign(editSignals([...(d.inputs || []), ...(d.outputs || [])]), { cp: false });
+  const signals = escape(JSON.stringify(sigObj));
   const inner = `<div class="p-5" data-signals="${signals}">
     ${header}
+    ${activityBlock(d.archetype)}
     ${errBanner}
     ${ioEditSection("Inputs", d.inputs, "inputs", id, cat)}
     ${ioEditSection("Outputs", d.outputs, "outputs", id, cat)}

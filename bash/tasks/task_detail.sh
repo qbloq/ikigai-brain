@@ -24,6 +24,8 @@ tid="$(psql_ro -t -A -c "SELECT id FROM ikigaigm.tasks WHERE id::text LIKE '${id
 psql_ro -t -A -c "
 SELECT json_build_object(
   'id',        left(t.id::text,8),
+  'uuid',      t.id::text,
+  'project_id', t.project_id,
   'title',     t.title,
   'status',    t.status::text,
   'priority',  t.priority::text,
@@ -39,6 +41,7 @@ SELECT json_build_object(
        'id', i.id, 'title', i.title,
        'io_type', it.display_name, 'io_type_id', i.io_type_id,
        'artifact', at.display_name, 'artifact_type_id', i.artifact_type_id,
+       'reference', i.artifact_reference,
        'is_required', i.is_required, 'is_satisfied', i.is_satisfied) ORDER BY i.position)
      FROM ikigaigm.task_inputs i
      LEFT JOIN ikigaigm.io_types it ON it.id=i.io_type_id
@@ -48,6 +51,7 @@ SELECT json_build_object(
        'id', o.id, 'title', o.title,
        'io_type', it.display_name, 'io_type_id', o.io_type_id,
        'artifact', at.display_name, 'artifact_type_id', o.artifact_type_id,
+       'reference', o.deliverable_reference,
        'is_required', o.is_required, 'is_delivered', o.is_delivered) ORDER BY o.position)
      FROM ikigaigm.task_outputs o
      LEFT JOIN ikigaigm.io_types it ON it.id=o.io_type_id

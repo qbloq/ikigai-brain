@@ -1,0 +1,1473 @@
+openapi: 3.1.0
+
+info:
+  title: Agentico — Tasks & Task I/O API
+  version: "1.0.0"
+  description: >
+    REST surface for the Agentico Task System and the Task I/O / artifact-binding
+    feature. The system spans **two services**:
+
+
+    - **meetico** (`google-meet-express`) — owns the entire task domain: tasks,
+      projects, columns, inputs, outputs, acceptance criteria, io_types,
+      artifact_types, the I/O Review cockpit, the artifact-resolution /
+      validation engine, and attestations. Mounted at `/tasks`.
+
+    - **marketico** — owns the per-project **Notion** integration that the
+      meetico `notion` resolver and the frontend pickers depend on (meetico never
+      calls the Notion API directly; it proxies through marketico). Mounted at
+      `/api/project-settings`.
+
+
+    Data lives in Supabase schema **`ikigaigm`** (resolved per-tenant). Every I/O
+    row carries a two-layer type: a semantic `io_type_id` (what the deliverable
+    *is*) and a physical `artifact_type_id` (how it *resolves*), plus a `reference`
+    locator. See `design-specs/tasks-system.md` for the conceptual model.
+
+servers:
+  - url: "{meeticoBase}/tasks"
+    description: meetico — task domain (all `/tasks/**` operations, tag = meetico)
+    variables:
+      meeticoBase:
+        default: https://localhost:5000
+  - url: "{marketicoBase}/api/project-settings"
+    description: marketico — Notion integration (all `/notion/**` operations, tag = marketico)
+    variables:
+      marketicoBase:
+        default: https://localhost:8000
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Projects
+    description: "[meetico] Task projects (the `ikigaigm.projects` table)."
+  - name: Columns
+    description: "[meetico] Kanban columns."
+  - name: Tasks
+    description: "[meetico] Tasks and their nested todos/comments."
+  - name: IO Types
+    description: "[meetico] Semantic layer — what a deliverable *is*."
+  - name: Artifact Types
+    description: "[meetico] Physical layer — how an artifact *resolves*."
+  - name: Inputs
+    description: "[meetico] Task input requirements."
+  - name: Outputs
+    description: "[meetico] Task output deliverables."
+  - name: Acceptance Criteria
+    description: "[meetico] Per-output acceptance criteria."
+  - name: I/O Review
+    description: "[meetico] Curation cockpit: review, bind, resolve I/O."
+  - name: Validation
+    description: "[meetico] Evaluate outputs against criteria; attestations."
+  - name: Notion
+    description: "[marketico] Per-project Notion config, content index, page content."
+
+# ============================================================================
+paths:
+
+  # ---------------------------------------------------------------- Projects
+  /projects:
+    post:
+      tags: [Projects]
+      summary: Create a task project
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectInput" }
+      responses:
+        "201":
+          description: Created
+          content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    get:
+      tags: [Projects]
+      summary: List task projects
+      operationId: listProjects
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Project" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /projects/{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [Projects]
+      summary: Get a project
+      operationId: getProject
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Projects]
+      summary: Update a project
+      operationId: updateProject
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ProjectInput" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Project" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Projects]
+      summary: Delete a project
+      operationId: deleteProject
+      responses:
+        "204": { description: Deleted (no content) }
+
+  # ---------------------------------------------------------------- Columns
+  /columns:
+    post:
+      tags: [Columns]
+      summary: Create a column
+      operationId: createColumn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                position: { type: integer, default: 0 }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Column" } } } }
+    get:
+      tags: [Columns]
+      summary: List columns
+      operationId: listColumns
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Column" } } } }
+
+  /columns/{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    put:
+      tags: [Columns]
+      summary: Update a column
+      operationId: updateColumn
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/Column" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Column" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Columns]
+      summary: Delete a column
+      operationId: deleteColumn
+      responses:
+        "204": { description: Deleted }
+
+  # ---------------------------------------------------------------- Tasks
+  /:
+    post:
+      tags: [Tasks]
+      summary: Create a task
+      description: >
+        `user_id` is taken from the session; `project_id` falls back to the
+        session's active project. Per project policy a task should always have a
+        project.
+      operationId: createTask
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/TaskInput" } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Task" } } } }
+    get:
+      tags: [Tasks]
+      summary: List tasks
+      description: Returns all tasks with nested comments and todos. Applies `ensureProject`.
+      operationId: listTasks
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Task" } } } }
+
+  /{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [Tasks]
+      summary: Get a task
+      operationId: getTask
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Task" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Tasks]
+      summary: Update a task
+      operationId: updateTask
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/TaskInput" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Task" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Tasks]
+      summary: Delete a task
+      operationId: deleteTask
+      responses:
+        "204": { description: Deleted }
+
+  /{id}/with-io:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [Tasks]
+      summary: Get a task with full I/O graph
+      description: Task plus its inputs, outputs (with acceptance criteria), each I/O joined to its io_type and artifact_type.
+      operationId: getTaskWithIO
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TaskWithIO" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /meetings/{meeting_id}:
+    parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [Tasks]
+      summary: Create tasks from a meeting transcript
+      description: LLM-refines the provided draft tasks against the meeting transcript and team members, then persists them.
+      operationId: createTasksFromMeeting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tasks]
+              properties:
+                tasks:
+                  type: array
+                  items: { $ref: "#/components/schemas/TaskInput" }
+      responses:
+        "201":
+          description: Created
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Task" } } } }
+
+  # ---------------------------------------------------------------- Todos
+  /todos:
+    post:
+      tags: [Tasks]
+      summary: Create a todo
+      operationId: createTodo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task_id, text]
+              properties:
+                task_id: { type: string, format: uuid }
+                text: { type: string }
+                completed: { type: boolean, default: false }
+                position: { type: integer, default: 0 }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Todo" } } } }
+
+  /todos/{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    put:
+      tags: [Tasks]
+      summary: Update a todo
+      operationId: updateTodo
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Todo" } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Todo" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Tasks]
+      summary: Delete a todo
+      operationId: deleteTodo
+      responses:
+        "204": { description: Deleted }
+
+  # ---------------------------------------------------------------- Comments
+  /comments:
+    post:
+      tags: [Tasks]
+      summary: Create a comment
+      operationId: createComment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task_id, text]
+              properties:
+                task_id: { type: string, format: uuid }
+                user_id: { type: string, format: uuid }
+                author_name: { type: string }
+                author_avatar: { type: string, format: uri }
+                text: { type: string }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Comment" } } } }
+
+  /comments/{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    put:
+      tags: [Tasks]
+      summary: Update a comment
+      operationId: updateComment
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Comment" } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Comment" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Tasks]
+      summary: Delete a comment
+      operationId: deleteComment
+      responses:
+        "204": { description: Deleted }
+
+  # ---------------------------------------------------------------- Artifact Types
+  /artifact-types:
+    get:
+      tags: [Artifact Types]
+      summary: List artifact types (physical resolver kinds)
+      operationId: listArtifactTypes
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ArtifactType" } } } }
+
+  /artifact-types/{name}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        description: The artifact type's unique `name` (e.g. `google_doc`, `notion_page`, `sql_query`).
+        schema: { type: string }
+    get:
+      tags: [Artifact Types]
+      summary: Get an artifact type by name
+      operationId: getArtifactType
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ArtifactType" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Artifact Types]
+      summary: Edit an artifact type's data
+      description: >
+        Editable: `resolver_config`, `reference_schema` / `binding_schema`,
+        `display_name`, `category`. Resolver *kinds* and validators are code, not data.
+      operationId: updateArtifactType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name: { type: string }
+                category: { type: string }
+                resolver_config: { type: object, additionalProperties: true }
+                reference_schema: { type: object, additionalProperties: true }
+                binding_schema: { $ref: "#/components/schemas/BindingSchema" }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ArtifactType" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /artifact-types/{name}/usage:
+    parameters:
+      - { name: name, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Artifact Types]
+      summary: Usage / blast radius for a type
+      description: Counts of outputs, inputs, and criteria-by-method that depend on this type. Shown before edits.
+      operationId: getArtifactTypeUsage
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string }
+                  inputs: { type: integer }
+                  outputs: { type: integer }
+                  criteria_by_method:
+                    type: object
+                    additionalProperties: { type: integer }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /artifact-types/{name}/probe:
+    parameters:
+      - { name: name, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Artifact Types]
+      summary: Resolve-probe a reference under a type
+      description: >
+        Side-effect free: runs only `resolveArtifact` (never `evaluateOutput`).
+        Optional `resolver_type` / `resolver_config` let you probe a *proposed*
+        config edit before saving.
+      operationId: probeArtifactType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reference: { $ref: "#/components/schemas/ArtifactReference" }
+                resolver_type: { type: string }
+                resolver_config: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Resolution result, content: { application/json: { schema: { $ref: "#/components/schemas/ResolvedArtifact" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- IO Types
+  /io-types:
+    get:
+      tags: [IO Types]
+      summary: List io_types (semantic layer)
+      operationId: listIoTypes
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/IoType" } } } }
+    post:
+      tags: [IO Types]
+      summary: Create an io_type
+      operationId: createIoType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, display_name, category]
+              properties:
+                name: { type: string, description: "Unique machine name." }
+                display_name: { type: string }
+                category:
+                  type: string
+                  description: "Must be a member of the server's IO_TYPE_CATEGORIES set."
+                description: { type: string }
+                default_artifact_type_id:
+                  type: string
+                  format: uuid
+                  description: "Physical type defaulted onto new I/O of this io_type (overridable at bind time)."
+                icon: { type: string }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/IoType" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /io-types/{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [IO Types]
+      summary: Get an io_type
+      operationId: getIoType
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/IoType" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [IO Types]
+      summary: Update an io_type
+      description: "Editable: display_name, category, description, default_artifact_type_id, icon."
+      operationId: updateIoType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name: { type: string }
+                category: { type: string }
+                description: { type: string }
+                default_artifact_type_id: { type: string, format: uuid }
+                icon: { type: string }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/IoType" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [IO Types]
+      summary: Delete an io_type
+      description: Guarded — refuses (throws) if any input/output still references it.
+      operationId: deleteIoType
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /io-types/{id}/usage:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [IO Types]
+      summary: Usage / blast radius for an io_type
+      operationId: getIoTypeUsage
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  name: { type: string }
+                  inputs: { type: integer }
+                  outputs: { type: integer }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- Verification templates
+  /verification-templates:
+    get:
+      tags: [Validation]
+      summary: List verification templates
+      operationId: listVerificationTemplates
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } }
+
+  # ---------------------------------------------------------------- I/O Review
+  /io-review:
+    get:
+      tags: [I/O Review]
+      summary: I/O Review cockpit feed
+      description: >
+        Aggregate feed: every task with its inputs/outputs/criteria, per-task
+        review summaries, a flat `items` array (queue mode), and global stats.
+      operationId: getIOReview
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/IOReviewResponse" } } } }
+
+  /io-review/bulk-review:
+    post:
+      tags: [I/O Review]
+      summary: Bulk set review status
+      operationId: bulkSetReviewStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items, status]
+              properties:
+                items:
+                  type: array
+                  description: Items to update.
+                  items:
+                    type: object
+                    required: [kind, id]
+                    properties:
+                      kind: { type: string, enum: [inputs, outputs, criteria] }
+                      id: { type: string, format: uuid }
+                status: { type: string, enum: [approved, flagged, pending] }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+
+  /io-review/bind-preview:
+    post:
+      tags: [I/O Review]
+      summary: Preview a binding (no persist)
+      description: >
+        Resolve a proposed binding live without persisting. Pass a physical
+        `artifact_type_id` and a locator as either `url` (parsed into a
+        reference by the type's parser) or a ready `reference` object.
+      operationId: bindPreview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BindRequest" }
+      responses:
+        "200":
+          description: Normalized reference + live resolution
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reference: { $ref: "#/components/schemas/ArtifactReference" }
+                  resolved: { $ref: "#/components/schemas/ResolvedArtifact" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /io-review/{kind}/{id}/bind:
+    parameters:
+      - { $ref: "#/components/parameters/KindPath" }
+      - { $ref: "#/components/parameters/IdPath" }
+    post:
+      tags: [I/O Review]
+      summary: Persist a binding on an input/output
+      description: >
+        Sets `artifact_type_id` + writes the locator into `artifact_reference`
+        (inputs) / `deliverable_reference` (outputs), after validating required
+        fields against the type's `binding_schema`.
+      operationId: bindArtifact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BindRequest" }
+      responses:
+        "200":
+          description: Updated row (joined to artifact_type + io_type)
+          content: { application/json: { schema: { $ref: "#/components/schemas/IORow" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /io-review/{kind}/{id}/review:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string, enum: [inputs, outputs, criteria] }
+      - { $ref: "#/components/parameters/IdPath" }
+    post:
+      tags: [I/O Review]
+      summary: Set review status on one item
+      description: Writes `metadata.review = { status, note, by }` on the row.
+      operationId: setReviewStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [approved, flagged, pending] }
+                note: { type: string }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- Inputs
+  /{id}/inputs:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [Inputs]
+      summary: List a task's inputs
+      operationId: listTaskInputs
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/TaskIO" } } } }
+    post:
+      tags: [Inputs]
+      summary: Create an input
+      description: "If `io_type_id` is set and `artifact_type_id` is omitted, the physical type is defaulted from the io_type."
+      operationId: createTaskInput
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/TaskIOInput" } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/TaskIO" } } } }
+
+  /inputs/{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    put:
+      tags: [Inputs]
+      summary: Update an input
+      operationId: updateTaskInput
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TaskIOInput" } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TaskIO" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Inputs]
+      summary: Delete an input
+      operationId: deleteTaskInput
+      responses:
+        "204": { description: Deleted }
+
+  /inputs/{id}/satisfy:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    post:
+      tags: [Inputs]
+      summary: Mark an input satisfied
+      description: Sets `is_satisfied=true`, `satisfied_by` (session user), `satisfied_at`, and optionally writes `artifact_reference`.
+      operationId: satisfyTaskInput
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                artifact_reference: { $ref: "#/components/schemas/ArtifactReference" }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TaskIO" } } } }
+
+  # ---------------------------------------------------------------- Outputs
+  /{id}/outputs:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [Outputs]
+      summary: List a task's outputs
+      description: Each output includes its acceptance criteria.
+      operationId: listTaskOutputs
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/TaskOutput" } } } }
+    post:
+      tags: [Outputs]
+      summary: Create an output
+      description: "Honors the io_type → artifact_type default, same as inputs."
+      operationId: createTaskOutput
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TaskIOInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/TaskOutput" } } } }
+
+  /outputs/{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [Outputs]
+      summary: Get an output
+      operationId: getTaskOutput
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TaskOutput" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Outputs]
+      summary: Update an output
+      operationId: updateTaskOutput
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TaskIOInput" } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TaskOutput" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Outputs]
+      summary: Delete an output
+      operationId: deleteTaskOutput
+      responses:
+        "204": { description: Deleted }
+
+  /outputs/{id}/deliver:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    post:
+      tags: [Outputs]
+      summary: Mark an output delivered
+      description: >
+        Sets `is_delivered=true`, `delivered_by`, `delivered_at`, writes
+        `deliverable_reference`, and flags all of the output's criteria
+        `requires_reverification=true`.
+      operationId: deliverTaskOutput
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deliverable_reference: { $ref: "#/components/schemas/ArtifactReference" }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TaskOutput" } } } }
+
+  # ---------------------------------------------------------------- Acceptance Criteria
+  /outputs/{output_id}/criteria:
+    parameters:
+      - name: output_id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Acceptance Criteria]
+      summary: List an output's criteria
+      operationId: listCriteria
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/AcceptanceCriterion" } } } }
+    post:
+      tags: [Acceptance Criteria]
+      summary: Create a criterion
+      operationId: createCriterion
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AcceptanceCriterionInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/AcceptanceCriterion" } } } }
+
+  /criteria/{id}:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    get:
+      tags: [Acceptance Criteria]
+      summary: Get a criterion
+      operationId: getCriterion
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/AcceptanceCriterion" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Acceptance Criteria]
+      summary: Update a criterion
+      operationId: updateCriterion
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AcceptanceCriterionInput" } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/AcceptanceCriterion" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Acceptance Criteria]
+      summary: Delete a criterion
+      operationId: deleteCriterion
+      responses:
+        "204": { description: Deleted }
+
+  # ---------------------------------------------------------------- Validation
+  /outputs/{output_id}/evaluate:
+    parameters:
+      - { name: output_id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Validation]
+      summary: Evaluate an output (unified engine)
+      description: >
+        Runs the full engine over the output's criteria: structural gate +
+        automated + llm + attested. Resolves the output's bound artifact first.
+      operationId: evaluateOutput
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                context: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Evaluation result, content: { application/json: { schema: { $ref: "#/components/schemas/EvaluationResult" } } } }
+
+  /outputs/{output_id}/evaluate-llm:
+    parameters:
+      - { name: output_id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Validation]
+      summary: Evaluate an output (LLM-only, legacy)
+      operationId: evaluateOutputLLM
+      responses:
+        "200":
+          description: Per-criterion LLM results
+          content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } }
+
+  /attestations/{id}/record:
+    parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+    post:
+      tags: [Validation]
+      summary: Record a human reply to an attestation
+      operationId: recordAttestation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reply: { type: string, description: "Free-text or yes/no reply." }
+                evidence: { type: object, additionalProperties: true, description: "{ screenshot | link } — re-validated through the engine." }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+
+  /attestations/whatsapp/inbound:
+    post:
+      tags: [Validation]
+      summary: Inbound WhatsApp attestation webhook
+      description: >
+        **Unauthenticated** webhook. Correlates an inbound message to the
+        sender's open attestation by phone. Accepts several payload shapes
+        (`from`/`sender`/`data.key.remoteJid` and `text`/`message`/`data.message.conversation`).
+      operationId: whatsappInboundAttestation
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from: { type: string }
+                sender: { type: string }
+                text: { type: string }
+                message: { type: string }
+                data: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+        "400": { description: "from and text required", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  # ================================================================ MARKETICO — Notion
+  /{projectId}/notion:
+    parameters: [ { $ref: "#/components/parameters/ProjectIdPath" } ]
+    get:
+      tags: [Notion]
+      summary: Get a project's Notion config
+      operationId: getNotionConfig
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/NotionEnvelope" } } } }
+        "400": { $ref: "#/components/responses/NoTenant" }
+    put:
+      tags: [Notion]
+      summary: Save Notion config (API-key mode)
+      operationId: saveNotionConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auth_method: { type: string, enum: [api_key, oauth] }
+                api_key: { type: string }
+                connected_database_id: { type: string }
+                connected_database_name: { type: string }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/NotionEnvelope" } } } }
+
+  /{projectId}/notion/oauth-exchange:
+    parameters: [ { $ref: "#/components/parameters/ProjectIdPath" } ]
+    post:
+      tags: [Notion]
+      summary: Exchange a Notion OAuth code
+      operationId: notionOAuthExchange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, redirect_uri]
+              properties:
+                code: { type: string }
+                redirect_uri: { type: string, format: uri }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/NotionEnvelope" } } } }
+        "400": { description: "code or redirect_uri missing", content: { application/json: { schema: { $ref: "#/components/schemas/Envelope" } } } }
+
+  /{projectId}/notion/test:
+    parameters: [ { $ref: "#/components/parameters/ProjectIdPath" } ]
+    post:
+      tags: [Notion]
+      summary: Test the Notion connection
+      operationId: testNotionConnection
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/NotionEnvelope" } } } }
+
+  /{projectId}/notion/disconnect:
+    parameters: [ { $ref: "#/components/parameters/ProjectIdPath" } ]
+    post:
+      tags: [Notion]
+      summary: Disconnect Notion
+      operationId: disconnectNotion
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/NotionEnvelope" } } } }
+
+  /{projectId}/notion/index:
+    parameters: [ { $ref: "#/components/parameters/ProjectIdPath" } ]
+    post:
+      tags: [Notion]
+      summary: Trigger a workspace crawl (async)
+      description: Fire-and-forget; the crawl runs in the background. Poll `…/index/status`.
+      operationId: startNotionIndex
+      responses:
+        "200":
+          description: Indexing started
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: "#/components/schemas/Envelope" }
+                  - type: object
+                    properties:
+                      data: { type: object, properties: { status: { type: string, example: indexing } } }
+    get:
+      tags: [Notion]
+      summary: Get the content index (tree + flat)
+      description: >
+        Source for the frontend Notion page picker. `data.flat[]` is an array of
+        index entries; pages have `object_type: "page"`. Entries carry `icon_type`
+        (`emoji` | `external` | `file`) and `icon_value` — for `file`/`external`
+        the value is a URL (render as an `<img>`, not as text).
+      operationId: getNotionIndex
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/NotionIndexEnvelope" } } } }
+    delete:
+      tags: [Notion]
+      summary: Clear the content index
+      operationId: deleteNotionIndex
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/NotionEnvelope" } } } }
+
+  /{projectId}/notion/index/status:
+    parameters: [ { $ref: "#/components/parameters/ProjectIdPath" } ]
+    get:
+      tags: [Notion]
+      summary: Get index status
+      operationId: getNotionIndexStatus
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/NotionEnvelope" } } } }
+
+  /{projectId}/notion/page/{pageId}/content:
+    parameters:
+      - { $ref: "#/components/parameters/ProjectIdPath" }
+      - name: pageId
+        in: path
+        required: true
+        description: 32-hex Notion page id (dashed or undashed).
+        schema: { type: string }
+    get:
+      tags: [Notion]
+      summary: Live page content
+      description: >
+        Fetches live Notion page content. This is what meetico's `notion`
+        artifact resolver calls — meetico never hits the Notion API directly.
+      operationId: getNotionPageContent
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: "#/components/schemas/Envelope" }
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotionPageContent" }
+
+# ============================================================================
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        meetico `/tasks` routes use passport-jwt (`Authorization: Bearer <token>`),
+        falling back to session. marketico `/notion` routes resolve a per-request
+        tenant schema; a missing tenant yields HTTP 400.
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    KindPath:
+      name: kind
+      in: path
+      required: true
+      description: Which I/O side to bind.
+      schema: { type: string, enum: [inputs, outputs] }
+    ProjectIdPath:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials.
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    NotFound:
+      description: Resource not found.
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    BadRequest:
+      description: Invalid input (e.g. missing required fields / binding fields).
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    NoTenant:
+      description: No tenant schema resolved for the request.
+      content: { application/json: { schema: { $ref: "#/components/schemas/Envelope" } } }
+
+  schemas:
+
+    # ---- shared ----
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+    Envelope:
+      type: object
+      description: marketico's standard response wrapper.
+      properties:
+        success: { type: boolean }
+        data: {}
+        message: { type: string }
+        error: { type: string }
+
+    ArtifactReference:
+      type: object
+      description: >
+        Physical locator, shape depends on the artifact type's parser. Examples —
+        gdrive `{ file_id, tab?, url? }`; notion `{ page_id, url?, project_id? }`;
+        sql `{ query, params? }`; storage `{ bucket, path }`; api `{ url }`;
+        inline `{ content }`.
+      additionalProperties: true
+
+    BindingSchema:
+      type: object
+      description: How a reference is parsed/validated for a physical type.
+      properties:
+        parser: { type: string, example: notion }
+        modes:
+          type: array
+          items: { type: object, additionalProperties: true }
+        fields:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              required: { type: boolean }
+
+    # ---- projects / columns / tasks ----
+    ProjectInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        color: { type: string, default: "#3B82F6" }
+    Project:
+      allOf:
+        - { $ref: "#/components/schemas/ProjectInput" }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+
+    Column:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        position: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    TaskInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        due_date: { type: string, format: date-time, nullable: true }
+        priority: { type: string, enum: [Low, Medium, High], default: Medium }
+        assignee:
+          type: array
+          items: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        status: { type: string, enum: [pending, in_progress, completed, blocked], default: pending }
+        column_id: { type: string, format: uuid, nullable: true }
+        position: { type: integer, default: 0 }
+    Task:
+      allOf:
+        - { $ref: "#/components/schemas/TaskInput" }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            user_id: { type: string, format: uuid }
+            is_completed: { type: boolean, nullable: true }
+            comments: { type: array, items: { $ref: "#/components/schemas/Comment" } }
+            todos: { type: array, items: { $ref: "#/components/schemas/Todo" } }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+    TaskWithIO:
+      allOf:
+        - { $ref: "#/components/schemas/Task" }
+        - type: object
+          properties:
+            inputs: { type: array, items: { $ref: "#/components/schemas/TaskIO" } }
+            outputs: { type: array, items: { $ref: "#/components/schemas/TaskOutput" } }
+
+    Todo:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        task_id: { type: string, format: uuid }
+        text: { type: string }
+        completed: { type: boolean }
+        position: { type: integer }
+    Comment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        task_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        author_name: { type: string }
+        author_avatar: { type: string }
+        text: { type: string }
+        created_at: { type: string, format: date-time }
+
+    # ---- type registries ----
+    ArtifactType:
+      type: object
+      description: Physical type — how an artifact resolves.
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, example: notion_page }
+        display_name: { type: string, example: "Notion Page" }
+        category: { type: string }
+        resolver_type:
+          type: string
+          description: "Resolver dispatch key in the validation engine."
+          enum: [gdrive, notion, sql, storage, api, computed, table, inline]
+        resolver_config: { type: object, additionalProperties: true }
+        reference_schema: { type: object, additionalProperties: true }
+        binding_schema: { $ref: "#/components/schemas/BindingSchema" }
+        icon: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    IoType:
+      type: object
+      description: Semantic type — what a deliverable is.
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        display_name: { type: string }
+        category: { type: string }
+        description: { type: string, nullable: true }
+        default_artifact_type_id: { type: string, format: uuid, nullable: true }
+        icon: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # ---- inputs / outputs ----
+    TaskIOInput:
+      type: object
+      description: Create/update body for an input or output.
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        io_type_id:
+          type: string
+          format: uuid
+          description: Semantic type. If set and artifact_type_id omitted, the physical default is applied.
+        artifact_type_id: { type: string, format: uuid, nullable: true }
+        is_required: { type: boolean, default: true }
+        position: { type: integer, default: 0 }
+        metadata: { type: object, additionalProperties: true }
+    TaskIO:
+      type: object
+      description: A task input (also the base for outputs).
+      properties:
+        id: { type: string, format: uuid }
+        task_id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        io_type_id: { type: string, format: uuid, nullable: true }
+        artifact_type_id: { type: string, format: uuid, nullable: true }
+        artifact_reference: { $ref: "#/components/schemas/ArtifactReference" }
+        is_required: { type: boolean }
+        is_satisfied: { type: boolean }
+        satisfied_at: { type: string, format: date-time, nullable: true }
+        satisfied_by: { type: string, format: uuid, nullable: true }
+        position: { type: integer }
+        metadata: { type: object, additionalProperties: true, nullable: true }
+        io_type: { $ref: "#/components/schemas/IoType" }
+        artifact_type: { $ref: "#/components/schemas/ArtifactType" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    TaskOutput:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        task_id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        io_type_id: { type: string, format: uuid, nullable: true }
+        artifact_type_id: { type: string, format: uuid, nullable: true }
+        deliverable_reference: { $ref: "#/components/schemas/ArtifactReference" }
+        content_resolver: { type: string, nullable: true }
+        is_required: { type: boolean }
+        is_delivered: { type: boolean }
+        delivered_at: { type: string, format: date-time, nullable: true }
+        delivered_by: { type: string, format: uuid, nullable: true }
+        position: { type: integer }
+        metadata: { type: object, additionalProperties: true, nullable: true }
+        io_type: { $ref: "#/components/schemas/IoType" }
+        artifact_type: { $ref: "#/components/schemas/ArtifactType" }
+        criteria: { type: array, items: { $ref: "#/components/schemas/AcceptanceCriterion" } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    IORow:
+      description: A bound input or output row (returned by /bind).
+      oneOf:
+        - { $ref: "#/components/schemas/TaskIO" }
+        - { $ref: "#/components/schemas/TaskOutput" }
+
+    # ---- criteria / validation ----
+    AcceptanceCriterionInput:
+      type: object
+      required: [criterion]
+      properties:
+        criterion: { type: string }
+        criterion_category: { type: string }
+        verification_method:
+          type: string
+          enum: [llm, manual, automated, test, attested]
+          default: manual
+        template_id: { type: string, format: uuid, nullable: true }
+        verification_prompt: { type: string }
+        is_required: { type: boolean, default: true }
+        position: { type: integer, default: 0 }
+        metadata: { type: object, additionalProperties: true }
+    AcceptanceCriterion:
+      allOf:
+        - { $ref: "#/components/schemas/AcceptanceCriterionInput" }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            output_id: { type: string, format: uuid }
+            is_met: { type: boolean }
+            verified_at: { type: string, format: date-time, nullable: true }
+            verified_by: { type: string, nullable: true }
+            verification_notes: { type: string, nullable: true }
+            confidence: { type: string, enum: [high, medium, low], nullable: true }
+            requires_reverification: { type: boolean }
+            template: { type: object, additionalProperties: true, nullable: true }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+
+    EvaluationResult:
+      type: object
+      description: Output of the unified validation engine.
+      properties:
+        output_id: { type: string, format: uuid }
+        passed: { type: boolean }
+        artifact: { $ref: "#/components/schemas/ResolvedArtifact" }
+        criteria:
+          type: array
+          items:
+            type: object
+            properties:
+              criterion_id: { type: string, format: uuid }
+              verification_method: { type: string }
+              is_met: { type: boolean }
+              confidence: { type: string, nullable: true }
+              notes: { type: string, nullable: true }
+      additionalProperties: true
+
+    ResolvedArtifact:
+      type: object
+      description: Uniform shape returned by `resolveArtifact` for every resolver kind.
+      properties:
+        exists: { type: boolean }
+        content_text: { type: string, nullable: true }
+        url: { type: string, nullable: true }
+        record: { nullable: true }
+        metadata: { type: object, additionalProperties: true, nullable: true }
+        error: { type: string, nullable: true }
+
+    # ---- binding ----
+    BindRequest:
+      type: object
+      required: [artifact_type_id]
+      description: >
+        Provide the locator as `url` (parsed by the type's parser) OR a ready
+        `reference` object. `project_id` is required for notion references.
+      properties:
+        artifact_type_id: { type: string, format: uuid }
+        url: { type: string }
+        reference: { $ref: "#/components/schemas/ArtifactReference" }
+        project_id: { type: string, format: uuid }
+
+    # ---- I/O review ----
+    ReviewItem:
+      type: object
+      properties:
+        kind: { type: string, enum: [input, output] }
+        id: { type: string, format: uuid }
+        task_id: { type: string, format: uuid }
+        task_title: { type: string }
+        project_name: { type: string, nullable: true }
+        project_id: { type: string, format: uuid }
+        label: { type: string }
+        detail: { type: string, nullable: true }
+        artifact_type: { type: string, nullable: true }
+        resolver_type: { type: string, nullable: true }
+        io_type: { type: string, nullable: true }
+        io_type_id: { type: string, format: uuid, nullable: true }
+        confidence: { type: string, nullable: true }
+        review_status: { type: string, enum: [approved, flagged, pending] }
+        is_required: { type: boolean }
+        settled: { type: boolean, description: "is_satisfied (inputs) / is_delivered (outputs)." }
+        bound: { type: boolean }
+        reference: { $ref: "#/components/schemas/ArtifactReference" }
+    IOReviewResponse:
+      type: object
+      properties:
+        tasks: { type: array, items: { type: object, additionalProperties: true } }
+        items: { type: array, items: { $ref: "#/components/schemas/ReviewItem" } }
+        stats:
+          type: object
+          properties:
+            tasks: { type: integer }
+            inputs: { type: integer }
+            outputs: { type: integer }
+            criteria: { type: integer }
+            review:
+              type: object
+              properties:
+                approved: { type: integer }
+                flagged: { type: integer }
+                pending: { type: integer }
+            confidence:
+              type: object
+              properties:
+                high: { type: integer }
+                medium: { type: integer }
+                low: { type: integer }
+                unknown: { type: integer }
+
+    # ---- marketico notion ----
+    NotionEnvelope:
+      allOf:
+        - { $ref: "#/components/schemas/Envelope" }
+        - type: object
+          properties:
+            data: { type: object, additionalProperties: true, nullable: true }
+    NotionIndexEntry:
+      type: object
+      properties:
+        notion_id: { type: string }
+        object_type: { type: string, enum: [page, database] }
+        title: { type: string, nullable: true }
+        url: { type: string, nullable: true }
+        icon_type: { type: string, enum: [emoji, external, file], nullable: true }
+        icon_value:
+          type: string
+          nullable: true
+          description: "emoji glyph, or a (possibly signed S3) URL for file/external icons."
+    NotionIndexEnvelope:
+      allOf:
+        - { $ref: "#/components/schemas/Envelope" }
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                flat: { type: array, items: { $ref: "#/components/schemas/NotionIndexEntry" } }
+                tree: { type: array, items: { type: object, additionalProperties: true } }
+    NotionPageContent:
+      type: object
+      properties:
+        page_id: { type: string }
+        title: { type: string, nullable: true }
+        url: { type: string, nullable: true }
+        content_text: { type: string, nullable: true }
+      additionalProperties: true

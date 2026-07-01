@@ -18,8 +18,23 @@ const { execFileSync } = require("node:child_process");
 const store = require("./lib/store");
 const { shell, listPanel } = require("./lib/html");
 const { renderPane, renderTaskDetail, renderTaskEditForm, renderMeetingDetail } = require("./lib/components");
-const { REPO_ROOT } = require("./lib/datasources");
+const { REPO_ROOT, fetchSource } = require("./lib/datasources");
+const meetico = require("./lib/meetico");
 const { startSSE, patchElements } = require("./lib/sse");
+
+// Locate one IO row within a task → { kind, artifact_type_id, project_id }.
+// Used by the bind route to derive the meetico request from just (tid, ioId).
+function locateIo(tid, ioId) {
+  let d;
+  try {
+    d = fetchSource("task_detail", { id: tid }).rows[0];
+  } catch {
+    return null;
+  }
+  if (!d) return null;
+  const find = (arr, kind) => (arr || []).filter((r) => r.id === ioId).map((r) => ({ kind, artifact_type_id: r.artifact_type_id, project_id: d.project_id }))[0];
+  return find(d.inputs, "inputs") || find(d.outputs, "outputs") || null;
+}
 
 // Run the IO write script (the ONLY write path in the viz). Returns its parsed
 // JSON result ({ok, task_id, ...} or {ok:false, error}). Mirrors the read-only
@@ -147,6 +162,30 @@ const server = http.createServer(async (req, res) => {
           const ioId = rest[1];
           if (rest[2] === "delete") {
             result = runIoEdit(["--delete", "--io", ioId]);
+          } else if (rest[2] === "unbind") {
+            result = runIoEdit(["--io", ioId, "--ref-clear"]);
+          } else if (rest[2] === "bind") {
+            // Binding goes through meetico (resolver + credentials), not the DB.
+            let notice;
+            try {
+              const loc = locateIo(id, ioId);
+              if (!loc) throw new Error("IO no encontrado");
+              if (!loc.artifact_type_id) throw new Error("Elegí un Artifact antes de vincular");
+              if (!value.trim()) throw new Error("Pegá un enlace o ID");
+              const body = { artifact_type_id: loc.artifact_type_id, url: value.trim() };
+              if (loc.project_id) body.project_id = loc.project_id;
+              const prev = await meetico.bindPreview(body).catch(() => null);
+              await meetico.bind(loc.kind, ioId, body);
+              const r = prev && prev.resolved;
+              if (r && r.exists) notice = { kind: "ok", text: `Vinculado ✓ ${r.url || r.metadata?.name || r.metadata?.title || ""}`.trim() };
+              else if (r && r.error) notice = { kind: "warn", text: `Vinculado, pero no resolvió: ${r.error}` };
+              else notice = { kind: "ok", text: "Vinculado ✓" };
+            } catch (e) {
+              notice = { kind: "err", text: e.message };
+            }
+            startSSE(res);
+            patchElements(res, renderTaskEditForm(id, notice));
+            return res.end();
           } else if (rest[2] === "field") {
             const flag = { title: "--title", io_type: "--io-type", artifact: "--artifact", required: "--required" }[rest[3]];
             result = flag ? runIoEdit(["--io", ioId, flag, value]) : { ok: false, error: `Campo inválido: ${rest[3]}` };

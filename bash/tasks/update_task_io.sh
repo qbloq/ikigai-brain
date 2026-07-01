@@ -39,6 +39,7 @@ while [[ $# -gt 0 ]]; do
     --io-type)  iotype="$2"; set_provided[iotype]=1; shift 2 ;;
     --artifact) artifact="$2"; set_provided[artifact]=1; shift 2 ;;
     --required) required="$2"; set_provided[required]=1; shift 2 ;;
+    --ref-clear) set_provided[refclear]=1; shift ;;
     --dry-run)  dry=1; shift ;;
     --json)     FORMAT=json; shift ;;
     -h|--help)  sed -n '2,33p' "$0"; exit 0 ;;
@@ -162,6 +163,10 @@ if [[ -n "${set_provided[required]:-}" ]]; then
     true|false) sets+=("is_required = $required") ;;
     *) fail "--required must be true or false" ;;
   esac
+fi
+if [[ -n "${set_provided[refclear]:-}" ]]; then
+  # Clear the binding locator (the reference jsonb), column depends on kind.
+  [[ "$kind" == "output" ]] && sets+=("deliverable_reference = '{}'::jsonb") || sets+=("artifact_reference = '{}'::jsonb")
 fi
 
 setclause="$(IFS=,; echo "${sets[*]}")"
