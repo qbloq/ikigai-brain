@@ -80,6 +80,15 @@ const SOURCES = {
     script: "bash/tasks/task_detail.sh",
     args: { id: { positional: true } },
   },
+  // Notion: all BD Avances tasks for a project "brief" page (positional page
+  // id/url). Notion is slow (several API calls) and this data is semi-static, so
+  // cache it — the notion-tasks component fetches ONCE and filters in the browser.
+  notion_project_tasks: {
+    label: "Tareas Notion (proyecto)",
+    script: "bash/notion/project_tasks.sh",
+    args: { project: { positional: true } },
+    cache: 120_000,
+  },
   // Reference data for the IO editor: { io_types[], artifact_types[] } as ONE
   // JSON object. Static/reference → short cache (the editor fetches it per form
   // render, so caching avoids re-querying the catalog on every IO edit).
