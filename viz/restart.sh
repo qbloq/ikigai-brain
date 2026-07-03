@@ -12,12 +12,18 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG="$REPO_ROOT/viz/viz.log"
 
 # --- stop any running instance ---------------------------------------------
-pids="$(pgrep -f 'viz/server.js' || true)"
+# Match by the LISTENER on our PORT, not by command-line text: a `pkill -f
+# viz/server.js` would also kill any unrelated shell whose command merely
+# mentions "viz/server.js" (e.g. an ad-hoc `pgrep`/`node -c`), including the
+# caller. Port ownership is unambiguous.
+port_pids() { { command -v fuser >/dev/null 2>&1 && fuser -n tcp "$PORT" 2>/dev/null; } \
+  || { command -v lsof >/dev/null 2>&1 && lsof -ti tcp:"$PORT" -sTCP:LISTEN 2>/dev/null; }; }
+pids="$(port_pids | tr -s ' ' '\n' | grep -E '^[0-9]+$' || true)"
 if [[ -n "$pids" ]]; then
-  echo "stopping viz (pid: $(echo "$pids" | tr '\n' ' '))"
+  echo "stopping viz on :$PORT (pid: $(echo "$pids" | tr '\n' ' '))"
   kill $pids 2>/dev/null || true
   sleep 0.5
-  pkill -9 -f 'viz/server.js' 2>/dev/null || true
+  kill -9 $(port_pids) 2>/dev/null || true
 fi
 
 # --- relaunch detached ------------------------------------------------------

@@ -165,6 +165,7 @@
 
     {"id": "A7.1", "sop": "S7.1", "verb": "Producir/Crear", "name": "Crear/duplicar landing page", "slots": ["proposito", "destino"]},
     {"id": "A7.4", "sop": "S7.1", "verb": "Producir/Crear", "name": "Construir/actualizar página de testimonios", "slots": ["testimonios"]},
+    {"id": "A7.6", "sop": "S7.1", "verb": "Optimizar", "name": "Editar/optimizar página del funnel (survey, agenda, velocidad de carga)", "slots": ["pagina", "cambio"]},
     {"id": "A7.2", "sop": "S7.2", "verb": "Configurar", "name": "Implementar checkout (Hotmart/GHL)", "slots": ["plataforma", "oferta", "order_bumps"]},
     {"id": "A7.5", "sop": "S7.2", "verb": "Integrar", "name": "Integrar pasarela de pagos", "slots": ["proveedor"]},
     {"id": "A7.3", "sop": "S7.3", "verb": "Configurar", "name": "Configurar VSL A/B (Biturbo)", "slots": ["variantes"]},
