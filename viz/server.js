@@ -94,7 +94,7 @@ function readBody(req) {
 function withParamOverrides(ui, searchParams) {
   if (!ui) return ui;
   const params = { ...(ui.params || {}) };
-  for (const key of ["project", "from", "to", "macro", "status", "priority", "assignee", "due", "open", "limit", "has_report"]) {
+  for (const key of ["project", "from", "to", "macro", "role", "status", "priority", "assignee", "due", "open", "limit", "has_report"]) {
     const v = searchParams.get(key);
     if (v != null && v !== "") params[key] = v;
   }
