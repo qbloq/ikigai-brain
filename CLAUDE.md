@@ -33,8 +33,10 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 | `io_types.sh` | List the semantic IO types (with default artifact type) usable in task contracts. |
 | `io_catalog.sh` | One JSON object `{io_types[], artifact_types[]}` (with ids) — reference data for the viz IO editor's dropdowns. Read-only. |
 | `update_task_io.sh --io <id> [--title T] [--io-type NAME] [--artifact NAME] [--required true\|false]` / `--add input\|output --task <id>` / `--delete --io <id> [--cascade]` **[WRITE]** | Edit one IO row of a task: retype its `io_type`/`artifact_type` (accepts id, name, or display_name), rename, toggle required, or add/remove rows. One op per call, one transaction, before/after, `--dry-run`, `--json` (emits `task_id` for re-render). Deleting an output with acceptance criteria is blocked unless `--cascade`. Powers the viz IO editor. |
-| `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. See `-h`. |
+| `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. **Provenance:** `source_meeting` (id/prefix→FK), `source_url`/`source_external_id` (Notion), `source_type` (auto-inferred) populate the tasks provenance columns. See `-h`. |
 | `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. |
+| `ingest_notion.sh <classified.json> [--project N] [--limit N] [--only-open] [--yes]` **[WRITE]** | Bulk-ingest Notion tasks (from an ontology-pilot `classified.json`) into `tasks` in ONE txn: born with provenance (`source_type='notion'`, `source_url`, `source_external_id`) + archetype tag (`method='llm'`). v1 = **tag+provenance only** (no IO instantiation, no assignees). Dedups by `source_external_id` (idempotent). Safe by default: previews + ROLLBACK unless `--yes`. |
+| `materialize_io.sh [--source notion] [--label NAME] [--yes]` **[WRITE]** | Backfill the IO work-contract (task_inputs/outputs/acceptance_criteria) onto EXISTING tasks by instantiating their archetype's template (set-based, one txn). Substitutes `{proyecto}`→label; **neutralizes other unfilled `{slots}`→«pendiente»** (templates keep their slots — the dimensional socket — untouched). Idempotent (skips tasks that already have IO); scoped by `--source`. Safe by default: ROLLBACK unless `--yes`. Only tasks whose archetype has a template get IO. |
 | `cancel_task.sh <id> [--into <id>] [--reason "…"]` **[WRITE]** | Cancel a task (`status='cancelled'`), optionally recording a merge into another (`--into`) with an auditable comment trail on both. Nothing is deleted. `--dry-run` to preview. Use for dedup/merges (e.g. cross-project duplicates the per-project dedup misses). |
 | `wipe_tasks.sh [--yes]` **[WRITE, IRREVERSIBLE]** | Delete the ENTIRE task domain (tasks + inputs + outputs + criteria + attestations + todos + comments) in one FK-safe transaction. Preserves `task_columns` and all FK parents. Safe by default: previews + rolls back unless `--yes`. Back up first (CSV snapshots in `backups/tasks-backup-<date>/`, restore via its `restore.sql`). |
 
@@ -171,8 +173,11 @@ keyed by `ui.component` (`table` with inferred columns, `dashboard` KPI cards,
 window/open) that re-fetches via `@get` with query params; replaces the old
 separate "abiertas"/"vencidas" UIs, since vencidas = `due=overdue` + `open`).
 The `tasks` pane is master-detail: clicking a row hits `GET /task/:id`, which
-SSE-patches a `#task-detail` side panel (header + IO + acceptance criteria,
-view-only) from the `task_detail` source; `GET /task/` (empty id) closes it.
+SSE-patches a `#task-detail` side panel (header + **Origen** provenance chip +
+IO + acceptance criteria, view-only) from the `task_detail` source; `GET /task/`
+(empty id) closes it. The `task_detail` object carries a `source` field
+(`{type,url,external_id,meeting_id,meeting_name}`) → the chip links to Notion (↗)
+or names the meeting.
 The `meetings` component is the same master-detail shape over team meetings:
 filter bar (project/status/solo-con-reporte) over the `meetings` source; clicking
 a row hits `GET /meeting/:id`, which SSE-patches a `#meeting-detail` panel (report
@@ -200,6 +205,7 @@ signal. Any new UI with a re-fetch or an SSE detail panel must include both.
 ## Tasks data model (schema `ikigaigm`)
 
 - **tasks** — core. `status` enum (`pending`,`in_progress`,`completed`,`blocked`,`cancelled`), `priority` enum (`Low`,`Medium`,`High`), `due_date`, `assignee` is `uuid[]`, `project_id`, `column_id`, `is_completed`.
+- **task provenance** (migration 002): `source_type` (`meeting`|`notion`|`manual`|`other`), `source_meeting_id` (FK→meetings), `source_url` (external URL, e.g. Notion page — preferred), `source_external_id` (external stable id, e.g. Notion page id — for dedup/sync). Populated by `create_task.sh` (structured twin of the human provenance comment). Schema: [catalog/migrations/002_task_provenance.sql](catalog/migrations/002_task_provenance.sql).
 - **assignee resolution**: `tasks.assignee[]` → `team_members.id` → `users.user_id` → `persons` (name); role via `team_roles`, team via `teams`. (Note: assignee UUIDs are team_members.id, **not** users.id.)
 - **task_inputs** / **task_outputs** — requirements and deliverables; typed by `io_types` / `artifact_types`.
 - **task_acceptance_criteria** — verification criteria per *output* (`verification_method`: `manual`/`attested`/auto). Linked by `output_id` → `task_outputs.id`.

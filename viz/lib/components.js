@@ -256,19 +256,33 @@ function renderSopTree(ui) {
     </section>`;
   }
 
-  // macro filter applied in JS over the cached catalog (no extra query)
+  // macro + role filters applied in JS over the cached catalog (no extra query).
+  // A SOP's roles come as a comma-joined string of owner_roles; the role filter
+  // keeps whole SOPs (roles are per-SOP, so every archetype row carries them).
   const current = (ui.params && ui.params.macro) || "";
-  const rows = current ? all.filter((r) => r.macro === current) : all;
+  const curRole = (ui.params && ui.params.role) || "";
+  let rows = current ? all.filter((r) => r.macro === current) : all;
+  if (curRole) rows = rows.filter((r) => (r.roles || "").split(", ").includes(curRole));
   const macros = groupBy(all, (r) => r.macro).map(([code, rs]) => ({ code, name: rs[0].macro_name }));
-  const reget = `@get('/ui/${escape(ui.id)}?macro='+$sopMacro)`;
+  const roles = [...new Set(all.flatMap((r) => (r.roles || "").split(", ").filter(Boolean)))].sort((a, b) =>
+    a.localeCompare(b, "es")
+  );
+  const reget = `@get('/ui/${escape(ui.id)}?macro='+$sopMacro+'&role='+encodeURIComponent($sopRole))`;
   const opts =
     `<option value="">Todos los macro-procesos</option>` +
     macros
       .map((m) => `<option value="${escape(m.code)}"${m.code === current ? " selected" : ""}>${escape(m.code)} · ${escape(m.name)}</option>`)
       .join("");
-  const controls = `<div class="mb-4" data-signals="{sopMacro:'${escape(current)}'}">
-    <select data-bind="sopMacro" data-on:change="${reget}"
-      class="text-sm px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 font-medium">${opts}</select>
+  const roleOpts =
+    `<option value="">Todos los roles</option>` +
+    roles
+      .map((r) => `<option value="${escape(r)}"${r === curRole ? " selected" : ""}>${escape(r)}</option>`)
+      .join("");
+  const selectCls =
+    "text-sm px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 font-medium";
+  const controls = `<div class="mb-4 flex gap-2" data-signals="{sopMacro:'${escape(current)}',sopRole:'${escape(curRole)}'}">
+    <select data-bind="sopMacro" data-on:change="${reget}" class="${selectCls}">${opts}</select>
+    <select data-bind="sopRole" data-on:change="${reget}" class="${selectCls}">${roleOpts}</select>
   </div>`;
 
   const body = rows.length
@@ -312,13 +326,26 @@ const DUE_OPTS = [
 // Per-column meta: width (table-fixed) + cell behavior. Título cedes width to
 // Vence; long titles truncate with a tooltip.
 const TASK_COLS = [
-  { k: "title", l: "Título", w: "w-[42%]" },
+  { k: "source_type", l: "", w: "w-8", align: "text-center" },
+  { k: "title", l: "Título", w: "w-[40%]" },
   { k: "status", l: "Estado", w: "w-24" },
   { k: "priority", l: "Prioridad", w: "w-16", align: "text-center" },
   { k: "due", l: "Vence", w: "w-24", cls: "whitespace-nowrap" },
   { k: "project", l: "Proyecto" },
   { k: "assignees", l: "Responsables" },
 ];
+// At-a-glance provenance icon per row (full detail in the side panel).
+const SOURCE_ICON = {
+  meeting: { i: "🎙️", t: "Reunión" },
+  notion: { i: "📄", t: "Notion" },
+  manual: { i: "✍️", t: "Manual" },
+  other: { i: "🔗", t: "Externo" },
+};
+function sourceIcon(v) {
+  const s = SOURCE_ICON[v];
+  if (!s) return '<span class="text-slate-300" title="Sin origen">·</span>';
+  return `<span title="Origen: ${escape(s.t)}">${s.i}</span>`;
+}
 const PRIORITY_DOT = {
   High: { c: "bg-red-500", t: "Alta" },
   Medium: { c: "bg-amber-400", t: "Media" },
@@ -340,6 +367,7 @@ function dueFmt(v) {
 }
 
 function taskCell(col, r) {
+  if (col === "source_type") return sourceIcon(r[col]);
   if (col === "priority") return priorityDot(r[col]);
   if (col === "due") return dueFmt(r[col]);
   return cell(r[col]);
@@ -581,6 +609,33 @@ function idCopy(uuid, shortid) {
   </span>`;
 }
 
+// Provenance chip: where the task came from. Notion → clickable ↗ link; meeting
+// → its name; manual/other → a label. Empty when the task has no source.
+function sourceBlock(s) {
+  if (!s || typeof s !== "object" || Array.isArray(s)) return "";
+  const T = {
+    notion: { icon: "📄", label: "Notion" },
+    meeting: { icon: "🎙️", label: "Reunión" },
+    manual: { icon: "✍️", label: "Manual" },
+    other: { icon: "🔗", label: "Externo" },
+  };
+  const t = T[s.type] || { icon: "🔗", label: s.type || "Origen" };
+  let inner;
+  if (s.url) {
+    inner = `<a href="${escape(s.url)}" target="_blank" class="text-indigo-600 hover:underline truncate">${escape(t.label)} ↗</a>`;
+  } else if (s.meeting_name || s.meeting_id) {
+    inner = `<span class="text-slate-700 truncate">${escape(t.label)} · ${escape(s.meeting_name || s.meeting_id)}</span>`;
+  } else if (s.type) {
+    inner = `<span class="text-slate-700">${escape(t.label)}</span>`;
+  } else {
+    return "";
+  }
+  return `<div class="mb-5 flex items-center gap-1.5 text-xs bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5">
+    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 shrink-0">Origen</span>
+    <span class="shrink-0">${t.icon}</span>${inner}
+  </div>`;
+}
+
 function renderTaskDetail(id) {
   if (!id) return taskDetailEmpty();
   let d, err;
@@ -614,6 +669,7 @@ function renderTaskDetail(id) {
 
   const inner = `<div class="p-5">
     ${header}
+    ${sourceBlock(d.source)}
     ${activityBlock(d.archetype)}
     ${section("Inputs", (d.inputs || []).length, ioList(d.inputs, "is_satisfied", "satisfecho", "pendiente"))}
     ${section("Outputs", (d.outputs || []).length, ioList(d.outputs, "is_delivered", "entregado", "pendiente"))}
@@ -796,6 +852,7 @@ function renderTaskEditForm(id, notice) {
   const signals = escape(JSON.stringify(sigObj));
   const inner = `<div class="p-5" data-signals="${signals}">
     ${header}
+    ${sourceBlock(d.source)}
     ${activityBlock(d.archetype)}
     ${errBanner}
     ${ioEditSection("Inputs", d.inputs, "inputs", id, cat)}

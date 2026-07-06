@@ -16,7 +16,15 @@
 #                                                Ikigai team, id-prefixes in ANY team
 #                                                — use an id for externals/other teams,
 #                                                e.g. David Guerrero "Cliente")
-#   "source_meeting": "32a519c9",               (optional; adds a provenance comment)
+#   "source_meeting": "32a519c9",               (optional; meeting id/prefix. Sets
+#                                                 source_type='meeting' + source_meeting_id
+#                                                 FK, AND adds the provenance comment.)
+#   "source_url": "https://notion.so/…",         (optional; external URL — Notion page,
+#                                                 preferred for provenance. Implies notion.)
+#   "source_external_id": "27ad5db4…",           (optional; external stable id — Notion
+#                                                 page id — for dedup/sync.)
+#   "source_type": "notion",                     (optional; meeting|notion|manual|other.
+#                                                 Auto-inferred from the fields above if omitted.)
 #   "archetype": "A3.2",                         (optional; FK to activity_archetypes;
 #                                                 tags the task to its SOP via the catalog)
 #   "archetype_match_method": "human",           (optional; rule|embedding|llm|human, default human)
@@ -146,7 +154,8 @@ BEGIN;
 WITH c AS (SELECT :'contract'::jsonb AS j),
 new_task AS (
   INSERT INTO ikigaigm.tasks (title, project_id, priority, due_date, status,
-                              archetype_id, archetype_confidence, archetype_match_method, assignee)
+                              archetype_id, archetype_confidence, archetype_match_method, assignee,
+                              source_type, source_meeting_id, source_url, source_external_id)
   SELECT j->>'title',
          (SELECT id FROM ikigaigm.projects p
             WHERE p.name ILIKE '%'||(j->>'project')||'%' OR p.id::text LIKE (j->>'project')||'%' LIMIT 1),
@@ -166,7 +175,18 @@ new_task AS (
                         OR tm.id::text LIKE a.name||'%'
                      LIMIT 1) AS mid
             FROM jsonb_array_elements_text(coalesce(j->'assignee','[]'::jsonb)) a(name)
-         ) s WHERE s.mid IS NOT NULL)
+         ) s WHERE s.mid IS NOT NULL),
+         -- provenance: explicit source_type, else inferred (meeting > notion)
+         coalesce(nullif(j->>'source_type',''),
+                  CASE WHEN nullif(j->>'source_meeting','') IS NOT NULL THEN 'meeting'
+                       WHEN nullif(j->>'source_url','') IS NOT NULL
+                         OR nullif(j->>'source_external_id','') IS NOT NULL THEN 'notion' END),
+         -- resolve source_meeting (id or prefix) → meetings.id FK; null when absent
+         (SELECT m.id FROM ikigaigm.meetings m
+            WHERE nullif(j->>'source_meeting','') IS NOT NULL
+              AND m.id::text LIKE (j->>'source_meeting')||'%' LIMIT 1),
+         nullif(j->>'source_url',''),
+         nullif(j->>'source_external_id','')
   FROM c
   RETURNING id
 ),

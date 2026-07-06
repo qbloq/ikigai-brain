@@ -33,6 +33,13 @@ SELECT json_build_object(
   'project',   pr.name,
   'assignees', $ASSIGNEES_SQL,
   'created',   to_char(t.created_at,'YYYY-MM-DD'),
+  'source', CASE WHEN t.source_type IS NULL AND t.source_url IS NULL AND t.source_meeting_id IS NULL
+     THEN NULL ELSE json_build_object(
+       'type', t.source_type,
+       'url', t.source_url,
+       'external_id', t.source_external_id,
+       'meeting_id', t.source_meeting_id,
+       'meeting_name', sm.name) END,
   'archetype', CASE WHEN a.id IS NULL THEN NULL ELSE json_build_object(
      'id', a.id, 'verb', a.verb, 'name', a.name,
      'sop', s.code, 'sop_name', s.name,
@@ -73,4 +80,5 @@ SELECT json_build_object(
   LEFT JOIN ikigaigm.activity_archetypes a ON a.id=t.archetype_id
   LEFT JOIN ikigaigm.sops s ON s.code=a.sop_code
   LEFT JOIN ikigaigm.macro_processes mp ON mp.code=s.macro_process_code
+  LEFT JOIN ikigaigm.meetings sm ON sm.id=t.source_meeting_id
 WHERE t.id='$tid';"

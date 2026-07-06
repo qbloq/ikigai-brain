@@ -106,7 +106,8 @@ SELECT left(t.id::text, 8)               AS id,
        t.priority::text                  AS priority,
        to_char(t.due_date, 'YYYY-MM-DD') AS due,
        pr.name                           AS project,
-       $ASSIGNEES_SQL                    AS assignees
+       $ASSIGNEES_SQL                    AS assignees,
+       t.source_type                     AS source_type
 FROM ikigaigm.tasks t
 LEFT JOIN ikigaigm.projects pr ON pr.id = t.project_id
 WHERE $where
