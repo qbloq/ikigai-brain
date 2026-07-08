@@ -3,7 +3,7 @@
 //   right <section id="pane">    — the selected UI, rendered on demand
 // Datastar swaps #pane (and #ui-list) via SSE; no full page reloads.
 
-const { escape } = require("./components");
+const { escape } = require("./kit");
 const { listSources } = require("./datasources");
 
 // Temporarily hide the "Nueva UI" form in the left panel (feature paused).
