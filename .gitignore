@@ -24,6 +24,9 @@ viz/store/
 # Local SQLite databases (the personal data layer) — never committed
 data/sqlite/
 
+# Copilot fork clones (each is its own git repo; the pilot lives here)
+data/forks/
+
 # OS / editor
 .DS_Store
 Thumbs.db
