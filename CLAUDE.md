@@ -78,6 +78,33 @@ and a `meeting_reports` row (structured jsonb, in Spanish).
 - **meeting_reports.report** (jsonb, ES) keys: `reportTitle`, `reportSubtitle`, `executiveSummary` (string), `meetingObjectives`/`meetingContext`/`nextStepsAndFollowUp` (objects), `actionItems` (array of `{task,dueDate,priority,assignedTo[],dependencies}`), `discussionPointsAndDecisions` (array of `{topic,summary,decision,rationale}`), `criticalIssuesAndBlockers` (array of `{issue,status,nextSteps}`), plus `risksAndConcerns`/`keySubjectAreas`/`resourceRequirements`/`futureConsiderations`/`additionalNotes`. `report_es` is unused (always null).
 - **meeting_transcripts.transcript** — plain text (Speaker A/B/… diarized). **meeting_participants** is sparse (only ~9 team meetings populated; names often blank). Note: action-item `assignedTo` uses free-text nicknames, not team_member ids.
 
+## Calls domain — sales calls ([bash/calls/](bash/calls/))
+
+Scoped to **sales calls** (`meetings.meeting_type='call'`, ~1.8k) — the
+closers' work product, which never enters the task system. ~200 have an
+analysis report (jsonb, its own 6-section canon: `generalInformation` with
+lead/program/**callStatus**/paymentDate · `generalMetrics` ·
+`performanceInsights` with the 5-phase call structure + **finalCloserEvaluation**
+(overallScore 0-10, strengths, coaching) + marketingInsights ·
+`objectionsAndInsights` (objections with status/closerResponse/aiSuggestion) ·
+`leadProfile` (BANT, archetype, closing probability + strategy) ·
+`aiAgentConclusion`). Built for the **Director Comercial** role (S12).
+
+**Closer resolution** (no closer column exists — it's a CRM trace, baked into
+every script): `meetings.event->booking->>contact_id` =
+`crm_contacts.ghl_contact_id` → `crm_opportunities.contact_id` (tiebreak: same
+`project_id`, then latest `created_date`) → `.user_id` → `users` → `persons`.
+Resolves ~83% of reported calls; the rest is the S8.2 data-hygiene queue.
+
+| Script | Use it to… |
+|--------|-----------|
+| `calls.sh [--status S] [--result R] [--project N] [--program P] [--closer N] [--from D] [--to D] [--reported] [--sin-closer] [--limit N]` | List calls with lead, program, project, **resolved closer**, resultado, prob, score. `--sin-closer` = reported calls whose closer didn't resolve (S8.2 queue). |
+| `call_show.sh <id\|prefix>` | Full detail of one call: header + all 6 report sections rendered (métricas, estructura por fases, evaluación del closer + coaching, objeciones con respuestas, momentos críticos, perfil del lead, marketing insights, conclusión). `--json` = one object incl. raw report. |
+| `call_stats.sh [--by closer\|result\|program\|project\|week] [--project N] [--from D] [--to D]` | Effectiveness aggregates over analyzed calls: calls, won, win %, avg closing probability, avg closer score. Default `--by closer` — the Director Comercial's KPI. |
+| `call_objections.sh [--project N] [--closer N] [--status S] [--from D] [--to D] [--limit N]` | One row per objection across reports (status, objection, closer response, AI suggestion) — the feedback loop into narrative/copy (S1) and the objection protocol (S12.2). |
+
+Viz sources: `calls`, `call_detail` (object), `call_stats`, `call_objections`.
+
 ## Catalog domain — process ontology ([catalog/](catalog/), [bash/catalog/](bash/catalog/))
 
 The org's process ontology, mapped from the start so every task is born tagged.

@@ -121,6 +121,47 @@ const SOURCES = {
     args: {},
     cache: 60_000,
   },
+  // --- Sales calls (meeting_type='call' — the closers' work product) --------
+  // The closer is resolved through the CRM trace inside the scripts
+  // (event->booking->contact_id → crm_contacts → crm_opportunities → users).
+  calls: {
+    label: "Llamadas de venta",
+    script: "bash/calls/calls.sh",
+    emits: "rows",
+    args: {
+      status: "--status",
+      result: "--result",
+      project: "--project",
+      program: "--program",
+      closer: "--closer",
+      from: "--from",
+      to: "--to",
+      reported: { flag: "--reported", bool: true },
+      sin_closer: { flag: "--sin-closer", bool: true },
+      limit: "--limit",
+    },
+  },
+  // One call with its full analysis report (header + raw report jsonb).
+  call_detail: {
+    label: "Detalle de llamada",
+    script: "bash/calls/call_show.sh",
+    emits: "object",
+    args: { id: { positional: true } },
+  },
+  // Per-closer/result/program/project/week effectiveness aggregates.
+  call_stats: {
+    label: "Desempeño comercial",
+    script: "bash/calls/call_stats.sh",
+    emits: "rows",
+    args: { by: "--by", project: "--project", from: "--from", to: "--to" },
+  },
+  // Objections flattened across call reports — the narrative feedback loop.
+  call_objections: {
+    label: "Objeciones (llamadas)",
+    script: "bash/calls/call_objections.sh",
+    emits: "rows",
+    args: { project: "--project", closer: "--closer", status: "--status", from: "--from", to: "--to", limit: "--limit" },
+  },
   // --- Local SQLite databases (data/sqlite/ — the user's OWN dbs) -----------
   // Same contract as every source (a bash script with --json), but against
   // local files instead of the remote Postgres: ~ms per call, so no cache —
