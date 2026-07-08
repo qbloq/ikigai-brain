@@ -221,10 +221,19 @@ it shows up in the form's `<select>` automatically. The render code is layered a
 the **composition tower** (see [docs/deltas-architecture.md](docs/deltas-architecture.md)):
 kernel [viz/lib/kit.js](viz/lib/kit.js) (stable primitives — growing it is a
 governance decision) → blocks [viz/blocks/](viz/blocks/) (fragments shared by 2+
-pages or SSE-addressable: tasks-table, task-detail, task-edit-form, meeting-detail,
-charts)
-→ patterns [viz/patterns/](viz/patterns/) (`master-detail`) → pages
-[viz/pages/](viz/pages/). New component = one `viz/pages/<name>.js` exporting
+pages or SSE-addressable: tasks-table, meetings-table, task-detail,
+task-edit-form, meeting-detail, charts)
+→ patterns [viz/patterns/](viz/patterns/) (`master-detail`, generalized to
+slots: master = `{block, source, params?}` filled by a master-contract block
+[signals/regetQS/controls/prepare?/table/counter — its filters are FIXED per
+block], detail = `{block, frag?}` filled by a routed panel block whose
+manifest declares `{slot:'detail', frag, width, selSignal}`; the pattern owns
+all wiring — row-click → `/c/<detail>/frag/<frag>`, overlays, signals) → pages
+[viz/pages/](viz/pages/). A saved spec can also be **v2 — pattern-addressed**:
+`{spec_version: 2, pattern: "master-detail", master: {...}, detail: {...}}`
+with blocks resolved by id from the registry; `validateSpec` checks the
+pattern's slot contract (block exists, fills the right slot, consumes≅emits,
+frag exists) and a v2 spec renders byte-identical to its page-instance twin. New component = one `viz/pages/<name>.js` exporting
 `{id, render(ui), manifest}` — the manifest is the page's machine-checkable
 contract: `{consumes: 'rows'|'object'` (must match the source's `emits` in
 `SOURCES`), `overridable: [...]}` (exactly the query params the browser may
@@ -267,17 +276,18 @@ IO + acceptance criteria, view-only) from the `task_detail` source; `GET /task/`
 (empty id) closes it. The `task_detail` object carries a `source` field
 (`{type,url,external_id,meeting_id,meeting_name}`) → the chip links to Notion (↗)
 or names the meeting.
-The `meetings` component is the same master-detail shape over team meetings:
-filter bar (project/status/solo-con-reporte) over the `meetings` source; clicking
-a row hits `GET /meeting/:id`, which SSE-patches a `#meeting-detail` panel (report
-summary/objectives/decisions/blockers, view-only) from the `meeting_detail` source.
+The `meetings` component is a master-detail instance over team meetings
+(master block `meetings-table`: filter bar project/status/solo-con-reporte;
+detail block `meeting-detail`: report summary/objectives/decisions/blockers,
+view-only, from the `meeting_detail` source).
 The `task-editor` component is the **editable** twin of `tasks` (seeded as the
 "Editor de IO" UI): same master list, but clicking a row hits `GET /task/:id/edit`,
 which SSE-patches `#task-detail` with an editable IO-contract form (rename, retype
 `io_type`/`artifact_type`, toggle required, add/remove inputs/outputs) built from
-`task_detail` + `io_catalog`. Both share `tasksMasterDetail(ui, edit)`
-([viz/patterns/master-detail.js](viz/patterns/master-detail.js)); the
-read-only `renderTaskDetail` is unchanged. **This is the viz's only write path:**
+`task_detail` + `io_catalog`. Both `tasks` and `task-editor` are thin
+instances of [viz/patterns/master-detail.js](viz/patterns/master-detail.js)
+(same `tasks-table` master; different detail block); the read-only
+`renderTaskDetail` is unchanged. **This is the viz's only write path:**
 each control persists immediately via one `@post` (`POST /task/:tid/io/add` ·
 `.../io/:ioId/field/:field?value=` · `.../io/:ioId/delete`) → `update_task_io.sh`
 (one txn) → SSE re-render of the form. No SQL in the viz — writes go through the

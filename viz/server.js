@@ -21,7 +21,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const store = require("./lib/store");
 const { shell, listPanel } = require("./lib/html");
-const { renderPane, getComponent, getManifest, dispatch, validateSpec, escape } = require("./lib/components");
+const { renderPane, getComponent, overridableFor, dispatch, validateSpec, escape } = require("./lib/components");
 const { makeRunner } = require("./lib/actions");
 const { startSSE, patchElements } = require("./lib/sse");
 
@@ -104,9 +104,8 @@ async function runDispatch(req, res, url, comp, kind, name, extra) {
 // because no manifest declares it.
 function withParamOverrides(ui, searchParams) {
   if (!ui) return ui;
-  const m = getManifest(ui.component);
   const params = { ...(ui.params || {}) };
-  for (const key of (m && m.overridable) || []) {
+  for (const key of overridableFor(ui)) {
     const v = searchParams.get(key);
     if (v != null && v !== "") params[key] = v;
   }
