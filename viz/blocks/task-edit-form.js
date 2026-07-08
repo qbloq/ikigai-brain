@@ -397,7 +397,9 @@ const acts = {
 
 module.exports = {
   id: "task-edit-form",
-  manifest: { writes: [IO_SCRIPT] },
+  // Detail slot: rows open the `form` frag; width matches the editor shell's
+  // w-[34rem]. `writes` is the act whitelist enforced by ctx.run().
+  manifest: { slot: "detail", frag: "form", width: "34rem", selSignal: "selectedTask", writes: [IO_SCRIPT] },
   frags: {
     form: (ctx) => renderTaskEditForm(ctx.params.get("id") || ""),
     // "Probar": run the PERSISTED query (provenance: only SQL already in the

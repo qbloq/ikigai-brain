@@ -132,6 +132,7 @@ function renderMeetingDetail(id) {
 // alias GET /meeting/:id (empty id → empty state).
 module.exports = {
   id: "meeting-detail",
+  manifest: { slot: "detail", frag: "panel", width: "32rem", selSignal: "selectedMeeting" },
   frags: { panel: (ctx) => renderMeetingDetail(ctx.params.get("id") || "") },
   renderMeetingDetail,
 };

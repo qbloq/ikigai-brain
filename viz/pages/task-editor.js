@@ -1,20 +1,21 @@
 // task-editor page — editable instance of the master-detail pattern (the
-// "Editor de IO" UI): same master list as `tasks`, but row click opens the
-// editable IO-contract form (/task/:id/edit) — the viz's only write path.
+// "Editor de IO" UI): same master block as `tasks`, but rows open the
+// task-edit-form detail block (its `form` frag) — the viz's only write path
+// (declared in that block's manifest.writes, enforced by ctx.run()).
 
-const { tasksMasterDetail } = require("../patterns/master-detail");
+const pattern = require("../patterns/master-detail");
+const tasksTable = require("../blocks/tasks-table");
+const taskEditForm = require("../blocks/task-edit-form");
 
 function renderTaskEditor(ui) {
-  return tasksMasterDetail(ui, true);
+  return pattern.render(ui, {
+    master: { block: tasksTable, source: "tasks" },
+    detail: { block: taskEditForm },
+  });
 }
 
-// Same contract as `tasks` (same master list); the write path belongs to the
-// task-edit-form BLOCK's manifest (its acts declare the script), not the page.
 module.exports = {
   id: "task-editor",
-  manifest: {
-    consumes: "rows",
-    overridable: ["status", "priority", "project", "assignee", "due", "open", "limit", "sort", "dir"],
-  },
+  manifest: { consumes: "rows", overridable: tasksTable.manifest.overridable },
   render: renderTaskEditor,
 };
