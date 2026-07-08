@@ -138,4 +138,13 @@ function renderMeetings(ui) {
   </section>`;
 }
 
-module.exports = { id: "meetings", render: renderMeetings };
+module.exports = {
+  id: "meetings",
+  manifest: {
+    consumes: "rows",
+    // project/status/has_report drive the filter bar; from/to keep date-ranged
+    // URLs addressable (/u/:id?from=…) even though no control emits them yet.
+    overridable: ["project", "status", "has_report", "from", "to", "limit"],
+  },
+  render: renderMeetings,
+};

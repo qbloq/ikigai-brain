@@ -107,4 +107,8 @@ function renderSopTree(ui) {
   return `<section id="pane" class="flex-1 p-6 overflow-auto bg-slate-50">${head}${controls}${body}</section>`;
 }
 
-module.exports = { id: "sop-tree", render: renderSopTree };
+module.exports = {
+  id: "sop-tree",
+  manifest: { consumes: "rows", overridable: ["macro", "role"] },
+  render: renderSopTree,
+};

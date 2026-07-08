@@ -18,7 +18,7 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const store = require("./lib/store");
 const { shell, listPanel } = require("./lib/html");
-const { renderPane, renderTaskDetail, renderTaskEditForm, renderMeetingDetail, renderSqlPreview } = require("./lib/components");
+const { renderPane, renderTaskDetail, renderTaskEditForm, renderMeetingDetail, renderSqlPreview, getManifest, validateSpec, escape } = require("./lib/components");
 const { sqlTitle } = require("./lib/artifacts");
 const { REPO_ROOT, fetchSource } = require("./lib/datasources");
 const meetico = require("./lib/meetico");
@@ -93,15 +93,17 @@ function readBody(req) {
   });
 }
 
-// Overlay whitelisted query params (project/from/to) onto a copy of the UI's
-// stored params, so the dashboard's controls can re-render with new values
-// without mutating the saved spec.
+// Overlay query params onto a copy of the UI's stored params, so a page's
+// controls can re-render with new values without mutating the saved spec.
+// The whitelist is per-page now: the component's manifest declares exactly
+// which params the browser may override (paso 3) — nothing leaks between
+// pages, and `query` (persisted-only SQL) is un-overridable by construction
+// because no manifest declares it.
 function withParamOverrides(ui, searchParams) {
   if (!ui) return ui;
+  const m = getManifest(ui.component);
   const params = { ...(ui.params || {}) };
-  // `db`/`table` drive the localdb explorer's selection. `query` is deliberately
-  // NOT overridable: persisted-only SQL (see the localdb_query source).
-  for (const key of ["project", "from", "to", "macro", "role", "status", "priority", "assignee", "due", "open", "limit", "has_report", "sort", "dir", "db", "table", "by", "kind"]) {
+  for (const key of (m && m.overridable) || []) {
     const v = searchParams.get(key);
     if (v != null && v !== "") params[key] = v;
   }
@@ -320,7 +322,23 @@ const server = http.createServer(async (req, res) => {
       } catch {
         /* ignore malformed body */
       }
-      const ui = store.create({ name: signals.name, source: signals.source || "tasks" });
+      // Validate BEFORE persisting; at creation, warnings count as errors too
+      // (an old saved spec may carry unknown params, a new one must not).
+      const candidate = { name: signals.name, component: "table", source: signals.source || "tasks", params: {} };
+      const v = validateSpec(candidate);
+      const issues = [...v.errors, ...v.warnings];
+      if (issues.length) {
+        startSSE(res);
+        patchElements(
+          res,
+          `<section id="pane" class="flex-1 p-8"><div class="max-w-xl rounded-lg border border-red-200 bg-red-50 text-red-700 p-4 text-sm">
+            <p class="font-semibold mb-1">Spec inválida — no se creó la UI</p>
+            <ul class="list-disc list-inside text-xs space-y-0.5">${issues.map((e) => `<li>${escape(e)}</li>`).join("")}</ul>
+          </div></section>`
+        );
+        return res.end();
+      }
+      const ui = store.create(candidate);
       startSSE(res);
       patchElements(res, listPanel(store.list(), ui.id));
       patchElements(res, renderPane(ui));
@@ -334,6 +352,16 @@ const server = http.createServer(async (req, res) => {
 });
 
 store.seedIfEmpty();
+
+// Boot sweep — validate every stored spec against this genome and log what
+// doesn't fit (the embryo of the elevation rail's checks: the same
+// validateSpec that gates the form and degrades the render).
+for (const ui of store.list()) {
+  const v = validateSpec(ui);
+  for (const e of v.errors) console.warn(`[spec ${ui.id} «${ui.name}»] ERROR: ${e}`);
+  for (const w of v.warnings) console.warn(`[spec ${ui.id} «${ui.name}»] aviso: ${w}`);
+}
+
 server.listen(PORT, () => {
   console.log(`viz on http://localhost:${PORT}`);
 });

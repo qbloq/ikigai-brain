@@ -111,4 +111,5 @@ function renderNotionTasks(ui) {
   return `<section id="pane" class="flex-1 p-6 overflow-auto bg-slate-50">${head}${controls}${kpis}${body}</section>`;
 }
 
-module.exports = { id: "notion-tasks", render: renderNotionTasks };
+// Filters run entirely in the browser (fetch once, data-show) → nothing overridable.
+module.exports = { id: "notion-tasks", manifest: { consumes: "rows", overridable: [] }, render: renderNotionTasks };

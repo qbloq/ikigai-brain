@@ -26,4 +26,5 @@ function renderTable(ui) {
   </section>`;
 }
 
-module.exports = { id: "table", render: renderTable };
+// No overridable params: a generic table renders exactly its persisted spec.
+module.exports = { id: "table", manifest: { consumes: "rows", overridable: [] }, render: renderTable };

@@ -118,4 +118,8 @@ function renderDashboard(ui) {
   return `<section id="pane" class="flex-1 p-6 overflow-auto bg-slate-50">${head}${controls}${grid}</section>`;
 }
 
-module.exports = { id: "dashboard", render: renderDashboard };
+module.exports = {
+  id: "dashboard",
+  manifest: { consumes: "object", overridable: ["project", "from", "to"] },
+  render: renderDashboard,
+};
