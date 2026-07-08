@@ -19,6 +19,12 @@ function firstLocator(r) {
 const resolvedTitle = (r) => (r && r._resolved && r._resolved.title) || null;
 const resolvedUrl = (r) => (r && r._resolved && r._resolved.url) || null;
 
+// First `-- comment` line of a SQL query, as its human title.
+function sqlTitle(q) {
+  const m = typeof q === "string" ? q.match(/^\s*--\s*(.+)$/m) : null;
+  return m ? m[1].trim() : null;
+}
+
 const ARTIFACTS = {
   google_doc: {
     icon: "📄",
@@ -47,7 +53,7 @@ const ARTIFACTS = {
   },
   sql_query: {
     icon: "🗃️",
-    label: (r) => resolvedTitle(r) || "Consulta SQL",
+    label: (r) => resolvedTitle(r) || sqlTitle(r.query) || "Consulta SQL",
     href: () => null,
   },
   storage_file: {
@@ -80,4 +86,4 @@ function chipData(name, reference) {
   return { icon: ui.icon, label: ui.label(r) || "", href: ui.href(r) || null };
 }
 
-module.exports = { artifactUI, chipData, ARTIFACTS };
+module.exports = { artifactUI, chipData, sqlTitle, ARTIFACTS };

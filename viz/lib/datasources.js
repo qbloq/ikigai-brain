@@ -89,6 +89,14 @@ const SOURCES = {
     args: { project: { positional: true } },
     cache: 120_000,
   },
+  // The data of one "SQL Results" IO binding: executes the query persisted in
+  // the row's artifact_reference (never SQL from the client — provenance lives
+  // in the DB row). `io` is positional; `limit` caps rows. No cache: live data.
+  io_query: {
+    label: "Resultado SQL (artefacto IO)",
+    script: "bash/tasks/run_io_query.sh",
+    args: { io: { positional: true }, limit: "--limit" },
+  },
   // Reference data for the IO editor: { io_types[], artifact_types[] } as ONE
   // JSON object. Static/reference → short cache (the editor fetches it per form
   // render, so caching avoids re-querying the catalog on every IO edit).
@@ -97,6 +105,29 @@ const SOURCES = {
     script: "bash/tasks/io_catalog.sh",
     args: {},
     cache: 60_000,
+  },
+  // --- Local SQLite databases (data/sqlite/ — the user's OWN dbs) -----------
+  // Same contract as every source (a bash script with --json), but against
+  // local files instead of the remote Postgres: ~ms per call, so no cache —
+  // freshness matters right after an import/exec.
+  // Full inventory in ONE call: [{db, size_kb, modified, tables:[{name,rows}]}].
+  localdbs: { label: "Bases locales (SQLite)", script: "bash/localdb/dbs.sh", args: {} },
+  // Rows of one table/view of a local db. The script validates the table name
+  // against sqlite_master (exact match, identifier-quoted) — nothing arbitrary
+  // ever becomes SQL. What the `localdb` explorer's preview consumes.
+  localdb_table: {
+    label: "Tabla local (SQLite)",
+    script: "bash/localdb/db_table.sh",
+    args: { db: { positional: true }, table: { positional: true }, limit: "--limit" },
+  },
+  // A saved SQL query over one local db, rendered as a generic-table UI. The
+  // `query` param comes ONLY from the persisted UI spec — withParamOverrides
+  // never forwards it from the browser — mirroring io_query's provenance rule
+  // (persisted SQL executes; client SQL never does). Connection is read-only.
+  localdb_query: {
+    label: "Consulta SQL local (SQLite)",
+    script: "bash/localdb/db_query.sh",
+    args: { db: { positional: true }, query: { positional: true }, limit: "--limit" },
   },
 };
 
