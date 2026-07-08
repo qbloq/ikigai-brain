@@ -1,0 +1,10 @@
+{
+  "id": "desempeno-por-closer",
+  "name": "Desempeño por closer",
+  "component": "chart",
+  "source": "call_stats",
+  "params": { "by": "closer", "kind": "bar" },
+  "scope": "role",
+  "role": "director-comercial",
+  "created_at": "2026-07-08T21:01:00.000Z"
+}
