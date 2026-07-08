@@ -43,19 +43,38 @@ function get(id) {
   }
 }
 
+function write(ui) {
+  fs.writeFileSync(fileFor(ui.id), JSON.stringify(ui, null, 2) + "\n");
+  return ui;
+}
+
+// Archiving is a soft-hide: the spec keeps its file (and /u/:id URL) and only
+// gains an `archived_at` stamp. Nothing is ever deleted by the UI.
+function archive(id) {
+  const ui = get(id);
+  if (!ui) return null;
+  ui.archived_at = new Date().toISOString();
+  return write(ui);
+}
+
+function unarchive(id) {
+  const ui = get(id);
+  if (!ui) return null;
+  delete ui.archived_at;
+  return write(ui);
+}
+
 function create({ name, component = "table", source, params = {} }) {
   ensureDir();
   const id = crypto.randomUUID().slice(0, 8);
-  const ui = {
+  return write({
     id,
     name: name && name.trim() ? name.trim() : `UI ${id}`,
     component,
     source,
     params,
     created_at: new Date().toISOString(),
-  };
-  fs.writeFileSync(fileFor(id), JSON.stringify(ui, null, 2) + "\n");
-  return ui;
+  });
 }
 
 function remove(id) {
@@ -81,6 +100,9 @@ function seedIfEmpty() {
     params: { project: "David Guerrero", from: "2026-06-01", to: "2026-06-30" },
   });
   create({ name: "SOPs & Arquetipos", source: "sops", component: "sop-tree", params: {} });
+  create({ name: "Bases locales", source: "localdbs", component: "localdb", params: {} });
+  create({ name: "Tareas por estado", source: "task_stats", component: "chart", params: { by: "status", kind: "donut" } });
+  create({ name: "Tareas por proyecto", source: "task_stats", component: "chart", params: { by: "project", kind: "bar" } });
 }
 
-module.exports = { list, get, create, remove, seedIfEmpty, STORE_DIR };
+module.exports = { list, get, create, archive, unarchive, remove, seedIfEmpty, STORE_DIR };

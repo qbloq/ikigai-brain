@@ -7,6 +7,7 @@
 //   GET  /u/:id       standalone full-page render of one UI (URL-addressable)
 //   GET  /ui/:id      SSE: patch #pane (+ #ui-list active state)
 //   POST /ui          create a UI from the "new UI" form, then patch the DOM
+//   POST /ui/:id/archive|unarchive   soft-hide/restore a UI (never deletes)
 //   GET  /health      liveness
 //
 // Run:  npm run viz   (PORT env overrides the default 4317)
@@ -17,7 +18,8 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const store = require("./lib/store");
 const { shell, listPanel } = require("./lib/html");
-const { renderPane, renderTaskDetail, renderTaskEditForm, renderMeetingDetail } = require("./lib/components");
+const { renderPane, renderTaskDetail, renderTaskEditForm, renderMeetingDetail, renderSqlPreview } = require("./lib/components");
+const { sqlTitle } = require("./lib/artifacts");
 const { REPO_ROOT, fetchSource } = require("./lib/datasources");
 const meetico = require("./lib/meetico");
 const { startSSE, patchElements } = require("./lib/sse");
@@ -75,6 +77,9 @@ function runIoEdit(args) {
 
 const PORT = Number(process.env.PORT) || 4317;
 
+// The whitelist of vendored assets under viz/public/ that /:name serves.
+const PUBLIC_FILES = new Set(["/datastar.js", "/chart.umd.js", "/charts-init.js"]);
+
 function send(res, status, body, type = "text/html; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type });
   res.end(body);
@@ -94,7 +99,9 @@ function readBody(req) {
 function withParamOverrides(ui, searchParams) {
   if (!ui) return ui;
   const params = { ...(ui.params || {}) };
-  for (const key of ["project", "from", "to", "macro", "role", "status", "priority", "assignee", "due", "open", "limit", "has_report"]) {
+  // `db`/`table` drive the localdb explorer's selection. `query` is deliberately
+  // NOT overridable: persisted-only SQL (see the localdb_query source).
+  for (const key of ["project", "from", "to", "macro", "role", "status", "priority", "assignee", "due", "open", "limit", "has_report", "sort", "dir", "db", "table", "by", "kind"]) {
     const v = searchParams.get(key);
     if (v != null && v !== "") params[key] = v;
   }
@@ -108,6 +115,8 @@ function standalone(ui) {
     <title>${ui ? ui.name : "UI no encontrada"} · Hermético</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module" src="/datastar.js"></script>
+    <script defer src="/chart.umd.js"></script>
+    <script type="module" src="/charts-init.js"></script>
   </head><body class="h-full"><div class="flex h-screen bg-white text-slate-900">${pane}</div></body></html>`;
 }
 
@@ -119,9 +128,9 @@ const server = http.createServer(async (req, res) => {
     // --- health ---
     if (pathname === "/health") return send(res, 200, "ok", "text/plain");
 
-    // --- vendored static asset (Datastar bundle, served locally to avoid CDN/CORS) ---
-    if (pathname === "/datastar.js" && req.method === "GET") {
-      const file = path.join(__dirname, "public", "datastar.js");
+    // --- vendored static assets (Datastar + Chart.js + glue, served locally to avoid CDN/CORS) ---
+    if (PUBLIC_FILES.has(pathname) && req.method === "GET") {
+      const file = path.join(__dirname, "public", pathname.slice(1));
       const body = fs.readFileSync(file);
       res.writeHead(200, {
         "Content-Type": "text/javascript; charset=utf-8",
@@ -150,6 +159,9 @@ const server = http.createServer(async (req, res) => {
     // GET  /task/:id/edit         editable IO form
     // POST /task/:tid/io/add?kind=inputs|outputs            add a blank IO row
     // POST /task/:tid/io/:ioId/field/:field?value=…         retype/rename/required
+    // POST /task/:tid/io/:ioId/sql   {query} body           persist a SQL binding
+    // GET  /task/:tid/io/:ioId/sqlrun                       preview the query's rows
+    // POST /task/:tid/io/:ioId/sqlui                        materialize it as a saved UI
     // POST /task/:tid/io/:ioId/delete                       remove an IO row
     if (pathname.startsWith("/task/")) {
       const seg = pathname.split("/").map((s) => decodeURIComponent(s)); // ["","task",id,...]
@@ -164,6 +176,13 @@ const server = http.createServer(async (req, res) => {
       if (req.method === "GET" && rest.length === 1 && rest[0] === "edit") {
         startSSE(res);
         patchElements(res, renderTaskEditForm(id));
+        return res.end();
+      }
+      // GET /task/:tid/io/:ioId/sqlrun — run the PERSISTED query (provenance:
+      // only SQL already in the DB row executes) and patch a preview table.
+      if (req.method === "GET" && rest[0] === "io" && rest[2] === "sqlrun") {
+        startSSE(res);
+        patchElements(res, renderSqlPreview(rest[1]));
         return res.end();
       }
       if (req.method === "POST" && rest[0] === "io") {
@@ -204,6 +223,53 @@ const server = http.createServer(async (req, res) => {
             startSSE(res);
             patchElements(res, renderTaskEditForm(id, notice));
             return res.end();
+          } else if (rest[2] === "sqlui") {
+            // Materialize this SQL binding as a saved UI: generic `table`
+            // component over the io_query source. Idempotent per IO row.
+            let notice;
+            try {
+              const d = fetchSource("task_detail", { id }).rows[0];
+              const row = [...((d && d.inputs) || []), ...((d && d.outputs) || [])].find((r) => r.id === ioId);
+              if (!row) throw new Error("IO no encontrado");
+              const q = row.reference && typeof row.reference === "object" ? row.reference.query : null;
+              if (!q) throw new Error("Guarda un SQL antes de abrirlo como UI");
+              let ui = store.list().find((u) => u.source === "io_query" && u.params && u.params.io === ioId);
+              if (ui && ui.archived_at) {
+                ui = store.unarchive(ui.id);
+                notice = { kind: "ok", text: `La UI «${ui.name}» estaba archivada — restaurada en el panel izquierdo` };
+              } else if (ui) notice = { kind: "ok", text: `Ya existía la UI «${ui.name}» — está en el panel izquierdo` };
+              else {
+                ui = store.create({ name: sqlTitle(q) || `SQL · ${row.title}`, component: "table", source: "io_query", params: { io: ioId } });
+                notice = { kind: "ok", text: `UI creada: «${ui.name}» — ábrela en el panel izquierdo` };
+              }
+              startSSE(res);
+              patchElements(res, listPanel(store.list(), ui.id));
+              patchElements(res, renderTaskEditForm(id, notice));
+              return res.end();
+            } catch (e) {
+              notice = { kind: "err", text: e.message };
+            }
+            startSSE(res);
+            patchElements(res, renderTaskEditForm(id, notice));
+            return res.end();
+          } else if (rest[2] === "sql") {
+            // The SQL editor posts {query} as an explicit payload (not signals).
+            const raw = await readBody(req);
+            let q = "";
+            try {
+              q = String((raw ? JSON.parse(raw) : {}).query ?? "");
+            } catch {
+              /* malformed body → treated as empty */
+            }
+            let notice;
+            if (!q.trim()) notice = { kind: "err", text: "El SQL está vacío — escribe la consulta antes de guardar." };
+            else {
+              const r = runIoEdit(["--io", ioId, "--ref-merge", JSON.stringify({ query: q })]);
+              notice = r && r.ok === false ? { kind: "err", text: r.error } : { kind: "ok", text: "SQL guardado ✓" };
+            }
+            startSSE(res);
+            patchElements(res, renderTaskEditForm(id, notice));
+            return res.end();
           } else if (rest[2] === "field") {
             const flag = { title: "--title", io_type: "--io-type", artifact: "--artifact", required: "--required" }[rest[3]];
             result = flag ? runIoEdit(["--io", ioId, flag, value]) : { ok: false, error: `Campo inválido: ${rest[3]}` };
@@ -222,6 +288,16 @@ const server = http.createServer(async (req, res) => {
       const id = decodeURIComponent(pathname.slice(9));
       startSSE(res);
       patchElements(res, renderMeetingDetail(id));
+      return res.end();
+    }
+
+    // --- archive / unarchive a UI (soft-hide: the spec file is never deleted) ---
+    if (pathname.startsWith("/ui/") && req.method === "POST") {
+      const [id, action] = pathname.slice(4).split("/");
+      if (action !== "archive" && action !== "unarchive") return send(res, 404, "Not found", "text/plain");
+      (action === "archive" ? store.archive : store.unarchive)(id);
+      startSSE(res);
+      patchElements(res, listPanel(store.list(), url.searchParams.get("active") || undefined));
       return res.end();
     }
 
