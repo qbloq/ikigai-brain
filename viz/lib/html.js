@@ -26,7 +26,7 @@ function listPanel(uis, activeId) {
           active ? "bg-indigo-600 text-white" : archived ? "text-slate-400 hover:bg-slate-200" : "text-slate-700 hover:bg-slate-200"
         }">
         <span class="block truncate">${escape(u.name)}</span>
-        <span class="block text-xs ${active ? "text-indigo-100" : "text-slate-400"}">${escape(u.source)}</span>
+        <span class="block text-xs ${active ? "text-indigo-100" : "text-slate-400"}">${escape(u.source || u.pattern || "")}</span>
       </button>
       <button title="${action.title}" data-on:click="@post('${action.url}')"
         class="absolute right-1.5 top-1/2 -translate-y-1/2 hidden group-hover:block leading-none ${
