@@ -1,22 +1,22 @@
-// tasks page — read-only instance of the master-detail pattern: one task list
-// with a filter bar (status/priority/project/assignee/due/open); clicking a
-// row opens the read-only detail panel (/task/:id). Replaces the old separate
-// "abiertas" / "vencidas" UIs: "vencidas" is just due=overdue + open.
+// tasks page — read-only instance of the master-detail pattern: the
+// tasks-table master block over the `tasks` source, with the task-detail
+// panel as detail slot. Replaces the old separate "abiertas" / "vencidas"
+// UIs: "vencidas" is just due=overdue + open.
 
-const { tasksMasterDetail } = require("../patterns/master-detail");
+const pattern = require("../patterns/master-detail");
+const tasksTable = require("../blocks/tasks-table");
+const taskDetail = require("../blocks/task-detail");
 
 function renderTasks(ui) {
-  return tasksMasterDetail(ui, false);
+  return pattern.render(ui, {
+    master: { block: tasksTable, source: "tasks" },
+    detail: { block: taskDetail },
+  });
 }
 
-// manifest — the page's machine-checkable contract (docs/deltas-architecture.md):
-// `consumes` must match the source's `emits`; `overridable` is exactly what the
-// filter bar / sort headers re-fetch with (sort/dir are presentation-only).
+// The page's contract delegates to its master block (same filter bar).
 module.exports = {
   id: "tasks",
-  manifest: {
-    consumes: "rows",
-    overridable: ["status", "priority", "project", "assignee", "due", "open", "limit", "sort", "dir"],
-  },
+  manifest: { consumes: "rows", overridable: tasksTable.manifest.overridable },
   render: renderTasks,
 };

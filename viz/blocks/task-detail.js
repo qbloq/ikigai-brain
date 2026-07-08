@@ -171,8 +171,12 @@ function renderTaskDetail(id) {
 // Routed block (paso 3): registers its SSE fragment in the flat component
 // namespace. Canonical: GET /c/task-detail/frag/panel?id=… — alias GET
 // /task/:id (empty id → the empty state, which is how the panel "closes").
+// Detail-slot manifest: how the master-detail pattern wires this panel —
+// which frag a row click opens, the open-panel width (matches the inner
+// shell's w-96) and the selection signal its close button clears.
 module.exports = {
   id: "task-detail",
+  manifest: { slot: "detail", frag: "panel", width: "24rem", selSignal: "selectedTask" },
   frags: { panel: (ctx) => renderTaskDetail(ctx.params.get("id") || "") },
   renderTaskDetail,
   activityBlock,
