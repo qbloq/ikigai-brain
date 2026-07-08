@@ -1,0 +1,10 @@
+{
+  "spec_version": 2,
+  "id": "reuniones",
+  "name": "Reuniones del equipo",
+  "pattern": "master-detail",
+  "master": { "block": "meetings-table", "source": "meetings", "params": { "limit": "0" } },
+  "detail": { "block": "meeting-detail" },
+  "scope": "org",
+  "created_at": "2026-07-08T18:02:00.000Z"
+}

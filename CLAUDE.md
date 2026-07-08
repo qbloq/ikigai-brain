@@ -189,10 +189,20 @@ npm run viz                 # http://localhost:4317   (PORT=… overrides)
   re-query (see `sop-tree`).
 - **Restart after editing `viz/`** — Node caches required modules, so changes
   (new source, component, cache TTL) need `npm run viz:restart` (or `viz:stop`).
-- **Creating a UI** = appending a record (a JSON file in `viz/store/`, git-ignored,
-  re-seeded on first run). The user can also create one from the left-panel "Nueva
-  UI" form. Programmatically: `store.create({name, component, source, params})` in
-  [viz/lib/store.js](viz/lib/store.js).
+- **The spec store is LAYERED** ([viz/lib/store.js](viz/lib/store.js), deltas
+  paso 5): `viz/specs/org/` (the shared genome, in git — seeds live HERE, no
+  runtime seeding) → `viz/specs/roles/<rol>/` → `viz/specs/local/` (the
+  personal layer, the ONLY writable one). `list()` merges with shadowing by
+  stable slug id (local > role > org; the left panel marks a shadowing fork
+  with ⑂). Every write goes to `local/`: creating stamps `scope: personal` and
+  a slug id; archiving/editing an org/role spec FORKS it into local with
+  `derived_from: "<layer>/<slug>@<git-sha>"`. Each local write **auto-commits**
+  (`viz(ui): <verb> <slug>` + `Delta-Type: ui-spec` / `Delta-Scope: personal`
+  trailers) — git is the delta event log; `VIZ_AUTOCOMMIT=0` disables it.
+  Programmatically: `store.create({name, component, source, params})`. Legacy
+  `viz/store/` (git-ignored) is migrated once by
+  `viz/scripts/migrate-store-to-specs.js` (old ids preserved → `/u/<id>` URLs
+  keep working).
 - **Layout** is master-detail: left `#ui-list` (saved UIs + form), right `#pane`
   (selected UI). Datastar swaps fragments via SSE — no full reloads.
 - **Routes**: `GET /` (shell, `?ui=<id>` opens one) · `GET /u/:id` (standalone page)

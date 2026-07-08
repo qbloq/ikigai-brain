@@ -238,7 +238,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-store.seedIfEmpty();
+// (Seeds live in git now: viz/specs/org/ IS the genome — no runtime seeding.)
 
 // Boot sweep — validate every stored spec against this genome and log what
 // doesn't fit (the embryo of the elevation rail's checks: the same

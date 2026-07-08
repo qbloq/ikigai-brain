@@ -1,0 +1,9 @@
+{
+  "id": "dashboard-david-guerrero",
+  "name": "Dashboard · David Guerrero",
+  "component": "dashboard",
+  "source": "dashboard",
+  "params": { "project": "David Guerrero", "from": "2026-06-01", "to": "2026-06-30" },
+  "scope": "org",
+  "created_at": "2026-07-08T18:05:00.000Z"
+}

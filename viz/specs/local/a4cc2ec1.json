@@ -1,0 +1,12 @@
+{
+  "id": "a4cc2ec1",
+  "name": "Tareas · DG Premium Mastermind (Notion)",
+  "component": "notion-tasks",
+  "source": "notion_project_tasks",
+  "params": {
+    "project": "27ad5db4-6a6c-80f5-90b4-f8223647360f"
+  },
+  "created_at": "2026-07-01T16:27:37.197Z",
+  "scope": "personal",
+  "updated_at": "2026-07-01T16:27:37.197Z"
+}
