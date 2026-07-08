@@ -29,6 +29,18 @@ const ORG_DIR = path.join(SPECS_DIR, "org");
 const ROLES_DIR = path.join(SPECS_DIR, "roles");
 const LOCAL_DIR = path.join(SPECS_DIR, "local");
 
+// Identity without auth (Fase 1): a copilot.json at the repo root
+// ({ employee, team_member_id, role }) marks this workspace as one employee's
+// copilot — the store then loads ONLY that role's layer and stamps ownership
+// on everything created. The brain's workspace has no copilot.json and sees
+// org + every role. Read once at boot (a workspace doesn't change identity).
+let COPILOT = null;
+try {
+  COPILOT = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "copilot.json"), "utf8"));
+} catch {
+  /* no copilot.json → this is the brain */
+}
+
 function readLayerDir(dir, layer) {
   let files;
   try {
@@ -49,7 +61,8 @@ function readLayerDir(dir, layer) {
     .filter(Boolean);
 }
 
-// org → roles/<r> → local, in shadowing order (later wins).
+// org → roles/<r> → local, in shadowing order (later wins). A copilot
+// workspace loads only its own role's layer; the brain loads all of them.
 function allLayers() {
   const out = [readLayerDir(ORG_DIR, "org")];
   let roles = [];
@@ -58,6 +71,7 @@ function allLayers() {
   } catch {
     /* no roles yet */
   }
+  if (COPILOT && COPILOT.role) roles = roles.filter((r) => r.name === COPILOT.role);
   for (const r of roles) out.push(readLayerDir(path.join(ROLES_DIR, r.name), `roles/${r.name}`));
   out.push(readLayerDir(LOCAL_DIR, "local"));
   return out;
@@ -159,6 +173,9 @@ function create({ name, component = "table", source, params = {} }) {
     source,
     params,
     scope: "personal",
+    // Ownership comes from the workspace identity (copilot.json), not auth.
+    ...(COPILOT && COPILOT.team_member_id ? { owner: `team_member:${COPILOT.team_member_id}` } : {}),
+    ...(COPILOT && COPILOT.role ? { role: COPILOT.role } : {}),
     created_at: now,
     updated_at: now,
   };
