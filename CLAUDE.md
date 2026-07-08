@@ -196,9 +196,18 @@ npm run viz                 # http://localhost:4317   (PORT=… overrides)
 - **Layout** is master-detail: left `#ui-list` (saved UIs + form), right `#pane`
   (selected UI). Datastar swaps fragments via SSE — no full reloads.
 - **Routes**: `GET /` (shell, `?ui=<id>` opens one) · `GET /u/:id` (standalone page)
-  · `GET /ui/:id` (SSE patch `#pane`) · `GET /task/:id` & `GET /meeting/:id` (SSE
-  detail panels) · `GET /task/:id/edit` + `POST /task/:tid/io/...` (the IO editor —
-  see below) · `GET /datastar.js` (vendored bundle) · `POST /ui` ·
+  · `GET /ui/:id` (SSE patch `#pane`) · `GET /c/:component/frag/:name` &
+  `POST /c/:component/act/:name` (**generic component dispatch** — the
+  component's `frags`/`acts` maps own the handlers; handlers never touch
+  req/res: they get `ctx = {params, body, run, refreshUiList}` and return HTML
+  patches, the server wraps the SSE; server.js never grows a route per
+  component) · frozen legacy aliases onto that dispatch: `GET /task/:id` &
+  `GET /meeting/:id` (SSE detail panels), `GET /task/:id/edit` +
+  `POST /task/:tid/io/...` (the IO editor — see below) · `GET /datastar.js`
+  (vendored bundle) · `POST /ui` (gated by `validateSpec`: component/source
+  exist, `consumes` matches the source's `emits`, params whitelisted — also
+  swept over saved specs at boot (logs) and enforced at render, where an
+  unknown component degrades to a "requiere actualizar el genoma" card) ·
   `POST /ui/:id/archive|unarchive` (soft-hide/restore a UI in the left panel's
   collapsible «Archivadas» section — stamps `archived_at` on the spec, never
   deletes the file) · `GET /health`.
@@ -216,9 +225,17 @@ pages or SSE-addressable: tasks-table, task-detail, task-edit-form, meeting-deta
 charts)
 → patterns [viz/patterns/](viz/patterns/) (`master-detail`) → pages
 [viz/pages/](viz/pages/). New component = one `viz/pages/<name>.js` exporting
-`{id, render(ui)}` — the registry in [viz/lib/components.js](viz/lib/components.js)
-scans the dir at startup (restart to pick it up); there is no central switch to
-edit. Current pages, keyed by `ui.component` (`table` with inferred columns, `dashboard` KPI cards,
+`{id, render(ui), manifest}` — the manifest is the page's machine-checkable
+contract: `{consumes: 'rows'|'object'` (must match the source's `emits` in
+`SOURCES`), `overridable: [...]}` (exactly the query params the browser may
+override — per-page, replacing any global whitelist). A block that owns SSE
+fragments or write actions also registers: it exports `{id, frags, acts,
+manifest: {writes: [scripts]}}` and is routed automatically under `/c/:id/...`;
+`ctx.run()` throws on any script not declared in `writes` (the governance
+rail — what gets approved when a component is elevated). The registry in
+[viz/lib/components.js](viz/lib/components.js)
+scans both dirs at startup (restart to pick it up) into one flat namespace
+(collision = boot error); there is no central switch to edit. Current pages, keyed by `ui.component` (`table` with inferred columns, `dashboard` KPI cards,
 `sop-tree` — a collapsible macro→SOP→archetype tree over the `sops` source,
 `chart` — see below,
 `localdb` — the local-SQLite explorer (see the Localdb domain),

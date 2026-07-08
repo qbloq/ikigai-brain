@@ -7,9 +7,11 @@
 // read-only filters' proven `@get('…?x='+$sig)` idiom. Header is read-only.
 
 const { fetchSource } = require("../lib/datasources");
-const { chipData } = require("../lib/artifacts");
+const { chipData, sqlTitle } = require("../lib/artifacts");
 const { escape, cell, miniTable } = require("../lib/kit");
 const { activityBlock, sourceBlock } = require("./task-detail");
+const store = require("../lib/store");
+const meetico = require("../lib/meetico");
 
 // A uuid is not a valid signal identifier (dashes, may start with a digit), so
 // strip to [a-z0-9] and prefix per field to namespace the row's signals.
@@ -261,4 +263,148 @@ function renderTaskEditForm(id, notice) {
   return editPanelShell(inner);
 }
 
-module.exports = { renderTaskEditForm, renderSqlPreview };
+// ---------------------------------------------------------------------------
+// Routed block (paso 3): the editor's SSE fragments and write acts, moved out
+// of server.js. Handlers never touch req/res — they get ctx = { params, body,
+// run, refreshUiList } and return HTML patches; the kernel owns the SSE.
+// ctx.run() only executes scripts declared below in manifest.writes.
+// Canonical routes: GET /c/task-edit-form/frag/form?id=… · POST
+// /c/task-edit-form/act/io-field?task=…&io=…&field=…&value=… — aliases keep
+// the legacy /task/:id/edit and POST /task/:tid/io/… URLs the markup emits.
+// ---------------------------------------------------------------------------
+
+const IO_SCRIPT = "bash/tasks/update_task_io.sh";
+
+// Best-effort human title from a meetico ResolvedArtifact: prefer explicit
+// metadata (Drive `name`, Notion `title`), else parse a web page's <title>.
+function resolvedTitle(r) {
+  if (!r) return null;
+  const m = r.metadata || {};
+  const meta = m.name || m.title || m.displayName;
+  if (meta) return String(meta).trim();
+  if (r.content_text) {
+    const t = /<title[^>]*>([^<]+)<\/title>/i.exec(r.content_text);
+    if (t) return t[1].trim();
+  }
+  return null;
+}
+
+// Locate one IO row within a task → { kind, artifact_type_id, project_id }.
+// Used by io-bind to derive the meetico request from just (tid, ioId).
+function locateIo(tid, ioId) {
+  let d;
+  try {
+    d = fetchSource("task_detail", { id: tid }).rows[0];
+  } catch {
+    return null;
+  }
+  if (!d) return null;
+  const find = (arr, kind) =>
+    (arr || []).filter((r) => r.id === ioId).map((r) => ({ kind, artifact_type_id: r.artifact_type_id, project_id: d.project_id }))[0];
+  return find(d.inputs, "inputs") || find(d.outputs, "outputs") || null;
+}
+
+// Re-render the form after a write, surfacing {ok:false} as the error banner.
+function afterWrite(result, tid) {
+  return renderTaskEditForm(tid, result && result.ok === false ? result.error : null);
+}
+
+const acts = {
+  "io-add": (ctx) => {
+    const tid = ctx.params.get("task") || "";
+    const kind = ctx.params.get("kind") === "outputs" ? "output" : "input";
+    return afterWrite(ctx.run(IO_SCRIPT, ["--add", kind, "--task", tid]), tid);
+  },
+  "io-field": (ctx) => {
+    const tid = ctx.params.get("task") || "";
+    const io = ctx.params.get("io") || "";
+    const field = ctx.params.get("field") || "";
+    const value = ctx.params.get("value") ?? "";
+    const flag = { title: "--title", io_type: "--io-type", artifact: "--artifact", required: "--required" }[field];
+    const result = flag ? ctx.run(IO_SCRIPT, ["--io", io, flag, value]) : { ok: false, error: `Campo inválido: ${field}` };
+    return afterWrite(result, tid);
+  },
+  "io-delete": (ctx) => afterWrite(ctx.run(IO_SCRIPT, ["--delete", "--io", ctx.params.get("io") || ""]), ctx.params.get("task") || ""),
+  "io-unbind": (ctx) => afterWrite(ctx.run(IO_SCRIPT, ["--io", ctx.params.get("io") || "", "--ref-clear"]), ctx.params.get("task") || ""),
+  // Binding goes through meetico (resolver + credentials), not the DB; the
+  // resolved title/url is then cached into the reference via --ref-merge so
+  // the chip shows the instance name without re-resolving on every render.
+  "io-bind": async (ctx) => {
+    const tid = ctx.params.get("task") || "";
+    const ioId = ctx.params.get("io") || "";
+    const value = ctx.params.get("value") ?? "";
+    let notice;
+    try {
+      const loc = locateIo(tid, ioId);
+      if (!loc) throw new Error("IO no encontrado");
+      if (!loc.artifact_type_id) throw new Error("Elegí un Artifact antes de vincular");
+      if (!value.trim()) throw new Error("Pegá un enlace o ID");
+      const body = { artifact_type_id: loc.artifact_type_id, url: value.trim() };
+      if (loc.project_id) body.project_id = loc.project_id;
+      const prev = await meetico.bindPreview(body).catch(() => null);
+      await meetico.bind(loc.kind, ioId, body);
+      const r = prev && prev.resolved;
+      const title = resolvedTitle(r);
+      ctx.run(IO_SCRIPT, ["--io", ioId, "--ref-merge", JSON.stringify({ _resolved: { title, url: (r && r.url) || null, exists: !!(r && r.exists) } })]);
+      if (r && r.exists) notice = { kind: "ok", text: `Vinculado ✓ ${title || r.url || ""}`.trim() };
+      else if (r && r.error) notice = { kind: "warn", text: `Vinculado, pero no resolvió: ${r.error}` };
+      else notice = { kind: "ok", text: "Vinculado ✓" };
+    } catch (e) {
+      notice = { kind: "err", text: e.message };
+    }
+    return renderTaskEditForm(tid, notice);
+  },
+  // The SQL editor posts {query} as an explicit payload (ctx.body), not signals.
+  "io-sql": (ctx) => {
+    const tid = ctx.params.get("task") || "";
+    const ioId = ctx.params.get("io") || "";
+    const q = String((ctx.body || {}).query ?? "");
+    let notice;
+    if (!q.trim()) notice = { kind: "err", text: "El SQL está vacío — escribe la consulta antes de guardar." };
+    else {
+      const r = ctx.run(IO_SCRIPT, ["--io", ioId, "--ref-merge", JSON.stringify({ query: q })]);
+      notice = r && r.ok === false ? { kind: "err", text: r.error } : { kind: "ok", text: "SQL guardado ✓" };
+    }
+    return renderTaskEditForm(tid, notice);
+  },
+  // Materialize this SQL binding as a saved UI: generic `table` over io_query.
+  // Idempotent per IO row. Returns TWO patches: the left panel + the form.
+  "io-sqlui": (ctx) => {
+    const tid = ctx.params.get("task") || "";
+    const ioId = ctx.params.get("io") || "";
+    let notice;
+    try {
+      const d = fetchSource("task_detail", { id: tid }).rows[0];
+      const row = [...((d && d.inputs) || []), ...((d && d.outputs) || [])].find((r) => r.id === ioId);
+      if (!row) throw new Error("IO no encontrado");
+      const q = row.reference && typeof row.reference === "object" ? row.reference.query : null;
+      if (!q) throw new Error("Guarda un SQL antes de abrirlo como UI");
+      let ui = store.list().find((u) => u.source === "io_query" && u.params && u.params.io === ioId);
+      if (ui && ui.archived_at) {
+        ui = store.unarchive(ui.id);
+        notice = { kind: "ok", text: `La UI «${ui.name}» estaba archivada — restaurada en el panel izquierdo` };
+      } else if (ui) notice = { kind: "ok", text: `Ya existía la UI «${ui.name}» — está en el panel izquierdo` };
+      else {
+        ui = store.create({ name: sqlTitle(q) || `SQL · ${row.title}`, component: "table", source: "io_query", params: { io: ioId } });
+        notice = { kind: "ok", text: `UI creada: «${ui.name}» — ábrela en el panel izquierdo` };
+      }
+      return [ctx.refreshUiList(ui.id), renderTaskEditForm(tid, notice)];
+    } catch (e) {
+      return renderTaskEditForm(tid, { kind: "err", text: e.message });
+    }
+  },
+};
+
+module.exports = {
+  id: "task-edit-form",
+  manifest: { writes: [IO_SCRIPT] },
+  frags: {
+    form: (ctx) => renderTaskEditForm(ctx.params.get("id") || ""),
+    // "Probar": run the PERSISTED query (provenance: only SQL already in the
+    // DB row executes) and patch a preview table into the row.
+    sqlprev: (ctx) => renderSqlPreview(ctx.params.get("io") || ""),
+  },
+  acts,
+  renderTaskEditForm,
+  renderSqlPreview,
+};

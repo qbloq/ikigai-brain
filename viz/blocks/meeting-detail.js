@@ -128,4 +128,10 @@ function renderMeetingDetail(id) {
   return meetingPanelShell(inner);
 }
 
-module.exports = { renderMeetingDetail };
+// Routed block (paso 3). Canonical: GET /c/meeting-detail/frag/panel?id=… —
+// alias GET /meeting/:id (empty id → empty state).
+module.exports = {
+  id: "meeting-detail",
+  frags: { panel: (ctx) => renderMeetingDetail(ctx.params.get("id") || "") },
+  renderMeetingDetail,
+};

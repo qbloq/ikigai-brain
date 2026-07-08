@@ -168,4 +168,13 @@ function renderTaskDetail(id) {
   return panelShell(inner);
 }
 
-module.exports = { renderTaskDetail, activityBlock, sourceBlock };
+// Routed block (paso 3): registers its SSE fragment in the flat component
+// namespace. Canonical: GET /c/task-detail/frag/panel?id=… — alias GET
+// /task/:id (empty id → the empty state, which is how the panel "closes").
+module.exports = {
+  id: "task-detail",
+  frags: { panel: (ctx) => renderTaskDetail(ctx.params.get("id") || "") },
+  renderTaskDetail,
+  activityBlock,
+  sourceBlock,
+};
