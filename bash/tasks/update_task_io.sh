@@ -199,5 +199,5 @@ if is_json; then
   printf '{"ok":true,"action":"update","kind":"%s","io_id":"%s","task_id":"%s"%s}\n' \
     "$kind" "$io" "$tid" "$([[ -n "$dry" ]] && echo ',"dry_run":true')"
 else
-  [[ -n "$dry" ]] && echo "(dry-run: rolled back, nothing written)"
+  [[ -n "$dry" ]] && echo "(dry-run: rolled back, nothing written)" || true
 fi
