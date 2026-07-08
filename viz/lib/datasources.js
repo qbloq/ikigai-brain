@@ -12,10 +12,15 @@ const path = require("node:path");
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 // flag spec: { <queryParam>: "--flag" }  — booleans use { flag: "--x", bool: true }
+// `emits` declares the semantic shape of the script's --json output — 'rows'
+// (an array) or 'object' (one record) — so validateSpec() can match a source
+// against what a page's manifest `consumes`. (Transport always normalizes to
+// an array; this is the *contract*, not the wire format.)
 const SOURCES = {
   tasks: {
     label: "Tareas",
     script: "bash/tasks/tasks.sh",
+    emits: "rows",
     args: {
       status: "--status",
       priority: "--priority",
@@ -29,22 +34,25 @@ const SOURCES = {
   tasks_due: {
     label: "Tareas por vencimiento",
     script: "bash/tasks/tasks_due.sh",
+    emits: "rows",
     // exactly one window flag is expected; pass e.g. ?window=overdue
     args: {
       window: { map: { today: "--today", tomorrow: "--tomorrow", yesterday: "--yesterday", "this-week": "--this-week", "next-week": "--next-week", overdue: "--overdue" } },
       all: { flag: "--all", bool: true },
     },
   },
-  projects: { label: "Proyectos", script: "bash/tasks/projects.sh", args: {}, cache: 60_000 },
-  team: { label: "Equipo", script: "bash/tasks/team.sh", args: { team: "--team" }, cache: 60_000 },
+  projects: { label: "Proyectos", script: "bash/tasks/projects.sh", emits: "rows", args: {}, cache: 60_000 },
+  team: { label: "Equipo", script: "bash/tasks/team.sh", emits: "rows", args: { team: "--team" }, cache: 60_000 },
   task_stats: {
     label: "Estadísticas",
     script: "bash/tasks/task_stats.sh",
+    emits: "rows",
     args: { by: "--by", open: { flag: "--open", bool: true } },
   },
   meetings: {
     label: "Reuniones",
     script: "bash/meetings/meetings.sh",
+    emits: "rows",
     args: {
       project: "--project",
       status: "--status",
@@ -59,6 +67,7 @@ const SOURCES = {
   meeting_detail: {
     label: "Detalle de reunión",
     script: "bash/meetings/meeting_show.sh",
+    emits: "object",
     args: { id: { positional: true } },
   },
   // Financial KPI dashboard. Emits a single JSON OBJECT (not a row array) — the
@@ -66,11 +75,13 @@ const SOURCES = {
   dashboard: {
     label: "Dashboard financiero",
     script: "bash/metrics/dashboard.sh",
+    emits: "object",
     args: { project: "--project", from: "--from", to: "--to" },
   },
   sops: {
     label: "SOPs & Arquetipos",
     script: "bash/catalog/sops.sh",
+    emits: "rows",
     args: { macro: "--macro" },
     cache: 60_000,
   },
@@ -78,6 +89,7 @@ const SOURCES = {
   task_detail: {
     label: "Detalle de tarea",
     script: "bash/tasks/task_detail.sh",
+    emits: "object",
     args: { id: { positional: true } },
   },
   // Notion: all BD Avances tasks for a project "brief" page (positional page
@@ -86,6 +98,7 @@ const SOURCES = {
   notion_project_tasks: {
     label: "Tareas Notion (proyecto)",
     script: "bash/notion/project_tasks.sh",
+    emits: "rows",
     args: { project: { positional: true } },
     cache: 120_000,
   },
@@ -95,6 +108,7 @@ const SOURCES = {
   io_query: {
     label: "Resultado SQL (artefacto IO)",
     script: "bash/tasks/run_io_query.sh",
+    emits: "rows",
     args: { io: { positional: true }, limit: "--limit" },
   },
   // Reference data for the IO editor: { io_types[], artifact_types[] } as ONE
@@ -103,6 +117,7 @@ const SOURCES = {
   io_catalog: {
     label: "Catálogo IO",
     script: "bash/tasks/io_catalog.sh",
+    emits: "object",
     args: {},
     cache: 60_000,
   },
@@ -111,13 +126,14 @@ const SOURCES = {
   // local files instead of the remote Postgres: ~ms per call, so no cache —
   // freshness matters right after an import/exec.
   // Full inventory in ONE call: [{db, size_kb, modified, tables:[{name,rows}]}].
-  localdbs: { label: "Bases locales (SQLite)", script: "bash/localdb/dbs.sh", args: {} },
+  localdbs: { label: "Bases locales (SQLite)", script: "bash/localdb/dbs.sh", emits: "rows", args: {} },
   // Rows of one table/view of a local db. The script validates the table name
   // against sqlite_master (exact match, identifier-quoted) — nothing arbitrary
   // ever becomes SQL. What the `localdb` explorer's preview consumes.
   localdb_table: {
     label: "Tabla local (SQLite)",
     script: "bash/localdb/db_table.sh",
+    emits: "rows",
     args: { db: { positional: true }, table: { positional: true }, limit: "--limit" },
   },
   // A saved SQL query over one local db, rendered as a generic-table UI. The
@@ -127,6 +143,7 @@ const SOURCES = {
   localdb_query: {
     label: "Consulta SQL local (SQLite)",
     script: "bash/localdb/db_query.sh",
+    emits: "rows",
     args: { db: { positional: true }, query: { positional: true }, limit: "--limit" },
   },
 };

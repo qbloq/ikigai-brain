@@ -86,4 +86,8 @@ function renderChart(ui) {
   </section>`;
 }
 
-module.exports = { id: "chart", render: renderChart };
+module.exports = {
+  id: "chart",
+  manifest: { consumes: "rows", overridable: ["kind", "by"] },
+  render: renderChart,
+};

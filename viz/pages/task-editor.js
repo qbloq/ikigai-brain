@@ -8,4 +8,13 @@ function renderTaskEditor(ui) {
   return tasksMasterDetail(ui, true);
 }
 
-module.exports = { id: "task-editor", render: renderTaskEditor };
+// Same contract as `tasks` (same master list); the write path belongs to the
+// task-edit-form BLOCK's manifest (its acts declare the script), not the page.
+module.exports = {
+  id: "task-editor",
+  manifest: {
+    consumes: "rows",
+    overridable: ["status", "priority", "project", "assignee", "due", "open", "limit", "sort", "dir"],
+  },
+  render: renderTaskEditor,
+};

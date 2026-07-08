@@ -113,4 +113,8 @@ function renderLocaldb(ui) {
   </section>`;
 }
 
-module.exports = { id: "localdb", render: renderLocaldb };
+module.exports = {
+  id: "localdb",
+  manifest: { consumes: "rows", overridable: ["db", "table"] },
+  render: renderLocaldb,
+};

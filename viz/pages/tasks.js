@@ -9,4 +9,14 @@ function renderTasks(ui) {
   return tasksMasterDetail(ui, false);
 }
 
-module.exports = { id: "tasks", render: renderTasks };
+// manifest — the page's machine-checkable contract (docs/deltas-architecture.md):
+// `consumes` must match the source's `emits`; `overridable` is exactly what the
+// filter bar / sort headers re-fetch with (sort/dir are presentation-only).
+module.exports = {
+  id: "tasks",
+  manifest: {
+    consumes: "rows",
+    overridable: ["status", "priority", "project", "assignee", "due", "open", "limit", "sort", "dir"],
+  },
+  render: renderTasks,
+};
