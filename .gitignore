@@ -21,6 +21,9 @@ docs/notion/*/tasks.csv
 # Generated UIs (viz store) — re-seeded on first run
 viz/store/
 
+# Local SQLite databases (the personal data layer) — never committed
+data/sqlite/
+
 # OS / editor
 .DS_Store
 Thumbs.db
