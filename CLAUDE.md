@@ -171,6 +171,28 @@ The viz `localdb` page (seeded as «Bases locales») is the explorer: left,
 every db with its tables + counts; right, a ≤200-row preview. The selection
 travels as `?db=&table=`, so any view is URL-addressable (`/u/<id>?db=…`).
 
+## Deltas domain — copilot pipeline ([bash/deltas/](bash/deltas/))
+
+The Fase-1 MVP of [docs/deltas-architecture.md](docs/deltas-architecture.md).
+Each employee's copilot is a git FORK of this repo (configured with
+`pull.rebase=true`, so its deltas always sit on top of the genome) whose
+identity is a `copilot.json` at the root (`{employee, team_member_id, role}`):
+the viz store then loads ONLY that role's spec layer and stamps `owner`/`role`
+on everything created. The brain (no copilot.json) sees org + all roles.
+Everything a copilot writes lands in `viz/specs/local/` and auto-commits —
+git IS the telemetry; structure is observed, content never.
+
+| Script | Use it to… |
+|--------|-----------|
+| `scan.sh <fork-path> [--base origin/main] [--json]` | **Read-only** digest of one fork's deltas: `git diff origin/main...HEAD` classified by path (`viz/specs`→ui-spec · `catalog`→ontología · `*/migrations`→esquema · `copilot.json`→identidad · else→código), with slug/name/lineage for ui-specs. Feeds the Gobernanza session. |
+| `elevate_ui.sh <fork-path> <slug> [--to org\|roles/<rol>] [--dry-run] [--json]` **[WRITE to the central tree]** | The spec-pure lane: a fork's `viz/specs/local/<slug>.json` → central `org/` or `roles/<rol>/` (default: the fork's role), validated against the central genome (`validateSpec`), stamped `promoted_from: <employee>/local/<slug>@<fork-sha>` and committed with `Delta-Type`/`Delta-Scope`/`Promoted-From` trailers. Slug collision aborts. |
+
+Pilot fork lives under `data/forks/` (git-ignored). Loop demonstrated
+end-to-end (2026-07-08): capture in the fork (auto-commit) → scan digest →
+elevate (commit f8b2843) → pull → shadow → unfork. New-fork setup must wipe
+the inherited `viz/specs/local/` (open decision: whether the central should
+commit its own local layer at all).
+
 ## Snapshot exports ([scripts/](scripts/))
 
 Regenerate the `backups/` snapshots from the live DB (read-only, open tasks).
