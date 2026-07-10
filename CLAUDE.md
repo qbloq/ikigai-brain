@@ -213,6 +213,15 @@ La telemetría del servidor git es un repo (`telemetria.git`, T1): clon local
 en `data/telemetria/` (git-ignored) — `git -C data/telemetria pull` la
 actualiza. Alimentará `fleet_stats` (T5).
 
+**Viz (T3):** la UI «Revisión de deltas» (seed org, patrón `master-detail`:
+master `queue-table` sobre `fleet_queue`; detail `delta-detail` sobre
+`fleet_delta`). Un delta ui-spec se aprueba VIENDO su **render en sombra**
+(`GET /shadow/:key` — el gemelo de `/u/:id` para specs de fork, iframe
+aislado, jamás instalada); código/esquema muestran diffstat y solo admiten
+descartar/pedir cambios. Los tres botones son el primer write-path de la
+torre: `@post /c/delta-detail/act/review` → `review.sh` (declarado en
+`manifest.writes`).
+
 ## Snapshot exports ([scripts/](scripts/))
 
 Regenerate the `backups/` snapshots from the live DB (read-only, open tasks).
@@ -289,7 +298,9 @@ npm run viz                 # http://localhost:4317   (PORT=… overrides)
   unknown component degrades to a "requiere actualizar el núcleo" card) ·
   `POST /ui/:id/archive|unarchive` (soft-hide/restore a UI in the left panel's
   collapsible «Archivadas» section — stamps `archived_at` on the spec, never
-  deletes the file) · `GET /health`.
+  deletes the file) · `GET /shadow/:key` (render en sombra: la spec de un
+  delta de fork — vía `fleet_delta` — renderizada full-page sin instalarla;
+  la iframea el panel de la Revisión de deltas) · `GET /health`.
 - **Datastar 1.0 — colon syntax** (NOT v0.x dashes): `data-on:click`,
   `data-on:submit__prevent`, `data-bind="signal"`, `@get`/`@post`. SSE event is
   `datastar-patch-elements` (see [viz/lib/sse.js](viz/lib/sse.js)). **Validate
