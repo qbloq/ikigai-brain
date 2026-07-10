@@ -193,6 +193,26 @@ elevate (commit f8b2843) → pull → shadow → unfork. New-fork setup must wip
 the inherited `viz/specs/local/` (open decision: whether the central should
 commit its own local layer at all).
 
+## Fleet domain — gobernanza de la torre ([bash/fleet/](bash/fleet/))
+
+La Revisión de deltas de [docs/torre-de-control.md](docs/torre-de-control.md)
+(T2): **cola = derivado − decidido**. Lo pendiente se deriva en vivo (scan
+sobre `data/forks/`); las decisiones son eventos append-only en
+[plataforma/gobernanza/decisiones.jsonl](plataforma/gobernanza/README.md), commiteados
+por `review.sh`. Una decisión oculta un delta solo si es más nueva que el
+último commit que tocó ese path — si el copiloto re-edita, el delta
+reaparece solo. No toca Postgres (todo es git + archivos).
+
+| Script | Use it to… |
+|--------|-----------|
+| `queue.sh [--all] [--clase C] [--json]` | La cola pendiente (una fila por delta, clave `org/empleado/(capa/slug\|path)`). `--all` incluye lo ya decidido. Fuente viz `fleet_queue`. |
+| `review.sh <key\|slug> --dismiss\|--changes\|--elevate [--to DEST] --reason "…" [--by N] [--dry-run] [--json]` **[WRITE al repo]** | Registra UNA decisión (append + commit). `--elevate` (solo ui-spec) delega en `bash/deltas/elevate_ui.sh` y registra el commit resultante. |
+| `delta_show.sh <key\|slug>` | Digest de UN delta como objeto JSON: fila + `spec` cruda (ui-spec, para el render en sombra) o `diff` (resto) + `history` de decisiones. Fuente viz `fleet_delta`. Siempre JSON. |
+
+La telemetría del servidor git es un repo (`telemetria.git`, T1): clon local
+en `data/telemetria/` (git-ignored) — `git -C data/telemetria pull` la
+actualiza. Alimentará `fleet_stats` (T5).
+
 ## Snapshot exports ([scripts/](scripts/))
 
 Regenerate the `backups/` snapshots from the live DB (read-only, open tasks).
