@@ -187,6 +187,23 @@ const SOURCES = {
     emits: "rows",
     args: { db: { positional: true }, query: { positional: true }, limit: "--limit" },
   },
+  // --- Fleet / gobernanza (torre de control, T3) -----------------------------
+  // Git + archivos, no Postgres: la cola derivada de deltas (queue.sh: scan de
+  // forks − decisiones commiteadas) y el digest de UN delta (con la spec cruda
+  // para el render en sombra). Sin cache: la cola es operacional, su valor es
+  // la frescura.
+  fleet_queue: {
+    label: "Cola de Gobernanza (deltas)",
+    script: "bash/fleet/queue.sh",
+    emits: "rows",
+    args: { clase: "--clase", all: { flag: "--all", bool: true } },
+  },
+  fleet_delta: {
+    label: "Detalle de delta (gobernanza)",
+    script: "bash/fleet/delta_show.sh",
+    emits: "object",
+    args: { id: { positional: true } },
+  },
 };
 
 function listSources() {

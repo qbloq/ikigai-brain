@@ -1,0 +1,10 @@
+{
+  "spec_version": 2,
+  "id": "cola-de-gobernanza",
+  "name": "Cola de Gobernanza",
+  "pattern": "master-detail",
+  "master": { "block": "queue-table", "source": "fleet_queue", "params": {} },
+  "detail": { "block": "delta-detail" },
+  "scope": "org",
+  "created_at": "2026-07-10T18:30:00.000Z"
+}
