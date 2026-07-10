@@ -204,6 +204,29 @@ const SOURCES = {
     emits: "object",
     args: { id: { positional: true } },
   },
+  // La Flota (T4): una fila por org del registro plataforma/clientes/, cruzada con
+  // la telemetría (último pull de data/telemetria/), los forks y la cola.
+  fleet_orgs: {
+    label: "Flota (orgs)",
+    script: "bash/fleet/orgs.sh",
+    emits: "rows",
+    args: {},
+  },
+  fleet_org_detail: {
+    label: "Ficha de org (flota)",
+    script: "bash/fleet/org_show.sh",
+    emits: "object",
+    args: { id: { positional: true } },
+  },
+  // Salud/adopción (T5): agregados estructurales — pulso semanal, volumen por
+  // clase, decisiones por acción. La fuente que acumula datos para la métrica
+  // norte de «cliente sano».
+  fleet_stats: {
+    label: "Salud de flota (agregados)",
+    script: "bash/fleet/stats.sh",
+    emits: "rows",
+    args: { by: "--by" },
+  },
 };
 
 function listSources() {
