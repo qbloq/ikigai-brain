@@ -208,12 +208,18 @@ reaparece solo. No toca Postgres (todo es git + archivos).
 | `queue.sh [--all] [--clase C] [--json]` | La cola pendiente (una fila por delta, clave `org/empleado/(capa/slug\|path)`). `--all` incluye lo ya decidido. Fuente viz `fleet_queue`. |
 | `review.sh <key\|slug> --dismiss\|--changes\|--elevate [--to DEST] --reason "…" [--by N] [--dry-run] [--json]` **[WRITE al repo]** | Registra UNA decisión (append + commit). `--elevate` (solo ui-spec) delega en `bash/deltas/elevate_ui.sh` y registra el commit resultante. |
 | `delta_show.sh <key\|slug>` | Digest de UN delta como objeto JSON: fila + `spec` cruda (ui-spec, para el render en sombra) o `diff` (resto) + `history` de decisiones. Fuente viz `fleet_delta`. Siempre JSON. |
+| `orgs.sh [--pull] [--json]` | La Flota (T4): una fila por org del registro `forja/clientes/*.json`, cruzada con telemetría (head, pulso, pushes 7d, espejo OK/FALLÓ), forks (copilotos) y cola (Δpend). `--pull` refresca la telemetría antes (offline-first por defecto). Fuente viz `fleet_orgs`. |
+| `org_show.sh <org>` | Ficha de UNA org (objeto JSON): identidad + espejo + copilotos (con deltas en cola y última actividad) + últimos 10 pushes + últimas 5 decisiones. Fuente viz `fleet_org_detail`. Siempre JSON. |
+| `stats.sh [--by semana\|clase\|accion] [--json]` | Salud/adopción (T5): pulso semanal (pushes + archivos-delta), volumen por clase, decisiones por acción. La fuente que acumula datos para la métrica norte de «cliente sano». Fuente viz `fleet_stats`. |
 
 La telemetría del servidor git es un repo (`telemetria.git`, T1): clon local
 en `data/telemetria/` (git-ignored) — `git -C data/telemetria pull` la
 actualiza. Alimentará `fleet_stats` (T5).
 
-**Viz (T3):** la UI «Cola de Gobernanza» (seed org, patrón `master-detail`:
+**Viz (T3–T5):** cuatro UIs sembradas en org — «Cola de Gobernanza»,
+«Flota» (master `orgs-table` + detail `org-detail`, view-only), «Pulso de
+deltas (semanal)» (chart line sobre `fleet_stats by=semana`, `y=archivos`) y
+«Decisiones de gobernanza» (donut `by=accion`). La Cola (seed org, patrón `master-detail`:
 master `queue-table` sobre `fleet_queue`; detail `delta-detail` sobre
 `fleet_delta`). Un delta ui-spec se aprueba VIENDO su **render en sombra**
 (`GET /shadow/:key` — el gemelo de `/u/:id` para specs de fork, iframe

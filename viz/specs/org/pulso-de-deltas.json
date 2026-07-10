@@ -1,0 +1,9 @@
+{
+  "id": "pulso-de-deltas",
+  "name": "Pulso de deltas (semanal)",
+  "component": "chart",
+  "source": "fleet_stats",
+  "params": { "by": "semana", "kind": "line", "y": "archivos" },
+  "scope": "org",
+  "created_at": "2026-07-10T19:00:00.000Z"
+}

@@ -1,0 +1,10 @@
+{
+  "spec_version": 2,
+  "id": "flota",
+  "name": "Flota",
+  "pattern": "master-detail",
+  "master": { "block": "orgs-table", "source": "fleet_orgs", "params": {} },
+  "detail": { "block": "org-detail" },
+  "scope": "org",
+  "created_at": "2026-07-10T19:00:00.000Z"
+}

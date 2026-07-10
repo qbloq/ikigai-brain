@@ -1,0 +1,9 @@
+{
+  "id": "decisiones-de-gobernanza",
+  "name": "Decisiones de gobernanza",
+  "component": "chart",
+  "source": "fleet_stats",
+  "params": { "by": "accion", "kind": "donut" },
+  "scope": "org",
+  "created_at": "2026-07-10T19:00:00.000Z"
+}

@@ -88,6 +88,9 @@ function renderChart(ui) {
 
 module.exports = {
   id: "chart",
-  manifest: { consumes: "rows", overridable: ["kind", "by"] },
+  // x/y son presentación pura (elección de columnas del rowsToSpec), igual que
+  // kind — inofensivos de sobreescribir y necesarios para que una spec que los
+  // declara (p.ej. pulso-de-deltas, y=archivos) valide limpia.
+  manifest: { consumes: "rows", overridable: ["kind", "by", "x", "y"] },
   render: renderChart,
 };
