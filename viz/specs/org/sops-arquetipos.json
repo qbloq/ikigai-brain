@@ -1,0 +1,9 @@
+{
+  "id": "sops-arquetipos",
+  "name": "SOPs & Arquetipos",
+  "component": "sop-tree",
+  "source": "sops",
+  "params": {},
+  "scope": "org",
+  "created_at": "2026-07-08T18:06:00.000Z"
+}

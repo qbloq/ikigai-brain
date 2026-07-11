@@ -1,0 +1,3432 @@
+{
+  "_meta": {
+    "description": "Canonical, machine-readable process ontology. THREE process tiers under the value chain: macro_process (S1–S12) → sop (canonical, deduped from role-sops-discovery.md §2) → archetype (activity A_.__). Tasks instantiate an archetype, so each task rolls up: archetype → sop → macro_process. Single source of truth for the pipeline.",
+    "hierarchy": "value_chain → macro_process (S1..S12) → sop (Sx.y) → archetype (A_.__) → task",
+    "sources": [
+      "docs/role-sops-discovery.md",
+      "docs/activity-archetypes.md"
+    ],
+    "verb_vocabulary": [
+      "Definir",
+      "Escribir",
+      "Producir/Crear",
+      "Grabar",
+      "Editar",
+      "Publicar",
+      "Revisar/Aprobar",
+      "Optimizar",
+      "Configurar",
+      "Integrar",
+      "Medir/Analizar",
+      "Coordinar/Seguir",
+      "Capacitar",
+      "Gestionar acceso"
+    ],
+    "status": "candidate"
+  },
+  "macro_processes": [
+    {
+      "code": "S1",
+      "name": "Narrativa & Oferta",
+      "value_chain_order": 1,
+      "cadence": "per-launch",
+      "owner_roles": [
+        "Copy",
+        "Estratega",
+        "Ejecutivo",
+        "Director Comercial",
+        "Contenido"
+      ],
+      "note": "gate A1.5 is the bottleneck"
+    },
+    {
+      "code": "S2",
+      "name": "Producción de Creativos (anuncios)",
+      "value_chain_order": 2,
+      "cadence": "per-campaign",
+      "owner_roles": [
+        "Copy",
+        "PM",
+        "Estratega",
+        "Editor"
+      ],
+      "note": "A2.7 (chase) dominates PM load"
+    },
+    {
+      "code": "S3",
+      "name": "Optimización de Pauta",
+      "value_chain_order": 4,
+      "cadence": "weekly",
+      "owner_roles": [
+        "Ejecutivo",
+        "Estratega"
+      ],
+      "owner_gap": "Media Buyer / Trafficker (unfilled)"
+    },
+    {
+      "code": "S4",
+      "name": "Contenido Orgánico",
+      "value_chain_order": 5,
+      "cadence": "daily/weekly",
+      "owner_roles": [
+        "Contenido",
+        "Ejecutivo",
+        "Estratega",
+        "Setter"
+      ]
+    },
+    {
+      "code": "S5",
+      "name": "Testimonios / Prueba Social",
+      "value_chain_order": 6,
+      "cadence": "ongoing",
+      "owner_roles": [
+        "Líder de Servicio",
+        "Editor",
+        "PM",
+        "Copy",
+        "Director Comercial"
+      ],
+      "note": "most hand-off friction → formalize first"
+    },
+    {
+      "code": "S6",
+      "name": "Calificación de Leads & Setter Ops",
+      "value_chain_order": 7,
+      "cadence": "per-campaign/weekly",
+      "owner_roles": [
+        "Director Comercial",
+        "Operaciones",
+        "Contenido",
+        "Setter",
+        "Líder de Servicio"
+      ]
+    },
+    {
+      "code": "S7",
+      "name": "Funnel / Landing / Checkout",
+      "value_chain_order": 3,
+      "cadence": "per-launch",
+      "owner_roles": [
+        "Operaciones",
+        "Technology",
+        "Diseño",
+        "Ejecutivo"
+      ]
+    },
+    {
+      "code": "S8",
+      "name": "Métricas & Fuente de Verdad",
+      "value_chain_order": 8,
+      "cadence": "weekly",
+      "owner_roles": [
+        "Technology",
+        "Ejecutivo",
+        "Director Comercial",
+        "PM"
+      ],
+      "note": "converge on Paralelo"
+    },
+    {
+      "code": "S9",
+      "name": "Lanzamiento / Masterclass",
+      "value_chain_order": 9,
+      "cadence": "per-launch",
+      "owner_roles": [
+        "PM",
+        "Copy",
+        "Estratega",
+        "Operaciones"
+      ]
+    },
+    {
+      "code": "S10",
+      "name": "Gobernanza de Tareas",
+      "value_chain_order": 10,
+      "cadence": "weekly/per-meeting",
+      "owner_roles": [
+        "Project Manager"
+      ]
+    },
+    {
+      "code": "S11",
+      "name": "Producto / Plataforma (Paralelo)",
+      "value_chain_order": null,
+      "cadence": "roadmap",
+      "owner_roles": [
+        "Technology"
+      ],
+      "status": "proposed-gap",
+      "note": "G1 — unowned dev/product"
+    },
+    {
+      "code": "S12",
+      "name": "Cierre & Retención (Closers)",
+      "value_chain_order": null,
+      "cadence": "weekly/reactive",
+      "owner_roles": [
+        "Director Comercial",
+        "Closer"
+      ],
+      "status": "proposed-gap",
+      "note": "G2 — closing-side"
+    }
+  ],
+  "gap_checklists": [
+    {
+      "code": "G3",
+      "name": "Gestión de Equipo / Roles",
+      "note": "people-ops checklist, not a SOP"
+    },
+    {
+      "code": "G4",
+      "name": "Accesos & Infraestructura de cuentas",
+      "note": "cross-cutting prerequisite checklist"
+    }
+  ],
+  "sops": [
+    {
+      "code": "S1.1",
+      "macro_process": "S1",
+      "name": "Construcción de narrativa & oferta",
+      "owner_roles": [
+        "Copy",
+        "Estratega",
+        "Ejecutivo",
+        "Contenido"
+      ]
+    },
+    {
+      "code": "S1.2",
+      "macro_process": "S1",
+      "name": "Empaquetado & lanzamiento de oferta (formatos / low-ticket)",
+      "owner_roles": [
+        "Director Comercial",
+        "Copy"
+      ]
+    },
+    {
+      "code": "S2.1",
+      "macro_process": "S2",
+      "name": "Producción de creativos de anuncios (ángulos, copy, hooks, grabación)",
+      "owner_roles": [
+        "Copy",
+        "Estratega",
+        "PM"
+      ]
+    },
+    {
+      "code": "S2.2",
+      "macro_process": "S2",
+      "name": "Edición de audio/video de anuncios",
+      "owner_roles": [
+        "Editor"
+      ]
+    },
+    {
+      "code": "S2.3",
+      "macro_process": "S2",
+      "name": "Diseño gráfico y piezas estáticas",
+      "owner_roles": [
+        "Diseño",
+        "Copy",
+        "PM"
+      ]
+    },
+    {
+      "code": "S3.1",
+      "macro_process": "S3",
+      "name": "Optimización & escalamiento de campañas",
+      "owner_roles": [
+        "Ejecutivo",
+        "Estratega"
+      ],
+      "note": "Media Buyer gap"
+    },
+    {
+      "code": "S3.2",
+      "macro_process": "S3",
+      "name": "Estructuración & documentación de campañas",
+      "owner_roles": [
+        "Estratega",
+        "Ejecutivo"
+      ]
+    },
+    {
+      "code": "S4.1",
+      "macro_process": "S4",
+      "name": "Producción de contenido orgánico (reels/historias/horarios)",
+      "owner_roles": [
+        "Contenido",
+        "Ejecutivo"
+      ]
+    },
+    {
+      "code": "S4.2",
+      "macro_process": "S4",
+      "name": "Estrategia & ángulos de contenido orgánico",
+      "owner_roles": [
+        "Copy",
+        "Contenido"
+      ]
+    },
+    {
+      "code": "S4.3",
+      "macro_process": "S4",
+      "name": "Optimización de perfil & assets de conversión",
+      "owner_roles": [
+        "Contenido"
+      ]
+    },
+    {
+      "code": "S5.1",
+      "macro_process": "S5",
+      "name": "Sourcing & grabación de testimonios",
+      "owner_roles": [
+        "Líder de Servicio",
+        "Copy",
+        "Director Comercial",
+        "PM"
+      ]
+    },
+    {
+      "code": "S5.2",
+      "macro_process": "S5",
+      "name": "Edición & publicación de testimonios",
+      "owner_roles": [
+        "Editor",
+        "PM",
+        "Operaciones"
+      ]
+    },
+    {
+      "code": "S5.3",
+      "macro_process": "S5",
+      "name": "Registro de casos de éxito (trazabilidad financiera)",
+      "owner_roles": [
+        "Operaciones",
+        "Director Comercial"
+      ]
+    },
+    {
+      "code": "S6.1",
+      "macro_process": "S6",
+      "name": "Automatización ManyChat & tagging (audios CTO)",
+      "owner_roles": [
+        "Operaciones",
+        "Contenido",
+        "Ejecutivo"
+      ]
+    },
+    {
+      "code": "S6.2",
+      "macro_process": "S6",
+      "name": "Operación de setters (agendamiento, capacitación, chat)",
+      "owner_roles": [
+        "Director Comercial",
+        "Setter",
+        "Líder de Servicio"
+      ]
+    },
+    {
+      "code": "S6.3",
+      "macro_process": "S6",
+      "name": "Inteligencia de leads & avatar",
+      "owner_roles": [
+        "Director Comercial",
+        "Contenido"
+      ]
+    },
+    {
+      "code": "S7.1",
+      "macro_process": "S7",
+      "name": "Build de landing & páginas",
+      "owner_roles": [
+        "Operaciones",
+        "Ejecutivo",
+        "Diseño"
+      ]
+    },
+    {
+      "code": "S7.2",
+      "macro_process": "S7",
+      "name": "Checkout & pasarela de pagos",
+      "owner_roles": [
+        "Operaciones",
+        "Diseño"
+      ]
+    },
+    {
+      "code": "S7.3",
+      "macro_process": "S7",
+      "name": "VSL A/B & plataforma (Biturbo ↔ GHL)",
+      "owner_roles": [
+        "Technology",
+        "Operaciones"
+      ]
+    },
+    {
+      "code": "S7.4",
+      "macro_process": "S7",
+      "name": "Funnel gamificado & lead magnets",
+      "owner_roles": [
+        "Copy",
+        "Diseño",
+        "Technology",
+        "Estratega"
+      ]
+    },
+    {
+      "code": "S8.1",
+      "macro_process": "S8",
+      "name": "Alineación de data & fuente de verdad (Paralelo)",
+      "owner_roles": [
+        "Technology",
+        "Ejecutivo"
+      ]
+    },
+    {
+      "code": "S8.2",
+      "macro_process": "S8",
+      "name": "Integridad & limpieza de datos de ventas",
+      "owner_roles": [
+        "Director Comercial"
+      ]
+    },
+    {
+      "code": "S8.3",
+      "macro_process": "S8",
+      "name": "Análisis & ingeniería inversa de conversiones",
+      "owner_roles": [
+        "Copy",
+        "Estratega",
+        "Setter"
+      ]
+    },
+    {
+      "code": "S8.4",
+      "macro_process": "S8",
+      "name": "Definición de KPIs & reportería",
+      "owner_roles": [
+        "PM",
+        "Contenido"
+      ]
+    },
+    {
+      "code": "S9.1",
+      "macro_process": "S9",
+      "name": "Mapeo de estrategia de lanzamiento/masterclass",
+      "owner_roles": [
+        "PM",
+        "Copy",
+        "Estratega"
+      ]
+    },
+    {
+      "code": "S9.2",
+      "macro_process": "S9",
+      "name": "Dinámicas de cierre de mes",
+      "owner_roles": [
+        "Copy",
+        "Director Comercial"
+      ]
+    },
+    {
+      "code": "S9.3",
+      "macro_process": "S9",
+      "name": "Secuencias de mensajería de lanzamiento (email/WhatsApp/Telegram)",
+      "owner_roles": [
+        "Copy",
+        "PM",
+        "Operaciones",
+        "Ejecutivo"
+      ]
+    },
+    {
+      "code": "S10.1",
+      "macro_process": "S10",
+      "name": "Gobernanza de tareas & seguimiento de reuniones",
+      "owner_roles": [
+        "Project Manager"
+      ]
+    },
+    {
+      "code": "S10.2",
+      "macro_process": "S10",
+      "name": "Organización de espacios de gestión",
+      "owner_roles": [
+        "Project Manager"
+      ]
+    },
+    {
+      "code": "S11.1",
+      "macro_process": "S11",
+      "name": "Desarrollo de features de Paralelo",
+      "owner_roles": [
+        "Technology"
+      ],
+      "status": "proposed-gap"
+    },
+    {
+      "code": "S11.2",
+      "macro_process": "S11",
+      "name": "Integraciones & tracking de origen de ventas",
+      "owner_roles": [
+        "Technology"
+      ],
+      "status": "proposed-gap"
+    },
+    {
+      "code": "S11.3",
+      "macro_process": "S11",
+      "name": "AI / Knowledge tools (Ask the Graph)",
+      "owner_roles": [
+        "Technology"
+      ],
+      "status": "proposed-gap"
+    },
+    {
+      "code": "S12.1",
+      "macro_process": "S12",
+      "name": "Gestión de closers & cuotas",
+      "owner_roles": [
+        "Director Comercial"
+      ],
+      "status": "proposed-gap"
+    },
+    {
+      "code": "S12.2",
+      "macro_process": "S12",
+      "name": "Manejo de objeciones & retención",
+      "owner_roles": [
+        "Director Comercial"
+      ],
+      "status": "proposed-gap"
+    },
+    {
+      "code": "S12.3",
+      "macro_process": "S12",
+      "name": "Forecasting de ingresos",
+      "owner_roles": [
+        "Director Comercial"
+      ],
+      "status": "proposed-gap"
+    },
+    {
+      "code": "S12.4",
+      "macro_process": "S12",
+      "name": "Provisión de data de trading a closers",
+      "owner_roles": [
+        "Líder de Servicio"
+      ],
+      "status": "proposed-gap"
+    }
+  ],
+  "archetypes": [
+    {
+      "id": "A1.1",
+      "sop": "S1.1",
+      "verb": "Definir",
+      "name": "Reformular narrativa / big idea / mecanismo único",
+      "slots": [
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Insumos de mercado y oferta",
+          "description": "Research de avatar, dolores, promesa y oferta actual de {proyecto} que sustentan la narrativa.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Narrativa/mensajería vigente",
+          "description": "Big idea, ángulos y mecanismo único que se usan hoy en {proyecto} (punto de partida a reformular).",
+          "io_type": "content_draft",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Narrativa reformulada",
+          "description": "Documento con la nueva big idea, promesa y mecanismo único articulados para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Define explícitamente big idea, promesa y mecanismo único diferenciador.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La narrativa conecta el dolor/deseo del avatar de {proyecto} con la solución ofrecida.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna del equipo registrada antes de usarla en piezas.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A1.2",
+      "sop": "S1.1",
+      "verb": "Escribir",
+      "name": "Escribir guion de venta largo (VSL/PSL/SL/TSL)",
+      "slots": [
+        "tipo",
+        "proyecto",
+        "talento_grabador"
+      ],
+      "inputs": [
+        {
+          "title": "Narrativa y oferta aprobadas",
+          "description": "Big idea, mecanismo único y oferta de {proyecto} que el guion {tipo} debe vehicular.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Referencias y brief del guion",
+          "description": "Swipes, ejemplos y lineamientos de tono/duración para el guion {tipo}, considerando a {talento_grabador} como quien lo grabará.",
+          "io_type": "content_draft",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Guion de venta largo",
+          "description": "Guion {tipo} (VSL/PSL/SL/TSL) completo y listo para grabación por {talento_grabador} en {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Incluye estructura completa: hook, historia, mecanismo, oferta, garantías y CTA.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Es coherente con la narrativa/oferta aprobada de {proyecto} y con el formato {tipo}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El guion es grabable por {talento_grabador} (tono, extensión y lenguaje adecuados).",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna del guion registrada antes de grabar.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A1.4",
+      "sop": "S1.1",
+      "verb": "Producir/Crear",
+      "name": "Graficar escalera de valor",
+      "slots": [
+        "proyecto"
+      ]
+    },
+    {
+      "id": "A1.5",
+      "sop": "S1.1",
+      "verb": "Revisar/Aprobar",
+      "name": "Revisar y aprobar narrativa (gate)",
+      "slots": [
+        "aprobador",
+        "proyecto"
+      ],
+      "is_gate": true,
+      "inputs": [
+        {
+          "title": "Narrativa a revisar",
+          "description": "Documento de narrativa/big idea/mensajería de {proyecto} sometido a la aprobación de {aprobador}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Aprobación de la narrativa",
+          "description": "Decisión de {aprobador} (aprobada / con ajustes / rechazada) sobre la narrativa de {proyecto}, con feedback registrado.",
+          "io_type": "task_approval",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "{aprobador} deja un veredicto explícito: aprobada, con ajustes o rechazada.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Si hay ajustes o rechazo, el feedback queda documentado y accionable.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La confirmación de {aprobador} queda registrada antes de avanzar a producción.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A1.6",
+      "sop": "S1.1",
+      "verb": "Definir",
+      "name": "Definir ángulo de comunicación / posicionamiento",
+      "slots": [
+        "angulo"
+      ],
+      "inputs": [
+        {
+          "title": "Insumos de posicionamiento",
+          "description": "Research de avatar, competencia y narrativa de {proyecto} que sustentan el ángulo {angulo}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Ángulo de comunicación definido",
+          "description": "Documento que define el ángulo {angulo} y el posicionamiento de {proyecto}: promesa, enemigo común, diferenciador y mensajes clave.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Articula el ángulo {angulo} con posicionamiento, diferenciador y mensajes clave.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El ángulo es coherente con la narrativa y el avatar de {proyecto}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna del ángulo registrada antes de bajarlo a piezas.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A1.3",
+      "sop": "S1.2",
+      "verb": "Definir",
+      "name": "Adaptar/empaquetar oferta a un formato",
+      "slots": [
+        "formato",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Oferta base de {proyecto}",
+          "description": "Definición actual de la oferta de {proyecto} (promesa, componentes, precio, garantías) a empaquetar.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Requisitos del formato",
+          "description": "Especificaciones y restricciones del formato {formato} al que se adaptará la oferta.",
+          "io_type": "documentation",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Oferta empaquetada en {formato}",
+          "description": "Oferta de {proyecto} adaptada y empaquetada al formato {formato}, con componentes, stack de valor y precio.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Detalla componentes, stack de valor, precio y garantías de la oferta en {formato}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El empaquetado cumple las restricciones y convenciones del formato {formato}.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna del empaquetado registrada antes de comunicarlo al cliente.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.1",
+      "sop": "S2.1",
+      "verb": "Definir",
+      "name": "Definir/mapear ángulos y formatos de anuncios",
+      "slots": [
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Brief y avatar de {proyecto}",
+          "description": "Contexto de campaña de {proyecto}: avatar/público objetivo, propuesta de valor y objetivos de los anuncios.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Referencias y aprendizajes previos",
+          "description": "Anuncios anteriores, benchmarks de la competencia y métricas/aprendizajes que orientan qué ángulos y formatos explorar.",
+          "io_type": "analytics_report",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Mapa de ángulos y formatos",
+          "description": "Documento que define y mapea los ángulos y formatos de anuncios propuestos para {proyecto} (por ángulo: dolor/deseo, promesa y formato sugerido).",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Cada ángulo declara público objetivo, promesa y formato de anuncio propuesto.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los ángulos son coherentes con el avatar y la propuesta de valor de {proyecto}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El mapa está estructurado y priorizado (qué ángulos/formatos producir primero).",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna del equipo registrada antes de pasar a producción.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.2",
+      "sop": "S2.1",
+      "verb": "Escribir",
+      "name": "Escribir copy de un lote de anuncios",
+      "slots": [
+        "cantidad",
+        "angulo",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Ángulos y brief de anuncios",
+          "description": "Ángulo {angulo}, público y oferta que orientan el copy de los {cantidad} anuncios para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Copy del lote de anuncios",
+          "description": "Copy de {cantidad} anuncios (hook, cuerpo y CTA) con ángulo {angulo} para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Se entregaron los {cantidad} copies con hook, cuerpo y CTA.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El copy es coherente con el ángulo {angulo}, el brief y la oferta.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.3",
+      "sop": "S2.1",
+      "verb": "Producir/Crear",
+      "name": "Crear variaciones de hooks",
+      "slots": [
+        "cantidad",
+        "base"
+      ],
+      "inputs": [
+        {
+          "title": "Hook base de partida",
+          "description": "Hook/gancho base ({base}) a partir del cual se generan las variaciones para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        },
+        {
+          "title": "Ángulo y avatar de referencia",
+          "description": "Ángulo, tono y avatar de {proyecto} que deben respetar las variaciones de hooks.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Variaciones de hooks",
+          "description": "{cantidad} variaciones de hooks generadas a partir de {base} para los anuncios de {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Se entregan {cantidad} variaciones de hooks distintas entre sí.",
+              "criterion_category": "completeness",
+              "verification_method": "llm"
+            },
+            {
+              "criterion": "Cada variación conserva la idea/ángulo de {base} sin repetir literalmente el original.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cada hook cumple longitud/formato apto para el anuncio (primeros segundos, sin errores).",
+              "criterion_category": "format",
+              "verification_method": "llm"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.4",
+      "sop": "S2.1",
+      "verb": "Grabar",
+      "name": "Grabar reels/videos de anuncio con talento",
+      "slots": [
+        "cantidad",
+        "talento",
+        "deadline",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Guion/copy a grabar",
+          "description": "Guiones de los {cantidad} anuncios a grabar con {talento} para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        },
+        {
+          "title": "Plan de grabación",
+          "description": "Locación, props y cronograma (deadline {deadline}).",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Material grabado (crudo)",
+          "description": "{cantidad} videos/reels grabados con {talento} (crudo, listo para edición) para {proyecto}.",
+          "io_type": "video_asset",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Se grabaron los {cantidad} anuncios según el guion.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "El material cumple calidad técnica mínima (audio, imagen, encuadre).",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.6",
+      "sop": "S2.1",
+      "verb": "Producir/Crear",
+      "name": "Producir anuncios con IA / voz IA",
+      "slots": [
+        "cantidad",
+        "talento"
+      ],
+      "inputs": [
+        {
+          "title": "Guion/copy del anuncio",
+          "description": "Copy o guion aprobado que se producirá con IA para el/los anuncio(s) de {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        },
+        {
+          "title": "Referencia de talento/voz IA",
+          "description": "Definición del talento {talento} o voz IA a usar (avatar, muestra de voz, estilo) para la producción.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Anuncios producidos con IA",
+          "description": "{cantidad} anuncio(s) producido(s) con IA / voz IA usando {talento} para {proyecto}, listos para edición/publicación.",
+          "io_type": "ad_creative",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Se producen {cantidad} anuncio(s) según el guion/copy aprobado.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La voz/avatar IA de {talento} suena natural y sin artefactos evidentes.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cumple especificaciones de formato (aspecto, duración, calidad) de la plataforma destino.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna del equipo registrada antes de enviar a edición/cliente.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.7",
+      "sop": "S2.1",
+      "verb": "Coordinar/Seguir",
+      "name": "Coordinar/seguir grabación con talento",
+      "slots": [
+        "talento",
+        "entregable"
+      ],
+      "inputs": [
+        {
+          "title": "Guion/plan de grabación",
+          "description": "Guion, shotlist o brief del {entregable} a grabar con {talento} para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        },
+        {
+          "title": "Contacto y disponibilidad de {talento}",
+          "description": "Datos de contacto y disponibilidad de {talento} para coordinar la grabación.",
+          "io_type": "contact_info",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Grabación agendada con {talento}",
+          "description": "Evento de agenda de la grabación del {entregable} coordinada con {talento} para {proyecto}.",
+          "io_type": "schedule_event",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La grabación queda agendada con fecha, hora y logística confirmadas con {talento}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Confirmación de asistencia de {talento} registrada.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        },
+        {
+          "title": "Material crudo grabado",
+          "description": "Video/audio crudo del {entregable} grabado por {talento} para {proyecto}, recibido y respaldado (Drive Crudo).",
+          "io_type": "video_asset",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El material crudo cubre todo lo previsto en el guion/shotlist del {entregable}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los archivos están respaldados y accesibles en Drive Crudo para edición.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.8",
+      "sop": "S2.3",
+      "verb": "Producir/Crear",
+      "name": "Diseñar pieza gráfica / estático",
+      "slots": [
+        "pieza",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Brief y copy de la pieza",
+          "description": "Mensaje, texto y especificaciones de la pieza {pieza} para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Pieza gráfica entregada",
+          "description": "Diseño estático de {pieza} listo para publicación para {proyecto}.",
+          "io_type": "image_asset",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La pieza incluye el copy/mensaje y el CTA correctos de {pieza}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cumple identidad de marca y el formato/tamaño del canal destino.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.9",
+      "sop": "S2.3",
+      "verb": "Producir/Crear",
+      "name": "Diseñar presentación / diapositivas",
+      "slots": [
+        "tema",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Guion/estructura de la presentación",
+          "description": "Contenido y estructura de la presentación sobre {tema} para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Presentación / diapositivas",
+          "description": "Diapositivas de {tema} listas para la sesión/uso para {proyecto}.",
+          "io_type": "documentation",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La presentación cubre la estructura/guion acordado de {tema}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cumple identidad de marca y es legible en el formato destino (Zoom/impresión).",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A2.5",
+      "sop": "S2.2",
+      "verb": "Editar",
+      "name": "Editar audio/video de anuncios",
+      "slots": [
+        "n_hooks",
+        "n_variaciones",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Material crudo a editar",
+          "description": "Video/audio en bruto (Drive Crudo) para el/los anuncio(s) de {proyecto}.",
+          "io_type": "video_asset",
+          "is_required": true
+        },
+        {
+          "title": "Guion/copy del anuncio",
+          "description": "Copy o guion aprobado que orienta la edición ({n_hooks} hooks, {n_variaciones} variaciones).",
+          "io_type": "content_draft",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Anuncio editado",
+          "description": "Anuncio(s) editado(s) listo(s) para publicación (Drive Editado): {n_hooks} hooks × {n_variaciones} variaciones para {proyecto}.",
+          "io_type": "ad_creative",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El anuncio editado corresponde al guion/copy aprobado y entrega {n_hooks} hooks y {n_variaciones} variaciones.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cumple especificaciones de formato de la plataforma destino (relación de aspecto, subtítulos, duración).",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna del equipo registrada antes de enviar al cliente.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Aprobación del cliente registrada.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A3.1",
+      "sop": "S3.1",
+      "verb": "Optimizar",
+      "name": "Optimizar campañas (apagar perdedores / escalar ganadores)",
+      "slots": [
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Reporte de rendimiento de campañas",
+          "description": "Reporte de métricas (CPA, ROAS, CTR, gasto) por campaña/conjunto/anuncio de {proyecto} en el período a optimizar.",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Metas y umbrales de la cuenta",
+          "description": "KPIs objetivo y umbrales de decisión (CPA máximo, ROAS mínimo, presupuesto disponible) para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Decisión de optimización",
+          "description": "Decisión documentada de qué anuncios/conjuntos apagar (perdedores) y cuáles escalar (ganadores) en {proyecto}, con la justificación por métricas.",
+          "io_type": "decision",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Cada decisión (apagar/escalar) se sustenta en las métricas del reporte de rendimiento.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La decisión respeta los umbrales de CPA/ROAS/presupuesto definidos para la cuenta.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        },
+        {
+          "title": "Cambios aplicados en la cuenta",
+          "description": "Configuración de la cuenta publicitaria de {proyecto} actualizada según la decisión (perdedores apagados, ganadores escalados).",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Los anuncios/conjuntos marcados como perdedores quedan efectivamente apagados en la cuenta.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los ganadores quedan escalados sin errores de configuración (presupuesto/estado activo correctos).",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A3.2",
+      "sop": "S3.1",
+      "verb": "Optimizar",
+      "name": "Ajustar presupuestos de pauta",
+      "slots": [
+        "direccion"
+      ],
+      "inputs": [
+        {
+          "title": "Rendimiento y estado de presupuestos",
+          "description": "Reporte de gasto y rendimiento actual por campaña/conjunto de {proyecto} que justifica {direccion} el presupuesto.",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Instrucción de ajuste",
+          "description": "Definición del ajuste a aplicar: {direccion} el presupuesto, en qué campañas/conjuntos y en qué magnitud, para {proyecto}.",
+          "io_type": "decision",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Presupuestos ajustados en la cuenta",
+          "description": "Configuración de la cuenta publicitaria de {proyecto} con los presupuestos ajustados ({direccion}) según la instrucción.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El presupuesto de cada campaña/conjunto quedó ajustado en la dirección y magnitud indicadas.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El gasto total resultante respeta el tope de inversión definido para la cuenta.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los cambios quedan reflejados y activos en el ad account sin errores de configuración.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A3.4",
+      "sop": "S3.1",
+      "verb": "Medir/Analizar",
+      "name": "Monitorear rendimiento de anuncios",
+      "slots": [
+        "activos"
+      ],
+      "inputs": [
+        {
+          "title": "Cuenta y campañas a monitorear",
+          "description": "Acceso a los anuncios {activos} en el ad account de {proyecto} cuyo rendimiento se va a monitorear.",
+          "io_type": "credentials_access",
+          "is_required": true
+        },
+        {
+          "title": "KPIs y umbrales de referencia",
+          "description": "Métricas objetivo y umbrales de alerta (CPA, ROAS, CTR, frecuencia) para evaluar los anuncios {activos} de {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Reporte de rendimiento de anuncios",
+          "description": "Reporte del rendimiento de los anuncios {activos} de {proyecto}: métricas clave, señales de alerta y observaciones para decidir.",
+          "io_type": "analytics_report",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El reporte cubre todos los anuncios activos del período monitoreado.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Incluye las métricas clave (gasto, CPA, ROAS, CTR, frecuencia) contrastadas contra sus umbrales.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Señala los anuncios fuera de umbral que requieren acción (escalar/apagar/ajustar).",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A3.5",
+      "sop": "S3.1",
+      "verb": "Configurar",
+      "name": "Apagar campañas/funnels obsoletos",
+      "slots": [
+        "campana"
+      ]
+    },
+    {
+      "id": "A3.3",
+      "sop": "S3.2",
+      "verb": "Configurar",
+      "name": "Montar estructura publicitaria (ciclo)",
+      "slots": [
+        "periodo",
+        "base"
+      ],
+      "inputs": [
+        {
+          "title": "Plan/estructura del ciclo",
+          "description": "Estrategia de pauta para el {periodo}: objetivos, públicos, presupuesto y estructura de campañas/conjuntos/anuncios a montar para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Creativos y copies aprobados",
+          "description": "Anuncios (video/imagen) y copies aprobados sobre la {base} que alimentan la estructura publicitaria de {proyecto}.",
+          "io_type": "ad_creative",
+          "is_required": true
+        },
+        {
+          "title": "Accesos a la cuenta publicitaria",
+          "description": "Credenciales/permisos al Business Manager y ad account de {proyecto} para montar la estructura.",
+          "io_type": "credentials_access",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Estructura publicitaria montada",
+          "description": "Campañas, conjuntos de anuncios y anuncios del {periodo} montados en el ad account de {proyecto} sobre la {base}, listos para activar.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La estructura montada (campañas/conjuntos/anuncios) corresponde al plan del ciclo.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Segmentación, presupuestos, objetivo y ubicaciones quedan configurados según lo definido.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cada anuncio usa el creativo/copy aprobado y el tracking/píxel queda correctamente asociado.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A3.6",
+      "sop": "S3.2",
+      "verb": "Producir/Crear",
+      "name": "Documentar estructura de campañas (Loom)",
+      "slots": [
+        "destinatario"
+      ],
+      "inputs": [
+        {
+          "title": "Estructura de campañas a documentar",
+          "description": "Cuenta/estructura de campañas de {proyecto} (campañas, conjuntos, anuncios, tracking) que se va a explicar en el Loom.",
+          "io_type": "system_configuration",
+          "is_required": true
+        },
+        {
+          "title": "Enfoque para el destinatario",
+          "description": "Qué debe entender {destinatario} y con qué nivel de detalle, para orientar el guion del instructivo de {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Loom/instructivo de la estructura",
+          "description": "Video Loom (o instructivo) que documenta la estructura de campañas de {proyecto} para {destinatario}, con su enlace compartido.",
+          "io_type": "documentation",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El Loom recorre la estructura completa (campañas, conjuntos, anuncios y tracking) de la cuenta.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La explicación está adaptada al nivel y necesidades del destinatario.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El enlace del Loom queda accesible y compartido con el destinatario.",
+              "criterion_category": "format",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A4.1",
+      "sop": "S4.1",
+      "verb": "Producir/Crear",
+      "name": "Producir reels orgánicos (cadencia)",
+      "slots": [
+        "cadencia",
+        "talento"
+      ],
+      "inputs": [
+        {
+          "title": "Estrategia/ángulos de contenido orgánico",
+          "description": "Ángulos, temas y tono aprobados que guían los reels orgánicos de {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Guiones/copys de los reels",
+          "description": "Guiones o copys aprobados para los reels a producir con {talento} en la cadencia {cadencia}.",
+          "io_type": "content_draft",
+          "is_required": true
+        },
+        {
+          "title": "Talento y material de grabación",
+          "description": "Disponibilidad de {talento} y material crudo (grabaciones/tomas) para los reels de {proyecto}.",
+          "io_type": "video_asset",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Reels orgánicos producidos",
+          "description": "Reels producidos y listos para publicación (Drive Editado) según la cadencia {cadencia} con {talento} para {proyecto}.",
+          "io_type": "ad_creative",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Se entregó el número de reels correspondiente a la cadencia {cadencia}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cada reel corresponde a los guiones/ángulos aprobados.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cumple especificaciones de formato de reel (vertical 9:16, subtítulos, duración).",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna del equipo registrada antes de publicar.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A4.5",
+      "sop": "S4.1",
+      "verb": "Coordinar/Seguir",
+      "name": "Hacer cumplir horarios de publicación (enforcement)",
+      "slots": [
+        "talento",
+        "hora_limite"
+      ]
+    },
+    {
+      "id": "A4.6",
+      "sop": "S4.1",
+      "verb": "Escribir",
+      "name": "Escribir reels anzuelo",
+      "slots": [
+        "cantidad",
+        "angulo"
+      ]
+    },
+    {
+      "id": "A4.2",
+      "sop": "S4.2",
+      "verb": "Definir",
+      "name": "Diseñar estrategia de historias (CTAs/secuencias/horarios)",
+      "slots": [
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Ángulos y objetivos de contenido",
+          "description": "Ángulos de contenido orgánico y objetivos de comunicación de {proyecto} que orientan las historias.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Datos de audiencia y desempeño previo",
+          "description": "Métricas de historias/publicaciones previas y comportamiento de audiencia de {proyecto} para definir horarios y secuencias.",
+          "io_type": "analytics_report",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Estrategia de historias",
+          "description": "Documento de estrategia de historias para {proyecto}: CTAs, secuencias narrativas y horarios de publicación.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Define CTAs, secuencias de historias y horarios de publicación de forma explícita.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Las secuencias y CTAs son coherentes con los ángulos y objetivos de {proyecto}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El documento está estructurado y accionable para el equipo de contenido.",
+              "criterion_category": "format",
+              "verification_method": "llm"
+            },
+            {
+              "criterion": "Aprobación de la estrategia registrada por el responsable de {proyecto}.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A4.4",
+      "sop": "S4.2",
+      "verb": "Definir",
+      "name": "Desarrollar ángulos de contenido orgánico",
+      "slots": [
+        "perfil_cliente"
+      ],
+      "inputs": [
+        {
+          "title": "Perfil de cliente ideal",
+          "description": "Definición de {perfil_cliente}: dolores, deseos, objeciones y lenguaje del público de {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Referencias y desempeño de contenido",
+          "description": "Contenido orgánico previo y referencias de la categoría que informan qué ángulos resuenan con {perfil_cliente}.",
+          "io_type": "analytics_report",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Ángulos de contenido orgánico",
+          "description": "Documento con los ángulos de contenido orgánico desarrollados para {perfil_cliente} de {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Cada ángulo está conectado a un dolor, deseo u objeción de {perfil_cliente}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Se entrega un set de ángulos diferenciados y accionables para producción.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El documento está estructurado (ángulo, mensaje central, formato sugerido).",
+              "criterion_category": "format",
+              "verification_method": "llm"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A4.3",
+      "sop": "S4.3",
+      "verb": "Optimizar",
+      "name": "Optimizar perfil (posts anzuelo fijados, destacados)",
+      "slots": [
+        "cantidad",
+        "proyecto"
+      ]
+    },
+    {
+      "id": "A5.1",
+      "sop": "S5.1",
+      "verb": "Coordinar/Seguir",
+      "name": "Sourcing de testimonios (identificar/solicitar)",
+      "slots": [
+        "fuente",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Casos de éxito candidatos",
+          "description": "Clientes con resultados que califican para testimonio (fuente: {fuente}).",
+          "io_type": "analytics_report",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Testimonios solicitados/confirmados",
+          "description": "Registro de clientes contactados y su compromiso de dar testimonio para {proyecto}.",
+          "io_type": "contact_info",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Se identificaron y contactaron los candidatos a testimonio del proyecto {proyecto}.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Quedó registrado quiénes aceptaron y el canal/fecha acordada.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A5.2",
+      "sop": "S5.1",
+      "verb": "Grabar",
+      "name": "Grabar testimonios",
+      "slots": [
+        "cantidad",
+        "talento"
+      ],
+      "inputs": [
+        {
+          "title": "Guion/preguntas del testimonio",
+          "description": "Preguntas y lineamientos para la grabación.",
+          "io_type": "documentation",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Grabaciones de testimonio",
+          "description": "Videos crudos de {cantidad} testimonios con {talento}.",
+          "io_type": "video_asset",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Existen las grabaciones de los {cantidad} testimonios solicitados.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Las grabaciones tienen calidad de audio/video suficiente para edición.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A5.3",
+      "sop": "S5.2",
+      "verb": "Editar",
+      "name": "Editar testimonios",
+      "slots": [
+        "cantidad",
+        "destino"
+      ],
+      "inputs": [
+        {
+          "title": "Grabaciones crudas",
+          "description": "Material crudo de testimonios a editar.",
+          "io_type": "video_asset",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Testimonios editados",
+          "description": "Testimonios editados listos para {destino}.",
+          "io_type": "video_asset",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Se editaron los {cantidad} testimonios.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El formato/duración cumple los requisitos de {destino}.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A5.4",
+      "sop": "S5.2",
+      "verb": "Publicar",
+      "name": "Publicar testimonios",
+      "slots": [
+        "destino"
+      ],
+      "inputs": [
+        {
+          "title": "Testimonios editados",
+          "description": "Testimonios listos para publicar.",
+          "io_type": "video_asset",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Testimonios publicados",
+          "description": "Testimonios publicados y visibles en {destino}.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Los testimonios están publicados y visibles en {destino}.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A5.5",
+      "sop": "S5.3",
+      "verb": "Configurar",
+      "name": "Estructurar registro de casos de éxito (con trazabilidad financiera)",
+      "slots": [],
+      "inputs": [
+        {
+          "title": "Datos de resultados de clientes",
+          "description": "Resultados y datos financieros de los casos de éxito.",
+          "io_type": "analytics_report",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Registro de casos de éxito",
+          "description": "Sistema/registro de casos de éxito con trazabilidad financiera.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El registro captura cada caso con su resultado y trazabilidad financiera.",
+              "criterion_category": "completeness",
+              "verification_method": "llm"
+            },
+            {
+              "criterion": "El sistema de registro está operativo y actualizable.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A6.1",
+      "sop": "S6.1",
+      "verb": "Configurar",
+      "name": "Implementar/configurar ManyChat",
+      "slots": [
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Credenciales/acceso a ManyChat",
+          "description": "Acceso a la cuenta de ManyChat y a la página/Instagram de {proyecto} para configurar el bot.",
+          "io_type": "credentials_access",
+          "is_required": true
+        },
+        {
+          "title": "Flujo y copies del bot",
+          "description": "Definición del flujo conversacional (palabras clave, respuestas, ramas) y copies aprobados para el bot de {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Bot de ManyChat configurado",
+          "description": "Automatización de ManyChat implementada y publicada para {proyecto} (flujos, palabras clave y respuestas activas).",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El flujo configurado corresponde al mapa de conversación y copies aprobados.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Las palabras clave disparan la respuesta correcta en una prueba end-to-end.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El bot está publicado/activo y conectado al canal de {proyecto}.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A6.2",
+      "sop": "S6.1",
+      "verb": "Configurar",
+      "name": "Configurar tags por etapa de conciencia",
+      "slots": [
+        "etapas"
+      ]
+    },
+    {
+      "id": "A6.3",
+      "sop": "S6.1",
+      "verb": "Configurar",
+      "name": "Implementar sistema de audios CTO",
+      "slots": [
+        "etapas"
+      ],
+      "inputs": [
+        {
+          "title": "Audios CTO por etapa",
+          "description": "Audios (call-to-order) grabados y aprobados para cada una de las {etapas} del flujo de {proyecto}.",
+          "io_type": "audio_asset",
+          "is_required": true
+        },
+        {
+          "title": "Mapa del flujo y {etapas}",
+          "description": "Definición de las {etapas} del flujo y en qué momento se dispara cada audio CTO.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Sistema de audios CTO configurado",
+          "description": "Automatización que reproduce el audio correcto en cada una de las {etapas} del flujo de {proyecto}.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Cada una de las {etapas} tiene su audio CTO asignado y disparándose en el punto correcto.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los audios se reproducen correctamente en una prueba del flujo end-to-end.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El sistema queda activo en producción para {proyecto}.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A6.6",
+      "sop": "S6.1",
+      "verb": "Configurar",
+      "name": "Diagnosticar/resolver fallas de chat",
+      "slots": [
+        "sintoma"
+      ]
+    },
+    {
+      "id": "A6.4",
+      "sop": "S6.2",
+      "verb": "Capacitar",
+      "name": "Capacitar setters",
+      "slots": [
+        "setters",
+        "tema"
+      ],
+      "inputs": [
+        {
+          "title": "Material de capacitación",
+          "description": "Guion, presentación o instructivo sobre {tema} para capacitar a {setters} de {proyecto}.",
+          "io_type": "documentation",
+          "is_required": true
+        },
+        {
+          "title": "Lista de setters a capacitar",
+          "description": "Los {setters} convocados a la capacitación de {tema} y su información de contacto.",
+          "io_type": "contact_info",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Capacitación entregada",
+          "description": "Sesión/documentación de capacitación sobre {tema} impartida a {setters} de {proyecto} (grabación o material entregado).",
+          "io_type": "documentation",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El material cubre los objetivos de {tema} de forma clara y accionable.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El material/grabación queda disponible para consulta posterior de {setters}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        },
+        {
+          "title": "Confirmación de asistencia",
+          "description": "Registro de que {setters} asistieron/completaron la capacitación de {tema}.",
+          "io_type": "task_approval",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Se registra la asistencia/confirmación de cada uno de los {setters} convocados.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A6.5",
+      "sop": "S6.2",
+      "verb": "Coordinar/Seguir",
+      "name": "Agendar llamadas (setter, cadencia)",
+      "slots": [
+        "meta"
+      ],
+      "inputs": [
+        {
+          "title": "Base de leads a contactar",
+          "description": "Listado de leads/contactos con quienes el setter debe agendar llamadas para {proyecto}.",
+          "io_type": "contact_info",
+          "is_required": true
+        },
+        {
+          "title": "Cadencia y meta de agendamiento",
+          "description": "Cadencia de contacto y la {meta} de llamadas a agendar en el periodo para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Llamadas agendadas",
+          "description": "Llamadas agendadas en calendario por el setter, avanzando hacia la {meta} de {proyecto}.",
+          "io_type": "schedule_event",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El número de llamadas agendadas cumple o avanza hacia la {meta} definida.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cada llamada tiene fecha, hora y contacto registrados en el calendario.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El agendamiento respeta la cadencia acordada para {proyecto}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A6.7",
+      "sop": "S6.3",
+      "verb": "Medir/Analizar",
+      "name": "Investigar avatar / inteligencia de leads",
+      "slots": [
+        "canal",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Datos y conversaciones del canal",
+          "description": "Conversaciones, mensajes y datos de leads del {canal} de {proyecto} como fuente para investigar el avatar.",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Preguntas de investigación",
+          "description": "Objetivos e hipótesis del avatar a validar (dolores, deseos, objeciones) para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Documento de inteligencia de leads",
+          "description": "Documento con insights del avatar de {proyecto} (dolores, deseos, objeciones y lenguaje) a partir del {canal}.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Los insights del avatar están sustentados en evidencia concreta del {canal}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El documento cubre dolores, deseos, objeciones y lenguaje del avatar.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Incluye recomendaciones accionables para el mensaje/oferta de {proyecto}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A7.1",
+      "sop": "S7.1",
+      "verb": "Producir/Crear",
+      "name": "Crear/duplicar landing page",
+      "slots": [
+        "proposito",
+        "destino"
+      ],
+      "inputs": [
+        {
+          "title": "Definición de propósito y destino",
+          "description": "Brief de la landing a crear/duplicar para {proyecto}: {proposito} de la página y {destino} (URL/slug o siguiente paso del funnel al que apunta).",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Copy y assets de la landing",
+          "description": "Copy aprobado, imágenes y/o video para poblar la landing con {proposito}.",
+          "io_type": "content_draft",
+          "is_required": true
+        },
+        {
+          "title": "Landing base a duplicar",
+          "description": "Plantilla o landing existente a duplicar como punto de partida (si aplica).",
+          "io_type": "system_configuration",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Landing page publicada",
+          "description": "Landing page publicada y funcional en el builder para {proyecto}, con {proposito} y apuntando a {destino}.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La landing refleja el propósito ({proposito}) y el copy/assets aprobados.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los enlaces y botones dirigen correctamente a {destino}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La página se visualiza correctamente en escritorio y móvil.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna registrada antes de dejar la landing en vivo.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A7.4",
+      "sop": "S7.1",
+      "verb": "Producir/Crear",
+      "name": "Construir/actualizar página de testimonios",
+      "slots": [
+        "testimonios"
+      ],
+      "inputs": [
+        {
+          "title": "Testimonios y pruebas",
+          "description": "Conjunto de {testimonios} y pruebas (capturas, videos, resultados) a incluir en la página para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        },
+        {
+          "title": "Página de testimonios base",
+          "description": "Página existente a actualizar o plantilla a usar para construir la página de testimonios (si aplica).",
+          "io_type": "system_configuration",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Página de testimonios publicada",
+          "description": "Página de testimonios publicada y funcional para {proyecto}, con los {testimonios} integrados.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Todos los {testimonios} aprobados están integrados y visibles en la página.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Videos e imágenes de las pruebas cargan y se reproducen correctamente.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La página se visualiza correctamente en escritorio y móvil.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna registrada antes de publicar.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A7.6",
+      "sop": "S7.1",
+      "verb": "Optimizar",
+      "name": "Editar/optimizar página del funnel (survey, agenda, velocidad de carga)",
+      "slots": [
+        "pagina",
+        "cambio"
+      ],
+      "inputs": [
+        {
+          "title": "Página del funnel a optimizar",
+          "description": "Identificación de la {pagina} del funnel de {proyecto} a intervenir (survey, agenda, checkout, etc.) y su estado actual.",
+          "io_type": "system_configuration",
+          "is_required": true
+        },
+        {
+          "title": "Cambio a aplicar",
+          "description": "Descripción del {cambio} de optimización a implementar (velocidad de carga, campos del survey, agenda, UX) con su justificación.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Página del funnel optimizada",
+          "description": "{pagina} del funnel de {proyecto} publicada con el {cambio} aplicado y verificado.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El {cambio} solicitado está implementado en la {pagina} correcta.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La página funciona correctamente (formularios, agenda y enlaces) tras el cambio.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La página se visualiza correctamente en escritorio y móvil.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A7.7",
+      "sop": "S7.4",
+      "verb": "Producir/Crear",
+      "name": "Crear/editar lead magnet (guía, video, quiz)",
+      "slots": [
+        "formato",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Brief del lead magnet",
+          "description": "Tema, formato ({formato}) y objetivo de captación del lead magnet para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Lead magnet entregado",
+          "description": "Lead magnet en formato {formato} listo para captar leads en {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El lead magnet entrega el valor prometido y coincide con el brief.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Incluye gancho/CTA hacia el siguiente paso del funnel.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A7.8",
+      "sop": "S7.4",
+      "verb": "Producir/Crear",
+      "name": "Construir funnel gamificado (quiz): flujo, contenido y página",
+      "slots": [
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Guion/flujo del quiz",
+          "description": "Preguntas, lógica de ramificación y narrativa de distribución del quiz para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Funnel gamificado publicado",
+          "description": "Quiz/funnel gamificado construido y en línea (flujo + página + captura) para {proyecto}.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El quiz funciona end-to-end y captura el lead dirigiéndolo al siguiente paso (p.ej. WhatsApp/closer).",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "El contenido/narrativa del quiz está completo y publicado.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A7.2",
+      "sop": "S7.2",
+      "verb": "Configurar",
+      "name": "Implementar checkout (Hotmart/GHL)",
+      "slots": [
+        "plataforma",
+        "oferta",
+        "order_bumps"
+      ]
+    },
+    {
+      "id": "A7.5",
+      "sop": "S7.2",
+      "verb": "Integrar",
+      "name": "Integrar pasarela de pagos",
+      "slots": [
+        "proveedor"
+      ]
+    },
+    {
+      "id": "A7.3",
+      "sop": "S7.3",
+      "verb": "Configurar",
+      "name": "Configurar VSL A/B (Biturbo)",
+      "slots": [
+        "variantes"
+      ],
+      "inputs": [
+        {
+          "title": "Variantes de VSL a testear",
+          "description": "Definición de las {variantes} de VSL a comparar en el A/B para {proyecto} (qué cambia entre A y B: hook, video, orden, CTA).",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Assets de las variantes",
+          "description": "Videos/VSL finales correspondientes a cada una de las {variantes} listos para cargar en Biturbo.",
+          "io_type": "video_asset",
+          "is_required": true
+        },
+        {
+          "title": "Acceso a Biturbo",
+          "description": "Credenciales/acceso a la plataforma Biturbo para configurar el test A/B.",
+          "io_type": "credentials_access",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Test A/B de VSL configurado en Biturbo",
+          "description": "Test A/B activo en Biturbo con las {variantes} distribuyendo tráfico para {proyecto}.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Cada una de las {variantes} está cargada y asociada a su brazo del test.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La distribución de tráfico entre variantes está configurada correctamente.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El registro/tracking de conversiones por variante funciona en una prueba.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Test A/B activado y confirmado en vivo.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A8.1",
+      "sop": "S8.1",
+      "verb": "Integrar",
+      "name": "Alinear data de métricas entre sistemas",
+      "slots": [
+        "sistemas",
+        "alcance"
+      ],
+      "inputs": [
+        {
+          "title": "Fuentes de datos a integrar",
+          "description": "Datos/sistemas a consolidar ({sistemas}).",
+          "io_type": "analytics_report",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Dashboard/medición del embudo",
+          "description": "Sistema que consolida y mide el embudo ({alcance}).",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El dashboard incluye las métricas clave del embudo (conversaciones, agendas, asistencias, ventas, cierres).",
+              "criterion_category": "completeness",
+              "verification_method": "llm"
+            },
+            {
+              "criterion": "El sistema está operativo e integra las fuentes en un solo lugar.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A8.3",
+      "sop": "S8.2",
+      "verb": "Medir/Analizar",
+      "name": "Limpiar / de-duplicar números de ventas",
+      "slots": [
+        "periodo"
+      ],
+      "inputs": [
+        {
+          "title": "Data de ventas cruda del periodo",
+          "description": "Dataset de ventas de {proyecto} en {periodo} sin depurar (posibles duplicados, registros incompletos o inconsistentes).",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Criterios de limpieza/dedup",
+          "description": "Reglas acordadas para depurar y de-duplicar (llave de deduplicación, tratamiento de reembolsos/anulaciones) de {proyecto}.",
+          "io_type": "documentation",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Dataset de ventas limpio y deduplicado",
+          "description": "Dataset de ventas de {proyecto} en {periodo} limpio y sin duplicados, listo para reportar y analizar.",
+          "io_type": "analytics_report",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "No quedan registros duplicados según la llave de deduplicación acordada.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Se documenta el conteo antes/después y las filas eliminadas o corregidas.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los totales de ventas limpios se conservan/concilian contra la fuente oficial (pasarela/CRM).",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A8.2",
+      "sop": "S8.3",
+      "verb": "Medir/Analizar",
+      "name": "Ingeniería inversa de conversiones",
+      "slots": [
+        "periodo"
+      ],
+      "inputs": [
+        {
+          "title": "Data de ventas del periodo",
+          "description": "Registros de ventas de {proyecto} en {periodo} (checkouts, leads, fuentes/UTMs, montos) para reconstruir el journey.",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Acceso a plataformas de tracking",
+          "description": "Accesos a las fuentes de datos (pixel/Meta, CRM, ManyChat, pasarela de pago) necesarios para trazar la atribución de {proyecto}.",
+          "io_type": "credentials_access",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Journey y atribución reconstruidos",
+          "description": "Reporte de ingeniería inversa del journey de conversión de {proyecto} en {periodo}: mapa de touchpoints y atribución por canal reconstruida.",
+          "io_type": "analytics_report",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El journey cubre todos los touchpoints desde el primer contacto hasta la conversión en {periodo}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cada conversión queda atribuida a una fuente/canal con su regla de atribución explícita.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Las cifras reconstruidas cuadran con la data de ventas de origen (sin descuadres inexplicados).",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A8.6",
+      "sop": "S8.3",
+      "verb": "Medir/Analizar",
+      "name": "Medir indicador puntual (AOV, origen de venta)",
+      "slots": [
+        "indicador"
+      ]
+    },
+    {
+      "id": "A8.4",
+      "sop": "S8.4",
+      "verb": "Definir",
+      "name": "Definir métricas/KPIs y modelar volúmenes",
+      "slots": [
+        "objetivo_facturacion"
+      ],
+      "inputs": [
+        {
+          "title": "Objetivo de facturación",
+          "description": "Meta de facturación {objetivo_facturacion} de {proyecto} a modelar en volúmenes y KPIs.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Data histórica de ventas y conversión",
+          "description": "Históricos de ventas, ticket promedio y tasas de conversión de {proyecto} como base para modelar volúmenes.",
+          "io_type": "analytics_report",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "KPIs y modelo de volúmenes",
+          "description": "Definición de métricas/KPIs y modelo de volúmenes (leads, calls, ventas, ticket, tasas) necesarios para alcanzar {objetivo_facturacion} en {proyecto}.",
+          "io_type": "analytics_report",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Cada KPI está definido con fórmula, fuente de dato y responsable/frecuencia de medición.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El modelo desagrega los volúmenes (leads→calls→ventas) que se requieren para llegar a {objetivo_facturacion}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los supuestos de conversión y ticket están respaldados por la data histórica.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Definición y modelo validados/aprobados por el equipo antes de operarlos.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A8.5",
+      "sop": "S8.4",
+      "verb": "Medir/Analizar",
+      "name": "Especificar/entregar reportes requeridos",
+      "slots": [
+        "consumidor"
+      ],
+      "inputs": [
+        {
+          "title": "Requerimientos de reporte del consumidor",
+          "description": "Especificación de lo que {consumidor} necesita ver: métricas, cortes, formato y periodicidad del reporte de {proyecto}.",
+          "io_type": "documentation",
+          "is_required": true
+        },
+        {
+          "title": "Data de métricas de origen",
+          "description": "Datos y métricas de {proyecto} (ventas, pauta, conversión) que alimentan el reporte solicitado por {consumidor}.",
+          "io_type": "analytics_report",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Reporte entregado al consumidor",
+          "description": "Reporte de métricas de {proyecto} especificado y entregado a {consumidor} en el formato y periodicidad acordados.",
+          "io_type": "analytics_report",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El reporte incluye todas las métricas y cortes solicitados por {consumidor}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cumple el formato y periodicidad acordados (estructura, unidades, fecha de corte).",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Entrega a {consumidor} confirmada.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A9.1",
+      "sop": "S9.1",
+      "verb": "Definir",
+      "name": "Mapear estrategia de lanzamiento (mensajes, fases, grupos, diseño, landing)",
+      "slots": [
+        "evento"
+      ],
+      "inputs": [
+        {
+          "title": "Objetivos y contexto del lanzamiento",
+          "description": "Meta comercial, oferta, fechas y audiencia del lanzamiento {evento} de {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Activos y referencias disponibles",
+          "description": "Materiales previos (grupos/segmentos, diseños, landing, comunicaciones) que alimentan la estrategia de {evento}.",
+          "io_type": "documentation",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Estrategia integral de lanzamiento",
+          "description": "Plan integral del lanzamiento {evento} de {proyecto}: mensajes, fases, grupos/segmentos, diseño y landing.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Define las fases del lanzamiento con fechas/hitos claros.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Especifica mensajes clave, grupos/segmentos, diseño y landing del lanzamiento.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El plan es coherente, accionable y asigna responsables por componente.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación del cliente registrada.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A9.2",
+      "sop": "S9.1",
+      "verb": "Definir",
+      "name": "Mapear masterclass (correos, mensajes, cronograma)",
+      "slots": [
+        "fecha"
+      ],
+      "inputs": [
+        {
+          "title": "Objetivos y fecha de la masterclass",
+          "description": "Meta, oferta y fecha {fecha} de la masterclass de {proyecto}, con audiencia objetivo.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Comunicaciones y activos de referencia",
+          "description": "Correos, mensajes y materiales previos que orientan el mapeo de la masterclass del {fecha}.",
+          "io_type": "content_draft",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Cronograma y comunicaciones de la masterclass",
+          "description": "Cronograma + secuencia de correos/mensajes de la masterclass del {fecha} para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Incluye cronograma completo con fechas y horas de cada envío/hito.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Define la secuencia de correos y mensajes con su contenido/asunto por pieza.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El plan es coherente y ejecutable en las fechas previstas hacia el {fecha}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación del cliente registrada.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A9.3",
+      "sop": "S9.2",
+      "verb": "Definir",
+      "name": "Diseñar dinámica de cierre de mes (pico de ventas)",
+      "slots": [
+        "mes"
+      ]
+    },
+    {
+      "id": "A9.4",
+      "sop": "S9.3",
+      "verb": "Escribir",
+      "name": "Escribir copy/flujo de secuencia de mensajería",
+      "slots": [
+        "canal",
+        "etapa",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Estrategia/mapa de la secuencia",
+          "description": "Fases, timing y objetivo de la secuencia de {etapa} para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Copy de la secuencia",
+          "description": "Mensajes redactados de la secuencia de {etapa} por {canal} para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La secuencia cubre todos los mensajes de la etapa {etapa} con su orden/timing.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cada mensaje incluye CTA y enlaces correctos para el canal {canal}.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A9.5",
+      "sop": "S9.3",
+      "verb": "Configurar",
+      "name": "Programar/automatizar secuencia de mensajería",
+      "slots": [
+        "canal",
+        "etapa",
+        "herramienta",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Copy de la secuencia aprobado",
+          "description": "Mensajes finales de la secuencia de {etapa} para {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": true
+        },
+        {
+          "title": "Acceso al canal/herramienta",
+          "description": "Acceso a {herramienta} y al canal {canal} (línea WhatsApp/API/plataforma de email).",
+          "io_type": "credentials_access",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Secuencia automatizada activa",
+          "description": "Secuencia de {etapa} programada y automatizada en {herramienta} por {canal} para {proyecto}.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La secuencia queda programada con disparadores y tiempos correctos en {herramienta}.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Se validó el envío con una prueba antes de activar.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A9.6",
+      "sop": "S9.3",
+      "verb": "Coordinar/Seguir",
+      "name": "Gestionar ciclo de grupos/comunidades de lanzamiento",
+      "slots": [
+        "canal",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Plan de grupos por etapa",
+          "description": "Nombres/estados de grupos por etapa y calendario de rotación/cierre para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Grupos operados (creación→moderación→cierre)",
+          "description": "Grupos/comunidades de {canal} creados, moderados y cerrados según etapa para {proyecto}.",
+          "io_type": "message_or_communication",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Grupos creados y nombrados según la etapa vigente.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Moderación y preguntas atendidas durante la ventana activa.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Grupos cerrados/destruidos al finalizar la etapa.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A9.7",
+      "sop": "S9.3",
+      "verb": "Gestionar acceso",
+      "name": "Configurar canal/infraestructura de mensajería",
+      "slots": [
+        "canal",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Requerimiento de canal",
+          "description": "Canal {canal} a habilitar (línea/API/plataforma) y necesidades de plantillas para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Canal de mensajería operativo",
+          "description": "Línea/API/plataforma de {canal} configurada, autenticada y con plantillas listas para {proyecto}.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El canal {canal} queda autenticado y probado (línea/API/plataforma).",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Plantillas base cargadas y aprobadas si el canal las requiere.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A10.1",
+      "sop": "S10.1",
+      "verb": "Coordinar/Seguir",
+      "name": "Aterrizar acta → tareas en plataforma",
+      "slots": [
+        "reunion"
+      ]
+    },
+    {
+      "id": "A10.2",
+      "sop": "S10.1",
+      "verb": "Coordinar/Seguir",
+      "name": "Seguimiento/chase de entregable",
+      "slots": [
+        "responsable",
+        "entregable"
+      ],
+      "inputs": [
+        {
+          "title": "Referencia del entregable pendiente",
+          "description": "Referencia al {entregable} pendiente a cargo de {responsable} en {proyecto}, con fecha comprometida.",
+          "io_type": "message_or_communication",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Entregable recibido o desbloqueado",
+          "description": "Confirmación de que {entregable} fue recibido/desbloqueado por {responsable} tras el seguimiento en {proyecto}.",
+          "io_type": "task_approval",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El {entregable} fue recibido o se desbloqueó explícitamente su avance.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Existe registro del seguimiento realizado a {responsable}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Confirmación de {responsable} registrada.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A10.3",
+      "sop": "S10.1",
+      "verb": "Medir/Analizar",
+      "name": "Entregar reportes semanales de reuniones",
+      "slots": [
+        "responsable"
+      ]
+    },
+    {
+      "id": "A10.4",
+      "sop": "S10.2",
+      "verb": "Gestionar acceso",
+      "name": "Organizar/separar espacios de gestión",
+      "slots": [
+        "espacios"
+      ]
+    },
+    {
+      "id": "A10.5",
+      "sop": "S10.1",
+      "verb": "Coordinar/Seguir",
+      "name": "Coordinar/agendar reunión (agenda, asistentes, grabación)",
+      "slots": [
+        "tema",
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Objetivo/temas de la reunión",
+          "description": "Tema {tema}, agenda y asistentes requeridos para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Reunión agendada/realizada",
+          "description": "Reunión de {tema} agendada con asistentes y, si aplica, grabación/acta para {proyecto}.",
+          "io_type": "schedule_event",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La reunión quedó agendada con asistentes y fecha/hora confirmadas.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            },
+            {
+              "criterion": "Si aplica, quedó disponible la grabación/acta.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A11.1",
+      "sop": "S11.1",
+      "verb": "Producir/Crear",
+      "name": "Desarrollar feature de Paralelo (vistas por estado/miembro/cliente, taskboards, uploads de Drive)",
+      "slots": [
+        "feature"
+      ],
+      "inputs": [
+        {
+          "title": "Especificación del feature",
+          "description": "Definición funcional de {feature} para Paralelo: comportamiento esperado, vistas/estados involucrados y criterios de uso para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Requerimientos o casos de uso del equipo",
+          "description": "Necesidades y flujos reportados por el equipo que justifican {feature} (vistas por estado/miembro/cliente, taskboards, uploads de Drive).",
+          "io_type": "documentation",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Feature de Paralelo desplegado",
+          "description": "{feature} implementado y desplegado en Paralelo, funcionando en el entorno de uso del equipo.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El feature cumple la especificación funcional acordada (comportamiento y vistas esperadas).",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El feature está desplegado y accesible sin errores en el entorno de uso.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación del equipo tras validar el feature en uso real.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A11.2",
+      "sop": "S11.2",
+      "verb": "Integrar",
+      "name": "Integrar sistema externo con Paralelo (Stripe/Biturbo/Cloud/Notion/Drive)",
+      "slots": [
+        "sistema"
+      ],
+      "inputs": [
+        {
+          "title": "Credenciales/acceso al sistema externo",
+          "description": "Accesos, API keys o tokens necesarios para conectar {sistema} con Paralelo.",
+          "io_type": "credentials_access",
+          "is_required": true
+        },
+        {
+          "title": "Especificación de la integración",
+          "description": "Datos a sincronizar y flujo esperado entre {sistema} y Paralelo (eventos, campos, dirección) para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Integración {sistema}↔Paralelo funcionando",
+          "description": "Conexión operativa entre {sistema} y Paralelo, sincronizando los datos definidos.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La integración sincroniza correctamente los datos definidos en la especificación.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La conexión se autentica y opera sin errores en un flujo de prueba end-to-end.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Validación del equipo confirmando que la integración funciona en uso real.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A11.3",
+      "sop": "S11.2",
+      "verb": "Configurar",
+      "name": "Implementar tracking de origen de ventas (VSL/orgánico/CTR)",
+      "slots": [
+        "canal"
+      ],
+      "inputs": [
+        {
+          "title": "Definición de eventos y parámetros a rastrear",
+          "description": "Qué señales de origen de {canal} se deben capturar (VSL/orgánico/CTR): eventos, parámetros UTM y puntos de conversión para {proyecto}.",
+          "io_type": "strategy_document",
+          "is_required": true
+        },
+        {
+          "title": "Acceso a plataformas de tracking",
+          "description": "Accesos a las herramientas de medición y analítica donde se implementa el tracking de {canal}.",
+          "io_type": "credentials_access",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Tracking de {canal} implementado",
+          "description": "Sistema de tracking de origen de ventas para {canal} configurado y registrando datos.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El tracking captura correctamente el origen {canal} en cada evento de conversión definido.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los datos registrados son consistentes y verificados contra una prueba de conversión real.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los parámetros y eventos cumplen la nomenclatura/formato acordado para reporte.",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A11.4",
+      "sop": "S11.3",
+      "verb": "Producir/Crear",
+      "name": "Construir herramienta de IA / knowledge (Ask the Graph / skills)",
+      "slots": [
+        "herramienta"
+      ]
+    },
+    {
+      "id": "A12.1",
+      "sop": "S12.1",
+      "verb": "Definir",
+      "name": "Definir cuotas y objetivos de ventas (semanales/mensuales)",
+      "slots": [
+        "periodo",
+        "equipo"
+      ]
+    },
+    {
+      "id": "A12.2",
+      "sop": "S12.1",
+      "verb": "Capacitar",
+      "name": "Alinear/capacitar a los closers (discurso, expectativas, desempeño)",
+      "slots": [
+        "tema"
+      ],
+      "inputs": [
+        {
+          "title": "Material de capacitación sobre {tema}",
+          "description": "Guion, playbook o presentación con el discurso, expectativas y estándares de desempeño sobre {tema} para los closers de {proyecto}.",
+          "io_type": "documentation",
+          "is_required": true
+        },
+        {
+          "title": "Sesión o agenda de capacitación",
+          "description": "Evento agendado con los closers para alinear/capacitar sobre {tema}.",
+          "io_type": "schedule_event",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Capacitación de closers sobre {tema}",
+          "description": "Closers alineados y capacitados sobre {tema}, con material de referencia entregado.",
+          "io_type": "documentation",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El material cubre discurso, expectativas y estándares de desempeño sobre {tema}.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La capacitación fue impartida a todos los closers asignados a {proyecto}.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        },
+        {
+          "title": "Confirmación de alineación de los closers",
+          "description": "Aprobación que confirma que los closers recibieron y comprendieron la capacitación sobre {tema}.",
+          "io_type": "task_approval",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Cada closer confirma haber recibido y comprendido la capacitación sobre {tema}.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A12.3",
+      "sop": "S12.2",
+      "verb": "Definir",
+      "name": "Diseñar protocolo de manejo de objeciones",
+      "slots": [
+        "objecion"
+      ]
+    },
+    {
+      "id": "A12.4",
+      "sop": "S12.2",
+      "verb": "Medir/Analizar",
+      "name": "Analizar/mejorar retención y ascensión entre niveles (Academy→Mastermind)",
+      "slots": [
+        "niveles"
+      ]
+    },
+    {
+      "id": "A12.5",
+      "sop": "S12.3",
+      "verb": "Medir/Analizar",
+      "name": "Modelar forecast de ingresos",
+      "slots": [
+        "periodo"
+      ],
+      "inputs": [
+        {
+          "title": "Datos históricos de ventas e ingresos",
+          "description": "Métricas de ventas, conversión y facturación de periodos previos que alimentan el forecast del {periodo} para {proyecto}.",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Supuestos y variables del modelo",
+          "description": "Supuestos de inversión, volumen de llamadas, tasas de cierre y estacionalidad para modelar el {periodo}.",
+          "io_type": "strategy_document",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Forecast de ingresos del {periodo}",
+          "description": "Modelo de proyección de ingresos para el {periodo} de {proyecto}, con escenarios y supuestos documentados.",
+          "io_type": "analytics_report",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "El forecast proyecta ingresos para el {periodo} con supuestos explícitos y trazables a los datos de entrada.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El modelo presenta al menos un escenario base y su sensibilidad a las variables clave.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los cálculos y cifras están libres de errores de fórmula y son reproducibles.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A12.6",
+      "sop": "S12.4",
+      "verb": "Gestionar acceso",
+      "name": "Proveer data de trading a closers",
+      "slots": [
+        "tipo_data"
+      ],
+      "inputs": [
+        {
+          "title": "Fuente de data de trading",
+          "description": "Origen de {tipo_data} (resultados/track record de trading, reportes o accesos) a entregar a los closers de {proyecto}.",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Solicitud o necesidad de los closers",
+          "description": "Qué {tipo_data} requieren los closers y para qué la usarán en el proceso de venta.",
+          "io_type": "message_or_communication",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Data de trading entregada a los closers",
+          "description": "{tipo_data} preparada y entregada (o accesos provistos) a los closers de {proyecto} para su uso en ventas.",
+          "io_type": "credentials_access",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La {tipo_data} entregada corresponde a lo solicitado y está actualizada.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Los closers confirman haber recibido el acceso/entrega de la {tipo_data}.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A12.7",
+      "sop": "S12.2",
+      "verb": "Configurar",
+      "name": "Implementar encuesta de satisfacción/seguimiento de clientes",
+      "slots": [
+        "audiencia",
+        "momento"
+      ],
+      "inputs": [
+        {
+          "title": "Segmento de clientes a encuestar",
+          "description": "Lista/segmento de clientes del programa ({audiencia}).",
+          "io_type": "contact_info",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Encuesta de satisfacción implementada",
+          "description": "Encuesta creada y distribuida a {audiencia} en {momento}, recolectando respuestas.",
+          "io_type": "system_configuration",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La encuesta cubre satisfacción, avance en el proceso y necesidades del cliente.",
+              "criterion_category": "completeness",
+              "verification_method": "llm"
+            },
+            {
+              "criterion": "La encuesta fue distribuida a {audiencia} y está recolectando respuestas.",
+              "criterion_category": "completeness",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

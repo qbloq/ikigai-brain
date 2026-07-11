@@ -1,0 +1,9 @@
+{
+  "id": "tareas-por-estado",
+  "name": "Tareas por estado",
+  "component": "chart",
+  "source": "task_stats",
+  "params": { "by": "status", "kind": "donut" },
+  "scope": "org",
+  "created_at": "2026-07-08T18:08:00.000Z"
+}
