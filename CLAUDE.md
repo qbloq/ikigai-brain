@@ -186,12 +186,21 @@ git IS the telemetry; structure is observed, content never.
 |--------|-----------|
 | `scan.sh <fork-path> [--base origin/main] [--json]` | **Read-only** digest of one fork's deltas: `git diff origin/main...HEAD` classified by path (`viz/specs`→ui-spec · `catalog`→ontología · `*/migrations`→esquema · `copilot.json`→identidad · else→código), with slug/name/lineage for ui-specs. Feeds the Gobernanza session. |
 | `elevate_ui.sh <fork-path> <slug> [--to org\|roles/<rol>] [--dry-run] [--json]` **[WRITE to the central tree]** | The spec-pure lane: a fork's `viz/specs/local/<slug>.json` → central `org/` or `roles/<rol>/` (default: the fork's role), validated against the central genome (`validateSpec`), stamped `promoted_from: <employee>/local/<slug>@<fork-sha>` and committed with `Delta-Type`/`Delta-Scope`/`Promoted-From` trailers. Slug collision aborts. |
+| `crear_copiloto.sh <employee-slug> --member <id-prefix\|nombre> --role <rol-slug> [--forks-dir DIR] [--no-decisions] [--dry-run] [--json]` **[WRITE: nuevo fork + decisiones en la forja]** | Alta mecánica de UN copiloto (Fase B del skill): clone del cerebro → `data/forks/<empleado>` (`pull.rebase=true`), wipe de la `viz/specs/local/` heredada, `copilot.json` — un commit; luego registra las **decisiones de nacimiento** (dismiss de identidad+wipe en `decisiones.jsonl`, precedente del piloto) para que las altas no inunden la Cola. No toca forks existentes. |
 
-Pilot fork lives under `data/forks/` (git-ignored). Loop demonstrated
-end-to-end (2026-07-08): capture in the fork (auto-commit) → scan digest →
-elevate (commit f8b2843) → pull → shadow → unfork. New-fork setup must wipe
-the inherited `viz/specs/local/` (open decision: whether the central should
-commit its own local layer at all).
+**Skill — `crear-copiloto`** ([.claude/skills/crear-copiloto/](.claude/skills/crear-copiloto/SKILL.md)):
+el algoritmo completo destilado del piloto — Fase A (una vez por ROL: perfil
+desde ontología+tareas+reuniones → huella de datos → gaps de herramientas →
+sembrar `viz/specs/roles/<rol>/`; opcional al alta, la capa crece por
+gobernanza) + Fase B (`crear_copiloto.sh` por empleado) + verificación
+(scan/queue/orgs). Política Ikigai: los Closers NO reciben copiloto; Luis
+David es Director Comercial antes que Closer.
+
+Pilot fork lives at `data/forks/piloto` (git-ignored), kept as-is as the
+historical reference. Loop demonstrated end-to-end (2026-07-08): capture in
+the fork (auto-commit) → scan digest → elevate (commit f8b2843) → pull →
+shadow → unfork. Initial fleet created 2026-07-11: 19 copilotos (Ikigai
+roster sin Closers) via `crear_copiloto.sh`.
 
 ## Fleet domain — gobernanza de la torre ([bash/fleet/](bash/fleet/))
 
