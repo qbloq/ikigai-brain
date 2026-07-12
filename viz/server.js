@@ -22,7 +22,6 @@ const path = require("node:path");
 const store = require("./lib/store");
 const { shell, listPanel } = require("./lib/html");
 const { renderPane, getComponent, overridableFor, dispatch, validateSpec, escape } = require("./lib/components");
-const { fetchSource } = require("./lib/datasources");
 const { makeRunner } = require("./lib/actions");
 const { startSSE, patchElements } = require("./lib/sse");
 
@@ -156,25 +155,6 @@ const server = http.createServer(async (req, res) => {
     if (pathname.startsWith("/u/") && req.method === "GET") {
       const id = pathname.slice(3);
       const ui = withParamOverrides(store.get(id), url.searchParams);
-      return send(res, ui ? 200 : 404, standalone(ui));
-    }
-
-    // --- render en sombra (gobernanza, T3) ---
-    // GET /shadow/:key — the /u/:id twin for a FORK's ui-spec delta: the spec
-    // comes from bash/fleet/delta_show.sh (never installed in any layer) and
-    // renders full-page, isolated (the delta-detail panel iframes this).
-    // renderPane applies the same gates as any saved spec (validateSpec,
-    // unknown component → degrade card). Read-only by construction.
-    if (pathname.startsWith("/shadow/") && req.method === "GET") {
-      const key = decodeURIComponent(pathname.slice(8));
-      let ui = null;
-      try {
-        const { rows } = fetchSource("fleet_delta", { id: key });
-        const d = rows[0];
-        if (d && d.spec) ui = { ...d.spec, id: d.spec.id || d.slug, name: `[sombra] ${d.spec.name || d.slug}` };
-      } catch {
-        /* delta sin spec o clave inválida → 404 */
-      }
       return send(res, ui ? 200 : 404, standalone(ui));
     }
 

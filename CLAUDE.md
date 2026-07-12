@@ -1,3 +1,7 @@
+<!-- CLAUDE.md del CEREBRO DE IKIGAI (org) — fork del núcleo
+     (cerebro.json: org ikigai, vertical agencia). La gobernanza de la flota
+     vive en la plataforma (/projects/plataforma), no aquí. -->
+
 - The DB connection string is DATABASE_URL in .env
 - We only use the ´ikigaigm´ schema
 
@@ -186,56 +190,12 @@ git IS the telemetry; structure is observed, content never.
 |--------|-----------|
 | `scan.sh <fork-path> [--base origin/main] [--json]` | **Read-only** digest of one fork's deltas: `git diff origin/main...HEAD` classified by path (`viz/specs`→ui-spec · `catalog`→ontología · `*/migrations`→esquema · `copilot.json`→identidad · else→código), with slug/name/lineage for ui-specs. Feeds the Gobernanza session. |
 | `elevate_ui.sh <fork-path> <slug> [--to org\|roles/<rol>] [--dry-run] [--json]` **[WRITE to the central tree]** | The spec-pure lane: a fork's `viz/specs/local/<slug>.json` → central `org/` or `roles/<rol>/` (default: the fork's role), validated against the central genome (`validateSpec`), stamped `promoted_from: <employee>/local/<slug>@<fork-sha>` and committed with `Delta-Type`/`Delta-Scope`/`Promoted-From` trailers. Slug collision aborts. |
-| `crear_copiloto.sh <employee-slug> --member <id-prefix\|nombre> --role <rol-slug> [--forks-dir DIR] [--no-decisions] [--dry-run] [--json]` **[WRITE: nuevo fork + decisiones en la plataforma]** | Alta mecánica de UN copiloto (Fase B del skill): clone del cerebro → `data/forks/<empleado>` (`pull.rebase=true`), wipe de la `viz/specs/local/` heredada, `copilot.json` — un commit; luego registra las **decisiones de nacimiento** (dismiss de identidad+wipe en `decisiones.jsonl`, precedente del piloto) para que las altas no inunden la Cola. No toca forks existentes. |
-
-**Skill — `crear-copiloto`** ([.claude/skills/crear-copiloto/](.claude/skills/crear-copiloto/SKILL.md)):
-el algoritmo completo destilado del piloto — Fase A (una vez por ROL: perfil
-desde ontología+tareas+reuniones → huella de datos → gaps de herramientas →
-sembrar `viz/specs/roles/<rol>/`; opcional al alta, la capa crece por
-gobernanza) + Fase B (`crear_copiloto.sh` por empleado) + verificación
-(scan/queue/orgs). Política Ikigai: los Closers NO reciben copiloto; Luis
-David es Director Comercial antes que Closer.
 
 Pilot fork lives at `data/forks/piloto` (git-ignored), kept as-is as the
 historical reference. Loop demonstrated end-to-end (2026-07-08): capture in
 the fork (auto-commit) → scan digest → elevate (commit f8b2843) → pull →
 shadow → unfork. Initial fleet created 2026-07-11: 19 copilotos (Ikigai
 roster sin Closers) via `crear_copiloto.sh`.
-
-## Fleet domain — gobernanza de la torre ([bash/fleet/](bash/fleet/))
-
-La Revisión de deltas de [docs/torre-de-control.md](docs/torre-de-control.md)
-(T2): **cola = derivado − decidido**. Lo pendiente se deriva en vivo (scan
-sobre `data/forks/`); las decisiones son eventos append-only en
-[plataforma/gobernanza/decisiones.jsonl](plataforma/gobernanza/README.md), commiteados
-por `review.sh`. Una decisión oculta un delta solo si es más nueva que el
-último commit que tocó ese path — si el copiloto re-edita, el delta
-reaparece solo. No toca Postgres (todo es git + archivos).
-
-| Script | Use it to… |
-|--------|-----------|
-| `queue.sh [--all] [--clase C] [--json]` | La cola pendiente (una fila por delta, clave `org/empleado/(capa/slug\|path)`). `--all` incluye lo ya decidido. Fuente viz `fleet_queue`. |
-| `review.sh <key\|slug> --dismiss\|--changes\|--elevate [--to DEST] --reason "…" [--by N] [--dry-run] [--json]` **[WRITE al repo]** | Registra UNA decisión (append + commit). `--elevate` (solo ui-spec) delega en `bash/deltas/elevate_ui.sh` y registra el commit resultante. |
-| `delta_show.sh <key\|slug>` | Digest de UN delta como objeto JSON: fila + `spec` cruda (ui-spec, para el render en sombra) o `diff` (resto) + `history` de decisiones. Fuente viz `fleet_delta`. Siempre JSON. |
-| `orgs.sh [--pull] [--json]` | La Flota (T4): una fila por org del registro `plataforma/clientes/*.json`, cruzada con telemetría (head, pulso, pushes 7d, espejo OK/FALLÓ), forks (copilotos) y cola (Δpend). `--pull` refresca la telemetría antes (offline-first por defecto). Fuente viz `fleet_orgs`. |
-| `org_show.sh <org>` | Ficha de UNA org (objeto JSON): identidad + espejo + copilotos (con deltas en cola y última actividad) + últimos 10 pushes + últimas 5 decisiones. Fuente viz `fleet_org_detail`. Siempre JSON. |
-| `stats.sh [--by semana\|clase\|accion] [--json]` | Salud/adopción (T5): pulso semanal (pushes + archivos-delta), volumen por clase, decisiones por acción. La fuente que acumula datos para la métrica norte de «cliente sano». Fuente viz `fleet_stats`. |
-
-La telemetría del servidor git es un repo (`telemetria.git`, T1): clon local
-en `data/telemetria/` (git-ignored) — `git -C data/telemetria pull` la
-actualiza. Alimentará `fleet_stats` (T5).
-
-**Viz (T3–T5):** cuatro UIs sembradas en org — «Revisión de deltas»,
-«Flota» (master `orgs-table` + detail `org-detail`, view-only), «Pulso de
-deltas (semanal)» (chart line sobre `fleet_stats by=semana`, `y=archivos`) y
-«Decisiones de gobernanza» (donut `by=accion`). La Cola (seed org, patrón `master-detail`:
-master `queue-table` sobre `fleet_queue`; detail `delta-detail` sobre
-`fleet_delta`). Un delta ui-spec se aprueba VIENDO su **render en sombra**
-(`GET /shadow/:key` — el gemelo de `/u/:id` para specs de fork, iframe
-aislado, jamás instalada); código/esquema muestran diffstat y solo admiten
-descartar/pedir cambios. Los tres botones son el primer write-path de la
-torre: `@post /c/delta-detail/act/review` → `review.sh` (declarado en
-`manifest.writes`).
 
 ## Snapshot exports ([scripts/](scripts/))
 
@@ -313,9 +273,7 @@ npm run viz                 # http://localhost:4317   (PORT=… overrides)
   unknown component degrades to a "requiere actualizar el núcleo" card) ·
   `POST /ui/:id/archive|unarchive` (soft-hide/restore a UI in the left panel's
   collapsible «Archivadas» section — stamps `archived_at` on the spec, never
-  deletes the file) · `GET /shadow/:key` (render en sombra: la spec de un
-  delta de fork — vía `fleet_delta` — renderizada full-page sin instalarla;
-  la iframea el panel de la Revisión de deltas) · `GET /health`.
+  deletes the file) · `GET /health`.
 - **Datastar 1.0 — colon syntax** (NOT v0.x dashes): `data-on:click`,
   `data-on:submit__prevent`, `data-bind="signal"`, `@get`/`@post`. SSE event is
   `datastar-patch-elements` (see [viz/lib/sse.js](viz/lib/sse.js)). **Validate
