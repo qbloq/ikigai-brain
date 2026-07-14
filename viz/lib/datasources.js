@@ -250,6 +250,38 @@ const SOURCES = {
       limit: "--limit",
     },
   },
+  // --- Google Drive / Docs / Sheets (bash/google/ — read-only) --------------
+  // Auth is DB-borne (OAuth token in ikigaigm.identities, file-cached ~1h by
+  // the lib), so calls after the first are sub-second. No cache here: Drive
+  // content is live work product (docs being edited right now).
+  drive_files: {
+    label: "Drive · archivos",
+    script: "bash/google/drive_ls.sh",
+    emits: "rows",
+    args: { folder: "--folder", q: "--q", type: "--type", limit: "--limit" },
+  },
+  drive_file: {
+    label: "Drive · metadata de archivo",
+    script: "bash/google/drive_file.sh",
+    emits: "object",
+    args: { id: { positional: true } },
+  },
+  // One Google Doc distilled to markdown: {id, markdown} (Drive export).
+  gdoc: {
+    label: "Google Doc (markdown)",
+    script: "bash/google/doc_read.sh",
+    emits: "object",
+    args: { id: { positional: true } },
+  },
+  // One Sheet tab's values as rows (header row = keys). While the Sheets API
+  // stays disabled in the OAuth project the script falls back to Drive CSV
+  // export (first tab only — tab/range ignored there).
+  gsheet: {
+    label: "Google Sheet (valores)",
+    script: "bash/google/sheet_read.sh",
+    emits: "rows",
+    args: { id: { positional: true }, tab: "--tab", range: "--range", limit: "--limit" },
+  },
   // --- Local SQLite databases (data/sqlite/ — the user's OWN dbs) -----------
   // Same contract as every source (a bash script with --json), but against
   // local files instead of the remote Postgres: ~ms per call, so no cache —
