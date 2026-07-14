@@ -29,12 +29,12 @@ servers:
     description: meetico — task domain (all `/tasks/**` operations, tag = meetico)
     variables:
       meeticoBase:
-        default: https://localhost:5000
+        default: https://ikigaigm.meetico.parallelo.ai
   - url: "{marketicoBase}/api/project-settings"
     description: marketico — Notion integration (all `/notion/**` operations, tag = marketico)
     variables:
       marketicoBase:
-        default: https://localhost:8000
+        default: https://ikigaigm.api.parallelo.ai
 
 security:
   - bearerAuth: []

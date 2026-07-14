@@ -1,0 +1,173 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Marketico API — Users",
+        "description": "API Documentation for Marketico Backend",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:3001",
+            "description": "Local development server"
+        }
+    ],
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ],
+    "paths": {
+        "/api/gh/users": {
+            "get": {
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "locationId",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/api/contacts/users": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/api/users/": {
+            "get": {
+                "description": "",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "post": {
+                "description": "",
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "example": "any"
+                                    },
+                                    "lastname": {
+                                        "example": "any"
+                                    },
+                                    "email": {
+                                        "example": "any"
+                                    },
+                                    "phone": {
+                                        "example": "any"
+                                    },
+                                    "password": {
+                                        "example": "any"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}": {
+            "patch": {
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "example": "any"
+                                    },
+                                    "lastname": {
+                                        "example": "any"
+                                    },
+                                    "email": {
+                                        "example": "any"
+                                    },
+                                    "phone": {
+                                        "example": "any"
+                                    },
+                                    "disabled": {
+                                        "example": "any"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}
