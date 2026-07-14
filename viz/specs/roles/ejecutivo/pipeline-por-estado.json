@@ -1,0 +1,10 @@
+{
+  "id": "pipeline-por-estado",
+  "name": "Pipeline CRM · por estado",
+  "component": "chart",
+  "source": "crm_pipeline",
+  "params": { "kind": "donut", "by": "status", "x": "status", "y": "opps" },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-07-14T00:00:00.000Z"
+}

@@ -134,6 +134,8 @@ has junk magnitudes (~663M COP for 4 purchases in June) — treat COP ROAS as
 unreliable until the pixel currency is fixed; cash truth lives in
 `installments`/`economics_ledger`.
 
+Viz sources: `ad_campaigns`, `ad_stats`, `ad_detail` (object).
+
 ## CRM domain — GHL pipeline ([bash/crm/](bash/crm/))
 
 Opportunities/pipelines synced from GHL: `crm_opportunities` (~2.1k) against
@@ -146,6 +148,12 @@ value IS real. Closer resolves via `o.user_id`→users→persons.
 | Script | Use it to… |
 |--------|-----------|
 | `pipeline.sh [--by stage\|status\|month\|closer] [--list] [--project N] [--status S] [--stage FRAG] [--from D] [--to D] [--limit N]` | Default `--by stage`: the pipeline board in order with open/won/lost/abandoned counts + won value per stage. `--by month` = cohorts (created, won, win %, won value). `--by closer` = per-closer effectiveness by opp (complements `call_stats.sh`, which is per-call). `--list` = raw opportunity rows (lead, stage, status, value, assigned). |
+
+Viz source: `crm_pipeline`. The **Ejecutivo role layer**
+([viz/specs/roles/ejecutivo/](viz/specs/roles/ejecutivo/), 9 UIs) covers all
+three domains: portafolio, pauta (campañas + line chart de gasto diario),
+cobranza (vencidas + aging), comisiones (cola de aprobación), cashflow y
+pipeline CRM (tablero + donut por estado).
 
 ## Notion domain — read-only extraction ([bash/notion/](bash/notion/))
 
@@ -210,6 +218,8 @@ mirror `bash/metrics/dashboard.sh` (the verified cash-collected KPI model).
 
 Data caveats: ~46 unpaid installments hang off plans with NULL `project_id`
 (show as project `—` — hygiene queue); ledger history starts 2026-03.
+
+Viz sources: `portfolio`, `cobranza`, `comisiones`, `cashflow`.
 
 ## Catalog domain — process ontology ([catalog/](catalog/), [bash/catalog/](bash/catalog/))
 
@@ -331,7 +341,9 @@ npm run viz                 # http://localhost:4317   (PORT=… overrides)
   `sops`, `task_detail` (one task OBJECT), `io_catalog` (`{io_types[],
   artifact_types[]}` for the IO editor), `io_query` (the rows of one IO's
   persisted SQL binding, via `run_io_query.sh` — never SQL from the client; the
-  query's provenance is the DB row) and the local-SQLite trio
+  query's provenance is the DB row), the Ejecutivo set — `ad_campaigns`/
+  `ad_stats`/`ad_detail` (object), `portfolio`, `cobranza`, `comisiones`,
+  `cashflow`, `crm_pipeline` — and the local-SQLite trio
   `localdbs`/`localdb_table`/`localdb_query` (inventory / one table / a
   spec-persisted query over `data/sqlite/` — see the Localdb domain).
   **Never** add SQL here. The one write

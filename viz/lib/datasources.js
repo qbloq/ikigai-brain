@@ -162,6 +162,94 @@ const SOURCES = {
     emits: "rows",
     args: { project: "--project", closer: "--closer", status: "--status", from: "--from", to: "--to", limit: "--limit" },
   },
+  // --- Ejecutivo domains (bash/ads, bash/finance, bash/crm) ------------------
+  // Meta campaigns with project/currency and window performance. Money columns
+  // are in the account's currency (`cur`) — the table shows it, never sum across.
+  ad_campaigns: {
+    label: "Pauta · campañas",
+    script: "bash/ads/campaigns.sh",
+    emits: "rows",
+    args: {
+      status: "--status",
+      active: { flag: "--active", bool: true },
+      project: "--project",
+      account: "--account",
+      from: "--from",
+      to: "--to",
+      with_spend: { flag: "--with-spend", bool: true },
+      limit: "--limit",
+    },
+  },
+  // Aggregated ads performance (spend/CTR/CPC/CPM/purchases/ROAS/CPA), grouped
+  // per currency. `by: day|week` keeps chronological order (line-chart safe).
+  ad_stats: {
+    label: "Pauta · desempeño",
+    script: "bash/ads/ad_stats.sh",
+    emits: "rows",
+    args: { by: "--by", project: "--project", account: "--account", campaign: "--campaign", from: "--from", to: "--to", limit: "--limit" },
+  },
+  // One campaign end-to-end: {campaign, totals, adsets[], ads[], daily[]} —
+  // the future detail block of the «Pauta» master-detail. `id` is positional.
+  ad_detail: {
+    label: "Detalle de campaña",
+    script: "bash/ads/ad_detail.sh",
+    emits: "object",
+    args: { id: { positional: true }, from: "--from", to: "--to", days: "--days" },
+  },
+  // The owner's portfolio: dashboard.sh KPIs for ALL projects + TOTAL row
+  // (cash-collected model, USD; COP ad spend reported apart). Live — no cache.
+  portfolio: {
+    label: "Portafolio (todos los proyectos)",
+    script: "bash/finance/portfolio.sh",
+    emits: "rows",
+    args: { from: "--from", to: "--to" },
+  },
+  // Uncollected installments with aging buckets; `summary` = buckets/project.
+  cobranza: {
+    label: "Cobranza (cuotas)",
+    script: "bash/finance/cobranza.sh",
+    emits: "rows",
+    args: {
+      overdue: { flag: "--overdue", bool: true },
+      upcoming: "--upcoming",
+      project: "--project",
+      customer: "--customer",
+      all: { flag: "--all", bool: true },
+      summary: { flag: "--summary", bool: true },
+      limit: "--limit",
+    },
+  },
+  // Commission payouts with review state — the approval queue (pending first).
+  comisiones: {
+    label: "Comisiones (payouts)",
+    script: "bash/finance/comisiones.sh",
+    emits: "rows",
+    args: { status: "--status", person: "--person", project: "--project", from: "--from", to: "--to", by: "--by", limit: "--limit" },
+  },
+  // Economics ledger: entradas vs opex/comisiones/reparto + neto per month.
+  cashflow: {
+    label: "Cashflow (ledger)",
+    script: "bash/finance/cashflow.sh",
+    emits: "rows",
+    args: { by: "--by", project: "--project", from: "--from", to: "--to" },
+  },
+  // GHL opportunities: the pipeline board per stage (default), by status/month/
+  // closer, or the raw list. Open opps carry value ≈ 0 — counts, not forecast.
+  crm_pipeline: {
+    label: "Pipeline CRM",
+    script: "bash/crm/pipeline.sh",
+    emits: "rows",
+    args: {
+      by: "--by",
+      list: { flag: "--list", bool: true },
+      project: "--project",
+      status: "--status",
+      stage: "--stage",
+      from: "--from",
+      to: "--to",
+      limit: "--limit",
+    },
+  },
   // --- Local SQLite databases (data/sqlite/ — the user's OWN dbs) -----------
   // Same contract as every source (a bash script with --json), but against
   // local files instead of the remote Postgres: ~ms per call, so no cache —

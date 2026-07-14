@@ -1,0 +1,10 @@
+{
+  "id": "cobranza-aging",
+  "name": "Cobranza · aging por proyecto",
+  "component": "table",
+  "source": "cobranza",
+  "params": { "summary": "1" },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-07-14T00:00:00.000Z"
+}

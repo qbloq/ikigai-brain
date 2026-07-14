@@ -1,0 +1,10 @@
+{
+  "id": "pipeline-crm",
+  "name": "Pipeline CRM · tablero por stage",
+  "component": "table",
+  "source": "crm_pipeline",
+  "params": {},
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-07-14T00:00:00.000Z"
+}
