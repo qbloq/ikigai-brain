@@ -106,6 +106,68 @@ es opcional: es el alivio que exige la paleta) y el overlay de carga estándar.
 Ejemplo de spec: `{ component: "chart", source: "task_stats",
 params: { by: "status", kind: "donut" } }`.
 
+## Componentes actuales
+
+Páginas, por `ui.component`:
+
+- **`table`** — tabla genérica con columnas inferidas de las filas.
+- **`dashboard`** — tarjetas KPI (fuentes objeto como `dashboard`/`portfolio`).
+- **`chart`** — barras/dona sobre cualquier fuente tabular (ver arriba).
+  `kind`/`by` son params sobreescribibles, así los selectores re-consultan como
+  cualquier barra de filtros. UIs sembradas: «Tareas por estado» (dona) y
+  «Tareas por proyecto» (barras), ambas sobre `task_stats`.
+- **`sop-tree`** — árbol plegable macro→SOP→arquetipo sobre la fuente `sops`;
+  fetch único (fuente cacheada) y filtrado en el navegador.
+- **`localdb`** — explorador de SQLite local: izquierda, cada db con tablas +
+  counts; derecha, preview ≤200 filas. La selección viaja como `?db=&table=`,
+  así toda vista es URL-direccionable (`/u/<id>?db=…`).
+- **`notion-tasks`** — tabla read-only filtrable de las tareas BD Avances de un
+  proyecto Notion (fetch único — fuente cacheada — filtrado en el navegador).
+- **`tasks`** — lista de tareas con barra de filtros (status/priority/project/
+  assignee/ventana due/open) que re-consulta vía `@get` con query params;
+  reemplaza las viejas UIs "abiertas"/"vencidas" (vencidas = `due=overdue` +
+  `open`). Los headers Título/Vence ordenan la lista (clic alterna asc/desc);
+  `sort`/`dir` son params de presentación — se aplican en JS sobre las filas ya
+  traídas, nunca llegan al shell.
+- **`meetings`** — master-detail sobre team meetings: master `meetings-table`
+  (filtros proyecto/estado/solo-con-reporte), detail `meeting-detail`
+  (resumen/objetivos/decisiones/blockers, view-only, fuente `meeting_detail`).
+- **`task-editor`** — el gemelo **editable** de `tasks` (sembrado como la UI
+  "Editor de IO"); ver abajo.
+
+`tasks` y `task-editor` son instancias delgadas de
+[`patterns/master-detail.js`](patterns/master-detail.js): mismo master
+`tasks-table`, distinto bloque detail. En `tasks`, el clic en una fila pega por
+SSE el panel `#task-detail` (header + chip **Origen** de proveniencia + IO +
+criterios de aceptación, view-only) desde la fuente `task_detail`; `GET /task/`
+(id vacío) lo cierra. El objeto `task_detail` trae un campo `source`
+(`{type,url,external_id,meeting_id,meeting_name}`) → el chip enlaza a Notion (↗)
+o nombra la reunión de origen.
+
+## Editor de IO — el único camino de escritura
+
+En `task-editor`, el clic en una fila abre (`GET /task/:id/edit`) un formulario
+editable del contrato IO — renombrar, retipar `io_type`/`artifact_type`, toggle
+required, agregar/quitar inputs/outputs — construido de `task_detail` +
+`io_catalog`. Cada control persiste al instante vía un `@post`
+(`POST /task/:tid/io/add` · `…/io/:ioId/field/:field?value=` ·
+`…/io/:ioId/delete`) → `update_task_io.sh` (una transacción) → re-render SSE del
+formulario. Sin SQL en el viz: las escrituras pasan por el script bash
+whitelisted, misma política que las lecturas.
+
+**Bindings SQL Results:** una fila IO cuyo artefacto es `sql_query` cambia el
+input genérico "pegar enlace" por un textarea monospace plegable — la instancia
+del artefacto ES una query, guardada en el jsonb del binding como
+`{query, params}`; el chip se titula con la primera línea `--` de la query (ver
+[`lib/artifacts.js`](lib/artifacts.js)). «Guardar SQL» la envía como payload del
+`@post` (→ `POST …/io/:ioId/sql` → `update_task_io.sh --ref-merge`). Dos
+superficies de resultados comparten la fuente `io_query`: **Probar**
+(`GET …/io/:ioId/sqlrun`) pega un preview compacto (20 filas + hint de
+truncado) en la fila, y **Abrir como UI** (`POST …/io/:ioId/sqlui`) materializa
+el binding como una UI `table` guardada (idempotente por fila IO) — todo
+artefacto SQL es una UI latente. Ambas ejecutan solo la query **persistida**,
+nunca el contenido del textarea.
+
 ## Extender
 
 - **Nueva fuente de datos**: agrega una entrada a `SOURCES` en `datasources.js`

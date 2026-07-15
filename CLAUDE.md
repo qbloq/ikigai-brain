@@ -53,6 +53,18 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
   each request to a single `update_task_io.sh` call (the CLI twin of the viz
   "Editor de IO"). Criteria editing is out of scope (no write script yet).
 
+### Tasks data model (schema `ikigaigm`)
+
+- **tasks** — core. `status` enum (`pending`,`in_progress`,`completed`,`blocked`,`cancelled`), `priority` enum (`Low`,`Medium`,`High`), `due_date`, `assignee` is `uuid[]`, `project_id`, `column_id`, `is_completed`.
+- **task provenance** (migration 002): `source_type` (`meeting`|`notion`|`manual`|`other`), `source_meeting_id` (FK→meetings), `source_url` (external URL, e.g. Notion page — preferred), `source_external_id` (external stable id, e.g. Notion page id — for dedup/sync). Populated by `create_task.sh` (structured twin of the human provenance comment). Schema: [catalog/migrations/002_task_provenance.sql](catalog/migrations/002_task_provenance.sql).
+- **assignee resolution**: `tasks.assignee[]` → `team_members.id` → `users.user_id` → `persons` (name); role via `team_roles`, team via `teams`. (Note: assignee UUIDs are team_members.id, **not** users.id.)
+- **task_inputs** / **task_outputs** — requirements and deliverables; typed by `io_types` / `artifact_types`.
+- **task_acceptance_criteria** — verification criteria per *output* (`verification_method`: `manual`/`attested`/auto). Linked by `output_id` → `task_outputs.id`.
+- **task_attestations** — human (WhatsApp) confirmation of a criterion.
+- **task_todos** / **task_comments** — checklist and comments per task.
+- **task_columns** — kanban columns.
+- **projects**: Andrea Torres, David Guerrero, Floppy, Ikigai.
+
 ## Meetings domain ([bash/meetings/](bash/meetings/))
 
 Scoped to **team meetings** (`meetings.meeting_type='team'`) — the coordination
@@ -342,187 +354,36 @@ Regenerate the `backups/` snapshots from the live DB (read-only, open tasks).
 
 When the user asks to **"crear una UI"** (a table/dashboard/visualization), this
 is the system to use — **do not** hand-write a one-off HTML file. A "UI" is a
-persisted *spec* (`{id, name, component, source, params}`), not frozen markup, so
-it always re-renders from live data. Node stdlib, **zero npm deps**;
-TailwindCSS (Play CDN) + **Datastar 1.0** over **SSE**. See [viz/README.md](viz/README.md).
-Datastar is **vendored** at `viz/public/datastar.js` and served at `/datastar.js`
-(not the CDN — avoids CDN/CORS); `viz/public/` is the static-asset dir (also
-`chart.umd.js` — Chart.js v4 — and `charts-init.js`, whitelisted in
-`PUBLIC_FILES` in server.js).
+persisted *spec* (`{id, name, component, source, params}`), not frozen markup,
+so it always re-renders from live data. Node stdlib, **zero npm deps**;
+TailwindCSS (Play CDN) + **Datastar 1.0** (vendored) over **SSE**.
 
 ```bash
 npm run viz                 # http://localhost:4317   (PORT=… overrides)
+npm run viz:restart         # REQUIRED after editing viz/ (Node caches modules)
 ```
 
-- **Data only flows through `bash/ --json`** — same read-only policy as everything
-  else. The whitelist of allowed sources + their CLI flags lives in
-  [viz/lib/datasources.js](viz/lib/datasources.js) (`SOURCES`): `tasks`, `tasks_due`,
-  `projects`, `team`, `task_stats`, `meetings` (now also `from`/`to`/`has-report`),
-  `meeting_detail` (one report OBJECT, from `meeting_show.sh --json`), `dashboard`,
-  `sops`, `task_detail` (one task OBJECT), `io_catalog` (`{io_types[],
-  artifact_types[]}` for the IO editor), `io_query` (the rows of one IO's
-  persisted SQL binding, via `run_io_query.sh` — never SQL from the client; the
-  query's provenance is the DB row), the Ejecutivo set — `ad_campaigns`/
-  `ad_stats`/`ad_detail` (object), `portfolio`, `cobranza`, `comisiones`,
-  `cashflow`, `crm_pipeline` — and the local-SQLite trio
-  `localdbs`/`localdb_table`/`localdb_query` (inventory / one table / a
-  spec-persisted query over `data/sqlite/` — see the Localdb domain).
-  **Never** add SQL here. The one write
-  path (the IO editor) likewise shells out to a bash script, never inline SQL.
-- **Caching — the DB connection (~0.8s/query, remote) dominates render time.** A
-  source opts into a short in-memory TTL cache with `cache: <ms>` in its `SOURCES`
-  entry. Use it ONLY for reference/static data (`sops`, `projects`, `team` — 60s);
-  **never** for live operational views (`tasks`, `tasks_due`, `dashboard`), whose
-  value is freshness. The cache is per-process — `npm run viz:restart` clears it.
-  Components that filter in the browser (e.g. a dropdown) should fetch the data
-  **once unfiltered** and slice in JS, so every filter change is a cache hit, not a
-  re-query (see `sop-tree`).
-- **Restart after editing `viz/`** — Node caches required modules, so changes
-  (new source, component, cache TTL) need `npm run viz:restart` (or `viz:stop`).
-- **The spec store is LAYERED** ([viz/lib/store.js](viz/lib/store.js), deltas
-  paso 5): `viz/specs/org/` (the shared genome, in git — seeds live HERE, no
-  runtime seeding) → `viz/specs/roles/<rol>/` → `viz/specs/local/` (the
-  personal layer, the ONLY writable one). `list()` merges with shadowing by
-  stable slug id (local > role > org; the left panel marks a shadowing fork
-  with ⑂). Every write goes to `local/`: creating stamps `scope: personal` and
-  a slug id; archiving/editing an org/role spec FORKS it into local with
-  `derived_from: "<layer>/<slug>@<git-sha>"`. Each local write **auto-commits**
-  (`viz(ui): <verb> <slug>` + `Delta-Type: ui-spec` / `Delta-Scope: personal`
-  trailers) — git is the delta event log; `VIZ_AUTOCOMMIT=0` disables it.
-  Programmatically: `store.create({name, component, source, params})`. Legacy
-  `viz/store/` (git-ignored) is migrated once by
-  `viz/scripts/migrate-store-to-specs.js` (old ids preserved → `/u/<id>` URLs
-  keep working).
-- **Layout** is master-detail: left `#ui-list` (saved UIs + form), right `#pane`
-  (selected UI). Datastar swaps fragments via SSE — no full reloads.
-- **Routes**: `GET /` (shell, `?ui=<id>` opens one) · `GET /u/:id` (standalone page)
-  · `GET /ui/:id` (SSE patch `#pane`) · `GET /c/:component/frag/:name` &
-  `POST /c/:component/act/:name` (**generic component dispatch** — the
-  component's `frags`/`acts` maps own the handlers; handlers never touch
-  req/res: they get `ctx = {params, body, run, refreshUiList}` and return HTML
-  patches, the server wraps the SSE; server.js never grows a route per
-  component) · frozen legacy aliases onto that dispatch: `GET /task/:id` &
-  `GET /meeting/:id` (SSE detail panels), `GET /task/:id/edit` +
-  `POST /task/:tid/io/...` (the IO editor — see below) · `GET /datastar.js`
-  (vendored bundle) · `POST /ui` (gated by `validateSpec`: component/source
-  exist, `consumes` matches the source's `emits`, params whitelisted — also
-  swept over saved specs at boot (logs) and enforced at render, where an
-  unknown component degrades to a "requiere actualizar el núcleo" card) ·
-  `POST /ui/:id/archive|unarchive` (soft-hide/restore a UI in the left panel's
-  collapsible «Archivadas» section — stamps `archived_at` on the spec, never
-  deletes the file) · `GET /health`.
-- **Datastar 1.0 — colon syntax** (NOT v0.x dashes): `data-on:click`,
-  `data-on:submit__prevent`, `data-bind="signal"`, `@get`/`@post`. SSE event is
-  `datastar-patch-elements` (see [viz/lib/sse.js](viz/lib/sse.js)). **Validate
-  Datastar syntax against Context7** before changing attributes.
+- **Data only flows through `bash/ --json`** — same read-only policy as
+  everything else. The whitelist of sources + their CLI flags is `SOURCES` in
+  [viz/lib/datasources.js](viz/lib/datasources.js); each domain section above
+  names its viz sources. **Never** add SQL to the viz — the one write path (the
+  IO editor) also shells out to a whitelisted bash script.
+- **The spec store is LAYERED** ([viz/lib/store.js](viz/lib/store.js)):
+  `viz/specs/org/` (shared genome, in git — seeds live here) →
+  `roles/<rol>/` → `local/` (the ONLY writable layer). Editing/archiving an
+  org/role spec forks it into local with `derived_from` lineage; every local
+  write auto-commits (`Delta-Type`/`Delta-Scope` trailers) — git is the delta
+  event log. Programmatically: `store.create({name, component, source, params})`.
+- Render code is layered as the **composition tower**
+  ([docs/deltas-architecture.md](docs/deltas-architecture.md)): kernel
+  [viz/lib/kit.js](viz/lib/kit.js) → blocks → patterns (`master-detail`) →
+  pages (one per `ui.component`); a saved spec can also be v2 pattern-addressed.
+  Components: `table`, `dashboard`, `chart` (bar/donut), `sop-tree`, `localdb`,
+  `notion-tasks`, `tasks`, `meetings`, `task-editor` (the IO editor — the viz's
+  only write path).
 
-**Extending:** new data source → add an entry to `SOURCES` (script + allowed flags),
-it shows up in the form's `<select>` automatically. The render code is layered as
-the **composition tower** (see [docs/deltas-architecture.md](docs/deltas-architecture.md)):
-kernel [viz/lib/kit.js](viz/lib/kit.js) (stable primitives — growing it is a
-governance decision) → blocks [viz/blocks/](viz/blocks/) (fragments shared by 2+
-pages or SSE-addressable: tasks-table, meetings-table, task-detail,
-task-edit-form, meeting-detail, charts)
-→ patterns [viz/patterns/](viz/patterns/) (`master-detail`, generalized to
-slots: master = `{block, source, params?}` filled by a master-contract block
-[signals/regetQS/controls/prepare?/table/counter — its filters are FIXED per
-block], detail = `{block, frag?}` filled by a routed panel block whose
-manifest declares `{slot:'detail', frag, width, selSignal}`; the pattern owns
-all wiring — row-click → `/c/<detail>/frag/<frag>`, overlays, signals) → pages
-[viz/pages/](viz/pages/). A saved spec can also be **v2 — pattern-addressed**:
-`{spec_version: 2, pattern: "master-detail", master: {...}, detail: {...}}`
-with blocks resolved by id from the registry; `validateSpec` checks the
-pattern's slot contract (block exists, fills the right slot, consumes≅emits,
-frag exists) and a v2 spec renders byte-identical to its page-instance twin. New component = one `viz/pages/<name>.js` exporting
-`{id, render(ui), manifest}` — the manifest is the page's machine-checkable
-contract: `{consumes: 'rows'|'object'` (must match the source's `emits` in
-`SOURCES`), `overridable: [...]}` (exactly the query params the browser may
-override — per-page, replacing any global whitelist). A block that owns SSE
-fragments or write actions also registers: it exports `{id, frags, acts,
-manifest: {writes: [scripts]}}` and is routed automatically under `/c/:id/...`;
-`ctx.run()` throws on any script not declared in `writes` (the governance
-rail — what gets approved when a component is elevated). The registry in
-[viz/lib/components.js](viz/lib/components.js)
-scans both dirs at startup (restart to pick it up) into one flat namespace
-(collision = boot error); there is no central switch to edit. Current pages, keyed by `ui.component` (`table` with inferred columns, `dashboard` KPI cards,
-`sop-tree` — a collapsible macro→SOP→archetype tree over the `sops` source,
-`chart` — see below,
-`localdb` — the local-SQLite explorer (see the Localdb domain),
-`notion-tasks` — a read-only filterable table of one Notion project's BD
-Avances tasks (fetched once — the source is cached — filtered in the browser), and
-`tasks` — one task list with a filter bar (status/priority/project/assignee/due
-window/open) that re-fetches via `@get` with query params; replaces the old
-separate "abiertas"/"vencidas" UIs, since vencidas = `due=overdue` + `open`).
-The `chart` component renders any tabular source as an interactive **bar/donut**
-chart (line reserved for future time series): server block
-[viz/blocks/charts.js](viz/blocks/charts.js) shapes rows into a compact spec
-(picks columns, sorts by value, folds the donut tail into «Otros» at 6 segments)
-and emits `<div data-chart='{spec}'><canvas></div>`; client glue
-[viz/public/charts-init.js](viz/public/charts-init.js) instantiates the vendored
-Chart.js over those placeholders on load AND after every SSE patch (a
-MutationObserver survives idiomorph morphs) — the glue owns the house style
-(validated CVD-safe categorical palette in slot order, single-series bars in ONE
-color, thin marks, hairline grid). Every chart card ships a «ver tabla» toggle
-(the accessible twin — required, not optional) and the standard loading overlay.
-`kind`/`by` are overridable query params (whitelisted in `withParamOverrides`),
-so the selectors re-fetch like every other filter bar. Seeded UIs: «Tareas por
-estado» (donut) and «Tareas por proyecto» (bars), both over `task_stats`.
-The Título/Vence column headers sort the list (click toggles asc/desc); `sort`/`dir`
-are presentation-only params — applied in JS over the fetched rows, never passed
-to the shell (`buildArgs` ignores non-whitelisted params).
-The `tasks` pane is master-detail: clicking a row hits `GET /task/:id`, which
-SSE-patches a `#task-detail` side panel (header + **Origen** provenance chip +
-IO + acceptance criteria, view-only) from the `task_detail` source; `GET /task/`
-(empty id) closes it. The `task_detail` object carries a `source` field
-(`{type,url,external_id,meeting_id,meeting_name}`) → the chip links to Notion (↗)
-or names the meeting.
-The `meetings` component is a master-detail instance over team meetings
-(master block `meetings-table`: filter bar project/status/solo-con-reporte;
-detail block `meeting-detail`: report summary/objectives/decisions/blockers,
-view-only, from the `meeting_detail` source).
-The `task-editor` component is the **editable** twin of `tasks` (seeded as the
-"Editor de IO" UI): same master list, but clicking a row hits `GET /task/:id/edit`,
-which SSE-patches `#task-detail` with an editable IO-contract form (rename, retype
-`io_type`/`artifact_type`, toggle required, add/remove inputs/outputs) built from
-`task_detail` + `io_catalog`. Both `tasks` and `task-editor` are thin
-instances of [viz/patterns/master-detail.js](viz/patterns/master-detail.js)
-(same `tasks-table` master; different detail block); the read-only
-`renderTaskDetail` is unchanged. **This is the viz's only write path:**
-each control persists immediately via one `@post` (`POST /task/:tid/io/add` ·
-`.../io/:ioId/field/:field?value=` · `.../io/:ioId/delete`) → `update_task_io.sh`
-(one txn) → SSE re-render of the form. No SQL in the viz — writes go through the
-whitelisted bash script, same policy as reads. Bound controls (`data-bind`) must
-seed their signals via `data-signals` (current values) or Datastar blanks them.
-**SQL Results bindings:** an IO row whose artifact is `sql_query` swaps the
-generic "pegar enlace" input for a collapsible monospace textarea (the artifact's
-instance IS a query, stored in the row's binding jsonb as `{query, params}`; the
-chip titles itself from the query's first `--` comment line — see
-[viz/lib/artifacts.js](viz/lib/artifacts.js)). Its signal is **local**
-(`_`-prefixed → excluded by Datastar's default `filterSignals`) so large SQL
-never rides along on other requests; "Guardar SQL" ships it explicitly as the
-`@post` `payload` (→ `POST .../io/:ioId/sql` → `--ref-merge`). Two result
-surfaces share the `io_query` source: **Probar** (`GET .../io/:ioId/sqlrun`)
-patches a compact preview (first 20 rows + truncation hint) into the row, and
-**Abrir como UI** (`POST .../io/:ioId/sqlui`) materializes the binding as a
-saved generic-`table` UI (idempotent per IO row) — any SQL artifact is a latent
-UI. Both only ever execute the **persisted** query, never textarea content.
+**Operating rules** (Datastar colon syntax, caching policy, manifest contracts,
+required loaders, store details) live in [viz/CLAUDE.md](viz/CLAUDE.md) —
+auto-loaded when working under `viz/`. Architecture narrative + component
+catalog: [viz/README.md](viz/README.md).
 
-**Loaders:** master-detail components (`tasks`, `meetings`) show *transparent
-overlays* (`bg-white/50` + a spinner, with a `.2s` opacity transition) while data
-loads — one over the table, driven by `data-indicator:<signal>` on the filter
-controls (the `@get` re-fetch), and one over the `#detail-wrap` panel, driven by
-`data-indicator:loading` on the row click (the `GET /<thing>/:id` SSE patch).
-`selectCtl(...)` takes an `indicator` arg (default `loadingtasks`) for the table
-signal. Any new UI with a re-fetch or an SSE detail panel must include both.
-
-## Tasks data model (schema `ikigaigm`)
-
-- **tasks** — core. `status` enum (`pending`,`in_progress`,`completed`,`blocked`,`cancelled`), `priority` enum (`Low`,`Medium`,`High`), `due_date`, `assignee` is `uuid[]`, `project_id`, `column_id`, `is_completed`.
-- **task provenance** (migration 002): `source_type` (`meeting`|`notion`|`manual`|`other`), `source_meeting_id` (FK→meetings), `source_url` (external URL, e.g. Notion page — preferred), `source_external_id` (external stable id, e.g. Notion page id — for dedup/sync). Populated by `create_task.sh` (structured twin of the human provenance comment). Schema: [catalog/migrations/002_task_provenance.sql](catalog/migrations/002_task_provenance.sql).
-- **assignee resolution**: `tasks.assignee[]` → `team_members.id` → `users.user_id` → `persons` (name); role via `team_roles`, team via `teams`. (Note: assignee UUIDs are team_members.id, **not** users.id.)
-- **task_inputs** / **task_outputs** — requirements and deliverables; typed by `io_types` / `artifact_types`.
-- **task_acceptance_criteria** — verification criteria per *output* (`verification_method`: `manual`/`attested`/auto). Linked by `output_id` → `task_outputs.id`.
-- **task_attestations** — human (WhatsApp) confirmation of a criterion.
-- **task_todos** / **task_comments** — checklist and comments per task.
-- **task_columns** — kanban columns.
-- **projects**: Andrea Torres, David Guerrero, Floppy, Ikigai.
