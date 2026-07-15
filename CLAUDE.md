@@ -344,11 +344,18 @@ created and governed from the PLATAFORMA (`crear-copiloto`, `bash/fleet/`, torre
 all extracted out of this repo in F0); each fork's own CLAUDE.md/copilot.json
 belongs to that copilot — never edit them from the brain.
 
-## Snapshot exports ([scripts/](scripts/))
+## Snapshot exports + elevación ([scripts/](scripts/))
 
 Regenerate the `backups/` snapshots from the live DB (read-only, open tasks).
 `npm run export` runs all three; or `export:json` / `export:by-role` /
 `export:by-due-date` individually. See [scripts/README.md](scripts/README.md).
+
+`elevate_núcleo.sh <path>... [-m T] [--commit SHA] [--yes]` **[WRITE al
+producto]** — el carril manual de elevación org→núcleo (nivel 0→1): eleva el
+delta committeado de este cerebro a `núcleo.git` con guarda de
+des-clientización, ensayo 3-way sobre la punta real y trailers de provenance
+(`Promoted-From: ikigai@<sha>`). Preview por defecto; solo `--yes`
+pushea. Detalle en [scripts/README.md](scripts/README.md).
 
 ## On-demand UIs — viz server ([viz/](viz/))
 
