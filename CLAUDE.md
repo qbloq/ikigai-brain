@@ -2,6 +2,8 @@
      (cerebro.json: org ikigai, vertical agencia). La gobernanza de la flota
      vive en la plataforma (/projects/plataforma), no aquí. -->
 
+@identidad.md
+
 - The DB connection string is DATABASE_URL in .env
 - We only use the ´ikigaigm´ schema
 - Git lineage: `upstream` = the genome (`núcleo.git`) — integrate its updates with **merge**, never rebase (this brain is the long-lived fork); `origin` = plataforma git server (`ikigai`); `github` = mirror (mirror/ikigai-brain)
@@ -325,9 +327,13 @@ travels as `?db=&table=`, so any view is URL-addressable (`/u/<id>?db=…`).
 The Fase-1 MVP of [docs/deltas-architecture.md](docs/deltas-architecture.md).
 Each employee's copilot is a git FORK of this repo (configured with
 `pull.rebase=true`, so its deltas always sit on top of the genome) whose
-identity is a `copilot.json` at the root (`{employee, team_member_id, role}`):
-the viz store then loads ONLY that role's spec layer and stamps `owner`/`role`
-on everything created. The brain (no copilot.json) sees org + all roles.
+identity is a `copilot.json` at the root (`{employee, team_member_id, role}`)
+plus its agent-readable twin `identidad.md` (written at birth from the plataforma's
+`plantillas/identidad-copiloto/`; it imports `docs/roles/<rol>.md`). The
+CLAUDE.md stays byte-identical across brain and forks — it composes identity
+via `@identidad.md`, never by assembling a per-fork copy. The viz store loads
+ONLY that role's spec layer and stamps `owner`/`role` on everything created.
+The brain (no copilot.json) sees org + all roles.
 Everything a copilot writes lands in `viz/specs/local/` and auto-commits —
 git IS the telemetry; structure is observed, content never.
 
