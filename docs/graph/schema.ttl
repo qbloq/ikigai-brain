@@ -1,0 +1,1157 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix ent:  <https://ikigai.parallelo.ai/ontology/entity#> .
+@prefix rel:  <https://ikigai.parallelo.ai/ontology/relation#> .
+@prefix dom:  <https://ikigai.parallelo.ai/ontology/domain#> .
+
+### Domains (grouping concepts)
+dom:tasks a owl:Class ; rdfs:label "Tareas"@es .
+dom:meetings a owl:Class ; rdfs:label "Reuniones"@es .
+dom:crm a owl:Class ; rdfs:label "CRM / Ventas"@es .
+dom:ads a owl:Class ; rdfs:label "Pauta (Meta)"@es .
+dom:finance a owl:Class ; rdfs:label "Finanzas"@es .
+dom:catalog a owl:Class ; rdfs:label "Ontología de procesos"@es .
+dom:people a owl:Class ; rdfs:label "Personas / Equipo"@es .
+dom:projects a owl:Class ; rdfs:label "Proyectos / Config"@es .
+dom:okr a owl:Class ; rdfs:label "OKR / KPI"@es .
+dom:runtime a owl:Class ; rdfs:label "Runtime agéntico / LLM"@es .
+dom:content a owl:Class ; rdfs:label "Contenido (Notion/Drive)"@es .
+dom:whatsapp a owl:Class ; rdfs:label "WhatsApp"@es .
+dom:misc a owl:Class ; rdfs:label "Otros"@es .
+
+### Entities (tables/views as classes)
+ent:activity_archetypes a owl:Class ;
+    rdfs:label "activity_archetypes" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~76 filas, 15 columnas"@es .
+ent:ad_accounts a owl:Class ;
+    rdfs:label "ad_accounts" ;
+    rdfs:subClassOf dom:ads ;
+    rdfs:comment "table, ~22 filas, 8 columnas"@es .
+ent:ad_insights_daily a owl:Class ;
+    rdfs:label "ad_insights_daily" ;
+    rdfs:subClassOf dom:ads ;
+    rdfs:comment "table, ~5994 filas, 36 columnas"@es .
+ent:ad_sets a owl:Class ;
+    rdfs:label "ad_sets" ;
+    rdfs:subClassOf dom:ads ;
+    rdfs:comment "table, ~1375 filas, 17 columnas"@es .
+ent:ads a owl:Class ;
+    rdfs:label "ads" ;
+    rdfs:subClassOf dom:ads ;
+    rdfs:comment "table, ~3715 filas, 9 columnas"@es .
+ent:archetype_acceptance_criteria a owl:Class ;
+    rdfs:label "archetype_acceptance_criteria" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~169 filas, 7 columnas"@es .
+ent:archetype_inputs a owl:Class ;
+    rdfs:label "archetype_inputs" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~101 filas, 8 columnas"@es .
+ent:archetype_outputs a owl:Class ;
+    rdfs:label "archetype_outputs" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~62 filas, 8 columnas"@es .
+ent:archetype_params a owl:Class ;
+    rdfs:label "archetype_params" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~118 filas, 8 columnas"@es .
+ent:artifact_binding_backup_inputs a owl:Class ;
+    rdfs:label "artifact_binding_backup_inputs" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~1037 filas, 2 columnas"@es .
+ent:artifact_binding_backup_outputs a owl:Class ;
+    rdfs:label "artifact_binding_backup_outputs" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~803 filas, 2 columnas"@es .
+ent:artifact_types a owl:Class ;
+    rdfs:label "artifact_types" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~7 filas, 11 columnas"@es .
+ent:call_meeting_results a owl:Class ;
+    rdfs:label "call_meeting_results" ;
+    rdfs:subClassOf dom:meetings ;
+    rdfs:comment "table, ~0 filas, 5 columnas"@es .
+ent:campaign_insights_daily a owl:Class ;
+    rdfs:label "campaign_insights_daily" ;
+    rdfs:subClassOf dom:ads ;
+    rdfs:comment "table, ~1331 filas, 20 columnas"@es .
+ent:campaigns a owl:Class ;
+    rdfs:label "campaigns" ;
+    rdfs:subClassOf dom:ads ;
+    rdfs:comment "table, ~479 filas, 14 columnas"@es .
+ent:commission_payouts a owl:Class ;
+    rdfs:label "commission_payouts" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~219 filas, 26 columnas"@es .
+ent:commission_rules a owl:Class ;
+    rdfs:label "commission_rules" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~0 filas, 16 columnas"@es .
+ent:crm_calendars a owl:Class ;
+    rdfs:label "crm_calendars" ;
+    rdfs:subClassOf dom:crm ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:crm_contacts a owl:Class ;
+    rdfs:label "crm_contacts" ;
+    rdfs:subClassOf dom:crm ;
+    rdfs:comment "table, ~1980 filas, 13 columnas"@es .
+ent:crm_custom_fields a owl:Class ;
+    rdfs:label "crm_custom_fields" ;
+    rdfs:subClassOf dom:crm ;
+    rdfs:comment "table, ~110 filas, 17 columnas"@es .
+ent:crm_opportunities a owl:Class ;
+    rdfs:label "crm_opportunities" ;
+    rdfs:subClassOf dom:crm ;
+    rdfs:comment "table, ~2054 filas, 16 columnas"@es .
+ent:crm_pipelines a owl:Class ;
+    rdfs:label "crm_pipelines" ;
+    rdfs:subClassOf dom:crm ;
+    rdfs:comment "table, ~2 filas, 10 columnas"@es .
+ent:drive_index a owl:Class ;
+    rdfs:label "drive_index" ;
+    rdfs:subClassOf dom:content ;
+    rdfs:comment "table, ~15500 filas, 16 columnas"@es .
+ent:drive_index_type_stats a owl:Class ;
+    rdfs:label "drive_index_type_stats" ;
+    rdfs:subClassOf dom:content ;
+    rdfs:comment "view, ~0 filas, 3 columnas"@es .
+ent:economics_ledger a owl:Class ;
+    rdfs:label "economics_ledger" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~543 filas, 12 columnas"@es .
+ent:expense_categories a owl:Class ;
+    rdfs:label "expense_categories" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:expense_templates a owl:Class ;
+    rdfs:label "expense_templates" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~0 filas, 13 columnas"@es .
+ent:expenses a owl:Class ;
+    rdfs:label "expenses" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~24 filas, 15 columnas"@es .
+ent:funnel_goals a owl:Class ;
+    rdfs:label "funnel_goals" ;
+    rdfs:subClassOf dom:crm ;
+    rdfs:comment "table, ~0 filas, 7 columnas"@es .
+ent:graph_conversations a owl:Class ;
+    rdfs:label "graph_conversations" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~0 filas, 5 columnas"@es .
+ent:graph_messages a owl:Class ;
+    rdfs:label "graph_messages" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~0 filas, 9 columnas"@es .
+ent:identities a owl:Class ;
+    rdfs:label "identities" ;
+    rdfs:subClassOf dom:people ;
+    rdfs:comment "table, ~5 filas, 11 columnas"@es .
+ent:installments a owl:Class ;
+    rdfs:label "installments" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~1243 filas, 14 columnas"@es .
+ent:io_types a owl:Class ;
+    rdfs:label "io_types" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~0 filas, 9 columnas"@es .
+ent:key_results a owl:Class ;
+    rdfs:label "key_results" ;
+    rdfs:subClassOf dom:okr ;
+    rdfs:comment "table, ~0 filas, 15 columnas"@es .
+ent:kpi_snapshots a owl:Class ;
+    rdfs:label "kpi_snapshots" ;
+    rdfs:subClassOf dom:okr ;
+    rdfs:comment "table, ~0 filas, 7 columnas"@es .
+ent:kpis a owl:Class ;
+    rdfs:label "kpis" ;
+    rdfs:subClassOf dom:okr ;
+    rdfs:comment "table, ~0 filas, 17 columnas"@es .
+ent:llm_calls a owl:Class ;
+    rdfs:label "llm_calls" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~0 filas, 25 columnas"@es .
+ent:llmrouter_api_keys a owl:Class ;
+    rdfs:label "llmrouter_api_keys" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~0 filas, 14 columnas"@es .
+ent:macro_processes a owl:Class ;
+    rdfs:label "macro_processes" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~0 filas, 10 columnas"@es .
+ent:meeting_participants a owl:Class ;
+    rdfs:label "meeting_participants" ;
+    rdfs:subClassOf dom:meetings ;
+    rdfs:comment "table, ~863 filas, 11 columnas"@es .
+ent:meeting_reports a owl:Class ;
+    rdfs:label "meeting_reports" ;
+    rdfs:subClassOf dom:meetings ;
+    rdfs:comment "table, ~338 filas, 6 columnas"@es .
+ent:meeting_transcripts a owl:Class ;
+    rdfs:label "meeting_transcripts" ;
+    rdfs:subClassOf dom:meetings ;
+    rdfs:comment "table, ~333 filas, 5 columnas"@es .
+ent:meetings a owl:Class ;
+    rdfs:label "meetings" ;
+    rdfs:subClassOf dom:meetings ;
+    rdfs:comment "table, ~2137 filas, 20 columnas"@es .
+ent:meta_capi_events a owl:Class ;
+    rdfs:label "meta_capi_events" ;
+    rdfs:subClassOf dom:ads ;
+    rdfs:comment "table, ~175 filas, 9 columnas"@es .
+ent:notion_content_index a owl:Class ;
+    rdfs:label "notion_content_index" ;
+    rdfs:subClassOf dom:content ;
+    rdfs:comment "table, ~3105 filas, 14 columnas"@es .
+ent:objectives a owl:Class ;
+    rdfs:label "objectives" ;
+    rdfs:subClassOf dom:okr ;
+    rdfs:comment "table, ~0 filas, 12 columnas"@es .
+ent:okr_reviews a owl:Class ;
+    rdfs:label "okr_reviews" ;
+    rdfs:subClassOf dom:okr ;
+    rdfs:comment "table, ~0 filas, 11 columnas"@es .
+ent:output_channels a owl:Class ;
+    rdfs:label "output_channels" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~0 filas, 10 columnas"@es .
+ent:payment_plans a owl:Class ;
+    rdfs:label "payment_plans" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~297 filas, 16 columnas"@es .
+ent:payroll_actuals a owl:Class ;
+    rdfs:label "payroll_actuals" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~0 filas, 18 columnas"@es .
+ent:payroll_rules a owl:Class ;
+    rdfs:label "payroll_rules" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~7 filas, 15 columnas"@es .
+ent:persons a owl:Class ;
+    rdfs:label "persons" ;
+    rdfs:subClassOf dom:people ;
+    rdfs:comment "table, ~26 filas, 7 columnas"@es .
+ent:products a owl:Class ;
+    rdfs:label "products" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~9 filas, 14 columnas"@es .
+ent:project_ad_account_mappings a owl:Class ;
+    rdfs:label "project_ad_account_mappings" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 5 columnas"@es .
+ent:project_campaign_mappings a owl:Class ;
+    rdfs:label "project_campaign_mappings" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~12 filas, 6 columnas"@es .
+ent:project_crm_configs a owl:Class ;
+    rdfs:label "project_crm_configs" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 13 columnas"@es .
+ent:project_google_configs a owl:Class ;
+    rdfs:label "project_google_configs" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 20 columnas"@es .
+ent:project_meta_configs a owl:Class ;
+    rdfs:label "project_meta_configs" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 6 columnas"@es .
+ent:project_notion_configs a owl:Class ;
+    rdfs:label "project_notion_configs" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 22 columnas"@es .
+ent:project_panda_video_configs a owl:Class ;
+    rdfs:label "project_panda_video_configs" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:project_panda_video_selections a owl:Class ;
+    rdfs:label "project_panda_video_selections" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:project_teams a owl:Class ;
+    rdfs:label "project_teams" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 4 columnas"@es .
+ent:project_vturb_video_configs a owl:Class ;
+    rdfs:label "project_vturb_video_configs" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:project_vturb_video_selections a owl:Class ;
+    rdfs:label "project_vturb_video_selections" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:project_whatsapp_configs a owl:Class ;
+    rdfs:label "project_whatsapp_configs" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 23 columnas"@es .
+ent:projects a owl:Class ;
+    rdfs:label "projects" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:prompt_budgets a owl:Class ;
+    rdfs:label "prompt_budgets" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~0 filas, 12 columnas"@es .
+ent:prompt_sections a owl:Class ;
+    rdfs:label "prompt_sections" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~0 filas, 11 columnas"@es .
+ent:revenue_share_distributions a owl:Class ;
+    rdfs:label "revenue_share_distributions" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~0 filas, 9 columnas"@es .
+ent:revenue_share_payouts a owl:Class ;
+    rdfs:label "revenue_share_payouts" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~0 filas, 12 columnas"@es .
+ent:revenue_share_rules a owl:Class ;
+    rdfs:label "revenue_share_rules" ;
+    rdfs:subClassOf dom:finance ;
+    rdfs:comment "table, ~0 filas, 11 columnas"@es .
+ent:runner_runs a owl:Class ;
+    rdfs:label "runner_runs" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~4 filas, 9 columnas"@es .
+ent:runners a owl:Class ;
+    rdfs:label "runners" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~2 filas, 14 columnas"@es .
+ent:settings a owl:Class ;
+    rdfs:label "settings" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~0 filas, 4 columnas"@es .
+ent:skills a owl:Class ;
+    rdfs:label "skills" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~8 filas, 13 columnas"@es .
+ent:sops a owl:Class ;
+    rdfs:label "sops" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:spaces a owl:Class ;
+    rdfs:label "spaces" ;
+    rdfs:subClassOf dom:projects ;
+    rdfs:comment "table, ~1963 filas, 12 columnas"@es .
+ent:sql_conversations a owl:Class ;
+    rdfs:label "sql_conversations" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~42 filas, 5 columnas"@es .
+ent:sql_messages a owl:Class ;
+    rdfs:label "sql_messages" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~212 filas, 10 columnas"@es .
+ent:task_acceptance_criteria a owl:Class ;
+    rdfs:label "task_acceptance_criteria" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~944 filas, 21 columnas"@es .
+ent:task_attestations a owl:Class ;
+    rdfs:label "task_attestations" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~0 filas, 16 columnas"@es .
+ent:task_columns a owl:Class ;
+    rdfs:label "task_columns" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~0 filas, 6 columnas"@es .
+ent:task_comments a owl:Class ;
+    rdfs:label "task_comments" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~52 filas, 8 columnas"@es .
+ent:task_inputs a owl:Class ;
+    rdfs:label "task_inputs" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~534 filas, 15 columnas"@es .
+ent:task_outputs a owl:Class ;
+    rdfs:label "task_outputs" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~330 filas, 16 columnas"@es .
+ent:task_todos a owl:Class ;
+    rdfs:label "task_todos" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~0 filas, 7 columnas"@es .
+ent:tasks a owl:Class ;
+    rdfs:label "tasks" ;
+    rdfs:subClassOf dom:tasks ;
+    rdfs:comment "table, ~329 filas, 20 columnas"@es .
+ent:team_member_roles a owl:Class ;
+    rdfs:label "team_member_roles" ;
+    rdfs:subClassOf dom:people ;
+    rdfs:comment "table, ~0 filas, 4 columnas"@es .
+ent:team_members a owl:Class ;
+    rdfs:label "team_members" ;
+    rdfs:subClassOf dom:people ;
+    rdfs:comment "table, ~22 filas, 8 columnas"@es .
+ent:team_roles a owl:Class ;
+    rdfs:label "team_roles" ;
+    rdfs:subClassOf dom:people ;
+    rdfs:comment "table, ~19 filas, 6 columnas"@es .
+ent:teams a owl:Class ;
+    rdfs:label "teams" ;
+    rdfs:subClassOf dom:people ;
+    rdfs:comment "table, ~0 filas, 6 columnas"@es .
+ent:user_evolution_instances a owl:Class ;
+    rdfs:label "user_evolution_instances" ;
+    rdfs:subClassOf dom:whatsapp ;
+    rdfs:comment "table, ~0 filas, 6 columnas"@es .
+ent:users a owl:Class ;
+    rdfs:label "users" ;
+    rdfs:subClassOf dom:people ;
+    rdfs:comment "table, ~26 filas, 15 columnas"@es .
+ent:verification_templates a owl:Class ;
+    rdfs:label "verification_templates" ;
+    rdfs:subClassOf dom:catalog ;
+    rdfs:comment "table, ~0 filas, 8 columnas"@es .
+ent:whatsapp_messages a owl:Class ;
+    rdfs:label "whatsapp_messages" ;
+    rdfs:subClassOf dom:whatsapp ;
+    rdfs:comment "table, ~7858 filas, 14 columnas"@es .
+ent:worker_runs a owl:Class ;
+    rdfs:label "worker_runs" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~93 filas, 11 columnas"@es .
+ent:workers a owl:Class ;
+    rdfs:label "workers" ;
+    rdfs:subClassOf dom:runtime ;
+    rdfs:comment "table, ~5 filas, 9 columnas"@es .
+
+### Relations (FK = object properties; implicit flagged)
+rel:activity_archetypes__sop_code__sops a owl:ObjectProperty ;
+    rdfs:domain ent:activity_archetypes ;
+    rdfs:range  ent:sops ;
+    rdfs:label "sop_code→code" ;
+    rdfs:comment "foreign key"@es .
+rel:ad_sets__campaign_id__campaigns a owl:ObjectProperty ;
+    rdfs:domain ent:ad_sets ;
+    rdfs:range  ent:campaigns ;
+    rdfs:label "campaign_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:ad_sets__ad_account_id__ad_accounts a owl:ObjectProperty ;
+    rdfs:domain ent:ad_sets ;
+    rdfs:range  ent:ad_accounts ;
+    rdfs:label "ad_account_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:ads__ad_set_id__ad_sets a owl:ObjectProperty ;
+    rdfs:domain ent:ads ;
+    rdfs:range  ent:ad_sets ;
+    rdfs:label "ad_set_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:ads__ad_account_id__ad_accounts a owl:ObjectProperty ;
+    rdfs:domain ent:ads ;
+    rdfs:range  ent:ad_accounts ;
+    rdfs:label "ad_account_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:ads__campaign_id__campaigns a owl:ObjectProperty ;
+    rdfs:domain ent:ads ;
+    rdfs:range  ent:campaigns ;
+    rdfs:label "campaign_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:archetype_acceptance_criteria__output_id__archetype_outputs a owl:ObjectProperty ;
+    rdfs:domain ent:archetype_acceptance_criteria ;
+    rdfs:range  ent:archetype_outputs ;
+    rdfs:label "output_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:archetype_inputs__io_type_id__io_types a owl:ObjectProperty ;
+    rdfs:domain ent:archetype_inputs ;
+    rdfs:range  ent:io_types ;
+    rdfs:label "io_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:archetype_inputs__artifact_type_id__artifact_types a owl:ObjectProperty ;
+    rdfs:domain ent:archetype_inputs ;
+    rdfs:range  ent:artifact_types ;
+    rdfs:label "artifact_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:archetype_inputs__archetype_id__activity_archetypes a owl:ObjectProperty ;
+    rdfs:domain ent:archetype_inputs ;
+    rdfs:range  ent:activity_archetypes ;
+    rdfs:label "archetype_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:archetype_outputs__io_type_id__io_types a owl:ObjectProperty ;
+    rdfs:domain ent:archetype_outputs ;
+    rdfs:range  ent:io_types ;
+    rdfs:label "io_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:archetype_outputs__artifact_type_id__artifact_types a owl:ObjectProperty ;
+    rdfs:domain ent:archetype_outputs ;
+    rdfs:range  ent:artifact_types ;
+    rdfs:label "artifact_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:archetype_outputs__archetype_id__activity_archetypes a owl:ObjectProperty ;
+    rdfs:domain ent:archetype_outputs ;
+    rdfs:range  ent:activity_archetypes ;
+    rdfs:label "archetype_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:archetype_params__archetype_id__activity_archetypes a owl:ObjectProperty ;
+    rdfs:domain ent:archetype_params ;
+    rdfs:range  ent:activity_archetypes ;
+    rdfs:label "archetype_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:call_meeting_results__meeting_id__meetings a owl:ObjectProperty ;
+    rdfs:domain ent:call_meeting_results ;
+    rdfs:range  ent:meetings ;
+    rdfs:label "meeting_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:campaign_insights_daily__ad_account_id__ad_accounts a owl:ObjectProperty ;
+    rdfs:domain ent:campaign_insights_daily ;
+    rdfs:range  ent:ad_accounts ;
+    rdfs:label "ad_account_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:campaigns__ad_account_id__ad_accounts a owl:ObjectProperty ;
+    rdfs:domain ent:campaigns ;
+    rdfs:range  ent:ad_accounts ;
+    rdfs:label "ad_account_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_payouts__role_id__team_roles a owl:ObjectProperty ;
+    rdfs:domain ent:commission_payouts ;
+    rdfs:range  ent:team_roles ;
+    rdfs:label "role_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_payouts__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:commission_payouts ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_payouts__installment_id__installments a owl:ObjectProperty ;
+    rdfs:domain ent:commission_payouts ;
+    rdfs:range  ent:installments ;
+    rdfs:label "installment_id→installment_id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_payouts__plan_id__payment_plans a owl:ObjectProperty ;
+    rdfs:domain ent:commission_payouts ;
+    rdfs:range  ent:payment_plans ;
+    rdfs:label "plan_id→plan_id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_payouts__commission_rule_id__commission_rules a owl:ObjectProperty ;
+    rdfs:domain ent:commission_payouts ;
+    rdfs:range  ent:commission_rules ;
+    rdfs:label "commission_rule_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_payouts__reviewed_by__users a owl:ObjectProperty ;
+    rdfs:domain ent:commission_payouts ;
+    rdfs:range  ent:users ;
+    rdfs:label "reviewed_by→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_payouts__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:commission_payouts ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_rules__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:commission_rules ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_rules__product_id__products a owl:ObjectProperty ;
+    rdfs:domain ent:commission_rules ;
+    rdfs:range  ent:products ;
+    rdfs:label "product_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_rules__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:commission_rules ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:commission_rules__role_id__team_roles a owl:ObjectProperty ;
+    rdfs:domain ent:commission_rules ;
+    rdfs:range  ent:team_roles ;
+    rdfs:label "role_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_calendars__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:crm_calendars ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_contacts__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:crm_contacts ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_contacts__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:crm_contacts ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_custom_fields__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:crm_custom_fields ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_opportunities__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:crm_opportunities ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_opportunities__pipeline_id__crm_pipelines a owl:ObjectProperty ;
+    rdfs:domain ent:crm_opportunities ;
+    rdfs:range  ent:crm_pipelines ;
+    rdfs:label "pipeline_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_opportunities__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:crm_opportunities ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_opportunities__contact_id__crm_contacts a owl:ObjectProperty ;
+    rdfs:domain ent:crm_opportunities ;
+    rdfs:range  ent:crm_contacts ;
+    rdfs:label "contact_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:crm_pipelines__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:crm_pipelines ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:economics_ledger__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:economics_ledger ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:expense_categories__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:expense_categories ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:expense_templates__category_id__expense_categories a owl:ObjectProperty ;
+    rdfs:domain ent:expense_templates ;
+    rdfs:range  ent:expense_categories ;
+    rdfs:label "category_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:expense_templates__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:expense_templates ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:expenses__registered_by__users a owl:ObjectProperty ;
+    rdfs:domain ent:expenses ;
+    rdfs:range  ent:users ;
+    rdfs:label "registered_by→id" ;
+    rdfs:comment "foreign key"@es .
+rel:expenses__template_id__expense_templates a owl:ObjectProperty ;
+    rdfs:domain ent:expenses ;
+    rdfs:range  ent:expense_templates ;
+    rdfs:label "template_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:expenses__category_id__expense_categories a owl:ObjectProperty ;
+    rdfs:domain ent:expenses ;
+    rdfs:range  ent:expense_categories ;
+    rdfs:label "category_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:expenses__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:expenses ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:graph_messages__conversation_id__graph_conversations a owl:ObjectProperty ;
+    rdfs:domain ent:graph_messages ;
+    rdfs:range  ent:graph_conversations ;
+    rdfs:label "conversation_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:installments__plan_id__payment_plans a owl:ObjectProperty ;
+    rdfs:domain ent:installments ;
+    rdfs:range  ent:payment_plans ;
+    rdfs:label "plan_id→plan_id" ;
+    rdfs:comment "foreign key"@es .
+rel:io_types__default_artifact_type_id__artifact_types a owl:ObjectProperty ;
+    rdfs:domain ent:io_types ;
+    rdfs:range  ent:artifact_types ;
+    rdfs:label "default_artifact_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:key_results__kpi_id__kpis a owl:ObjectProperty ;
+    rdfs:domain ent:key_results ;
+    rdfs:range  ent:kpis ;
+    rdfs:label "kpi_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:key_results__objective_id__objectives a owl:ObjectProperty ;
+    rdfs:domain ent:key_results ;
+    rdfs:range  ent:objectives ;
+    rdfs:label "objective_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:kpi_snapshots__kpi_id__kpis a owl:ObjectProperty ;
+    rdfs:domain ent:kpi_snapshots ;
+    rdfs:range  ent:kpis ;
+    rdfs:label "kpi_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:kpis__created_by__users a owl:ObjectProperty ;
+    rdfs:domain ent:kpis ;
+    rdfs:range  ent:users ;
+    rdfs:label "created_by→id" ;
+    rdfs:comment "foreign key"@es .
+rel:kpis__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:kpis ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:meeting_participants__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:meeting_participants ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:meeting_participants__meeting_id__meetings a owl:ObjectProperty ;
+    rdfs:domain ent:meeting_participants ;
+    rdfs:range  ent:meetings ;
+    rdfs:label "meeting_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:meeting_reports__meeting_id__meetings a owl:ObjectProperty ;
+    rdfs:domain ent:meeting_reports ;
+    rdfs:range  ent:meetings ;
+    rdfs:label "meeting_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:meeting_transcripts__meeting_id__meetings a owl:ObjectProperty ;
+    rdfs:domain ent:meeting_transcripts ;
+    rdfs:range  ent:meetings ;
+    rdfs:label "meeting_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:meetings__space_id__spaces a owl:ObjectProperty ;
+    rdfs:domain ent:meetings ;
+    rdfs:range  ent:spaces ;
+    rdfs:label "space_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:meetings__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:meetings ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:meta_capi_events__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:meta_capi_events ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:meta_capi_events__installment_id__installments a owl:ObjectProperty ;
+    rdfs:domain ent:meta_capi_events ;
+    rdfs:range  ent:installments ;
+    rdfs:label "installment_id→installment_id" ;
+    rdfs:comment "foreign key"@es .
+rel:notion_content_index__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:notion_content_index ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:objectives__owner_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:objectives ;
+    rdfs:range  ent:users ;
+    rdfs:label "owner_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:objectives__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:objectives ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:okr_reviews__objective_id__objectives a owl:ObjectProperty ;
+    rdfs:domain ent:okr_reviews ;
+    rdfs:range  ent:objectives ;
+    rdfs:label "objective_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:output_channels__runner_id__runners a owl:ObjectProperty ;
+    rdfs:domain ent:output_channels ;
+    rdfs:range  ent:runners ;
+    rdfs:label "runner_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payment_plans__product_uuid__products a owl:ObjectProperty ;
+    rdfs:domain ent:payment_plans ;
+    rdfs:range  ent:products ;
+    rdfs:label "product_uuid→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payment_plans__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:payment_plans ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payment_plans__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:payment_plans ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payroll_actuals__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:payroll_actuals ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payroll_actuals__payroll_rule_id__payroll_rules a owl:ObjectProperty ;
+    rdfs:domain ent:payroll_actuals ;
+    rdfs:range  ent:payroll_rules ;
+    rdfs:label "payroll_rule_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payroll_actuals__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:payroll_actuals ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payroll_actuals__overridden_by__users a owl:ObjectProperty ;
+    rdfs:domain ent:payroll_actuals ;
+    rdfs:range  ent:users ;
+    rdfs:label "overridden_by→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payroll_rules__commission_rule_id__commission_rules a owl:ObjectProperty ;
+    rdfs:domain ent:payroll_rules ;
+    rdfs:range  ent:commission_rules ;
+    rdfs:label "commission_rule_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payroll_rules__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:payroll_rules ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payroll_rules__role_id__team_roles a owl:ObjectProperty ;
+    rdfs:domain ent:payroll_rules ;
+    rdfs:range  ent:team_roles ;
+    rdfs:label "role_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:payroll_rules__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:payroll_rules ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:products__default_commission_rule_id__commission_rules a owl:ObjectProperty ;
+    rdfs:domain ent:products ;
+    rdfs:range  ent:commission_rules ;
+    rdfs:label "default_commission_rule_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:products__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:products ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_ad_account_mappings__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_ad_account_mappings ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_campaign_mappings__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_campaign_mappings ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_crm_configs__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_crm_configs ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_google_configs__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_google_configs ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_meta_configs__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_meta_configs ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_notion_configs__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_notion_configs ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_panda_video_configs__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_panda_video_configs ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_panda_video_selections__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_panda_video_selections ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_teams__team_id__teams a owl:ObjectProperty ;
+    rdfs:domain ent:project_teams ;
+    rdfs:range  ent:teams ;
+    rdfs:label "team_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_teams__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_teams ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_vturb_video_configs__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_vturb_video_configs ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_vturb_video_selections__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_vturb_video_selections ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:project_whatsapp_configs__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:project_whatsapp_configs ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:prompt_sections__llm_call_id__llm_calls a owl:ObjectProperty ;
+    rdfs:domain ent:prompt_sections ;
+    rdfs:range  ent:llm_calls ;
+    rdfs:label "llm_call_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:revenue_share_distributions__triggered_by__users a owl:ObjectProperty ;
+    rdfs:domain ent:revenue_share_distributions ;
+    rdfs:range  ent:users ;
+    rdfs:label "triggered_by→id" ;
+    rdfs:comment "foreign key"@es .
+rel:revenue_share_distributions__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:revenue_share_distributions ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:revenue_share_payouts__distribution_id__revenue_share_distributions a owl:ObjectProperty ;
+    rdfs:domain ent:revenue_share_payouts ;
+    rdfs:range  ent:revenue_share_distributions ;
+    rdfs:label "distribution_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:revenue_share_payouts__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:revenue_share_payouts ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:revenue_share_payouts__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:revenue_share_payouts ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:revenue_share_rules__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:revenue_share_rules ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:revenue_share_rules__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:revenue_share_rules ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:runner_runs__worker_run_id__worker_runs a owl:ObjectProperty ;
+    rdfs:domain ent:runner_runs ;
+    rdfs:range  ent:worker_runs ;
+    rdfs:label "worker_run_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:runner_runs__runner_id__runners a owl:ObjectProperty ;
+    rdfs:domain ent:runner_runs ;
+    rdfs:range  ent:runners ;
+    rdfs:label "runner_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:runners__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:runners ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:runners__worker_id__workers a owl:ObjectProperty ;
+    rdfs:domain ent:runners ;
+    rdfs:range  ent:workers ;
+    rdfs:label "worker_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:runners__skill_id__skills a owl:ObjectProperty ;
+    rdfs:domain ent:runners ;
+    rdfs:range  ent:skills ;
+    rdfs:label "skill_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:skills__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:skills ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:sops__macro_process_code__macro_processes a owl:ObjectProperty ;
+    rdfs:domain ent:sops ;
+    rdfs:range  ent:macro_processes ;
+    rdfs:label "macro_process_code→code" ;
+    rdfs:comment "foreign key"@es .
+rel:spaces__id_id__identities a owl:ObjectProperty ;
+    rdfs:domain ent:spaces ;
+    rdfs:range  ent:identities ;
+    rdfs:label "id_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:spaces__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:spaces ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:sql_messages__conversation_id__sql_conversations a owl:ObjectProperty ;
+    rdfs:domain ent:sql_messages ;
+    rdfs:range  ent:sql_conversations ;
+    rdfs:label "conversation_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_acceptance_criteria__template_id__verification_templates a owl:ObjectProperty ;
+    rdfs:domain ent:task_acceptance_criteria ;
+    rdfs:range  ent:verification_templates ;
+    rdfs:label "template_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_acceptance_criteria__output_id__task_outputs a owl:ObjectProperty ;
+    rdfs:domain ent:task_acceptance_criteria ;
+    rdfs:range  ent:task_outputs ;
+    rdfs:label "output_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_attestations__criterion_id__task_acceptance_criteria a owl:ObjectProperty ;
+    rdfs:domain ent:task_attestations ;
+    rdfs:range  ent:task_acceptance_criteria ;
+    rdfs:label "criterion_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_attestations__responsible_team_member_id__team_members a owl:ObjectProperty ;
+    rdfs:domain ent:task_attestations ;
+    rdfs:range  ent:team_members ;
+    rdfs:label "responsible_team_member_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_comments__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:task_comments ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_comments__task_id__tasks a owl:ObjectProperty ;
+    rdfs:domain ent:task_comments ;
+    rdfs:range  ent:tasks ;
+    rdfs:label "task_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_inputs__io_type_id__io_types a owl:ObjectProperty ;
+    rdfs:domain ent:task_inputs ;
+    rdfs:range  ent:io_types ;
+    rdfs:label "io_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_inputs__artifact_type_id__artifact_types a owl:ObjectProperty ;
+    rdfs:domain ent:task_inputs ;
+    rdfs:range  ent:artifact_types ;
+    rdfs:label "artifact_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_inputs__satisfied_by__users a owl:ObjectProperty ;
+    rdfs:domain ent:task_inputs ;
+    rdfs:range  ent:users ;
+    rdfs:label "satisfied_by→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_inputs__task_id__tasks a owl:ObjectProperty ;
+    rdfs:domain ent:task_inputs ;
+    rdfs:range  ent:tasks ;
+    rdfs:label "task_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_outputs__artifact_type_id__artifact_types a owl:ObjectProperty ;
+    rdfs:domain ent:task_outputs ;
+    rdfs:range  ent:artifact_types ;
+    rdfs:label "artifact_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_outputs__io_type_id__io_types a owl:ObjectProperty ;
+    rdfs:domain ent:task_outputs ;
+    rdfs:range  ent:io_types ;
+    rdfs:label "io_type_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_outputs__delivered_by__users a owl:ObjectProperty ;
+    rdfs:domain ent:task_outputs ;
+    rdfs:range  ent:users ;
+    rdfs:label "delivered_by→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_outputs__task_id__tasks a owl:ObjectProperty ;
+    rdfs:domain ent:task_outputs ;
+    rdfs:range  ent:tasks ;
+    rdfs:label "task_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:task_todos__task_id__tasks a owl:ObjectProperty ;
+    rdfs:domain ent:task_todos ;
+    rdfs:range  ent:tasks ;
+    rdfs:label "task_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:tasks__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:tasks ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:tasks__column_id__task_columns a owl:ObjectProperty ;
+    rdfs:domain ent:tasks ;
+    rdfs:range  ent:task_columns ;
+    rdfs:label "column_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:tasks__source_meeting_id__meetings a owl:ObjectProperty ;
+    rdfs:domain ent:tasks ;
+    rdfs:range  ent:meetings ;
+    rdfs:label "source_meeting_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:tasks__archetype_id__activity_archetypes a owl:ObjectProperty ;
+    rdfs:domain ent:tasks ;
+    rdfs:range  ent:activity_archetypes ;
+    rdfs:label "archetype_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:tasks__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:tasks ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:team_member_roles__role_id__team_roles a owl:ObjectProperty ;
+    rdfs:domain ent:team_member_roles ;
+    rdfs:range  ent:team_roles ;
+    rdfs:label "role_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:team_member_roles__team_member_id__team_members a owl:ObjectProperty ;
+    rdfs:domain ent:team_member_roles ;
+    rdfs:range  ent:team_members ;
+    rdfs:label "team_member_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:team_members__team_id__teams a owl:ObjectProperty ;
+    rdfs:domain ent:team_members ;
+    rdfs:range  ent:teams ;
+    rdfs:label "team_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:team_members__role_id__team_roles a owl:ObjectProperty ;
+    rdfs:domain ent:team_members ;
+    rdfs:range  ent:team_roles ;
+    rdfs:label "role_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:team_members__user_id__users a owl:ObjectProperty ;
+    rdfs:domain ent:team_members ;
+    rdfs:range  ent:users ;
+    rdfs:label "user_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:team_roles__team_id__teams a owl:ObjectProperty ;
+    rdfs:domain ent:team_roles ;
+    rdfs:range  ent:teams ;
+    rdfs:label "team_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:user_evolution_instances__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:user_evolution_instances ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:users__person_id__persons a owl:ObjectProperty ;
+    rdfs:domain ent:users ;
+    rdfs:range  ent:persons ;
+    rdfs:label "person_id→person_id" ;
+    rdfs:comment "foreign key"@es .
+rel:whatsapp_messages__project_id__projects a owl:ObjectProperty ;
+    rdfs:domain ent:whatsapp_messages ;
+    rdfs:range  ent:projects ;
+    rdfs:label "project_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:worker_runs__skill_id__skills a owl:ObjectProperty ;
+    rdfs:domain ent:worker_runs ;
+    rdfs:range  ent:skills ;
+    rdfs:label "skill_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:worker_runs__worker_id__workers a owl:ObjectProperty ;
+    rdfs:domain ent:worker_runs ;
+    rdfs:range  ent:workers ;
+    rdfs:label "worker_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:workers__skill_id__skills a owl:ObjectProperty ;
+    rdfs:domain ent:workers ;
+    rdfs:range  ent:skills ;
+    rdfs:label "skill_id→id" ;
+    rdfs:comment "foreign key"@es .
+rel:tasks__assignee_arr__team_members a owl:ObjectProperty ;
+    rdfs:domain ent:tasks ;
+    rdfs:range  ent:team_members ;
+    rdfs:label "assignee[]→id" ;
+    rdfs:comment "IMPLÍCITA (no forzada por FK): assignee uuid[] resuelve a team_members (no hay FK sobre el array)"@es .
+rel:meetings__event_booking_contact_id__crm_contacts a owl:ObjectProperty ;
+    rdfs:domain ent:meetings ;
+    rdfs:range  ent:crm_contacts ;
+    rdfs:label "event.booking.contact_id→ghl_contact_id" ;
+    rdfs:comment "IMPLÍCITA (no forzada por FK): traza del closer: booking.contact_id ≈ crm_contacts.ghl_contact_id"@es .
+rel:project_ad_account_mappings__account_id__ad_accounts a owl:ObjectProperty ;
+    rdfs:domain ent:project_ad_account_mappings ;
+    rdfs:range  ent:ad_accounts ;
+    rdfs:label "account_id→(externo)" ;
+    rdfs:comment "IMPLÍCITA (no forzada por FK): mapea cuenta publicitaria→proyecto por id externo de Meta"@es .
+rel:project_campaign_mappings__campaign_id__campaigns a owl:ObjectProperty ;
+    rdfs:domain ent:project_campaign_mappings ;
+    rdfs:range  ent:campaigns ;
+    rdfs:label "campaign_id→(externo)" ;
+    rdfs:comment "IMPLÍCITA (no forzada por FK): mapea campaña→proyecto por id externo"@es .
+rel:users__crm_id__crm_opportunities a owl:ObjectProperty ;
+    rdfs:domain ent:users ;
+    rdfs:range  ent:crm_opportunities ;
+    rdfs:label "crm_id→user_id" ;
+    rdfs:comment "IMPLÍCITA (no forzada por FK): crm_id (integrations jsonb) es lo que la resolución del closer lee"@es .
+rel:meta_capi_events__(evento)__crm_contacts a owl:ObjectProperty ;
+    rdfs:domain ent:meta_capi_events ;
+    rdfs:range  ent:crm_contacts ;
+    rdfs:label "(evento)→ghl_contact_id" ;
+    rdfs:comment "IMPLÍCITA (no forzada por FK): eventos CAPI ligados al contacto/lead"@es .

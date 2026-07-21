@@ -1,0 +1,2249 @@
+{
+  "meta": {
+    "schema": "ikigaigm",
+    "generated_from": "pg_catalog + information_schema (FK) + CLAUDE.md (implicit)",
+    "n_nodes": 98,
+    "n_edges": 148,
+    "n_fk": 142,
+    "n_implicit": 6,
+    "domains": {
+      "tasks": "Tareas",
+      "meetings": "Reuniones",
+      "crm": "CRM / Ventas",
+      "ads": "Pauta (Meta)",
+      "finance": "Finanzas",
+      "catalog": "Ontología de procesos",
+      "people": "Personas / Equipo",
+      "projects": "Proyectos / Config",
+      "okr": "OKR / KPI",
+      "runtime": "Runtime agéntico / LLM",
+      "content": "Contenido (Notion/Drive)",
+      "whatsapp": "WhatsApp",
+      "misc": "Otros"
+    }
+  },
+  "nodes": [
+    {
+      "id": "activity_archetypes",
+      "kind": "table",
+      "rows": 76,
+      "cols": 15,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 5
+    },
+    {
+      "id": "ad_accounts",
+      "kind": "table",
+      "rows": 22,
+      "cols": 8,
+      "domain": "ads",
+      "domain_label": "Pauta (Meta)",
+      "degree": 5
+    },
+    {
+      "id": "ad_insights_daily",
+      "kind": "table",
+      "rows": 5994,
+      "cols": 36,
+      "domain": "ads",
+      "domain_label": "Pauta (Meta)",
+      "degree": 0
+    },
+    {
+      "id": "ad_sets",
+      "kind": "table",
+      "rows": 1375,
+      "cols": 17,
+      "domain": "ads",
+      "domain_label": "Pauta (Meta)",
+      "degree": 3
+    },
+    {
+      "id": "ads",
+      "kind": "table",
+      "rows": 3715,
+      "cols": 9,
+      "domain": "ads",
+      "domain_label": "Pauta (Meta)",
+      "degree": 3
+    },
+    {
+      "id": "archetype_acceptance_criteria",
+      "kind": "table",
+      "rows": 169,
+      "cols": 7,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 1
+    },
+    {
+      "id": "archetype_inputs",
+      "kind": "table",
+      "rows": 101,
+      "cols": 8,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 3
+    },
+    {
+      "id": "archetype_outputs",
+      "kind": "table",
+      "rows": 62,
+      "cols": 8,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 4
+    },
+    {
+      "id": "archetype_params",
+      "kind": "table",
+      "rows": 118,
+      "cols": 8,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 1
+    },
+    {
+      "id": "artifact_binding_backup_inputs",
+      "kind": "table",
+      "rows": 1037,
+      "cols": 2,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 0
+    },
+    {
+      "id": "artifact_binding_backup_outputs",
+      "kind": "table",
+      "rows": 803,
+      "cols": 2,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 0
+    },
+    {
+      "id": "artifact_types",
+      "kind": "table",
+      "rows": 7,
+      "cols": 11,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 5
+    },
+    {
+      "id": "call_meeting_results",
+      "kind": "table",
+      "rows": 0,
+      "cols": 5,
+      "domain": "meetings",
+      "domain_label": "Reuniones",
+      "degree": 1
+    },
+    {
+      "id": "campaign_insights_daily",
+      "kind": "table",
+      "rows": 1331,
+      "cols": 20,
+      "domain": "ads",
+      "domain_label": "Pauta (Meta)",
+      "degree": 1
+    },
+    {
+      "id": "campaigns",
+      "kind": "table",
+      "rows": 479,
+      "cols": 14,
+      "domain": "ads",
+      "domain_label": "Pauta (Meta)",
+      "degree": 4
+    },
+    {
+      "id": "commission_payouts",
+      "kind": "table",
+      "rows": 219,
+      "cols": 26,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 7
+    },
+    {
+      "id": "commission_rules",
+      "kind": "table",
+      "rows": 0,
+      "cols": 16,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 7
+    },
+    {
+      "id": "crm_calendars",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "crm",
+      "domain_label": "CRM / Ventas",
+      "degree": 1
+    },
+    {
+      "id": "crm_contacts",
+      "kind": "table",
+      "rows": 1980,
+      "cols": 13,
+      "domain": "crm",
+      "domain_label": "CRM / Ventas",
+      "degree": 5
+    },
+    {
+      "id": "crm_custom_fields",
+      "kind": "table",
+      "rows": 110,
+      "cols": 17,
+      "domain": "crm",
+      "domain_label": "CRM / Ventas",
+      "degree": 1
+    },
+    {
+      "id": "crm_opportunities",
+      "kind": "table",
+      "rows": 2054,
+      "cols": 16,
+      "domain": "crm",
+      "domain_label": "CRM / Ventas",
+      "degree": 5
+    },
+    {
+      "id": "crm_pipelines",
+      "kind": "table",
+      "rows": 2,
+      "cols": 10,
+      "domain": "crm",
+      "domain_label": "CRM / Ventas",
+      "degree": 2
+    },
+    {
+      "id": "drive_index",
+      "kind": "table",
+      "rows": 15500,
+      "cols": 16,
+      "domain": "content",
+      "domain_label": "Contenido (Notion/Drive)",
+      "degree": 0
+    },
+    {
+      "id": "drive_index_type_stats",
+      "kind": "view",
+      "rows": 0,
+      "cols": 3,
+      "domain": "content",
+      "domain_label": "Contenido (Notion/Drive)",
+      "degree": 0
+    },
+    {
+      "id": "economics_ledger",
+      "kind": "table",
+      "rows": 543,
+      "cols": 12,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 1
+    },
+    {
+      "id": "expense_categories",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 3
+    },
+    {
+      "id": "expense_templates",
+      "kind": "table",
+      "rows": 0,
+      "cols": 13,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 3
+    },
+    {
+      "id": "expenses",
+      "kind": "table",
+      "rows": 24,
+      "cols": 15,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 4
+    },
+    {
+      "id": "funnel_goals",
+      "kind": "table",
+      "rows": 0,
+      "cols": 7,
+      "domain": "crm",
+      "domain_label": "CRM / Ventas",
+      "degree": 0
+    },
+    {
+      "id": "graph_conversations",
+      "kind": "table",
+      "rows": 0,
+      "cols": 5,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 1
+    },
+    {
+      "id": "graph_messages",
+      "kind": "table",
+      "rows": 0,
+      "cols": 9,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 1
+    },
+    {
+      "id": "identities",
+      "kind": "table",
+      "rows": 5,
+      "cols": 11,
+      "domain": "people",
+      "domain_label": "Personas / Equipo",
+      "degree": 1
+    },
+    {
+      "id": "installments",
+      "kind": "table",
+      "rows": 1243,
+      "cols": 14,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 3
+    },
+    {
+      "id": "io_types",
+      "kind": "table",
+      "rows": 0,
+      "cols": 9,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 5
+    },
+    {
+      "id": "key_results",
+      "kind": "table",
+      "rows": 0,
+      "cols": 15,
+      "domain": "okr",
+      "domain_label": "OKR / KPI",
+      "degree": 2
+    },
+    {
+      "id": "kpi_snapshots",
+      "kind": "table",
+      "rows": 0,
+      "cols": 7,
+      "domain": "okr",
+      "domain_label": "OKR / KPI",
+      "degree": 1
+    },
+    {
+      "id": "kpis",
+      "kind": "table",
+      "rows": 0,
+      "cols": 17,
+      "domain": "okr",
+      "domain_label": "OKR / KPI",
+      "degree": 4
+    },
+    {
+      "id": "llm_calls",
+      "kind": "table",
+      "rows": 0,
+      "cols": 25,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 1
+    },
+    {
+      "id": "llmrouter_api_keys",
+      "kind": "table",
+      "rows": 0,
+      "cols": 14,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 0
+    },
+    {
+      "id": "macro_processes",
+      "kind": "table",
+      "rows": 0,
+      "cols": 10,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 1
+    },
+    {
+      "id": "meeting_participants",
+      "kind": "table",
+      "rows": 863,
+      "cols": 11,
+      "domain": "meetings",
+      "domain_label": "Reuniones",
+      "degree": 2
+    },
+    {
+      "id": "meeting_reports",
+      "kind": "table",
+      "rows": 338,
+      "cols": 6,
+      "domain": "meetings",
+      "domain_label": "Reuniones",
+      "degree": 1
+    },
+    {
+      "id": "meeting_transcripts",
+      "kind": "table",
+      "rows": 333,
+      "cols": 5,
+      "domain": "meetings",
+      "domain_label": "Reuniones",
+      "degree": 1
+    },
+    {
+      "id": "meetings",
+      "kind": "table",
+      "rows": 2137,
+      "cols": 20,
+      "domain": "meetings",
+      "domain_label": "Reuniones",
+      "degree": 8
+    },
+    {
+      "id": "meta_capi_events",
+      "kind": "table",
+      "rows": 175,
+      "cols": 9,
+      "domain": "ads",
+      "domain_label": "Pauta (Meta)",
+      "degree": 3
+    },
+    {
+      "id": "notion_content_index",
+      "kind": "table",
+      "rows": 3105,
+      "cols": 14,
+      "domain": "content",
+      "domain_label": "Contenido (Notion/Drive)",
+      "degree": 1
+    },
+    {
+      "id": "objectives",
+      "kind": "table",
+      "rows": 0,
+      "cols": 12,
+      "domain": "okr",
+      "domain_label": "OKR / KPI",
+      "degree": 4
+    },
+    {
+      "id": "okr_reviews",
+      "kind": "table",
+      "rows": 0,
+      "cols": 11,
+      "domain": "okr",
+      "domain_label": "OKR / KPI",
+      "degree": 1
+    },
+    {
+      "id": "output_channels",
+      "kind": "table",
+      "rows": 0,
+      "cols": 10,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 1
+    },
+    {
+      "id": "payment_plans",
+      "kind": "table",
+      "rows": 297,
+      "cols": 16,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 5
+    },
+    {
+      "id": "payroll_actuals",
+      "kind": "table",
+      "rows": 0,
+      "cols": 18,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 4
+    },
+    {
+      "id": "payroll_rules",
+      "kind": "table",
+      "rows": 7,
+      "cols": 15,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 5
+    },
+    {
+      "id": "persons",
+      "kind": "table",
+      "rows": 26,
+      "cols": 7,
+      "domain": "people",
+      "domain_label": "Personas / Equipo",
+      "degree": 1
+    },
+    {
+      "id": "products",
+      "kind": "table",
+      "rows": 9,
+      "cols": 14,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 4
+    },
+    {
+      "id": "project_ad_account_mappings",
+      "kind": "table",
+      "rows": 0,
+      "cols": 5,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 2
+    },
+    {
+      "id": "project_campaign_mappings",
+      "kind": "table",
+      "rows": 12,
+      "cols": 6,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 2
+    },
+    {
+      "id": "project_crm_configs",
+      "kind": "table",
+      "rows": 0,
+      "cols": 13,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "project_google_configs",
+      "kind": "table",
+      "rows": 0,
+      "cols": 20,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "project_meta_configs",
+      "kind": "table",
+      "rows": 0,
+      "cols": 6,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "project_notion_configs",
+      "kind": "table",
+      "rows": 0,
+      "cols": 22,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "project_panda_video_configs",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "project_panda_video_selections",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "project_teams",
+      "kind": "table",
+      "rows": 0,
+      "cols": 4,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 2
+    },
+    {
+      "id": "project_vturb_video_configs",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "project_vturb_video_selections",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "project_whatsapp_configs",
+      "kind": "table",
+      "rows": 0,
+      "cols": 23,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 1
+    },
+    {
+      "id": "projects",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 40
+    },
+    {
+      "id": "prompt_budgets",
+      "kind": "table",
+      "rows": 0,
+      "cols": 12,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 0
+    },
+    {
+      "id": "prompt_sections",
+      "kind": "table",
+      "rows": 0,
+      "cols": 11,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 1
+    },
+    {
+      "id": "revenue_share_distributions",
+      "kind": "table",
+      "rows": 0,
+      "cols": 9,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 3
+    },
+    {
+      "id": "revenue_share_payouts",
+      "kind": "table",
+      "rows": 0,
+      "cols": 12,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 3
+    },
+    {
+      "id": "revenue_share_rules",
+      "kind": "table",
+      "rows": 0,
+      "cols": 11,
+      "domain": "finance",
+      "domain_label": "Finanzas",
+      "degree": 2
+    },
+    {
+      "id": "runner_runs",
+      "kind": "table",
+      "rows": 4,
+      "cols": 9,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 2
+    },
+    {
+      "id": "runners",
+      "kind": "table",
+      "rows": 2,
+      "cols": 14,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 5
+    },
+    {
+      "id": "settings",
+      "kind": "table",
+      "rows": 0,
+      "cols": 4,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 0
+    },
+    {
+      "id": "skills",
+      "kind": "table",
+      "rows": 8,
+      "cols": 13,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 4
+    },
+    {
+      "id": "sops",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 2
+    },
+    {
+      "id": "spaces",
+      "kind": "table",
+      "rows": 1963,
+      "cols": 12,
+      "domain": "projects",
+      "domain_label": "Proyectos / Config",
+      "degree": 3
+    },
+    {
+      "id": "sql_conversations",
+      "kind": "table",
+      "rows": 42,
+      "cols": 5,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 1
+    },
+    {
+      "id": "sql_messages",
+      "kind": "table",
+      "rows": 212,
+      "cols": 10,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 1
+    },
+    {
+      "id": "task_acceptance_criteria",
+      "kind": "table",
+      "rows": 944,
+      "cols": 21,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 3
+    },
+    {
+      "id": "task_attestations",
+      "kind": "table",
+      "rows": 0,
+      "cols": 16,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 2
+    },
+    {
+      "id": "task_columns",
+      "kind": "table",
+      "rows": 0,
+      "cols": 6,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 1
+    },
+    {
+      "id": "task_comments",
+      "kind": "table",
+      "rows": 52,
+      "cols": 8,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 2
+    },
+    {
+      "id": "task_inputs",
+      "kind": "table",
+      "rows": 534,
+      "cols": 15,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 4
+    },
+    {
+      "id": "task_outputs",
+      "kind": "table",
+      "rows": 330,
+      "cols": 16,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 5
+    },
+    {
+      "id": "task_todos",
+      "kind": "table",
+      "rows": 0,
+      "cols": 7,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 1
+    },
+    {
+      "id": "tasks",
+      "kind": "table",
+      "rows": 329,
+      "cols": 20,
+      "domain": "tasks",
+      "domain_label": "Tareas",
+      "degree": 10
+    },
+    {
+      "id": "team_member_roles",
+      "kind": "table",
+      "rows": 0,
+      "cols": 4,
+      "domain": "people",
+      "domain_label": "Personas / Equipo",
+      "degree": 2
+    },
+    {
+      "id": "team_members",
+      "kind": "table",
+      "rows": 22,
+      "cols": 8,
+      "domain": "people",
+      "domain_label": "Personas / Equipo",
+      "degree": 6
+    },
+    {
+      "id": "team_roles",
+      "kind": "table",
+      "rows": 19,
+      "cols": 6,
+      "domain": "people",
+      "domain_label": "Personas / Equipo",
+      "degree": 6
+    },
+    {
+      "id": "teams",
+      "kind": "table",
+      "rows": 0,
+      "cols": 6,
+      "domain": "people",
+      "domain_label": "Personas / Equipo",
+      "degree": 3
+    },
+    {
+      "id": "user_evolution_instances",
+      "kind": "table",
+      "rows": 0,
+      "cols": 6,
+      "domain": "whatsapp",
+      "domain_label": "WhatsApp",
+      "degree": 1
+    },
+    {
+      "id": "users",
+      "kind": "table",
+      "rows": 26,
+      "cols": 15,
+      "domain": "people",
+      "domain_label": "Personas / Equipo",
+      "degree": 24
+    },
+    {
+      "id": "verification_templates",
+      "kind": "table",
+      "rows": 0,
+      "cols": 8,
+      "domain": "catalog",
+      "domain_label": "Ontología de procesos",
+      "degree": 1
+    },
+    {
+      "id": "whatsapp_messages",
+      "kind": "table",
+      "rows": 7858,
+      "cols": 14,
+      "domain": "whatsapp",
+      "domain_label": "WhatsApp",
+      "degree": 1
+    },
+    {
+      "id": "worker_runs",
+      "kind": "table",
+      "rows": 93,
+      "cols": 11,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 3
+    },
+    {
+      "id": "workers",
+      "kind": "table",
+      "rows": 5,
+      "cols": 9,
+      "domain": "runtime",
+      "domain_label": "Runtime agéntico / LLM",
+      "degree": 3
+    }
+  ],
+  "edges": [
+    {
+      "source": "activity_archetypes",
+      "target": "sops",
+      "src_col": "sop_code",
+      "tgt_col": "code",
+      "kind": "fk",
+      "self": false,
+      "label": "sop_code→code"
+    },
+    {
+      "source": "ad_sets",
+      "target": "campaigns",
+      "src_col": "campaign_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "campaign_id→id"
+    },
+    {
+      "source": "ad_sets",
+      "target": "ad_accounts",
+      "src_col": "ad_account_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "ad_account_id→id"
+    },
+    {
+      "source": "ads",
+      "target": "ad_sets",
+      "src_col": "ad_set_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "ad_set_id→id"
+    },
+    {
+      "source": "ads",
+      "target": "ad_accounts",
+      "src_col": "ad_account_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "ad_account_id→id"
+    },
+    {
+      "source": "ads",
+      "target": "campaigns",
+      "src_col": "campaign_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "campaign_id→id"
+    },
+    {
+      "source": "archetype_acceptance_criteria",
+      "target": "archetype_outputs",
+      "src_col": "output_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "output_id→id"
+    },
+    {
+      "source": "archetype_inputs",
+      "target": "io_types",
+      "src_col": "io_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "io_type_id→id"
+    },
+    {
+      "source": "archetype_inputs",
+      "target": "artifact_types",
+      "src_col": "artifact_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "artifact_type_id→id"
+    },
+    {
+      "source": "archetype_inputs",
+      "target": "activity_archetypes",
+      "src_col": "archetype_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "archetype_id→id"
+    },
+    {
+      "source": "archetype_outputs",
+      "target": "io_types",
+      "src_col": "io_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "io_type_id→id"
+    },
+    {
+      "source": "archetype_outputs",
+      "target": "artifact_types",
+      "src_col": "artifact_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "artifact_type_id→id"
+    },
+    {
+      "source": "archetype_outputs",
+      "target": "activity_archetypes",
+      "src_col": "archetype_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "archetype_id→id"
+    },
+    {
+      "source": "archetype_params",
+      "target": "activity_archetypes",
+      "src_col": "archetype_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "archetype_id→id"
+    },
+    {
+      "source": "call_meeting_results",
+      "target": "meetings",
+      "src_col": "meeting_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "meeting_id→id"
+    },
+    {
+      "source": "campaign_insights_daily",
+      "target": "ad_accounts",
+      "src_col": "ad_account_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "ad_account_id→id"
+    },
+    {
+      "source": "campaigns",
+      "target": "ad_accounts",
+      "src_col": "ad_account_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "ad_account_id→id"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "team_roles",
+      "src_col": "role_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "role_id→id"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "installments",
+      "src_col": "installment_id",
+      "tgt_col": "installment_id",
+      "kind": "fk",
+      "self": false,
+      "label": "installment_id→installment_id"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "payment_plans",
+      "src_col": "plan_id",
+      "tgt_col": "plan_id",
+      "kind": "fk",
+      "self": false,
+      "label": "plan_id→plan_id"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "commission_rules",
+      "src_col": "commission_rule_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "commission_rule_id→id"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "users",
+      "src_col": "reviewed_by",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "reviewed_by→id"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "commission_rules",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "commission_rules",
+      "target": "products",
+      "src_col": "product_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "product_id→id"
+    },
+    {
+      "source": "commission_rules",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "commission_rules",
+      "target": "team_roles",
+      "src_col": "role_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "role_id→id"
+    },
+    {
+      "source": "crm_calendars",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "crm_contacts",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "crm_contacts",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "crm_custom_fields",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "crm_opportunities",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "crm_opportunities",
+      "target": "crm_pipelines",
+      "src_col": "pipeline_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "pipeline_id→id"
+    },
+    {
+      "source": "crm_opportunities",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "crm_opportunities",
+      "target": "crm_contacts",
+      "src_col": "contact_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "contact_id→id"
+    },
+    {
+      "source": "crm_pipelines",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "economics_ledger",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "expense_categories",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "expense_templates",
+      "target": "expense_categories",
+      "src_col": "category_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "category_id→id"
+    },
+    {
+      "source": "expense_templates",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "expenses",
+      "target": "users",
+      "src_col": "registered_by",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "registered_by→id"
+    },
+    {
+      "source": "expenses",
+      "target": "expense_templates",
+      "src_col": "template_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "template_id→id"
+    },
+    {
+      "source": "expenses",
+      "target": "expense_categories",
+      "src_col": "category_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "category_id→id"
+    },
+    {
+      "source": "expenses",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "graph_messages",
+      "target": "graph_conversations",
+      "src_col": "conversation_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "conversation_id→id"
+    },
+    {
+      "source": "installments",
+      "target": "payment_plans",
+      "src_col": "plan_id",
+      "tgt_col": "plan_id",
+      "kind": "fk",
+      "self": false,
+      "label": "plan_id→plan_id"
+    },
+    {
+      "source": "io_types",
+      "target": "artifact_types",
+      "src_col": "default_artifact_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "default_artifact_type_id→id"
+    },
+    {
+      "source": "key_results",
+      "target": "kpis",
+      "src_col": "kpi_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "kpi_id→id"
+    },
+    {
+      "source": "key_results",
+      "target": "objectives",
+      "src_col": "objective_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "objective_id→id"
+    },
+    {
+      "source": "kpi_snapshots",
+      "target": "kpis",
+      "src_col": "kpi_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "kpi_id→id"
+    },
+    {
+      "source": "kpis",
+      "target": "users",
+      "src_col": "created_by",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "created_by→id"
+    },
+    {
+      "source": "kpis",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "meeting_participants",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "meeting_participants",
+      "target": "meetings",
+      "src_col": "meeting_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "meeting_id→id"
+    },
+    {
+      "source": "meeting_reports",
+      "target": "meetings",
+      "src_col": "meeting_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "meeting_id→id"
+    },
+    {
+      "source": "meeting_transcripts",
+      "target": "meetings",
+      "src_col": "meeting_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "meeting_id→id"
+    },
+    {
+      "source": "meetings",
+      "target": "spaces",
+      "src_col": "space_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "space_id→id"
+    },
+    {
+      "source": "meetings",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "meta_capi_events",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "meta_capi_events",
+      "target": "installments",
+      "src_col": "installment_id",
+      "tgt_col": "installment_id",
+      "kind": "fk",
+      "self": false,
+      "label": "installment_id→installment_id"
+    },
+    {
+      "source": "notion_content_index",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "objectives",
+      "target": "users",
+      "src_col": "owner_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "owner_id→id"
+    },
+    {
+      "source": "objectives",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "okr_reviews",
+      "target": "objectives",
+      "src_col": "objective_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "objective_id→id"
+    },
+    {
+      "source": "output_channels",
+      "target": "runners",
+      "src_col": "runner_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "runner_id→id"
+    },
+    {
+      "source": "payment_plans",
+      "target": "products",
+      "src_col": "product_uuid",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "product_uuid→id"
+    },
+    {
+      "source": "payment_plans",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "payment_plans",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "payroll_actuals",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "payroll_actuals",
+      "target": "payroll_rules",
+      "src_col": "payroll_rule_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "payroll_rule_id→id"
+    },
+    {
+      "source": "payroll_actuals",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "payroll_actuals",
+      "target": "users",
+      "src_col": "overridden_by",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "overridden_by→id"
+    },
+    {
+      "source": "payroll_rules",
+      "target": "commission_rules",
+      "src_col": "commission_rule_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "commission_rule_id→id"
+    },
+    {
+      "source": "payroll_rules",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "payroll_rules",
+      "target": "team_roles",
+      "src_col": "role_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "role_id→id"
+    },
+    {
+      "source": "payroll_rules",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "products",
+      "target": "commission_rules",
+      "src_col": "default_commission_rule_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "default_commission_rule_id→id"
+    },
+    {
+      "source": "products",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_ad_account_mappings",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_campaign_mappings",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_crm_configs",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_google_configs",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_meta_configs",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_notion_configs",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_panda_video_configs",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_panda_video_selections",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_teams",
+      "target": "teams",
+      "src_col": "team_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "team_id→id"
+    },
+    {
+      "source": "project_teams",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_vturb_video_configs",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_vturb_video_selections",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "project_whatsapp_configs",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "prompt_sections",
+      "target": "llm_calls",
+      "src_col": "llm_call_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "llm_call_id→id"
+    },
+    {
+      "source": "revenue_share_distributions",
+      "target": "users",
+      "src_col": "triggered_by",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "triggered_by→id"
+    },
+    {
+      "source": "revenue_share_distributions",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "revenue_share_payouts",
+      "target": "revenue_share_distributions",
+      "src_col": "distribution_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "distribution_id→id"
+    },
+    {
+      "source": "revenue_share_payouts",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "revenue_share_payouts",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "revenue_share_rules",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "revenue_share_rules",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "runner_runs",
+      "target": "worker_runs",
+      "src_col": "worker_run_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "worker_run_id→id"
+    },
+    {
+      "source": "runner_runs",
+      "target": "runners",
+      "src_col": "runner_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "runner_id→id"
+    },
+    {
+      "source": "runners",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "runners",
+      "target": "workers",
+      "src_col": "worker_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "worker_id→id"
+    },
+    {
+      "source": "runners",
+      "target": "skills",
+      "src_col": "skill_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "skill_id→id"
+    },
+    {
+      "source": "skills",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "sops",
+      "target": "macro_processes",
+      "src_col": "macro_process_code",
+      "tgt_col": "code",
+      "kind": "fk",
+      "self": false,
+      "label": "macro_process_code→code"
+    },
+    {
+      "source": "spaces",
+      "target": "identities",
+      "src_col": "id_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "id_id→id"
+    },
+    {
+      "source": "spaces",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "sql_messages",
+      "target": "sql_conversations",
+      "src_col": "conversation_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "conversation_id→id"
+    },
+    {
+      "source": "task_acceptance_criteria",
+      "target": "verification_templates",
+      "src_col": "template_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "template_id→id"
+    },
+    {
+      "source": "task_acceptance_criteria",
+      "target": "task_outputs",
+      "src_col": "output_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "output_id→id"
+    },
+    {
+      "source": "task_attestations",
+      "target": "task_acceptance_criteria",
+      "src_col": "criterion_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "criterion_id→id"
+    },
+    {
+      "source": "task_attestations",
+      "target": "team_members",
+      "src_col": "responsible_team_member_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "responsible_team_member_id→id"
+    },
+    {
+      "source": "task_comments",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "task_comments",
+      "target": "tasks",
+      "src_col": "task_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "task_id→id"
+    },
+    {
+      "source": "task_inputs",
+      "target": "io_types",
+      "src_col": "io_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "io_type_id→id"
+    },
+    {
+      "source": "task_inputs",
+      "target": "artifact_types",
+      "src_col": "artifact_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "artifact_type_id→id"
+    },
+    {
+      "source": "task_inputs",
+      "target": "users",
+      "src_col": "satisfied_by",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "satisfied_by→id"
+    },
+    {
+      "source": "task_inputs",
+      "target": "tasks",
+      "src_col": "task_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "task_id→id"
+    },
+    {
+      "source": "task_outputs",
+      "target": "artifact_types",
+      "src_col": "artifact_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "artifact_type_id→id"
+    },
+    {
+      "source": "task_outputs",
+      "target": "io_types",
+      "src_col": "io_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "io_type_id→id"
+    },
+    {
+      "source": "task_outputs",
+      "target": "users",
+      "src_col": "delivered_by",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "delivered_by→id"
+    },
+    {
+      "source": "task_outputs",
+      "target": "tasks",
+      "src_col": "task_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "task_id→id"
+    },
+    {
+      "source": "task_todos",
+      "target": "tasks",
+      "src_col": "task_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "task_id→id"
+    },
+    {
+      "source": "tasks",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "tasks",
+      "target": "task_columns",
+      "src_col": "column_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "column_id→id"
+    },
+    {
+      "source": "tasks",
+      "target": "meetings",
+      "src_col": "source_meeting_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "source_meeting_id→id"
+    },
+    {
+      "source": "tasks",
+      "target": "activity_archetypes",
+      "src_col": "archetype_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "archetype_id→id"
+    },
+    {
+      "source": "tasks",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "team_member_roles",
+      "target": "team_roles",
+      "src_col": "role_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "role_id→id"
+    },
+    {
+      "source": "team_member_roles",
+      "target": "team_members",
+      "src_col": "team_member_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "team_member_id→id"
+    },
+    {
+      "source": "team_members",
+      "target": "teams",
+      "src_col": "team_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "team_id→id"
+    },
+    {
+      "source": "team_members",
+      "target": "team_roles",
+      "src_col": "role_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "role_id→id"
+    },
+    {
+      "source": "team_members",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id"
+    },
+    {
+      "source": "team_roles",
+      "target": "teams",
+      "src_col": "team_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "team_id→id"
+    },
+    {
+      "source": "user_evolution_instances",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "users",
+      "target": "persons",
+      "src_col": "person_id",
+      "tgt_col": "person_id",
+      "kind": "fk",
+      "self": false,
+      "label": "person_id→person_id"
+    },
+    {
+      "source": "whatsapp_messages",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id"
+    },
+    {
+      "source": "worker_runs",
+      "target": "skills",
+      "src_col": "skill_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "skill_id→id"
+    },
+    {
+      "source": "worker_runs",
+      "target": "workers",
+      "src_col": "worker_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "worker_id→id"
+    },
+    {
+      "source": "workers",
+      "target": "skills",
+      "src_col": "skill_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "skill_id→id"
+    },
+    {
+      "source": "tasks",
+      "target": "team_members",
+      "src_col": "assignee[]",
+      "tgt_col": "id",
+      "kind": "implicit",
+      "self": false,
+      "label": "assignee[]→id",
+      "note": "assignee uuid[] resuelve a team_members (no hay FK sobre el array)"
+    },
+    {
+      "source": "meetings",
+      "target": "crm_contacts",
+      "src_col": "event.booking.contact_id",
+      "tgt_col": "ghl_contact_id",
+      "kind": "implicit",
+      "self": false,
+      "label": "event.booking.contact_id→ghl_contact_id",
+      "note": "traza del closer: booking.contact_id ≈ crm_contacts.ghl_contact_id"
+    },
+    {
+      "source": "project_ad_account_mappings",
+      "target": "ad_accounts",
+      "src_col": "account_id",
+      "tgt_col": "(externo)",
+      "kind": "implicit",
+      "self": false,
+      "label": "account_id→(externo)",
+      "note": "mapea cuenta publicitaria→proyecto por id externo de Meta"
+    },
+    {
+      "source": "project_campaign_mappings",
+      "target": "campaigns",
+      "src_col": "campaign_id",
+      "tgt_col": "(externo)",
+      "kind": "implicit",
+      "self": false,
+      "label": "campaign_id→(externo)",
+      "note": "mapea campaña→proyecto por id externo"
+    },
+    {
+      "source": "users",
+      "target": "crm_opportunities",
+      "src_col": "crm_id",
+      "tgt_col": "user_id",
+      "kind": "implicit",
+      "self": false,
+      "label": "crm_id→user_id",
+      "note": "crm_id (integrations jsonb) es lo que la resolución del closer lee"
+    },
+    {
+      "source": "meta_capi_events",
+      "target": "crm_contacts",
+      "src_col": "(evento)",
+      "tgt_col": "ghl_contact_id",
+      "kind": "implicit",
+      "self": false,
+      "label": "(evento)→ghl_contact_id",
+      "note": "eventos CAPI ligados al contacto/lead"
+    }
+  ]
+}

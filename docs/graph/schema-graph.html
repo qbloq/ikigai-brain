@@ -1,0 +1,438 @@
+<meta charset="utf-8">
+<title>ikigaigm · mapa de entidades</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --bg:#0f131a; --canvas:#0c1016; --panel:#161c26; --panel2:#1b222e;
+  --ink:#e6ebf2; --muted:#8a97a8; --line:#2a333f; --line2:#38424f;
+  --accent:#6ea8fe; --shadow:rgba(0,0,0,.45);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,monospace;
+}
+@media (prefers-color-scheme:light){
+  :root{ --bg:#eef1f5; --canvas:#f4f6f9; --panel:#ffffff; --panel2:#f2f5f8;
+    --ink:#1a2230; --muted:#5b6675; --line:#d7dee6; --line2:#c3cdd7;
+    --accent:#2f6fe0; --shadow:rgba(20,30,50,.12); }
+}
+:root[data-theme="dark"]{ --bg:#0f131a; --canvas:#0c1016; --panel:#161c26; --panel2:#1b222e;
+  --ink:#e6ebf2; --muted:#8a97a8; --line:#2a333f; --line2:#38424f; --accent:#6ea8fe; --shadow:rgba(0,0,0,.45); }
+:root[data-theme="light"]{ --bg:#eef1f5; --canvas:#f4f6f9; --panel:#ffffff; --panel2:#f2f5f8;
+  --ink:#1a2230; --muted:#5b6675; --line:#d7dee6; --line2:#c3cdd7; --accent:#2f6fe0; --shadow:rgba(20,30,50,.12); }
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);
+  overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* ---- top bar ---- */
+header{position:fixed;top:0;left:0;right:0;height:60px;z-index:20;
+  display:flex;align-items:center;gap:20px;padding:0 20px;
+  background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 88%,transparent));
+  border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.brand{display:flex;flex-direction:column;gap:1px;min-width:0}
+.brand h1{font-family:var(--mono);font-size:14px;font-weight:600;margin:0;letter-spacing:.02em;white-space:nowrap}
+.brand .sub{font-size:11px;color:var(--muted);letter-spacing:.04em}
+.stats{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:7px;
+  padding:5px 11px;display:flex;flex-direction:column;line-height:1.15;min-width:64px}
+.stat b{font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums}
+.stat span{font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+
+/* ---- left rail ---- */
+.rail{position:fixed;top:72px;left:16px;z-index:15;width:236px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 8px 30px var(--shadow);overflow:hidden;
+  display:flex;flex-direction:column;max-height:calc(100vh - 92px)}
+.rail .pad{padding:12px}
+.search{width:100%;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);
+  border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:12px;outline:none}
+.search:focus{border-color:var(--accent)}
+.sec-t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  margin:14px 2px 7px}
+.sec-t.row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.mini{font-size:10px;letter-spacing:.04em;text-transform:none;color:var(--muted);cursor:pointer;
+  user-select:none;border:none;background:none;padding:0;font-family:var(--font)}
+.mini:hover{color:var(--accent)}
+.mini + .mini{margin-left:2px}
+.sep{color:var(--line2)}
+.legend{display:flex;flex-direction:column;gap:1px;overflow-y:auto}
+.dom{display:flex;align-items:center;gap:9px;padding:5px 7px;border-radius:7px;cursor:pointer;
+  user-select:none;border:1px solid transparent}
+.dom:hover{background:var(--panel2)}
+.dom.off{opacity:.34}
+.dom .dot{width:11px;height:11px;border-radius:3px;flex:none}
+.dom .nm{font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dom .ct{font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.edgetog{display:flex;gap:7px;margin-top:4px}
+.etg{flex:1;font-size:11px;text-align:center;padding:6px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--line2);background:var(--panel2);user-select:none}
+.etg.off{opacity:.4}
+.etg b{display:block;font-family:var(--mono);font-size:12px}
+.hint{font-size:10.5px;color:var(--muted);line-height:1.5;padding:10px 2px 2px;border-top:1px solid var(--line);margin-top:10px}
+.hint code{font-family:var(--mono);background:var(--panel2);padding:1px 4px;border-radius:4px}
+
+/* ---- detail panel ---- */
+.detail{position:fixed;top:72px;right:16px;z-index:15;width:300px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 8px 30px var(--shadow);overflow:hidden;
+  display:none;flex-direction:column;max-height:calc(100vh - 92px)}
+.detail.on{display:flex}
+.dhead{padding:14px 14px 12px;border-bottom:1px solid var(--line);position:relative}
+.dhead .stripe{position:absolute;left:0;top:0;bottom:0;width:4px}
+.dhead .dom-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dhead h2{font-family:var(--mono);font-size:15px;margin:3px 0 8px;word-break:break-all}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:10.5px;background:var(--panel2);border:1px solid var(--line2);
+  border-radius:6px;padding:2px 7px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dbody{overflow-y:auto;padding:4px 0 10px}
+.rel-t{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:12px 14px 5px}
+.rel{display:flex;align-items:baseline;gap:7px;padding:5px 14px;cursor:pointer;border-left:2px solid transparent}
+.rel:hover{background:var(--panel2);border-left-color:var(--accent)}
+.rel .to{font-family:var(--mono);font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rel .via{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.rel .kb{font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:4px;flex:none}
+.kb.fk{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
+.kb.impl{background:color-mix(in srgb,#E0A458 26%,transparent);color:#E0A458;border:1px dashed #E0A458}
+.close{position:absolute;top:12px;right:12px;cursor:pointer;color:var(--muted);
+  font-size:18px;line-height:1;width:22px;height:22px;text-align:center;border-radius:6px}
+.close:hover{background:var(--panel2);color:var(--ink)}
+.empty{color:var(--muted);font-size:11px;padding:2px 14px 8px;font-style:italic}
+
+/* ---- canvas + tooltip ---- */
+canvas{position:fixed;inset:0;z-index:1;display:block;touch-action:none}
+.tip{position:fixed;z-index:30;pointer-events:none;background:var(--panel);border:1px solid var(--line2);
+  border-radius:7px;padding:6px 9px;font-family:var(--mono);font-size:11px;box-shadow:0 4px 14px var(--shadow);
+  display:none;white-space:nowrap}
+.tip b{font-size:12px}.tip small{color:var(--muted)}
+.zoombar{position:fixed;bottom:16px;left:16px;z-index:15;display:flex;gap:6px}
+.zb{width:34px;height:34px;background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  color:var(--ink);font-size:17px;cursor:pointer;box-shadow:0 4px 14px var(--shadow);
+  display:flex;align-items:center;justify-content:center}
+.zb:hover{border-color:var(--accent)}
+.zb.wide{width:auto;padding:0 12px;font-size:12px;font-family:var(--font)}
+@media (max-width:720px){ .rail{display:none} .detail{width:calc(100vw - 32px)} }
+</style>
+
+<header>
+  <div class="brand">
+    <h1>ikigaigm · mapa de entidades</h1>
+    <span class="sub" id="subline">ontología de datos de Ikigai — primer vistazo desde el esquema</span>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<div class="rail">
+  <div class="pad">
+    <input class="search" id="search" placeholder="buscar entidad…" autocomplete="off" spellcheck="false">
+    <div class="sec-t">Relaciones</div>
+    <div class="edgetog">
+      <div class="etg" data-ek="fk" id="etg-fk"><b id="cfk">0</b>foreign keys</div>
+      <div class="etg" data-ek="implicit" id="etg-impl"><b id="cimpl">0</b>implícitas</div>
+    </div>
+    <div class="sec-t row"><span>Dominios</span><span><button class="mini" id="dom-all">todos</button><span class="sep">·</span><button class="mini" id="dom-none">ninguno</button></span></div>
+    <div class="legend" id="legend"></div>
+    <div class="hint">
+      <b>click</b> un nodo para ver sus relaciones · <b>arrastra</b> para fijarlo ·
+      rueda para <b>zoom</b> · fondo para desplazar.<br>
+      <b>doble-click</b> un dominio para aislarlo · el <b>tamaño</b> del nodo crece con sus conexiones ·
+      línea <code>punteada</code> = relación implícita (no forzada por FK).
+    </div>
+  </div>
+</div>
+
+<div class="detail" id="detail">
+  <div class="dhead">
+    <div class="stripe" id="d-stripe"></div>
+    <div class="close" id="d-close">×</div>
+    <div class="dom-lbl" id="d-dom"></div>
+    <h2 id="d-name"></h2>
+    <div class="chips" id="d-chips"></div>
+  </div>
+  <div class="dbody" id="d-body"></div>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="zoombar">
+  <div class="zb" id="z-in">+</div>
+  <div class="zb" id="z-out">−</div>
+  <div class="zb wide" id="z-fit">ajustar</div>
+</div>
+
+<canvas id="cv"></canvas>
+
+<script>
+const GRAPH = {"meta":{"schema":"ikigaigm","generated_from":"pg_catalog + information_schema (FK) + CLAUDE.md (implicit)","n_nodes":98,"n_edges":148,"n_fk":142,"n_implicit":6,"domains":{"tasks":"Tareas","meetings":"Reuniones","crm":"CRM / Ventas","ads":"Pauta (Meta)","finance":"Finanzas","catalog":"Ontología de procesos","people":"Personas / Equipo","projects":"Proyectos / Config","okr":"OKR / KPI","runtime":"Runtime agéntico / LLM","content":"Contenido (Notion/Drive)","whatsapp":"WhatsApp","misc":"Otros"}},"nodes":[{"id":"activity_archetypes","kind":"table","rows":76,"cols":15,"domain":"catalog","domain_label":"Ontología de procesos","degree":5},{"id":"ad_accounts","kind":"table","rows":22,"cols":8,"domain":"ads","domain_label":"Pauta (Meta)","degree":5},{"id":"ad_insights_daily","kind":"table","rows":5994,"cols":36,"domain":"ads","domain_label":"Pauta (Meta)","degree":0},{"id":"ad_sets","kind":"table","rows":1375,"cols":17,"domain":"ads","domain_label":"Pauta (Meta)","degree":3},{"id":"ads","kind":"table","rows":3715,"cols":9,"domain":"ads","domain_label":"Pauta (Meta)","degree":3},{"id":"archetype_acceptance_criteria","kind":"table","rows":169,"cols":7,"domain":"catalog","domain_label":"Ontología de procesos","degree":1},{"id":"archetype_inputs","kind":"table","rows":101,"cols":8,"domain":"catalog","domain_label":"Ontología de procesos","degree":3},{"id":"archetype_outputs","kind":"table","rows":62,"cols":8,"domain":"catalog","domain_label":"Ontología de procesos","degree":4},{"id":"archetype_params","kind":"table","rows":118,"cols":8,"domain":"catalog","domain_label":"Ontología de procesos","degree":1},{"id":"artifact_binding_backup_inputs","kind":"table","rows":1037,"cols":2,"domain":"tasks","domain_label":"Tareas","degree":0},{"id":"artifact_binding_backup_outputs","kind":"table","rows":803,"cols":2,"domain":"tasks","domain_label":"Tareas","degree":0},{"id":"artifact_types","kind":"table","rows":7,"cols":11,"domain":"catalog","domain_label":"Ontología de procesos","degree":5},{"id":"call_meeting_results","kind":"table","rows":0,"cols":5,"domain":"meetings","domain_label":"Reuniones","degree":1},{"id":"campaign_insights_daily","kind":"table","rows":1331,"cols":20,"domain":"ads","domain_label":"Pauta (Meta)","degree":1},{"id":"campaigns","kind":"table","rows":479,"cols":14,"domain":"ads","domain_label":"Pauta (Meta)","degree":4},{"id":"commission_payouts","kind":"table","rows":219,"cols":26,"domain":"finance","domain_label":"Finanzas","degree":7},{"id":"commission_rules","kind":"table","rows":0,"cols":16,"domain":"finance","domain_label":"Finanzas","degree":7},{"id":"crm_calendars","kind":"table","rows":0,"cols":8,"domain":"crm","domain_label":"CRM / Ventas","degree":1},{"id":"crm_contacts","kind":"table","rows":1980,"cols":13,"domain":"crm","domain_label":"CRM / Ventas","degree":5},{"id":"crm_custom_fields","kind":"table","rows":110,"cols":17,"domain":"crm","domain_label":"CRM / Ventas","degree":1},{"id":"crm_opportunities","kind":"table","rows":2054,"cols":16,"domain":"crm","domain_label":"CRM / Ventas","degree":5},{"id":"crm_pipelines","kind":"table","rows":2,"cols":10,"domain":"crm","domain_label":"CRM / Ventas","degree":2},{"id":"drive_index","kind":"table","rows":15500,"cols":16,"domain":"content","domain_label":"Contenido (Notion/Drive)","degree":0},{"id":"drive_index_type_stats","kind":"view","rows":0,"cols":3,"domain":"content","domain_label":"Contenido (Notion/Drive)","degree":0},{"id":"economics_ledger","kind":"table","rows":543,"cols":12,"domain":"finance","domain_label":"Finanzas","degree":1},{"id":"expense_categories","kind":"table","rows":0,"cols":8,"domain":"finance","domain_label":"Finanzas","degree":3},{"id":"expense_templates","kind":"table","rows":0,"cols":13,"domain":"finance","domain_label":"Finanzas","degree":3},{"id":"expenses","kind":"table","rows":24,"cols":15,"domain":"finance","domain_label":"Finanzas","degree":4},{"id":"funnel_goals","kind":"table","rows":0,"cols":7,"domain":"crm","domain_label":"CRM / Ventas","degree":0},{"id":"graph_conversations","kind":"table","rows":0,"cols":5,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":1},{"id":"graph_messages","kind":"table","rows":0,"cols":9,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":1},{"id":"identities","kind":"table","rows":5,"cols":11,"domain":"people","domain_label":"Personas / Equipo","degree":1},{"id":"installments","kind":"table","rows":1243,"cols":14,"domain":"finance","domain_label":"Finanzas","degree":3},{"id":"io_types","kind":"table","rows":0,"cols":9,"domain":"catalog","domain_label":"Ontología de procesos","degree":5},{"id":"key_results","kind":"table","rows":0,"cols":15,"domain":"okr","domain_label":"OKR / KPI","degree":2},{"id":"kpi_snapshots","kind":"table","rows":0,"cols":7,"domain":"okr","domain_label":"OKR / KPI","degree":1},{"id":"kpis","kind":"table","rows":0,"cols":17,"domain":"okr","domain_label":"OKR / KPI","degree":4},{"id":"llm_calls","kind":"table","rows":0,"cols":25,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":1},{"id":"llmrouter_api_keys","kind":"table","rows":0,"cols":14,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":0},{"id":"macro_processes","kind":"table","rows":0,"cols":10,"domain":"catalog","domain_label":"Ontología de procesos","degree":1},{"id":"meeting_participants","kind":"table","rows":863,"cols":11,"domain":"meetings","domain_label":"Reuniones","degree":2},{"id":"meeting_reports","kind":"table","rows":338,"cols":6,"domain":"meetings","domain_label":"Reuniones","degree":1},{"id":"meeting_transcripts","kind":"table","rows":333,"cols":5,"domain":"meetings","domain_label":"Reuniones","degree":1},{"id":"meetings","kind":"table","rows":2137,"cols":20,"domain":"meetings","domain_label":"Reuniones","degree":8},{"id":"meta_capi_events","kind":"table","rows":175,"cols":9,"domain":"ads","domain_label":"Pauta (Meta)","degree":3},{"id":"notion_content_index","kind":"table","rows":3105,"cols":14,"domain":"content","domain_label":"Contenido (Notion/Drive)","degree":1},{"id":"objectives","kind":"table","rows":0,"cols":12,"domain":"okr","domain_label":"OKR / KPI","degree":4},{"id":"okr_reviews","kind":"table","rows":0,"cols":11,"domain":"okr","domain_label":"OKR / KPI","degree":1},{"id":"output_channels","kind":"table","rows":0,"cols":10,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":1},{"id":"payment_plans","kind":"table","rows":297,"cols":16,"domain":"finance","domain_label":"Finanzas","degree":5},{"id":"payroll_actuals","kind":"table","rows":0,"cols":18,"domain":"finance","domain_label":"Finanzas","degree":4},{"id":"payroll_rules","kind":"table","rows":7,"cols":15,"domain":"finance","domain_label":"Finanzas","degree":5},{"id":"persons","kind":"table","rows":26,"cols":7,"domain":"people","domain_label":"Personas / Equipo","degree":1},{"id":"products","kind":"table","rows":9,"cols":14,"domain":"finance","domain_label":"Finanzas","degree":4},{"id":"project_ad_account_mappings","kind":"table","rows":0,"cols":5,"domain":"projects","domain_label":"Proyectos / Config","degree":2},{"id":"project_campaign_mappings","kind":"table","rows":12,"cols":6,"domain":"projects","domain_label":"Proyectos / Config","degree":2},{"id":"project_crm_configs","kind":"table","rows":0,"cols":13,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"project_google_configs","kind":"table","rows":0,"cols":20,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"project_meta_configs","kind":"table","rows":0,"cols":6,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"project_notion_configs","kind":"table","rows":0,"cols":22,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"project_panda_video_configs","kind":"table","rows":0,"cols":8,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"project_panda_video_selections","kind":"table","rows":0,"cols":8,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"project_teams","kind":"table","rows":0,"cols":4,"domain":"projects","domain_label":"Proyectos / Config","degree":2},{"id":"project_vturb_video_configs","kind":"table","rows":0,"cols":8,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"project_vturb_video_selections","kind":"table","rows":0,"cols":8,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"project_whatsapp_configs","kind":"table","rows":0,"cols":23,"domain":"projects","domain_label":"Proyectos / Config","degree":1},{"id":"projects","kind":"table","rows":0,"cols":8,"domain":"projects","domain_label":"Proyectos / Config","degree":40},{"id":"prompt_budgets","kind":"table","rows":0,"cols":12,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":0},{"id":"prompt_sections","kind":"table","rows":0,"cols":11,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":1},{"id":"revenue_share_distributions","kind":"table","rows":0,"cols":9,"domain":"finance","domain_label":"Finanzas","degree":3},{"id":"revenue_share_payouts","kind":"table","rows":0,"cols":12,"domain":"finance","domain_label":"Finanzas","degree":3},{"id":"revenue_share_rules","kind":"table","rows":0,"cols":11,"domain":"finance","domain_label":"Finanzas","degree":2},{"id":"runner_runs","kind":"table","rows":4,"cols":9,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":2},{"id":"runners","kind":"table","rows":2,"cols":14,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":5},{"id":"settings","kind":"table","rows":0,"cols":4,"domain":"projects","domain_label":"Proyectos / Config","degree":0},{"id":"skills","kind":"table","rows":8,"cols":13,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":4},{"id":"sops","kind":"table","rows":0,"cols":8,"domain":"catalog","domain_label":"Ontología de procesos","degree":2},{"id":"spaces","kind":"table","rows":1963,"cols":12,"domain":"projects","domain_label":"Proyectos / Config","degree":3},{"id":"sql_conversations","kind":"table","rows":42,"cols":5,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":1},{"id":"sql_messages","kind":"table","rows":212,"cols":10,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":1},{"id":"task_acceptance_criteria","kind":"table","rows":944,"cols":21,"domain":"tasks","domain_label":"Tareas","degree":3},{"id":"task_attestations","kind":"table","rows":0,"cols":16,"domain":"tasks","domain_label":"Tareas","degree":2},{"id":"task_columns","kind":"table","rows":0,"cols":6,"domain":"tasks","domain_label":"Tareas","degree":1},{"id":"task_comments","kind":"table","rows":52,"cols":8,"domain":"tasks","domain_label":"Tareas","degree":2},{"id":"task_inputs","kind":"table","rows":534,"cols":15,"domain":"tasks","domain_label":"Tareas","degree":4},{"id":"task_outputs","kind":"table","rows":330,"cols":16,"domain":"tasks","domain_label":"Tareas","degree":5},{"id":"task_todos","kind":"table","rows":0,"cols":7,"domain":"tasks","domain_label":"Tareas","degree":1},{"id":"tasks","kind":"table","rows":329,"cols":20,"domain":"tasks","domain_label":"Tareas","degree":10},{"id":"team_member_roles","kind":"table","rows":0,"cols":4,"domain":"people","domain_label":"Personas / Equipo","degree":2},{"id":"team_members","kind":"table","rows":22,"cols":8,"domain":"people","domain_label":"Personas / Equipo","degree":6},{"id":"team_roles","kind":"table","rows":19,"cols":6,"domain":"people","domain_label":"Personas / Equipo","degree":6},{"id":"teams","kind":"table","rows":0,"cols":6,"domain":"people","domain_label":"Personas / Equipo","degree":3},{"id":"user_evolution_instances","kind":"table","rows":0,"cols":6,"domain":"whatsapp","domain_label":"WhatsApp","degree":1},{"id":"users","kind":"table","rows":26,"cols":15,"domain":"people","domain_label":"Personas / Equipo","degree":24},{"id":"verification_templates","kind":"table","rows":0,"cols":8,"domain":"catalog","domain_label":"Ontología de procesos","degree":1},{"id":"whatsapp_messages","kind":"table","rows":7858,"cols":14,"domain":"whatsapp","domain_label":"WhatsApp","degree":1},{"id":"worker_runs","kind":"table","rows":93,"cols":11,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":3},{"id":"workers","kind":"table","rows":5,"cols":9,"domain":"runtime","domain_label":"Runtime agéntico / LLM","degree":3}],"edges":[{"source":"activity_archetypes","target":"sops","src_col":"sop_code","tgt_col":"code","kind":"fk","self":false,"label":"sop_code→code"},{"source":"ad_sets","target":"campaigns","src_col":"campaign_id","tgt_col":"id","kind":"fk","self":false,"label":"campaign_id→id"},{"source":"ad_sets","target":"ad_accounts","src_col":"ad_account_id","tgt_col":"id","kind":"fk","self":false,"label":"ad_account_id→id"},{"source":"ads","target":"ad_sets","src_col":"ad_set_id","tgt_col":"id","kind":"fk","self":false,"label":"ad_set_id→id"},{"source":"ads","target":"ad_accounts","src_col":"ad_account_id","tgt_col":"id","kind":"fk","self":false,"label":"ad_account_id→id"},{"source":"ads","target":"campaigns","src_col":"campaign_id","tgt_col":"id","kind":"fk","self":false,"label":"campaign_id→id"},{"source":"archetype_acceptance_criteria","target":"archetype_outputs","src_col":"output_id","tgt_col":"id","kind":"fk","self":false,"label":"output_id→id"},{"source":"archetype_inputs","target":"io_types","src_col":"io_type_id","tgt_col":"id","kind":"fk","self":false,"label":"io_type_id→id"},{"source":"archetype_inputs","target":"artifact_types","src_col":"artifact_type_id","tgt_col":"id","kind":"fk","self":false,"label":"artifact_type_id→id"},{"source":"archetype_inputs","target":"activity_archetypes","src_col":"archetype_id","tgt_col":"id","kind":"fk","self":false,"label":"archetype_id→id"},{"source":"archetype_outputs","target":"io_types","src_col":"io_type_id","tgt_col":"id","kind":"fk","self":false,"label":"io_type_id→id"},{"source":"archetype_outputs","target":"artifact_types","src_col":"artifact_type_id","tgt_col":"id","kind":"fk","self":false,"label":"artifact_type_id→id"},{"source":"archetype_outputs","target":"activity_archetypes","src_col":"archetype_id","tgt_col":"id","kind":"fk","self":false,"label":"archetype_id→id"},{"source":"archetype_params","target":"activity_archetypes","src_col":"archetype_id","tgt_col":"id","kind":"fk","self":false,"label":"archetype_id→id"},{"source":"call_meeting_results","target":"meetings","src_col":"meeting_id","tgt_col":"id","kind":"fk","self":false,"label":"meeting_id→id"},{"source":"campaign_insights_daily","target":"ad_accounts","src_col":"ad_account_id","tgt_col":"id","kind":"fk","self":false,"label":"ad_account_id→id"},{"source":"campaigns","target":"ad_accounts","src_col":"ad_account_id","tgt_col":"id","kind":"fk","self":false,"label":"ad_account_id→id"},{"source":"commission_payouts","target":"team_roles","src_col":"role_id","tgt_col":"id","kind":"fk","self":false,"label":"role_id→id"},{"source":"commission_payouts","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"commission_payouts","target":"installments","src_col":"installment_id","tgt_col":"installment_id","kind":"fk","self":false,"label":"installment_id→installment_id"},{"source":"commission_payouts","target":"payment_plans","src_col":"plan_id","tgt_col":"plan_id","kind":"fk","self":false,"label":"plan_id→plan_id"},{"source":"commission_payouts","target":"commission_rules","src_col":"commission_rule_id","tgt_col":"id","kind":"fk","self":false,"label":"commission_rule_id→id"},{"source":"commission_payouts","target":"users","src_col":"reviewed_by","tgt_col":"id","kind":"fk","self":false,"label":"reviewed_by→id"},{"source":"commission_payouts","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"commission_rules","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"commission_rules","target":"products","src_col":"product_id","tgt_col":"id","kind":"fk","self":false,"label":"product_id→id"},{"source":"commission_rules","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"commission_rules","target":"team_roles","src_col":"role_id","tgt_col":"id","kind":"fk","self":false,"label":"role_id→id"},{"source":"crm_calendars","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"crm_contacts","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"crm_contacts","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"crm_custom_fields","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"crm_opportunities","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"crm_opportunities","target":"crm_pipelines","src_col":"pipeline_id","tgt_col":"id","kind":"fk","self":false,"label":"pipeline_id→id"},{"source":"crm_opportunities","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"crm_opportunities","target":"crm_contacts","src_col":"contact_id","tgt_col":"id","kind":"fk","self":false,"label":"contact_id→id"},{"source":"crm_pipelines","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"economics_ledger","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"expense_categories","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"expense_templates","target":"expense_categories","src_col":"category_id","tgt_col":"id","kind":"fk","self":false,"label":"category_id→id"},{"source":"expense_templates","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"expenses","target":"users","src_col":"registered_by","tgt_col":"id","kind":"fk","self":false,"label":"registered_by→id"},{"source":"expenses","target":"expense_templates","src_col":"template_id","tgt_col":"id","kind":"fk","self":false,"label":"template_id→id"},{"source":"expenses","target":"expense_categories","src_col":"category_id","tgt_col":"id","kind":"fk","self":false,"label":"category_id→id"},{"source":"expenses","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"graph_messages","target":"graph_conversations","src_col":"conversation_id","tgt_col":"id","kind":"fk","self":false,"label":"conversation_id→id"},{"source":"installments","target":"payment_plans","src_col":"plan_id","tgt_col":"plan_id","kind":"fk","self":false,"label":"plan_id→plan_id"},{"source":"io_types","target":"artifact_types","src_col":"default_artifact_type_id","tgt_col":"id","kind":"fk","self":false,"label":"default_artifact_type_id→id"},{"source":"key_results","target":"kpis","src_col":"kpi_id","tgt_col":"id","kind":"fk","self":false,"label":"kpi_id→id"},{"source":"key_results","target":"objectives","src_col":"objective_id","tgt_col":"id","kind":"fk","self":false,"label":"objective_id→id"},{"source":"kpi_snapshots","target":"kpis","src_col":"kpi_id","tgt_col":"id","kind":"fk","self":false,"label":"kpi_id→id"},{"source":"kpis","target":"users","src_col":"created_by","tgt_col":"id","kind":"fk","self":false,"label":"created_by→id"},{"source":"kpis","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"meeting_participants","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"meeting_participants","target":"meetings","src_col":"meeting_id","tgt_col":"id","kind":"fk","self":false,"label":"meeting_id→id"},{"source":"meeting_reports","target":"meetings","src_col":"meeting_id","tgt_col":"id","kind":"fk","self":false,"label":"meeting_id→id"},{"source":"meeting_transcripts","target":"meetings","src_col":"meeting_id","tgt_col":"id","kind":"fk","self":false,"label":"meeting_id→id"},{"source":"meetings","target":"spaces","src_col":"space_id","tgt_col":"id","kind":"fk","self":false,"label":"space_id→id"},{"source":"meetings","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"meta_capi_events","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"meta_capi_events","target":"installments","src_col":"installment_id","tgt_col":"installment_id","kind":"fk","self":false,"label":"installment_id→installment_id"},{"source":"notion_content_index","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"objectives","target":"users","src_col":"owner_id","tgt_col":"id","kind":"fk","self":false,"label":"owner_id→id"},{"source":"objectives","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"okr_reviews","target":"objectives","src_col":"objective_id","tgt_col":"id","kind":"fk","self":false,"label":"objective_id→id"},{"source":"output_channels","target":"runners","src_col":"runner_id","tgt_col":"id","kind":"fk","self":false,"label":"runner_id→id"},{"source":"payment_plans","target":"products","src_col":"product_uuid","tgt_col":"id","kind":"fk","self":false,"label":"product_uuid→id"},{"source":"payment_plans","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"payment_plans","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"payroll_actuals","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"payroll_actuals","target":"payroll_rules","src_col":"payroll_rule_id","tgt_col":"id","kind":"fk","self":false,"label":"payroll_rule_id→id"},{"source":"payroll_actuals","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"payroll_actuals","target":"users","src_col":"overridden_by","tgt_col":"id","kind":"fk","self":false,"label":"overridden_by→id"},{"source":"payroll_rules","target":"commission_rules","src_col":"commission_rule_id","tgt_col":"id","kind":"fk","self":false,"label":"commission_rule_id→id"},{"source":"payroll_rules","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"payroll_rules","target":"team_roles","src_col":"role_id","tgt_col":"id","kind":"fk","self":false,"label":"role_id→id"},{"source":"payroll_rules","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"products","target":"commission_rules","src_col":"default_commission_rule_id","tgt_col":"id","kind":"fk","self":false,"label":"default_commission_rule_id→id"},{"source":"products","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_ad_account_mappings","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_campaign_mappings","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_crm_configs","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_google_configs","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_meta_configs","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_notion_configs","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_panda_video_configs","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_panda_video_selections","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_teams","target":"teams","src_col":"team_id","tgt_col":"id","kind":"fk","self":false,"label":"team_id→id"},{"source":"project_teams","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_vturb_video_configs","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_vturb_video_selections","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"project_whatsapp_configs","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"prompt_sections","target":"llm_calls","src_col":"llm_call_id","tgt_col":"id","kind":"fk","self":false,"label":"llm_call_id→id"},{"source":"revenue_share_distributions","target":"users","src_col":"triggered_by","tgt_col":"id","kind":"fk","self":false,"label":"triggered_by→id"},{"source":"revenue_share_distributions","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"revenue_share_payouts","target":"revenue_share_distributions","src_col":"distribution_id","tgt_col":"id","kind":"fk","self":false,"label":"distribution_id→id"},{"source":"revenue_share_payouts","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"revenue_share_payouts","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"revenue_share_rules","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"revenue_share_rules","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"runner_runs","target":"worker_runs","src_col":"worker_run_id","tgt_col":"id","kind":"fk","self":false,"label":"worker_run_id→id"},{"source":"runner_runs","target":"runners","src_col":"runner_id","tgt_col":"id","kind":"fk","self":false,"label":"runner_id→id"},{"source":"runners","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"runners","target":"workers","src_col":"worker_id","tgt_col":"id","kind":"fk","self":false,"label":"worker_id→id"},{"source":"runners","target":"skills","src_col":"skill_id","tgt_col":"id","kind":"fk","self":false,"label":"skill_id→id"},{"source":"skills","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"sops","target":"macro_processes","src_col":"macro_process_code","tgt_col":"code","kind":"fk","self":false,"label":"macro_process_code→code"},{"source":"spaces","target":"identities","src_col":"id_id","tgt_col":"id","kind":"fk","self":false,"label":"id_id→id"},{"source":"spaces","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"sql_messages","target":"sql_conversations","src_col":"conversation_id","tgt_col":"id","kind":"fk","self":false,"label":"conversation_id→id"},{"source":"task_acceptance_criteria","target":"verification_templates","src_col":"template_id","tgt_col":"id","kind":"fk","self":false,"label":"template_id→id"},{"source":"task_acceptance_criteria","target":"task_outputs","src_col":"output_id","tgt_col":"id","kind":"fk","self":false,"label":"output_id→id"},{"source":"task_attestations","target":"task_acceptance_criteria","src_col":"criterion_id","tgt_col":"id","kind":"fk","self":false,"label":"criterion_id→id"},{"source":"task_attestations","target":"team_members","src_col":"responsible_team_member_id","tgt_col":"id","kind":"fk","self":false,"label":"responsible_team_member_id→id"},{"source":"task_comments","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"task_comments","target":"tasks","src_col":"task_id","tgt_col":"id","kind":"fk","self":false,"label":"task_id→id"},{"source":"task_inputs","target":"io_types","src_col":"io_type_id","tgt_col":"id","kind":"fk","self":false,"label":"io_type_id→id"},{"source":"task_inputs","target":"artifact_types","src_col":"artifact_type_id","tgt_col":"id","kind":"fk","self":false,"label":"artifact_type_id→id"},{"source":"task_inputs","target":"users","src_col":"satisfied_by","tgt_col":"id","kind":"fk","self":false,"label":"satisfied_by→id"},{"source":"task_inputs","target":"tasks","src_col":"task_id","tgt_col":"id","kind":"fk","self":false,"label":"task_id→id"},{"source":"task_outputs","target":"artifact_types","src_col":"artifact_type_id","tgt_col":"id","kind":"fk","self":false,"label":"artifact_type_id→id"},{"source":"task_outputs","target":"io_types","src_col":"io_type_id","tgt_col":"id","kind":"fk","self":false,"label":"io_type_id→id"},{"source":"task_outputs","target":"users","src_col":"delivered_by","tgt_col":"id","kind":"fk","self":false,"label":"delivered_by→id"},{"source":"task_outputs","target":"tasks","src_col":"task_id","tgt_col":"id","kind":"fk","self":false,"label":"task_id→id"},{"source":"task_todos","target":"tasks","src_col":"task_id","tgt_col":"id","kind":"fk","self":false,"label":"task_id→id"},{"source":"tasks","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"tasks","target":"task_columns","src_col":"column_id","tgt_col":"id","kind":"fk","self":false,"label":"column_id→id"},{"source":"tasks","target":"meetings","src_col":"source_meeting_id","tgt_col":"id","kind":"fk","self":false,"label":"source_meeting_id→id"},{"source":"tasks","target":"activity_archetypes","src_col":"archetype_id","tgt_col":"id","kind":"fk","self":false,"label":"archetype_id→id"},{"source":"tasks","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"team_member_roles","target":"team_roles","src_col":"role_id","tgt_col":"id","kind":"fk","self":false,"label":"role_id→id"},{"source":"team_member_roles","target":"team_members","src_col":"team_member_id","tgt_col":"id","kind":"fk","self":false,"label":"team_member_id→id"},{"source":"team_members","target":"teams","src_col":"team_id","tgt_col":"id","kind":"fk","self":false,"label":"team_id→id"},{"source":"team_members","target":"team_roles","src_col":"role_id","tgt_col":"id","kind":"fk","self":false,"label":"role_id→id"},{"source":"team_members","target":"users","src_col":"user_id","tgt_col":"id","kind":"fk","self":false,"label":"user_id→id"},{"source":"team_roles","target":"teams","src_col":"team_id","tgt_col":"id","kind":"fk","self":false,"label":"team_id→id"},{"source":"user_evolution_instances","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"users","target":"persons","src_col":"person_id","tgt_col":"person_id","kind":"fk","self":false,"label":"person_id→person_id"},{"source":"whatsapp_messages","target":"projects","src_col":"project_id","tgt_col":"id","kind":"fk","self":false,"label":"project_id→id"},{"source":"worker_runs","target":"skills","src_col":"skill_id","tgt_col":"id","kind":"fk","self":false,"label":"skill_id→id"},{"source":"worker_runs","target":"workers","src_col":"worker_id","tgt_col":"id","kind":"fk","self":false,"label":"worker_id→id"},{"source":"workers","target":"skills","src_col":"skill_id","tgt_col":"id","kind":"fk","self":false,"label":"skill_id→id"},{"source":"tasks","target":"team_members","src_col":"assignee[]","tgt_col":"id","kind":"implicit","self":false,"label":"assignee[]→id","note":"assignee uuid[] resuelve a team_members (no hay FK sobre el array)"},{"source":"meetings","target":"crm_contacts","src_col":"event.booking.contact_id","tgt_col":"ghl_contact_id","kind":"implicit","self":false,"label":"event.booking.contact_id→ghl_contact_id","note":"traza del closer: booking.contact_id ≈ crm_contacts.ghl_contact_id"},{"source":"project_ad_account_mappings","target":"ad_accounts","src_col":"account_id","tgt_col":"(externo)","kind":"implicit","self":false,"label":"account_id→(externo)","note":"mapea cuenta publicitaria→proyecto por id externo de Meta"},{"source":"project_campaign_mappings","target":"campaigns","src_col":"campaign_id","tgt_col":"(externo)","kind":"implicit","self":false,"label":"campaign_id→(externo)","note":"mapea campaña→proyecto por id externo"},{"source":"users","target":"crm_opportunities","src_col":"crm_id","tgt_col":"user_id","kind":"implicit","self":false,"label":"crm_id→user_id","note":"crm_id (integrations jsonb) es lo que la resolución del closer lee"},{"source":"meta_capi_events","target":"crm_contacts","src_col":"(evento)","tgt_col":"ghl_contact_id","kind":"implicit","self":false,"label":"(evento)→ghl_contact_id","note":"eventos CAPI ligados al contacto/lead"}]};
+const COL = {"tasks": "#E0A458", "meetings": "#4FB0A5", "crm": "#E0685E", "ads": "#9B7EDE", "finance": "#5FB37A", "catalog": "#5B9BD5", "people": "#E6C34A", "projects": "#CE6BA6", "okr": "#3FB6C9", "runtime": "#7C77D6", "content": "#E08A45", "whatsapp": "#7FB84A", "misc": "#9AA0A6"};
+const RED = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+// ---- model ----
+const nodes = GRAPH.nodes.map(n=>({...n}));
+const byId = new Map(nodes.map(n=>[n.id,n]));
+const edges = GRAPH.edges.map(e=>({...e, s:byId.get(e.source), t:byId.get(e.target)})).filter(e=>e.s&&e.t);
+const DOMS = GRAPH.meta.domains;
+const adj = new Map(nodes.map(n=>[n.id,[]]));
+edges.forEach(e=>{ adj.get(e.source).push(e); if(e.target!==e.source) adj.get(e.target).push(e); });
+
+const state = { domOff:new Set(), ekOff:new Set(), sel:null, hover:null, query:"" };
+
+// ---- header stats ----
+const m = GRAPH.meta;
+document.getElementById('stats').innerHTML =
+  [['entidades',m.n_nodes],['foreign keys',m.n_fk],['implícitas',m.n_implicit],['dominios',Object.keys(DOMS).length]]
+  .map(([l,v])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+document.getElementById('cfk').textContent=m.n_fk;
+document.getElementById('cimpl').textContent=m.n_implicit;
+
+// ---- legend ----
+const domCounts={}; nodes.forEach(n=>domCounts[n.domain]=(domCounts[n.domain]||0)+1);
+const legend=document.getElementById('legend');
+const domsShown=Object.keys(DOMS).filter(d=>domCounts[d]).sort((a,b)=>domCounts[b]-domCounts[a]);
+function syncLegend(){ legend.querySelectorAll('.dom').forEach(el=>
+  el.classList.toggle('off', state.domOff.has(el.dataset.dom))); }
+domsShown.forEach(d=>{
+  const el=document.createElement('div'); el.className='dom'; el.dataset.dom=d;
+  el.innerHTML=`<span class="dot" style="background:${COL[d]}"></span><span class="nm">${DOMS[d]}</span><span class="ct">${domCounts[d]}</span>`;
+  el.onclick=()=>{ if(state.domOff.has(d)){state.domOff.delete(d);}
+    else{state.domOff.add(d);} syncLegend(); draw(); };
+  el.ondblclick=()=>{ // isolate this domain (solo); dbl-click again to restore all
+    const soloed = domsShown.every(x=> x===d ? !state.domOff.has(x) : state.domOff.has(x));
+    state.domOff = new Set(soloed ? [] : domsShown.filter(x=>x!==d));
+    syncLegend(); draw(); };
+  legend.appendChild(el);
+});
+document.getElementById('dom-all').onclick=()=>{ state.domOff.clear(); syncLegend(); draw(); };
+document.getElementById('dom-none').onclick=()=>{ state.domOff=new Set(domsShown); syncLegend(); draw(); };
+document.querySelectorAll('.etg').forEach(el=>{
+  el.onclick=()=>{ const k=el.dataset.ek;
+    if(state.ekOff.has(k)){state.ekOff.delete(k);el.classList.remove('off');}
+    else{state.ekOff.add(k);el.classList.add('off');} draw(); };
+});
+const nodeVisible=n=>!state.domOff.has(n.domain);
+const edgeVisible=e=>!state.ekOff.has(e.kind)&&nodeVisible(e.s)&&nodeVisible(e.t);
+
+// ---- layout: seed by domain cluster ----
+const domList=Object.keys(DOMS);
+nodes.forEach(n=>{
+  const di=domList.indexOf(n.domain), a=di/domList.length*Math.PI*2;
+  const r=180+Math.random()*120;
+  n.x=Math.cos(a)*r + (Math.random()-.5)*80;
+  n.y=Math.sin(a)*r + (Math.random()-.5)*80;
+  n.vx=0; n.vy=0; n.pinned=false;
+  n.rad=5+Math.sqrt(n.degree)*2.4;
+});
+// ---- force sim ----
+let alpha=1;
+const MAXV=32, FMAX=45;              // velocity + force caps keep the sim stable
+function tick(){
+  const k=alpha;
+  for(let i=0;i<nodes.length;i++){
+    const a=nodes[i];
+    for(let j=i+1;j<nodes.length;j++){
+      const b=nodes[j]; let dx=a.x-b.x, dy=a.y-b.y; let d2=dx*dx+dy*dy;
+      if(d2>90000) continue;
+      if(d2<36) d2=36;               // floor distance so close pairs don't explode
+      const d=Math.sqrt(d2);
+      const f=Math.min(1500/d2,FMAX)*k;
+      const fx=dx/d*f, fy=dy/d*f; a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;
+    }
+    a.vx-=a.x*0.01*k; a.vy-=a.y*0.01*k; // gravity to center
+  }
+  for(const e of edges){
+    const a=e.s,b=e.t; let dx=b.x-a.x, dy=b.y-a.y; let d=Math.hypot(dx,dy)||1;
+    const L=64+(a.rad+b.rad); const f=(d-L)*0.05*k; const fx=dx/d*f, fy=dy/d*f;
+    a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;
+  }
+  for(const n of nodes){ if(n.pinned){n.vx=0;n.vy=0;continue;}
+    n.vx=Math.max(-MAXV,Math.min(MAXV,n.vx)); n.vy=Math.max(-MAXV,Math.min(MAXV,n.vy));
+    if(!Number.isFinite(n.vx))n.vx=0; if(!Number.isFinite(n.vy))n.vy=0;
+    n.x+=n.vx; n.y+=n.vy; n.vx*=0.8; n.vy*=0.8; }
+  alpha*=0.985; if(alpha<0.02) alpha=0.02;
+}
+
+// ---- view transform ----
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let DPR=1, view={x:0,y:0,s:1};
+function resize(){ DPR=Math.min(devicePixelRatio||1,2);
+  // A <canvas> is a replaced element: position:fixed+inset:0 does NOT stretch it,
+  // it keeps its intrinsic (attribute) size as CSS size. Pin the CSS size to the
+  // viewport explicitly so screen = view.s*world + view.x (no stray DPR factor),
+  // which is what the zoom/pick math assumes.
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  cv.width=Math.round(innerWidth*DPR); cv.height=Math.round(innerHeight*DPR); draw(); }
+addEventListener('resize',resize);
+function toScreen(p){ return {x:(p.x*view.s+view.x)*DPR, y:(p.y*view.s+view.y)*DPR}; }
+function toWorld(sx,sy){ return {x:(sx*DPR/DPR-view.x)/view.s, y:(sy*DPR/DPR-view.y)/view.s}; }
+
+function fit(){
+  const vis=nodes.filter(n=>nodeVisible(n)&&Number.isFinite(n.x)&&Number.isFinite(n.y)); if(!vis.length) return;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  vis.forEach(n=>{x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x);y1=Math.max(y1,n.y);});
+  // inset the fit for the fixed UI chrome so the graph centers in the *visible* area
+  const railW = innerWidth>720 ? 268 : 16;   // left rail + margin
+  const topH = 72, padR = 28, padB = 24;
+  const availW = Math.max(innerWidth - railW - padR, 120);
+  const availH = Math.max(innerHeight - topH - padB, 120);
+  const s=Math.min(availW/(x1-x0||1), availH/(y1-y0||1), 2.0);
+  view.s=Math.max(s,0.25);
+  const cx=(x0+x1)/2, cy=(y0+y1)/2;
+  view.x = railW + availW/2 - cx*view.s;   // center within the visible band
+  view.y = topH  + availH/2 - cy*view.s;
+}
+
+// ---- draw ----
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function draw(){
+  const cvbg=css('--canvas'), line=css('--line'), ink=css('--ink'), muted=css('--muted'), panel=css('--panel');
+  ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle=cvbg; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.translate(view.x,view.y); ctx.scale(view.s,view.s);
+
+  const sel=state.sel;
+  const neigh=new Set();
+  if(sel){ neigh.add(sel.id); adj.get(sel.id).forEach(e=>{neigh.add(e.source);neigh.add(e.target);}); }
+
+  // edges
+  for(const e of edges){
+    if(!edgeVisible(e)) continue;
+    const hot = sel && (e.source===sel.id||e.target===sel.id);
+    if(sel && !hot){ ctx.globalAlpha=0.06; } else { ctx.globalAlpha= sel?0.9:0.34; }
+    ctx.beginPath(); ctx.moveTo(e.s.x,e.s.y); ctx.lineTo(e.t.x,e.t.y);
+    ctx.strokeStyle = hot ? (COL[e.s.domain]||line) : line;
+    ctx.lineWidth = (hot?1.8:0.8)/view.s;
+    if(e.kind==='implicit'){ ctx.setLineDash([5/view.s,4/view.s]); } else { ctx.setLineDash([]); }
+    ctx.stroke();
+    // arrow head for hot edges
+    if(hot){ const dx=e.t.x-e.s.x,dy=e.t.y-e.s.y,d=Math.hypot(dx,dy)||1;
+      const ux=dx/d,uy=dy/d; const bx=e.t.x-ux*(e.t.rad+2), by=e.t.y-uy*(e.t.rad+2); const a=7/view.s;
+      ctx.beginPath(); ctx.moveTo(bx,by);
+      ctx.lineTo(bx-ux*a-uy*a*0.6, by-uy*a+ux*a*0.6);
+      ctx.lineTo(bx-ux*a+uy*a*0.6, by-uy*a-ux*a*0.6);
+      ctx.closePath(); ctx.fillStyle=COL[e.s.domain]||line; ctx.fill(); }
+  }
+  ctx.setLineDash([]); ctx.globalAlpha=1;
+
+  // nodes
+  for(const n of nodes){
+    if(!nodeVisible(n)) continue;
+    const dim = sel && !neigh.has(n.id);
+    const isSel = sel && n.id===sel.id;
+    const q = state.query && n.id.toLowerCase().includes(state.query);
+    ctx.globalAlpha = dim?0.18:1;
+    ctx.beginPath(); ctx.arc(n.x,n.y,n.rad,0,7);
+    ctx.fillStyle=COL[n.domain]||muted; ctx.fill();
+    ctx.lineWidth=(isSel?2.6:1.1)/view.s;
+    ctx.strokeStyle=isSel?ink:(q?css('--accent'):'rgba(0,0,0,.35)');
+    if(q&&!isSel) ctx.lineWidth=2.4/view.s;
+    ctx.stroke();
+    // label
+    const showLabel = !dim && (isSel || n===state.hover || n.degree>=4 || q || (neigh.has(n.id)&&sel) || view.s>1.1);
+    if(showLabel){
+      const fs=Math.max(10, 11)/view.s;
+      ctx.font=`${fs}px ${css('--mono')||'monospace'}`;
+      const tw=ctx.measureText(n.id).width;
+      const ty=n.y+n.rad+fs*1.15;
+      ctx.globalAlpha=dim?0.2:0.92;
+      ctx.fillStyle=panel; ctx.fillRect(n.x-tw/2-2/view.s, ty-fs*0.85, tw+4/view.s, fs*1.15);
+      ctx.fillStyle=isSel?ink:muted;
+      ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+      ctx.fillText(n.id, n.x, ty);
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+// ---- animation ----
+// Settle the layout synchronously up front so the initial view is static — a
+// drifting graph under the cursor is what makes zoom feel un-anchored. After
+// settling the loop only runs while the user is interacting, then self-stops.
+let running=false;
+function loop(){ if(running){ for(let i=0;i<2;i++) tick(); draw(); if(alpha<=0.021) running=false; } requestAnimationFrame(loop); }
+for(let i=0;i<340;i++) tick();
+alpha=0.02;
+fit(); resize();
+requestAnimationFrame(loop);
+
+// ---- picking ----
+function pick(sx,sy){ const w=toWorld(sx,sy); let best=null,bd=1e9;
+  for(const n of nodes){ if(!nodeVisible(n))continue; const d=Math.hypot(n.x-w.x,n.y-w.y);
+    if(d<n.rad+4/view.s && d<bd){bd=d;best=n;} } return best; }
+
+// ---- interaction ----
+let drag=null, panning=false, last=null, moved=false;
+cv.addEventListener('pointerdown',ev=>{
+  const n=pick(ev.clientX,ev.clientY); moved=false;
+  if(n){ drag=n; n.pinned=true; running=true; alpha=Math.max(alpha,0.3); }
+  else { panning=true; last={x:ev.clientX,y:ev.clientY}; }
+  cv.setPointerCapture(ev.pointerId);
+});
+cv.addEventListener('pointermove',ev=>{
+  if(drag){ const w=toWorld(ev.clientX,ev.clientY); drag.x=w.x; drag.y=w.y; moved=true; if(running)0; else draw(); }
+  else if(panning){ view.x+=ev.clientX-last.x; view.y+=ev.clientY-last.y; last={x:ev.clientX,y:ev.clientY}; moved=true; draw(); }
+  else { const n=pick(ev.clientX,ev.clientY); const tip=document.getElementById('tip');
+    if(n!==state.hover){ state.hover=n; if(!running)draw(); }
+    if(n){ tip.style.display='block'; tip.style.left=(ev.clientX+12)+'px'; tip.style.top=(ev.clientY+12)+'px';
+      tip.innerHTML=`<b>${n.id}</b> <small>· ${DOMS[n.domain]}</small><br><small>${n.kind} · ~${n.rows.toLocaleString()} filas · ${n.degree} conexiones</small>`;
+      cv.style.cursor='pointer'; }
+    else { tip.style.display='none'; cv.style.cursor='grab'; } }
+});
+cv.addEventListener('pointerup',ev=>{
+  if(drag && !moved){ select(drag); }
+  else if(panning && !moved){ select(null); }
+  drag=null; panning=false;
+  if(!RED && alpha>0.05) running=true;   // loop self-stops once it settles
+});
+cv.addEventListener('wheel',ev=>{ ev.preventDefault();
+  const f=ev.deltaY<0?1.12:0.893; const mx=ev.clientX,my=ev.clientY;
+  const wx=(mx-view.x)/view.s, wy=(my-view.y)/view.s;
+  view.s=Math.max(0.15,Math.min(4,view.s*f));
+  view.x=mx-wx*view.s; view.y=my-wy*view.s; draw();
+},{passive:false});
+
+document.getElementById('z-in').onclick=()=>zoomStep(1.2);
+document.getElementById('z-out').onclick=()=>zoomStep(1/1.2);
+document.getElementById('z-fit').onclick=()=>{fit();draw();};
+function zoomStep(f){ const mx=innerWidth/2,my=innerHeight/2;
+  const wx=(mx-view.x)/view.s, wy=(my-view.y)/view.s; view.s=Math.max(0.15,Math.min(4,view.s*f));
+  view.x=mx-wx*view.s; view.y=my-wy*view.s; draw(); }
+
+// ---- selection + detail panel ----
+function select(n){ state.sel=n; renderDetail(); draw(); }
+const dp=document.getElementById('detail');
+document.getElementById('d-close').onclick=()=>select(null);
+function renderDetail(){
+  const n=state.sel; if(!n){ dp.classList.remove('on'); return; }
+  dp.classList.add('on');
+  document.getElementById('d-stripe').style.background=COL[n.domain];
+  document.getElementById('d-dom').textContent=DOMS[n.domain];
+  document.getElementById('d-name').textContent=n.id;
+  document.getElementById('d-chips').innerHTML=
+    [`${n.kind}`,`~${n.rows.toLocaleString()} filas`,`${n.cols} columnas`,`${n.degree} conexiones`]
+    .map(c=>`<span class="chip">${c}</span>`).join('');
+  const out=adj.get(n.id).filter(e=>e.source===n.id);
+  const inc=adj.get(n.id).filter(e=>e.target===n.id && e.source!==n.id);
+  const row=e=>{ const other=e.source===n.id?e.t:e.s;
+    return `<div class="rel" data-go="${other.id}">
+      <span class="kb ${e.kind==='fk'?'fk':'impl'}">${e.kind==='fk'?'FK':'impl'}</span>
+      <span class="to" style="color:${COL[other.domain]}">${other.id}</span>
+      <span class="via">${e.label}</span></div>`; };
+  let html='';
+  html+=`<div class="rel-t">Apunta a → (${out.length})</div>`;
+  html+= out.length? out.map(row).join('') : `<div class="empty">no referencia otras entidades</div>`;
+  html+=`<div class="rel-t">← Referenciada por (${inc.length})</div>`;
+  html+= inc.length? inc.map(row).join('') : `<div class="empty">ninguna entidad la referencia</div>`;
+  const body=document.getElementById('d-body'); body.innerHTML=html;
+  body.querySelectorAll('.rel').forEach(r=>r.onclick=()=>{ const g=byId.get(r.dataset.go); if(g){select(g);centerOn(g);} });
+}
+function centerOn(n){ view.x=innerWidth/2-n.x*view.s; view.y=innerHeight*0.5-n.y*view.s; draw(); }
+
+// ---- search ----
+document.getElementById('search').addEventListener('input',ev=>{
+  state.query=ev.target.value.trim().toLowerCase();
+  if(state.query){ const hit=nodes.find(n=>n.id.toLowerCase()===state.query)||nodes.find(n=>n.id.toLowerCase().includes(state.query));
+    if(hit && ev.inputType==null){} }
+  draw();
+});
+document.getElementById('search').addEventListener('keydown',ev=>{
+  if(ev.key==='Enter'){ const hit=nodes.find(n=>n.id.toLowerCase().includes(state.query)); if(hit){select(hit);centerOn(hit);} }
+});
+</script>
