@@ -27,6 +27,9 @@ data/sqlite/
 # Copilot fork clones (each is its own git repo; the pilot lives here)
 data/forks/
 
+# Personal scratch (raíz) — notas de trabajo, nunca versionadas
+/x
+
 # OS / editor
 .DS_Store
 Thumbs.db
