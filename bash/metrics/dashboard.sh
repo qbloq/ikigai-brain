@@ -14,7 +14,14 @@ source "$(dirname "$0")/../lib/common.sh"
 
 project="David Guerrero"
 from="$(TZ="$TZ_DEFAULT" date +%Y-%m-01)"
-to="$(TZ="$TZ_DEFAULT" date -d "$(TZ="$TZ_DEFAULT" date +%Y-%m-01) +1 month -1 day" +%Y-%m-%d)"
+# último día del mes sin `date -d` (GNU-only; los copilotos corren en cualquier OS)
+_y="$(TZ="$TZ_DEFAULT" date +%Y)" _m="$(TZ="$TZ_DEFAULT" date +%m)"
+case "${_m#0}" in
+  4|6|9|11) _d=30 ;;
+  2) _d=28; (( (_y % 4 == 0 && _y % 100 != 0) || _y % 400 == 0 )) && _d=29 ;;
+  *) _d=31 ;;
+esac
+to="${_y}-${_m}-${_d}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

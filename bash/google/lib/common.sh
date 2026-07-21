@@ -66,7 +66,10 @@ google_token() {
   GOOGLE_EMAIL="$(cut -f3 <<<"$row")"
   [[ -z "$GOOGLE_TOKEN" ]] && { echo "google: identities row has no access_token" >&2; return 1; }
   if [[ -n "$GOOGLE_EXPIRY" ]] && (( GOOGLE_EXPIRY / 1000 <= now + 60 )); then
-    echo "google: token vencido ($(date -d "@$((GOOGLE_EXPIRY / 1000))" '+%Y-%m-%d %H:%M %Z'))." >&2
+    exp_s=$((GOOGLE_EXPIRY / 1000))
+    # GNU: date -d @epoch · BSD/macOS: date -r epoch
+    exp_h="$(date -d "@$exp_s" '+%Y-%m-%d %H:%M %Z' 2>/dev/null || date -r "$exp_s" '+%Y-%m-%d %H:%M %Z' 2>/dev/null || echo "$exp_s")"
+    echo "google: token vencido ($exp_h)." >&2
     echo "El backend lo refresca al usarlo (bot de meetings); reintenta en unos minutos" >&2
     echo "o re-autentica Google en la app. No hay client_secret local para refrescarlo aquí." >&2
     return 1

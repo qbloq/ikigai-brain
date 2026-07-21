@@ -39,7 +39,14 @@ while [[ $# -gt 0 ]]; do
     --jid)   JID="$2"; shift 2 ;;
     --since)
       if [[ "$2" =~ ^[0-9]+$ ]]; then SINCE_EPOCH="$2"
-      else SINCE_EPOCH="$(date -u -d "$2" +%s 2>/dev/null || echo 0)"; fi
+      else
+        # ISO → epoch sin `date -d` (GNU-only); python3 cubre BSD/macOS
+        SINCE_EPOCH="$(date -u -d "$2" +%s 2>/dev/null \
+          || python3 -c 'import sys,datetime as d
+t=d.datetime.fromisoformat(sys.argv[1].replace("Z","+00:00"))
+if t.tzinfo is None: t=t.replace(tzinfo=d.timezone.utc)
+print(int(t.timestamp()))' "$2" 2>/dev/null || echo 0)"
+      fi
       shift 2 ;;
     *) echo "Unknown flag: $1" >&2; exit 1 ;;
   esac
