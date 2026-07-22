@@ -1,0 +1,180 @@
+Cliente	A1.1	1
+Cliente	A2.4	16
+Cliente	A2.5	2
+Cliente	A2.7	1
+Cliente	A6.5	1
+Cliente	A9.2	2
+Cliente	A9.5	1
+Cliente	A9.6	1
+Cliente	A9.7	1
+Closer	A8.3	1
+Contenido	A1.6	1
+Contenido	A10.5	2
+Contenido	A2.2	1
+Contenido	A2.5	9
+Contenido	A3.3	1
+Contenido	A3.4	1
+Contenido	A4.1	5
+Contenido	A4.2	3
+Contenido	A4.4	2
+Contenido	A6.1	3
+Contenido	A6.3	1
+Contenido	A7.1	1
+Contenido	A7.7	2
+Contenido	A8.1	2
+Copy	A1.1	1
+Copy	A1.2	3
+Copy	A1.3	1
+Copy	A1.5	1
+Copy	A1.6	2
+Copy	A10.2	4
+Copy	A10.5	2
+Copy	A2.1	2
+Copy	A2.2	14
+Copy	A2.3	2
+Copy	A2.5	1
+Copy	A2.6	1
+Copy	A2.8	2
+Copy	A3.3	1
+Copy	A3.6	1
+Copy	A4.2	2
+Copy	A4.4	2
+Copy	A5.2	1
+Copy	A5.5	1
+Copy	A6.1	3
+Copy	A6.7	1
+Copy	A7.1	2
+Copy	A7.4	1
+Copy	A7.6	1
+Copy	A8.2	1
+Copy	A9.1	1
+Copy	A9.2	3
+Copy	A9.4	22
+Copy	A9.5	2
+Copy	A9.6	5
+Director Comercial	A1.3	1
+Director Comercial	A11.2	2
+Director Comercial	A11.3	1
+Director Comercial	A12.2	1
+Director Comercial	A12.4	1
+Director Comercial	A12.5	1
+Director Comercial	A12.6	1
+Director Comercial	A3.4	1
+Director Comercial	A5.5	1
+Director Comercial	A6.3	1
+Director Comercial	A6.4	1
+Director Comercial	A6.5	2
+Director Comercial	A6.7	1
+Director Comercial	A8.1	3
+Director Comercial	A8.2	2
+Director Comercial	A8.3	1
+Director Comercial	A9.1	1
+Diseño	A12.2	1
+Diseño	A2.5	8
+Diseño	A2.6	2
+Diseño	A2.8	6
+Diseño	A2.9	2
+Editor	A2.2	2
+Editor	A2.5	32
+Editor	A5.3	2
+Editor	A7.7	1
+Ejecutivo	A1.1	1
+Ejecutivo	A1.2	1
+Ejecutivo	A1.5	1
+Ejecutivo	A10.2	2
+Ejecutivo	A10.5	4
+Ejecutivo	A11.1	3
+Ejecutivo	A11.2	1
+Ejecutivo	A11.3	1
+Ejecutivo	A12.4	1
+Ejecutivo	A12.7	1
+Ejecutivo	A2.2	1
+Ejecutivo	A2.5	1
+Ejecutivo	A3.2	2
+Ejecutivo	A3.3	2
+Ejecutivo	A3.6	1
+Ejecutivo	A4.4	1
+Ejecutivo	A5.5	2
+Ejecutivo	A6.1	3
+Ejecutivo	A7.1	6
+Ejecutivo	A7.3	4
+Ejecutivo	A7.4	1
+Ejecutivo	A7.5	1
+Ejecutivo	A7.6	4
+Ejecutivo	A7.7	1
+Ejecutivo	A8.1	3
+Ejecutivo	A8.2	2
+Ejecutivo	A8.4	1
+Ejecutivo	A8.5	1
+Ejecutivo	A9.2	1
+Ejecutivo	A9.4	2
+Ejecutivo	A9.5	12
+Ejecutivo	A9.6	6
+Ejecutivo	A9.7	3
+Estratega	A10.5	1
+Estratega	A2.1	1
+Estratega	A2.2	1
+Estratega	A2.3	1
+Estratega	A2.5	1
+Estratega	A3.1	3
+Estratega	A3.2	4
+Estratega	A3.3	2
+Estratega	A3.4	3
+Estratega	A8.2	1
+Estratega	A9.1	1
+Líder de servicio	A12.4	1
+Líder de servicio	A5.1	1
+Líder de servicio	A5.2	1
+Líder de servicio	A5.5	2
+Líder de servicio	A7.4	1
+Operaciones	A6.1	3
+Operaciones	A7.1	1
+Operaciones	A7.3	2
+Operaciones	A7.4	1
+Operaciones	A7.6	5
+Operaciones	A9.2	1
+Operaciones	A9.4	1
+Operaciones	A9.5	11
+Operaciones	A9.6	6
+Operaciones	A9.7	2
+Project Manager	A10.2	2
+Project Manager	A10.5	4
+Project Manager	A11.2	1
+Project Manager	A12.5	1
+Project Manager	A12.6	1
+Project Manager	A12.7	1
+Project Manager	A2.2	2
+Project Manager	A2.3	1
+Project Manager	A2.4	4
+Project Manager	A2.5	48
+Project Manager	A2.7	4
+Project Manager	A2.8	2
+Project Manager	A3.1	2
+Project Manager	A3.2	1
+Project Manager	A3.4	1
+Project Manager	A4.1	1
+Project Manager	A4.4	1
+Project Manager	A5.1	2
+Project Manager	A5.2	1
+Project Manager	A5.3	1
+Project Manager	A5.5	1
+Project Manager	A6.1	3
+Project Manager	A7.1	1
+Project Manager	A7.3	1
+Project Manager	A7.5	1
+Project Manager	A7.6	1
+Project Manager	A7.7	1
+Project Manager	A8.2	1
+Project Manager	A8.3	1
+Project Manager	A9.1	1
+Project Manager	A9.2	2
+Project Manager	A9.6	1
+Technology	A1.1	1
+Technology	A10.5	2
+Technology	A6.1	2
+Technology	A7.1	4
+Technology	A7.3	3
+Technology	A7.6	4
+Technology	A7.7	1
+Technology	A9.5	1
+Technology	A9.7	1

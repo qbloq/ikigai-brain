@@ -1,0 +1,36 @@
+S1.1	S1	Construcción de narrativa & oferta	Copy|Estratega|Ejecutivo|Contenido	candidate
+S1.2	S1	Empaquetado & lanzamiento de oferta (formatos / low-ticket)	Director Comercial|Copy	candidate
+S10.1	S10	Gobernanza de tareas & seguimiento de reuniones	Project Manager	candidate
+S10.2	S10	Organización de espacios de gestión	Project Manager	candidate
+S11.1	S11	Desarrollo de features de Paralelo	Technology	proposed-gap
+S11.2	S11	Integraciones & tracking de origen de ventas	Technology	proposed-gap
+S11.3	S11	AI / Knowledge tools (Ask the Graph)	Technology	proposed-gap
+S12.1	S12	Gestión de closers & cuotas	Director Comercial	proposed-gap
+S12.2	S12	Manejo de objeciones & retención	Director Comercial	proposed-gap
+S12.3	S12	Forecasting de ingresos	Director Comercial	proposed-gap
+S12.4	S12	Provisión de data de trading a closers	Líder de Servicio	proposed-gap
+S2.1	S2	Producción de creativos de anuncios (ángulos, copy, hooks, grabación)	Copy|Estratega|PM	candidate
+S2.2	S2	Edición de audio/video de anuncios	Editor	candidate
+S2.3	S2	Diseño gráfico y piezas estáticas	Diseño|Copy|PM	candidate
+S3.1	S3	Optimización & escalamiento de campañas	Ejecutivo|Estratega	candidate
+S3.2	S3	Estructuración & documentación de campañas	Estratega|Ejecutivo	candidate
+S4.1	S4	Producción de contenido orgánico (reels/historias/horarios)	Contenido|Ejecutivo	candidate
+S4.2	S4	Estrategia & ángulos de contenido orgánico	Copy|Contenido	candidate
+S4.3	S4	Optimización de perfil & assets de conversión	Contenido	candidate
+S5.1	S5	Sourcing & grabación de testimonios	Líder de Servicio|Copy|Director Comercial|PM	candidate
+S5.2	S5	Edición & publicación de testimonios	Editor|PM|Operaciones	candidate
+S5.3	S5	Registro de casos de éxito (trazabilidad financiera)	Operaciones|Director Comercial	candidate
+S6.1	S6	Automatización ManyChat & tagging (audios CTO)	Operaciones|Contenido|Ejecutivo	candidate
+S6.2	S6	Operación de setters (agendamiento, capacitación, chat)	Director Comercial|Setter|Líder de Servicio	candidate
+S6.3	S6	Inteligencia de leads & avatar	Director Comercial|Contenido	candidate
+S7.1	S7	Build de landing & páginas	Operaciones|Ejecutivo|Diseño	candidate
+S7.2	S7	Checkout & pasarela de pagos	Operaciones|Diseño	candidate
+S7.3	S7	VSL A/B & plataforma (Biturbo ↔ GHL)	Technology|Operaciones	candidate
+S7.4	S7	Funnel gamificado & lead magnets	Copy|Diseño|Technology|Estratega	candidate
+S8.1	S8	Alineación de data & fuente de verdad (Paralelo)	Technology|Ejecutivo	candidate
+S8.2	S8	Integridad & limpieza de datos de ventas	Director Comercial	candidate
+S8.3	S8	Análisis & ingeniería inversa de conversiones	Copy|Estratega|Setter	candidate
+S8.4	S8	Definición de KPIs & reportería	PM|Contenido	candidate
+S9.1	S9	Mapeo de estrategia de lanzamiento/masterclass	PM|Copy|Estratega	candidate
+S9.2	S9	Dinámicas de cierre de mes	Copy|Director Comercial	candidate
+S9.3	S9	Secuencias de mensajería de lanzamiento (email/WhatsApp/Telegram)	Copy|PM|Operaciones|Ejecutivo	candidate

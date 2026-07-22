@@ -1,0 +1,12 @@
+S1	Narrativa & Oferta	1	per-launch	Copy|Estratega|Ejecutivo|Director Comercial|Contenido	candidate	gate A1.5 is the bottleneck
+S2	Producción de Creativos (anuncios)	2	per-campaign	Copy|PM|Estratega|Editor	candidate	A2.7 (chase) dominates PM load
+S7	Funnel / Landing / Checkout	3	per-launch	Operaciones|Technology|Diseño|Ejecutivo	candidate	
+S3	Optimización de Pauta	4	weekly	Ejecutivo|Estratega	candidate	
+S4	Contenido Orgánico	5	daily/weekly	Contenido|Ejecutivo|Estratega|Setter	candidate	
+S5	Testimonios / Prueba Social	6	ongoing	Líder de Servicio|Editor|PM|Copy|Director Comercial	candidate	most hand-off friction → formalize first
+S6	Calificación de Leads & Setter Ops	7	per-campaign/weekly	Director Comercial|Operaciones|Contenido|Setter|Líder de Servicio	candidate	
+S8	Métricas & Fuente de Verdad	8	weekly	Technology|Ejecutivo|Director Comercial|PM	candidate	converge on Paralelo
+S9	Lanzamiento / Masterclass	9	per-launch	PM|Copy|Estratega|Operaciones	candidate	
+S10	Gobernanza de Tareas	10	weekly/per-meeting	Project Manager	candidate	
+S11	Producto / Plataforma (Paralelo)		roadmap	Technology	proposed-gap	G1 — unowned dev/product
+S12	Cierre & Retención (Closers)		weekly/reactive	Director Comercial|Closer	proposed-gap	G2 — closing-side

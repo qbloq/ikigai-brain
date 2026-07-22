@@ -1,25 +1,101 @@
 #!/usr/bin/env python3
-"""Generate a self-contained force-directed viewer for the schema graph.
-Reads graph.json, writes schema-graph.html with the data embedded inline
-(no external requests — Artifact CSP-safe). Usage: build_viewer.py <dir>
+"""Generate a self-contained force-directed viewer for a graph, with the data
+embedded inline (no external requests — Artifact CSP-safe).
+
+One engine, two profiles — the layers of the ontology:
+  schema   : graph.json     → entities, FKs, rules            (the data layer)
+  business : business.json  → value chain → SOP → arquetipo    (the concept layer)
+
+Usage: build_viewer.py <dir> [--profile schema|business] [--graph F] [--out F]
 """
 import json, os, sys
 
-D = sys.argv[1] if len(sys.argv) > 1 else "."
-graph = json.load(open(os.path.join(D, "graph.json")))
-DATA = json.dumps(graph, ensure_ascii=False, separators=(",", ":"))
+argv = sys.argv[1:]
+D = argv[0] if argv and not argv[0].startswith("--") else "."
+def opt(name, default=None):
+    return argv[argv.index(name) + 1] if name in argv else default
+PROFILE = opt("--profile", "schema")
 
-# Per-domain colors (mid-tone: legible on both dark and light grounds).
-COLORS = {
-    "tasks":"#E0A458","meetings":"#4FB0A5","crm":"#E0685E","ads":"#9B7EDE",
-    "finance":"#5FB37A","catalog":"#5B9BD5","people":"#E6C34A","projects":"#CE6BA6",
-    "okr":"#3FB6C9","runtime":"#7C77D6","content":"#E08A45","whatsapp":"#7FB84A",
-    "misc":"#9AA0A6",
+# ---- profiles ---------------------------------------------------------------
+# Colors are mid-tone on purpose: they must read on both the dark and the light
+# ground, since the page follows the viewer's theme.
+PROFILES = {
+    "schema": {
+        "graph": "graph.json", "out": "schema-graph.html",
+        "title": "ikigaigm · mapa de entidades",
+        "subtitle": "ontología de datos de Ikigai — primer vistazo desde el esquema",
+        "colors": {
+            "tasks":"#E0A458","meetings":"#4FB0A5","crm":"#E0685E","ads":"#9B7EDE",
+            "finance":"#5FB37A","catalog":"#5B9BD5","people":"#E6C34A","projects":"#CE6BA6",
+            "okr":"#3FB6C9","runtime":"#7C77D6","content":"#E08A45","whatsapp":"#7FB84A",
+            "misc":"#9AA0A6",
+        },
+        "stats": [("entidades","n_nodes"),("foreign keys","n_fk"),
+                  ("implícitas","n_implicit"),("reglas","n_rules")],
+        "dashed": ["implicit"], "groups_off": [],
+        "edge_labels": {"fk":"foreign keys","implicit":"implícitas"},
+        "hint": ('<b>doble-click</b> un dominio para aislarlo · el <b>tamaño</b> del nodo crece con '
+                 'sus conexiones · línea <code>punteada</code> = relación <b>implícita</b>: no la fuerza '
+                 'ningún FK, se verificó contra datos reales y el panel muestra su tasa de resolución.'),
+        "legend_title": "Dominios",
+    },
+    "business": {
+        "graph": "business.json", "out": "business-graph.html",
+        "title": "Ikigai · ontología de la organización",
+        "subtitle": "cadena de valor → macro-proceso → SOP → arquetipo → tarea",
+        "colors": {
+            "macro":"#E0685E","sop":"#5B9BD5","archetype":"#E0A458",
+            "role":"#E6C34A","project":"#CE6BA6","io_type":"#4FB0A5",
+        },
+        "stats": [("conceptos","n_nodes"),("relaciones","n_edges")],
+        # observed relations are drawn dashed: they come from real tasks, not
+        # from the catalog's declaration
+        "dashed": ["ejecuta","consume"],
+        # 644 edges at once is a hairball. Open on the process spine
+        # (macro → SOP → arquetipo) with the peripheral classes folded away;
+        # switching one on brings its relations with it.
+        "groups_off": ["role","project","io_type"],
+        "edge_labels": {"precede":"cadena","descompone":"descompone","agrupa":"agrupa",
+                        "dueño":"dueño (decl.)","ejecuta":"ejecuta (obs.)",
+                        "consume":"consume (obs.)","requiere":"requiere","produce":"produce"},
+        "hint": ('<b>doble-click</b> una clase para aislarla · línea <code>punteada</code> = relación '
+                 '<b>observada</b> (sale de las 329 tareas reales), sólida = <b>declarada</b> por el '
+                 'catálogo. El contraste entre ambas es el hallazgo.'),
+        "legend_title": "Clases",
+    },
 }
-CJSON = json.dumps(COLORS)
+P = PROFILES[PROFILE]
+graph = json.load(open(os.path.join(D, opt("--graph", P["graph"]))))
+OUTFILE = opt("--out", P["out"])
+
+# ---- normalise both shapes onto one vocabulary the JS can rely on -----------
+# schema nodes carry domain/domain_label and display as their id; business nodes
+# carry group/group_label and display as their short code.
+meta = graph["meta"]
+meta["groups"] = meta.get("domains") or meta.get("classes")
+for n in graph["nodes"]:
+    n["group"] = n.get("domain") or n.get("group")
+    n["group_label"] = n.get("domain_label") or n.get("group_label")
+    n["disp"] = n.get("label") or n["id"]
+kinds = []
+for e in graph["edges"]:
+    if e["kind"] not in kinds: kinds.append(e["kind"])
+meta["edge_kinds"] = [
+    {"k": k, "label": P["edge_labels"].get(k, k),
+     "n": sum(1 for e in graph["edges"] if e["kind"] == k),
+     "dash": k in P["dashed"]}
+    for k in kinds
+]
+meta["groups_off"] = P.get("groups_off", [])
+STATS = [[lbl, meta.get(key)] for lbl, key in P["stats"] if meta.get(key) is not None]
+STATS.append(["clases" if PROFILE == "business" else "dominios", len(meta["groups"])])
+
+DATA  = json.dumps(graph, ensure_ascii=False, separators=(",", ":"))
+CJSON = json.dumps(P["colors"])
+SJSON = json.dumps(STATS, ensure_ascii=False)
 
 HTML = r"""<meta charset="utf-8">
-<title>ikigaigm · mapa de entidades</title>
+<title>__TITLE__</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 :root{
@@ -83,9 +159,10 @@ header{position:fixed;top:0;left:0;right:0;height:60px;z-index:20;
 .dom .dot{width:11px;height:11px;border-radius:3px;flex:none}
 .dom .nm{font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dom .ct{font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
-.edgetog{display:flex;gap:7px;margin-top:4px}
-.etg{flex:1;font-size:11px;text-align:center;padding:6px;border-radius:7px;cursor:pointer;
-  border:1px solid var(--line2);background:var(--panel2);user-select:none}
+.edgetog{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.etg{flex:1 1 44%;font-size:10.5px;text-align:center;padding:5px 4px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--line2);background:var(--panel2);user-select:none;line-height:1.25}
+.etg.dash{border-style:dashed}
 .etg.off{opacity:.4}
 .etg b{display:block;font-family:var(--mono);font-size:12px}
 .hint{font-size:10.5px;color:var(--muted);line-height:1.5;padding:10px 2px 2px;border-top:1px solid var(--line);margin-top:10px}
@@ -149,8 +226,8 @@ canvas{position:fixed;inset:0;z-index:1;display:block;touch-action:none}
 
 <header>
   <div class="brand">
-    <h1>ikigaigm · mapa de entidades</h1>
-    <span class="sub" id="subline">ontología de datos de Ikigai — primer vistazo desde el esquema</span>
+    <h1>__TITLE__</h1>
+    <span class="sub" id="subline">__SUBTITLE__</span>
   </div>
   <div class="stats" id="stats"></div>
 </header>
@@ -159,18 +236,13 @@ canvas{position:fixed;inset:0;z-index:1;display:block;touch-action:none}
   <div class="pad">
     <input class="search" id="search" placeholder="buscar entidad…" autocomplete="off" spellcheck="false">
     <div class="sec-t">Relaciones</div>
-    <div class="edgetog">
-      <div class="etg" data-ek="fk" id="etg-fk"><b id="cfk">0</b>foreign keys</div>
-      <div class="etg" data-ek="implicit" id="etg-impl"><b id="cimpl">0</b>implícitas</div>
-    </div>
-    <div class="sec-t row"><span>Dominios</span><span><button class="mini" id="dom-all">todos</button><span class="sep">·</span><button class="mini" id="dom-none">ninguno</button></span></div>
+    <div class="edgetog" id="edgetog"></div>
+    <div class="sec-t row"><span>__LEGEND_TITLE__</span><span><button class="mini" id="dom-all">todos</button><span class="sep">·</span><button class="mini" id="dom-none">ninguno</button></span></div>
     <div class="legend" id="legend"></div>
     <div class="hint">
       <b>click</b> un nodo para ver sus relaciones · <b>arrastra</b> para fijarlo ·
       rueda para <b>zoom</b> · fondo para desplazar.<br>
-      <b>doble-click</b> un dominio para aislarlo · el <b>tamaño</b> del nodo crece con sus conexiones ·
-      línea <code>punteada</code> = relación <b>implícita</b>: no la fuerza ningún FK, se verificó contra
-      datos reales y el panel muestra su tasa de resolución.
+      __HINT__
     </div>
   </div>
 </div>
@@ -204,23 +276,24 @@ const RED = matchMedia('(prefers-reduced-motion:reduce)').matches;
 const nodes = GRAPH.nodes.map(n=>({...n}));
 const byId = new Map(nodes.map(n=>[n.id,n]));
 const edges = GRAPH.edges.map(e=>({...e, s:byId.get(e.source), t:byId.get(e.target)})).filter(e=>e.s&&e.t);
-const DOMS = GRAPH.meta.domains;
+const DOMS = GRAPH.meta.groups;
 const adj = new Map(nodes.map(n=>[n.id,[]]));
 edges.forEach(e=>{ adj.get(e.source).push(e); if(e.target!==e.source) adj.get(e.target).push(e); });
 
-const state = { domOff:new Set(), ekOff:new Set(), sel:null, hover:null, query:"" };
+const state = { domOff:new Set(GRAPH.meta.groups_off||[]), ekOff:new Set(), sel:null, hover:null, query:"" };
 
 // ---- header stats ----
 const m = GRAPH.meta;
-document.getElementById('stats').innerHTML =
-  [['entidades',m.n_nodes],['foreign keys',m.n_fk],['implícitas',m.n_implicit],
-   ['reglas',m.n_rules],['dominios',Object.keys(DOMS).length]]
+document.getElementById('stats').innerHTML = __STATS__
   .map(([l,v])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
-document.getElementById('cfk').textContent=m.n_fk;
-document.getElementById('cimpl').textContent=m.n_implicit;
+
+// edge-kind toggles, generated from the kinds this graph actually has
+const DASH = new Set(m.edge_kinds.filter(k=>k.dash).map(k=>k.k));
+document.getElementById('edgetog').innerHTML = m.edge_kinds
+  .map(k=>`<div class="etg${k.dash?' dash':''}" data-ek="${k.k}"><b>${k.n}</b>${k.label}</div>`).join('');
 
 // ---- legend ----
-const domCounts={}; nodes.forEach(n=>domCounts[n.domain]=(domCounts[n.domain]||0)+1);
+const domCounts={}; nodes.forEach(n=>domCounts[n.group]=(domCounts[n.group]||0)+1);
 const legend=document.getElementById('legend');
 const domsShown=Object.keys(DOMS).filter(d=>domCounts[d]).sort((a,b)=>domCounts[b]-domCounts[a]);
 function syncLegend(){ legend.querySelectorAll('.dom').forEach(el=>
@@ -236,6 +309,7 @@ domsShown.forEach(d=>{
     syncLegend(); draw(); };
   legend.appendChild(el);
 });
+syncLegend();   // reflect any classes this profile folds away on open
 document.getElementById('dom-all').onclick=()=>{ state.domOff.clear(); syncLegend(); draw(); };
 document.getElementById('dom-none').onclick=()=>{ state.domOff=new Set(domsShown); syncLegend(); draw(); };
 document.querySelectorAll('.etg').forEach(el=>{
@@ -243,13 +317,13 @@ document.querySelectorAll('.etg').forEach(el=>{
     if(state.ekOff.has(k)){state.ekOff.delete(k);el.classList.remove('off');}
     else{state.ekOff.add(k);el.classList.add('off');} draw(); };
 });
-const nodeVisible=n=>!state.domOff.has(n.domain);
+const nodeVisible=n=>!state.domOff.has(n.group);
 const edgeVisible=e=>!state.ekOff.has(e.kind)&&nodeVisible(e.s)&&nodeVisible(e.t);
 
 // ---- layout: seed by domain cluster ----
 const domList=Object.keys(DOMS);
 nodes.forEach(n=>{
-  const di=domList.indexOf(n.domain), a=di/domList.length*Math.PI*2;
+  const di=domList.indexOf(n.group), a=di/domList.length*Math.PI*2;
   const r=180+Math.random()*120;
   n.x=Math.cos(a)*r + (Math.random()-.5)*80;
   n.y=Math.sin(a)*r + (Math.random()-.5)*80;
@@ -333,9 +407,9 @@ function draw(){
     const hot = sel && (e.source===sel.id||e.target===sel.id);
     if(sel && !hot){ ctx.globalAlpha=0.06; } else { ctx.globalAlpha= sel?0.9:0.34; }
     ctx.beginPath(); ctx.moveTo(e.s.x,e.s.y); ctx.lineTo(e.t.x,e.t.y);
-    ctx.strokeStyle = hot ? (COL[e.s.domain]||line) : line;
+    ctx.strokeStyle = hot ? (COL[e.s.group]||line) : line;
     ctx.lineWidth = (hot?1.8:0.8)/view.s;
-    if(e.kind==='implicit'){ ctx.setLineDash([5/view.s,4/view.s]); } else { ctx.setLineDash([]); }
+    if(DASH.has(e.kind)){ ctx.setLineDash([5/view.s,4/view.s]); } else { ctx.setLineDash([]); }
     ctx.stroke();
     // arrow head for hot edges
     if(hot){ const dx=e.t.x-e.s.x,dy=e.t.y-e.s.y,d=Math.hypot(dx,dy)||1;
@@ -343,7 +417,7 @@ function draw(){
       ctx.beginPath(); ctx.moveTo(bx,by);
       ctx.lineTo(bx-ux*a-uy*a*0.6, by-uy*a+ux*a*0.6);
       ctx.lineTo(bx-ux*a+uy*a*0.6, by-uy*a-ux*a*0.6);
-      ctx.closePath(); ctx.fillStyle=COL[e.s.domain]||line; ctx.fill(); }
+      ctx.closePath(); ctx.fillStyle=COL[e.s.group]||line; ctx.fill(); }
   }
   ctx.setLineDash([]); ctx.globalAlpha=1;
 
@@ -352,10 +426,10 @@ function draw(){
     if(!nodeVisible(n)) continue;
     const dim = sel && !neigh.has(n.id);
     const isSel = sel && n.id===sel.id;
-    const q = state.query && n.id.toLowerCase().includes(state.query);
+    const q = state.query && n.disp.toLowerCase().includes(state.query);
     ctx.globalAlpha = dim?0.18:1;
     ctx.beginPath(); ctx.arc(n.x,n.y,n.rad,0,7);
-    ctx.fillStyle=COL[n.domain]||muted; ctx.fill();
+    ctx.fillStyle=COL[n.group]||muted; ctx.fill();
     ctx.lineWidth=(isSel?2.6:1.1)/view.s;
     ctx.strokeStyle=isSel?ink:(q?css('--accent'):'rgba(0,0,0,.35)');
     if(q&&!isSel) ctx.lineWidth=2.4/view.s;
@@ -365,13 +439,13 @@ function draw(){
     if(showLabel){
       const fs=Math.max(10, 11)/view.s;
       ctx.font=`${fs}px ${css('--mono')||'monospace'}`;
-      const tw=ctx.measureText(n.id).width;
+      const tw=ctx.measureText(n.disp).width;
       const ty=n.y+n.rad+fs*1.15;
       ctx.globalAlpha=dim?0.2:0.92;
       ctx.fillStyle=panel; ctx.fillRect(n.x-tw/2-2/view.s, ty-fs*0.85, tw+4/view.s, fs*1.15);
       ctx.fillStyle=isSel?ink:muted;
       ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-      ctx.fillText(n.id, n.x, ty);
+      ctx.fillText(n.disp, n.x, ty);
     }
   }
   ctx.globalAlpha=1;
@@ -407,7 +481,10 @@ cv.addEventListener('pointermove',ev=>{
   else { const n=pick(ev.clientX,ev.clientY); const tip=document.getElementById('tip');
     if(n!==state.hover){ state.hover=n; if(!running)draw(); }
     if(n){ tip.style.display='block'; tip.style.left=(ev.clientX+12)+'px'; tip.style.top=(ev.clientY+12)+'px';
-      tip.innerHTML=`<b>${n.id}</b> <small>· ${DOMS[n.domain]}</small><br><small>${n.kind} · ~${n.rows.toLocaleString()} filas · ${n.degree} conexiones</small>`;
+      const sub = n.rows!==undefined
+        ? `${n.kind} · ~${n.rows.toLocaleString()} filas · ${n.degree} conexiones`
+        : `${(n.name&&n.name!==n.disp)?n.name+' · ':''}${n.degree} conexiones`;
+      tip.innerHTML=`<b>${n.disp}</b> <small>· ${DOMS[n.group]}</small><br><small>${sub}</small>`;
       cv.style.cursor='pointer'; }
     else { tip.style.display='none'; cv.style.cursor='grab'; } }
 });
@@ -438,32 +515,53 @@ document.getElementById('d-close').onclick=()=>select(null);
 function renderDetail(){
   const n=state.sel; if(!n){ dp.classList.remove('on'); return; }
   dp.classList.add('on');
-  document.getElementById('d-stripe').style.background=COL[n.domain];
-  document.getElementById('d-dom').textContent=DOMS[n.domain];
-  document.getElementById('d-name').textContent=n.id;
-  const chips=[`${n.kind}`,`~${n.rows.toLocaleString()} filas`,`${n.cols} columnas`,`${n.degree} conexiones`];
-  if(n.pk) chips.push(`pk ${n.pk}`);
-  document.getElementById('d-chips').innerHTML=chips.map(c=>`<span class="chip">${c}</span>`).join('');
+  document.getElementById('d-stripe').style.background=COL[n.group];
+  document.getElementById('d-dom').textContent=DOMS[n.group];
+  document.getElementById('d-name').textContent=n.disp;
   const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const chips=[];
+  if(n.rows!==undefined){                      // data layer
+    chips.push(`${n.kind}`,`~${n.rows.toLocaleString()} filas`,`${n.cols} columnas`,`${n.degree} conexiones`);
+    if(n.pk) chips.push(`pk ${n.pk}`);
+  } else {                                     // concept layer
+    if(n.verb) chips.push(n.verb);
+    if(n.sop) chips.push(`SOP ${n.sop}`);
+    if(n.macro) chips.push(`macro ${n.macro}`);
+    if(n.chain_order) chips.push(`paso ${n.chain_order} de la cadena`);
+    if(n.tasks!==undefined) chips.push(`${n.tasks} tarea${n.tasks===1?'':'s'}`);
+    if(n.open_tasks!==undefined) chips.push(`${n.open_tasks} abiertas`);
+    if(n.people!==undefined) chips.push(`${n.people} persona${n.people===1?'':'s'}`);
+    if(n.category) chips.push(n.category);
+    if(n.is_gate) chips.push('gate');
+    chips.push(`${n.degree} conexiones`);
+  }
+  document.getElementById('d-chips').innerHTML=chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('');
   const out=adj.get(n.id).filter(e=>e.source===n.id);
   const inc=adj.get(n.id).filter(e=>e.target===n.id && e.source!==n.id);
+  const KL={}; m.edge_kinds.forEach(k=>KL[k.k]=k.label);
   const row=e=>{ const other=e.source===n.id?e.t:e.s;
-    const ev=e.verified?` · resuelve ${e.verified.matched}/${e.verified.total} (${e.verified.pct}%)`:'';
-    const od=(e.kind==='fk'&&e.on_delete&&e.on_delete!=='no action')?` · on delete ${esc(e.on_delete)}`:'';
-    const part=e.optional?'<span class="opt">opcional</span>':'obligatoria';
+    const bits=[];
+    if(e.card) bits.push(e.optional?'<span class="opt">opcional</span>':'obligatoria');
+    if(e.on_delete && e.on_delete!=='no action' && e.on_delete!=='—') bits.push('on delete '+esc(e.on_delete));
+    if(e.verified) bits.push(`resuelve ${e.verified.matched}/${e.verified.total} (${e.verified.pct}%)`);
+    if(e.tasks) bits.push(`${e.tasks} tarea${e.tasks===1?'':'s'}`);
+    if(e.required) bits.push('requerido');
+    if(e.note && !e.verified) bits.push(esc(e.note));
+    const right = e.card || (e.tasks?`×${e.tasks}`:'');
     return `<div class="rel" data-go="${other.id}">
       <div class="r1">
-        <span class="kb ${e.kind==='fk'?'fk':'impl'}">${e.kind==='fk'?'FK':'impl'}</span>
-        <span class="to" style="color:${COL[other.domain]}">${other.id}</span>
-        <span class="cardb">${esc(e.card)}</span>
+        <span class="kb ${DASH.has(e.kind)?'impl':'fk'}">${esc(e.kind==='fk'?'FK':(KL[e.kind]||e.kind))}</span>
+        <span class="to" style="color:${COL[other.group]}">${esc(other.disp)}</span>
+        ${right?`<span class="cardb">${esc(right)}</span>`:''}
       </div>
-      <div class="r2"><span class="via">${esc(e.label)}</span>
-        <span class="meta">${part}${od}${ev}</span></div></div>`; };
+      <div class="r2"><span class="via">${esc(other.name&&other.name!==other.disp?other.name:e.label)}</span>
+        ${bits.length?`<span class="meta">${bits.join(' · ')}</span>`:''}</div></div>`; };
   let html='';
+  if(n.name && n.name!==n.disp) html+=`<div class="cols" style="padding-top:10px">${esc(n.name)}</div>`;
   html+=`<div class="rel-t">Apunta a → (${out.length})</div>`;
-  html+= out.length? out.map(row).join('') : `<div class="empty">no referencia otras entidades</div>`;
+  html+= out.length? out.map(row).join('') : `<div class="empty">no apunta a nada</div>`;
   html+=`<div class="rel-t">← Referenciada por (${inc.length})</div>`;
-  html+= inc.length? inc.map(row).join('') : `<div class="empty">ninguna entidad la referencia</div>`;
+  html+= inc.length? inc.map(row).join('') : `<div class="empty">nada la referencia</div>`;
 
   // rules: enums, CHECK (incl. the check-as-enum idiom) and unique constraints
   const enums=n.enums||[], checks=n.checks||[], uniq=n.uniques||[];
@@ -494,17 +592,26 @@ function centerOn(n){ view.x=innerWidth/2-n.x*view.s; view.y=innerHeight*0.5-n.y
 // ---- search ----
 document.getElementById('search').addEventListener('input',ev=>{
   state.query=ev.target.value.trim().toLowerCase();
-  if(state.query){ const hit=nodes.find(n=>n.id.toLowerCase()===state.query)||nodes.find(n=>n.id.toLowerCase().includes(state.query));
+  if(state.query){ const hit=nodes.find(n=>n.disp.toLowerCase()===state.query)||nodes.find(n=>(n.disp+' '+(n.name||'')).toLowerCase().includes(state.query));
     if(hit && ev.inputType==null){} }
   draw();
 });
 document.getElementById('search').addEventListener('keydown',ev=>{
-  if(ev.key==='Enter'){ const hit=nodes.find(n=>n.id.toLowerCase().includes(state.query)); if(hit){select(hit);centerOn(hit);} }
+  if(ev.key==='Enter'){ const hit=nodes.find(n=>(n.disp+' '+(n.name||'')).toLowerCase().includes(state.query)); if(hit){select(hit);centerOn(hit);} }
 });
 </script>
 """
 
-out = HTML.replace("__DATA__", DATA).replace("__COLORS__", CJSON)
-with open(os.path.join(D, "schema-graph.html"), "w") as f:
+out = (HTML.replace("__DATA__", DATA).replace("__COLORS__", CJSON)
+           .replace("__STATS__", SJSON)
+           .replace("__TITLE__", P["title"]).replace("__SUBTITLE__", P["subtitle"])
+           .replace("__LEGEND_TITLE__", P["legend_title"]).replace("__HINT__", P["hint"]))
+leftover = [t for t in ("__DATA__","__COLORS__","__STATS__","__TITLE__","__SUBTITLE__",
+                        "__LEGEND_TITLE__","__HINT__") if t in out]
+if leftover:
+    sys.exit(f"placeholders sin reemplazar: {leftover}")
+path = os.path.join(D, OUTFILE)
+with open(path, "w") as f:
     f.write(out)
-print("wrote", os.path.join(D, "schema-graph.html"), len(out), "bytes")
+print(f"wrote {path} ({len(out)} bytes) · perfil={PROFILE} · "
+      f"{len(graph['nodes'])} nodos / {len(graph['edges'])} aristas")

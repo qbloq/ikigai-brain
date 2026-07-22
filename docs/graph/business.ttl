@@ -1,0 +1,1781 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix biz:  <https://ikigai.parallelo.ai/ontology/business#> .
+@prefix ent:  <https://ikigai.parallelo.ai/ontology/entity#> .
+@prefix mp:   <https://ikigai.parallelo.ai/business/macro#> .
+@prefix sop:  <https://ikigai.parallelo.ai/business/sop#> .
+@prefix arq:  <https://ikigai.parallelo.ai/business/arquetipo#> .
+@prefix rol:  <https://ikigai.parallelo.ai/business/rol#> .
+@prefix proj: <https://ikigai.parallelo.ai/business/cliente#> .
+@prefix io:   <https://ikigai.parallelo.ai/business/entregable#> .
+
+### Concept classes, each bridged to the tables that realize it
+biz:MacroProceso a owl:Class ; rdfs:label "Macro-proceso"@es ;
+    biz:realizadoPor ent:macro_processes .
+biz:SOP a owl:Class ; rdfs:label "SOP"@es ;
+    biz:realizadoPor ent:sops .
+biz:ArquetipoDeActividad a owl:Class ; rdfs:label "Arquetipo de actividad"@es ;
+    biz:realizadoPor ent:activity_archetypes ; biz:realizadoPor ent:archetype_inputs ; biz:realizadoPor ent:archetype_outputs ; biz:realizadoPor ent:archetype_acceptance_criteria ; biz:realizadoPor ent:tasks .
+biz:Rol a owl:Class ; rdfs:label "Rol"@es ;
+    biz:realizadoPor ent:team_roles ; biz:realizadoPor ent:team_members ; biz:realizadoPor ent:users ; biz:realizadoPor ent:persons .
+biz:Cliente a owl:Class ; rdfs:label "Cliente / Proyecto"@es ;
+    biz:realizadoPor ent:projects .
+biz:TipoDeEntregable a owl:Class ; rdfs:label "Tipo de entregable"@es ;
+    biz:realizadoPor ent:io_types ; biz:realizadoPor ent:artifact_types ; biz:realizadoPor ent:task_inputs ; biz:realizadoPor ent:task_outputs .
+
+### Relations
+biz:precedeA a owl:ObjectProperty ; rdfs:label "precede"@es ; biz:evidencia "declarada" .
+biz:seDescomponeEn a owl:ObjectProperty ; rdfs:label "descompone"@es ; biz:evidencia "declarada" .
+biz:agrupa a owl:ObjectProperty ; rdfs:label "agrupa"@es ; biz:evidencia "declarada" .
+biz:tieneDueño a owl:ObjectProperty ; rdfs:label "dueño"@es ; biz:evidencia "declarada" .
+biz:ejecuta a owl:ObjectProperty ; rdfs:label "ejecuta"@es ; biz:evidencia "observada" .
+biz:consume a owl:ObjectProperty ; rdfs:label "consume"@es ; biz:evidencia "observada" .
+biz:requiere a owl:ObjectProperty ; rdfs:label "requiere"@es ; biz:evidencia "declarada" .
+biz:produce a owl:ObjectProperty ; rdfs:label "produce"@es ; biz:evidencia "declarada" .
+
+### Instances
+mp:S1 a biz:MacroProceso ;
+    rdfs:label "S1" ;
+    biz:nombre "Narrativa & Oferta" ;
+    biz:ordenCadena 1 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S2 a biz:MacroProceso ;
+    rdfs:label "S2" ;
+    biz:nombre "Producción de Creativos (anuncios)" ;
+    biz:ordenCadena 2 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S7 a biz:MacroProceso ;
+    rdfs:label "S7" ;
+    biz:nombre "Funnel / Landing / Checkout" ;
+    biz:ordenCadena 3 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S3 a biz:MacroProceso ;
+    rdfs:label "S3" ;
+    biz:nombre "Optimización de Pauta" ;
+    biz:ordenCadena 4 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S4 a biz:MacroProceso ;
+    rdfs:label "S4" ;
+    biz:nombre "Contenido Orgánico" ;
+    biz:ordenCadena 5 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S5 a biz:MacroProceso ;
+    rdfs:label "S5" ;
+    biz:nombre "Testimonios / Prueba Social" ;
+    biz:ordenCadena 6 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S6 a biz:MacroProceso ;
+    rdfs:label "S6" ;
+    biz:nombre "Calificación de Leads & Setter Ops" ;
+    biz:ordenCadena 7 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S8 a biz:MacroProceso ;
+    rdfs:label "S8" ;
+    biz:nombre "Métricas & Fuente de Verdad" ;
+    biz:ordenCadena 8 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S9 a biz:MacroProceso ;
+    rdfs:label "S9" ;
+    biz:nombre "Lanzamiento / Masterclass" ;
+    biz:ordenCadena 9 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S10 a biz:MacroProceso ;
+    rdfs:label "S10" ;
+    biz:nombre "Gobernanza de Tareas" ;
+    biz:ordenCadena 10 ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S11 a biz:MacroProceso ;
+    rdfs:label "S11" ;
+    biz:nombre "Producto / Plataforma (Paralelo)" ;
+    rdfs:comment "Macro-proceso"@es .
+mp:S12 a biz:MacroProceso ;
+    rdfs:label "S12" ;
+    biz:nombre "Cierre & Retención (Closers)" ;
+    rdfs:comment "Macro-proceso"@es .
+sop:S1.1 a biz:SOP ;
+    rdfs:label "S1.1" ;
+    biz:nombre "Construcción de narrativa & oferta" ;
+    rdfs:comment "SOP"@es .
+sop:S1.2 a biz:SOP ;
+    rdfs:label "S1.2" ;
+    biz:nombre "Empaquetado & lanzamiento de oferta (formatos / low-ticket)" ;
+    rdfs:comment "SOP"@es .
+sop:S10.1 a biz:SOP ;
+    rdfs:label "S10.1" ;
+    biz:nombre "Gobernanza de tareas & seguimiento de reuniones" ;
+    rdfs:comment "SOP"@es .
+sop:S10.2 a biz:SOP ;
+    rdfs:label "S10.2" ;
+    biz:nombre "Organización de espacios de gestión" ;
+    rdfs:comment "SOP"@es .
+sop:S11.1 a biz:SOP ;
+    rdfs:label "S11.1" ;
+    biz:nombre "Desarrollo de features de Paralelo" ;
+    rdfs:comment "SOP"@es .
+sop:S11.2 a biz:SOP ;
+    rdfs:label "S11.2" ;
+    biz:nombre "Integraciones & tracking de origen de ventas" ;
+    rdfs:comment "SOP"@es .
+sop:S11.3 a biz:SOP ;
+    rdfs:label "S11.3" ;
+    biz:nombre "AI / Knowledge tools (Ask the Graph)" ;
+    rdfs:comment "SOP"@es .
+sop:S12.1 a biz:SOP ;
+    rdfs:label "S12.1" ;
+    biz:nombre "Gestión de closers & cuotas" ;
+    rdfs:comment "SOP"@es .
+sop:S12.2 a biz:SOP ;
+    rdfs:label "S12.2" ;
+    biz:nombre "Manejo de objeciones & retención" ;
+    rdfs:comment "SOP"@es .
+sop:S12.3 a biz:SOP ;
+    rdfs:label "S12.3" ;
+    biz:nombre "Forecasting de ingresos" ;
+    rdfs:comment "SOP"@es .
+sop:S12.4 a biz:SOP ;
+    rdfs:label "S12.4" ;
+    biz:nombre "Provisión de data de trading a closers" ;
+    rdfs:comment "SOP"@es .
+sop:S2.1 a biz:SOP ;
+    rdfs:label "S2.1" ;
+    biz:nombre "Producción de creativos de anuncios (ángulos, copy, hooks, grabación)" ;
+    rdfs:comment "SOP"@es .
+sop:S2.2 a biz:SOP ;
+    rdfs:label "S2.2" ;
+    biz:nombre "Edición de audio/video de anuncios" ;
+    rdfs:comment "SOP"@es .
+sop:S2.3 a biz:SOP ;
+    rdfs:label "S2.3" ;
+    biz:nombre "Diseño gráfico y piezas estáticas" ;
+    rdfs:comment "SOP"@es .
+sop:S3.1 a biz:SOP ;
+    rdfs:label "S3.1" ;
+    biz:nombre "Optimización & escalamiento de campañas" ;
+    rdfs:comment "SOP"@es .
+sop:S3.2 a biz:SOP ;
+    rdfs:label "S3.2" ;
+    biz:nombre "Estructuración & documentación de campañas" ;
+    rdfs:comment "SOP"@es .
+sop:S4.1 a biz:SOP ;
+    rdfs:label "S4.1" ;
+    biz:nombre "Producción de contenido orgánico (reels/historias/horarios)" ;
+    rdfs:comment "SOP"@es .
+sop:S4.2 a biz:SOP ;
+    rdfs:label "S4.2" ;
+    biz:nombre "Estrategia & ángulos de contenido orgánico" ;
+    rdfs:comment "SOP"@es .
+sop:S4.3 a biz:SOP ;
+    rdfs:label "S4.3" ;
+    biz:nombre "Optimización de perfil & assets de conversión" ;
+    rdfs:comment "SOP"@es .
+sop:S5.1 a biz:SOP ;
+    rdfs:label "S5.1" ;
+    biz:nombre "Sourcing & grabación de testimonios" ;
+    rdfs:comment "SOP"@es .
+sop:S5.2 a biz:SOP ;
+    rdfs:label "S5.2" ;
+    biz:nombre "Edición & publicación de testimonios" ;
+    rdfs:comment "SOP"@es .
+sop:S5.3 a biz:SOP ;
+    rdfs:label "S5.3" ;
+    biz:nombre "Registro de casos de éxito (trazabilidad financiera)" ;
+    rdfs:comment "SOP"@es .
+sop:S6.1 a biz:SOP ;
+    rdfs:label "S6.1" ;
+    biz:nombre "Automatización ManyChat & tagging (audios CTO)" ;
+    rdfs:comment "SOP"@es .
+sop:S6.2 a biz:SOP ;
+    rdfs:label "S6.2" ;
+    biz:nombre "Operación de setters (agendamiento, capacitación, chat)" ;
+    rdfs:comment "SOP"@es .
+sop:S6.3 a biz:SOP ;
+    rdfs:label "S6.3" ;
+    biz:nombre "Inteligencia de leads & avatar" ;
+    rdfs:comment "SOP"@es .
+sop:S7.1 a biz:SOP ;
+    rdfs:label "S7.1" ;
+    biz:nombre "Build de landing & páginas" ;
+    rdfs:comment "SOP"@es .
+sop:S7.2 a biz:SOP ;
+    rdfs:label "S7.2" ;
+    biz:nombre "Checkout & pasarela de pagos" ;
+    rdfs:comment "SOP"@es .
+sop:S7.3 a biz:SOP ;
+    rdfs:label "S7.3" ;
+    biz:nombre "VSL A/B & plataforma (Biturbo ↔ GHL)" ;
+    rdfs:comment "SOP"@es .
+sop:S7.4 a biz:SOP ;
+    rdfs:label "S7.4" ;
+    biz:nombre "Funnel gamificado & lead magnets" ;
+    rdfs:comment "SOP"@es .
+sop:S8.1 a biz:SOP ;
+    rdfs:label "S8.1" ;
+    biz:nombre "Alineación de data & fuente de verdad (Paralelo)" ;
+    rdfs:comment "SOP"@es .
+sop:S8.2 a biz:SOP ;
+    rdfs:label "S8.2" ;
+    biz:nombre "Integridad & limpieza de datos de ventas" ;
+    rdfs:comment "SOP"@es .
+sop:S8.3 a biz:SOP ;
+    rdfs:label "S8.3" ;
+    biz:nombre "Análisis & ingeniería inversa de conversiones" ;
+    rdfs:comment "SOP"@es .
+sop:S8.4 a biz:SOP ;
+    rdfs:label "S8.4" ;
+    biz:nombre "Definición de KPIs & reportería" ;
+    rdfs:comment "SOP"@es .
+sop:S9.1 a biz:SOP ;
+    rdfs:label "S9.1" ;
+    biz:nombre "Mapeo de estrategia de lanzamiento/masterclass" ;
+    rdfs:comment "SOP"@es .
+sop:S9.2 a biz:SOP ;
+    rdfs:label "S9.2" ;
+    biz:nombre "Dinámicas de cierre de mes" ;
+    rdfs:comment "SOP"@es .
+sop:S9.3 a biz:SOP ;
+    rdfs:label "S9.3" ;
+    biz:nombre "Secuencias de mensajería de lanzamiento (email/WhatsApp/Telegram)" ;
+    rdfs:comment "SOP"@es .
+arq:A1.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A1.1" ;
+    biz:nombre "Reformular narrativa / big idea / mecanismo único" ;
+    biz:tareas 3 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A1.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A1.2" ;
+    biz:nombre "Escribir guion de venta largo (VSL/PSL/SL/TSL)" ;
+    biz:tareas 4 ;
+    biz:verbo "Escribir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A1.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A1.3" ;
+    biz:nombre "Adaptar/empaquetar oferta a un formato" ;
+    biz:tareas 2 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A1.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A1.4" ;
+    biz:nombre "Graficar escalera de valor" ;
+    biz:tareas 0 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A1.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A1.5" ;
+    biz:nombre "Revisar y aprobar narrativa (gate)" ;
+    biz:tareas 1 ;
+    biz:verbo "Revisar/Aprobar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A1.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A1.6" ;
+    biz:nombre "Definir ángulo de comunicación / posicionamiento" ;
+    biz:tareas 2 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A10.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A10.1" ;
+    biz:nombre "Aterrizar acta → tareas en plataforma" ;
+    biz:tareas 0 ;
+    biz:verbo "Coordinar/Seguir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A10.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A10.2" ;
+    biz:nombre "Seguimiento/chase de entregable" ;
+    biz:tareas 5 ;
+    biz:verbo "Coordinar/Seguir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A10.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A10.3" ;
+    biz:nombre "Entregar reportes semanales de reuniones" ;
+    biz:tareas 0 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A10.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A10.4" ;
+    biz:nombre "Organizar/separar espacios de gestión" ;
+    biz:tareas 0 ;
+    biz:verbo "Gestionar acceso" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A10.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A10.5" ;
+    biz:nombre "Coordinar/agendar reunión (agenda, asistentes, grabación)" ;
+    biz:tareas 6 ;
+    biz:verbo "Coordinar/Seguir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A11.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A11.1" ;
+    biz:nombre "Desarrollar feature de Paralelo (vistas por estado/miembro/cliente, taskboards, uploads de Drive)" ;
+    biz:tareas 3 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A11.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A11.2" ;
+    biz:nombre "Integrar sistema externo con Paralelo (Stripe/Biturbo/Cloud/Notion/Drive)" ;
+    biz:tareas 2 ;
+    biz:verbo "Integrar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A11.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A11.3" ;
+    biz:nombre "Implementar tracking de origen de ventas (VSL/orgánico/CTR)" ;
+    biz:tareas 2 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A11.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A11.4" ;
+    biz:nombre "Construir herramienta de IA / knowledge (Ask the Graph / skills)" ;
+    biz:tareas 0 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A12.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A12.1" ;
+    biz:nombre "Definir cuotas y objetivos de ventas (semanales/mensuales)" ;
+    biz:tareas 0 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A12.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A12.2" ;
+    biz:nombre "Alinear/capacitar a los closers (discurso, expectativas, desempeño)" ;
+    biz:tareas 2 ;
+    biz:verbo "Capacitar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A12.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A12.3" ;
+    biz:nombre "Diseñar protocolo de manejo de objeciones" ;
+    biz:tareas 0 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A12.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A12.4" ;
+    biz:nombre "Analizar/mejorar retención y ascensión entre niveles (Academy→Mastermind)" ;
+    biz:tareas 2 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A12.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A12.5" ;
+    biz:nombre "Modelar forecast de ingresos" ;
+    biz:tareas 1 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A12.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A12.6" ;
+    biz:nombre "Proveer data de trading a closers" ;
+    biz:tareas 1 ;
+    biz:verbo "Gestionar acceso" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A12.7 a biz:ArquetipoDeActividad ;
+    rdfs:label "A12.7" ;
+    biz:nombre "Implementar encuesta de satisfacción/seguimiento de clientes" ;
+    biz:tareas 1 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.1" ;
+    biz:nombre "Definir/mapear ángulos y formatos de anuncios" ;
+    biz:tareas 3 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.2" ;
+    biz:nombre "Escribir copy de un lote de anuncios" ;
+    biz:tareas 15 ;
+    biz:verbo "Escribir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.3" ;
+    biz:nombre "Crear variaciones de hooks" ;
+    biz:tareas 3 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.4" ;
+    biz:nombre "Grabar reels/videos de anuncio con talento" ;
+    biz:tareas 16 ;
+    biz:verbo "Grabar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.5" ;
+    biz:nombre "Editar audio/video de anuncios" ;
+    biz:tareas 84 ;
+    biz:verbo "Editar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.6" ;
+    biz:nombre "Producir anuncios con IA / voz IA" ;
+    biz:tareas 3 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.7 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.7" ;
+    biz:nombre "Coordinar/seguir grabación con talento" ;
+    biz:tareas 4 ;
+    biz:verbo "Coordinar/Seguir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.8 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.8" ;
+    biz:nombre "Diseñar pieza gráfica / estático" ;
+    biz:tareas 6 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A2.9 a biz:ArquetipoDeActividad ;
+    rdfs:label "A2.9" ;
+    biz:nombre "Diseñar presentación / diapositivas" ;
+    biz:tareas 2 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A3.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A3.1" ;
+    biz:nombre "Optimizar campañas (apagar perdedores / escalar ganadores)" ;
+    biz:tareas 3 ;
+    biz:verbo "Optimizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A3.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A3.2" ;
+    biz:nombre "Ajustar presupuestos de pauta" ;
+    biz:tareas 4 ;
+    biz:verbo "Optimizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A3.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A3.3" ;
+    biz:nombre "Montar estructura publicitaria (ciclo)" ;
+    biz:tareas 4 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A3.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A3.4" ;
+    biz:nombre "Monitorear rendimiento de anuncios" ;
+    biz:tareas 3 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A3.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A3.5" ;
+    biz:nombre "Apagar campañas/funnels obsoletos" ;
+    biz:tareas 0 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A3.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A3.6" ;
+    biz:nombre "Documentar estructura de campañas (Loom)" ;
+    biz:tareas 1 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A4.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A4.1" ;
+    biz:nombre "Producir reels orgánicos (cadencia)" ;
+    biz:tareas 5 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A4.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A4.2" ;
+    biz:nombre "Diseñar estrategia de historias (CTAs/secuencias/horarios)" ;
+    biz:tareas 3 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A4.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A4.3" ;
+    biz:nombre "Optimizar perfil (posts anzuelo fijados, destacados)" ;
+    biz:tareas 0 ;
+    biz:verbo "Optimizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A4.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A4.4" ;
+    biz:nombre "Desarrollar ángulos de contenido orgánico" ;
+    biz:tareas 3 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A4.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A4.5" ;
+    biz:nombre "Hacer cumplir horarios de publicación (enforcement)" ;
+    biz:tareas 0 ;
+    biz:verbo "Coordinar/Seguir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A4.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A4.6" ;
+    biz:nombre "Escribir reels anzuelo" ;
+    biz:tareas 0 ;
+    biz:verbo "Escribir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A5.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A5.1" ;
+    biz:nombre "Sourcing de testimonios (identificar/solicitar)" ;
+    biz:tareas 2 ;
+    biz:verbo "Coordinar/Seguir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A5.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A5.2" ;
+    biz:nombre "Grabar testimonios" ;
+    biz:tareas 2 ;
+    biz:verbo "Grabar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A5.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A5.3" ;
+    biz:nombre "Editar testimonios" ;
+    biz:tareas 3 ;
+    biz:verbo "Editar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A5.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A5.4" ;
+    biz:nombre "Publicar testimonios" ;
+    biz:tareas 0 ;
+    biz:verbo "Publicar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A5.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A5.5" ;
+    biz:nombre "Estructurar registro de casos de éxito (con trazabilidad financiera)" ;
+    biz:tareas 3 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A6.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A6.1" ;
+    biz:nombre "Implementar/configurar ManyChat" ;
+    biz:tareas 9 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A6.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A6.2" ;
+    biz:nombre "Configurar tags por etapa de conciencia" ;
+    biz:tareas 0 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A6.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A6.3" ;
+    biz:nombre "Implementar sistema de audios CTO" ;
+    biz:tareas 1 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A6.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A6.4" ;
+    biz:nombre "Capacitar setters" ;
+    biz:tareas 1 ;
+    biz:verbo "Capacitar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A6.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A6.5" ;
+    biz:nombre "Agendar llamadas (setter, cadencia)" ;
+    biz:tareas 3 ;
+    biz:verbo "Coordinar/Seguir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A6.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A6.6" ;
+    biz:nombre "Diagnosticar/resolver fallas de chat" ;
+    biz:tareas 0 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A6.7 a biz:ArquetipoDeActividad ;
+    rdfs:label "A6.7" ;
+    biz:nombre "Investigar avatar / inteligencia de leads" ;
+    biz:tareas 1 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A7.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A7.1" ;
+    biz:nombre "Crear/duplicar landing page" ;
+    biz:tareas 7 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A7.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A7.2" ;
+    biz:nombre "Implementar checkout (Hotmart/GHL)" ;
+    biz:tareas 0 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A7.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A7.3" ;
+    biz:nombre "Configurar VSL A/B (Biturbo)" ;
+    biz:tareas 5 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A7.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A7.4" ;
+    biz:nombre "Construir/actualizar página de testimonios" ;
+    biz:tareas 3 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A7.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A7.5" ;
+    biz:nombre "Integrar pasarela de pagos" ;
+    biz:tareas 1 ;
+    biz:verbo "Integrar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A7.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A7.6" ;
+    biz:nombre "Editar/optimizar página del funnel (survey, agenda, velocidad de carga)" ;
+    biz:tareas 9 ;
+    biz:verbo "Optimizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A7.7 a biz:ArquetipoDeActividad ;
+    rdfs:label "A7.7" ;
+    biz:nombre "Crear/editar lead magnet (guía, video, quiz)" ;
+    biz:tareas 3 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A7.8 a biz:ArquetipoDeActividad ;
+    rdfs:label "A7.8" ;
+    biz:nombre "Construir funnel gamificado (quiz): flujo, contenido y página" ;
+    biz:tareas 1 ;
+    biz:verbo "Producir/Crear" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A8.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A8.1" ;
+    biz:nombre "Alinear data de métricas entre sistemas" ;
+    biz:tareas 6 ;
+    biz:verbo "Integrar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A8.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A8.2" ;
+    biz:nombre "Ingeniería inversa de conversiones" ;
+    biz:tareas 2 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A8.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A8.3" ;
+    biz:nombre "Limpiar / de-duplicar números de ventas" ;
+    biz:tareas 2 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A8.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A8.4" ;
+    biz:nombre "Definir métricas/KPIs y modelar volúmenes" ;
+    biz:tareas 1 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A8.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A8.5" ;
+    biz:nombre "Especificar/entregar reportes requeridos" ;
+    biz:tareas 1 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A8.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A8.6" ;
+    biz:nombre "Medir indicador puntual (AOV, origen de venta)" ;
+    biz:tareas 0 ;
+    biz:verbo "Medir/Analizar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A9.1 a biz:ArquetipoDeActividad ;
+    rdfs:label "A9.1" ;
+    biz:nombre "Mapear estrategia de lanzamiento (mensajes, fases, grupos, diseño, landing)" ;
+    biz:tareas 2 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A9.2 a biz:ArquetipoDeActividad ;
+    rdfs:label "A9.2" ;
+    biz:nombre "Mapear masterclass (correos, mensajes, cronograma)" ;
+    biz:tareas 6 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A9.3 a biz:ArquetipoDeActividad ;
+    rdfs:label "A9.3" ;
+    biz:nombre "Diseñar dinámica de cierre de mes (pico de ventas)" ;
+    biz:tareas 0 ;
+    biz:verbo "Definir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A9.4 a biz:ArquetipoDeActividad ;
+    rdfs:label "A9.4" ;
+    biz:nombre "Escribir copy/flujo de secuencia de mensajería" ;
+    biz:tareas 21 ;
+    biz:verbo "Escribir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A9.5 a biz:ArquetipoDeActividad ;
+    rdfs:label "A9.5" ;
+    biz:nombre "Programar/automatizar secuencia de mensajería" ;
+    biz:tareas 15 ;
+    biz:verbo "Configurar" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A9.6 a biz:ArquetipoDeActividad ;
+    rdfs:label "A9.6" ;
+    biz:nombre "Gestionar ciclo de grupos/comunidades de lanzamiento" ;
+    biz:tareas 10 ;
+    biz:verbo "Coordinar/Seguir" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+arq:A9.7 a biz:ArquetipoDeActividad ;
+    rdfs:label "A9.7" ;
+    biz:nombre "Configurar canal/infraestructura de mensajería" ;
+    biz:tareas 4 ;
+    biz:verbo "Gestionar acceso" ;
+    rdfs:comment "Arquetipo de actividad"@es .
+io:ad_creative a biz:TipoDeEntregable ;
+    rdfs:label "ad_creative" ;
+    biz:nombre "Ad Creative" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:analytics_report a biz:TipoDeEntregable ;
+    rdfs:label "analytics_report" ;
+    biz:nombre "Analytics Report" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:audio_asset a biz:TipoDeEntregable ;
+    rdfs:label "audio_asset" ;
+    biz:nombre "Audio Asset" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:contact_info a biz:TipoDeEntregable ;
+    rdfs:label "contact_info" ;
+    biz:nombre "Contact Info" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:content_draft a biz:TipoDeEntregable ;
+    rdfs:label "content_draft" ;
+    biz:nombre "Content Draft" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:credentials_access a biz:TipoDeEntregable ;
+    rdfs:label "credentials_access" ;
+    biz:nombre "Credentials Access" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:decision a biz:TipoDeEntregable ;
+    rdfs:label "decision" ;
+    biz:nombre "Decision" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:documentation a biz:TipoDeEntregable ;
+    rdfs:label "documentation" ;
+    biz:nombre "Documentation" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:image_asset a biz:TipoDeEntregable ;
+    rdfs:label "image_asset" ;
+    biz:nombre "Image Asset" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:meeting_report a biz:TipoDeEntregable ;
+    rdfs:label "meeting_report" ;
+    biz:nombre "Meeting Report" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:message_or_communication a biz:TipoDeEntregable ;
+    rdfs:label "message_or_communication" ;
+    biz:nombre "Message Or Communication" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:schedule_event a biz:TipoDeEntregable ;
+    rdfs:label "schedule_event" ;
+    biz:nombre "Schedule Event" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:strategy_document a biz:TipoDeEntregable ;
+    rdfs:label "strategy_document" ;
+    biz:nombre "Strategy Document" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:system_configuration a biz:TipoDeEntregable ;
+    rdfs:label "system_configuration" ;
+    biz:nombre "System Configuration" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:task_approval a biz:TipoDeEntregable ;
+    rdfs:label "task_approval" ;
+    biz:nombre "Task Approval" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:team_member a biz:TipoDeEntregable ;
+    rdfs:label "team_member" ;
+    biz:nombre "Team Member" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:transcript a biz:TipoDeEntregable ;
+    rdfs:label "transcript" ;
+    biz:nombre "Meeting Transcript" ;
+    rdfs:comment "Tipo de entregable"@es .
+io:video_asset a biz:TipoDeEntregable ;
+    rdfs:label "video_asset" ;
+    biz:nombre "Video Asset" ;
+    rdfs:comment "Tipo de entregable"@es .
+rol:Admin a biz:Rol ;
+    rdfs:label "Admin" ;
+    biz:nombre "Admin" ;
+    biz:personas 1 ;
+    rdfs:comment "Rol"@es .
+rol:CEO a biz:Rol ;
+    rdfs:label "CEO" ;
+    biz:nombre "CEO" ;
+    biz:personas 0 ;
+    rdfs:comment "Rol"@es .
+rol:Cliente a biz:Rol ;
+    rdfs:label "Cliente" ;
+    biz:nombre "Cliente" ;
+    biz:personas 2 ;
+    rdfs:comment "Rol"@es .
+rol:Closer a biz:Rol ;
+    rdfs:label "Closer" ;
+    biz:nombre "Closer" ;
+    biz:personas 7 ;
+    rdfs:comment "Rol"@es .
+rol:Community a biz:Rol ;
+    rdfs:label "Community" ;
+    biz:nombre "Community" ;
+    biz:personas 0 ;
+    rdfs:comment "Rol"@es .
+rol:Confirmer a biz:Rol ;
+    rdfs:label "Confirmer" ;
+    biz:nombre "Confirmer" ;
+    biz:personas 0 ;
+    rdfs:comment "Rol"@es .
+rol:Contenido a biz:Rol ;
+    rdfs:label "Contenido" ;
+    biz:nombre "Contenido" ;
+    biz:personas 3 ;
+    rdfs:comment "Rol"@es .
+rol:COO a biz:Rol ;
+    rdfs:label "COO" ;
+    biz:nombre "COO" ;
+    biz:personas 0 ;
+    rdfs:comment "Rol"@es .
+rol:Copy a biz:Rol ;
+    rdfs:label "Copy" ;
+    biz:nombre "Copy" ;
+    biz:personas 2 ;
+    rdfs:comment "Rol"@es .
+rol:Director_Comercial a biz:Rol ;
+    rdfs:label "Director Comercial" ;
+    biz:nombre "Director Comercial" ;
+    biz:personas 1 ;
+    rdfs:comment "Rol"@es .
+rol:Director_Creativo a biz:Rol ;
+    rdfs:label "Director Creativo" ;
+    biz:nombre "Director Creativo" ;
+    biz:personas 0 ;
+    rdfs:comment "Rol"@es .
+rol:Dise_o a biz:Rol ;
+    rdfs:label "Diseño" ;
+    biz:nombre "Diseño" ;
+    biz:personas 2 ;
+    rdfs:comment "Rol"@es .
+rol:Editor a biz:Rol ;
+    rdfs:label "Editor" ;
+    biz:nombre "Editor" ;
+    biz:personas 1 ;
+    rdfs:comment "Rol"@es .
+rol:Ejecutivo a biz:Rol ;
+    rdfs:label "Ejecutivo" ;
+    biz:nombre "Ejecutivo" ;
+    biz:personas 2 ;
+    rdfs:comment "Rol"@es .
+rol:Estratega a biz:Rol ;
+    rdfs:label "Estratega" ;
+    biz:nombre "Estratega" ;
+    biz:personas 1 ;
+    rdfs:comment "Rol"@es .
+rol:L_der_de_servicio a biz:Rol ;
+    rdfs:label "Líder de servicio" ;
+    biz:nombre "Líder de servicio" ;
+    biz:personas 1 ;
+    rdfs:comment "Rol"@es .
+rol:member a biz:Rol ;
+    rdfs:label "member" ;
+    biz:nombre "member" ;
+    biz:personas 0 ;
+    rdfs:comment "Rol"@es .
+rol:Operaciones a biz:Rol ;
+    rdfs:label "Operaciones" ;
+    biz:nombre "Operaciones" ;
+    biz:personas 1 ;
+    rdfs:comment "Rol"@es .
+rol:Project_Manager a biz:Rol ;
+    rdfs:label "Project Manager" ;
+    biz:nombre "Project Manager" ;
+    biz:personas 1 ;
+    rdfs:comment "Rol"@es .
+rol:Setter a biz:Rol ;
+    rdfs:label "Setter" ;
+    biz:nombre "Setter" ;
+    biz:personas 2 ;
+    rdfs:comment "Rol"@es .
+rol:Technology a biz:Rol ;
+    rdfs:label "Technology" ;
+    biz:nombre "Technology" ;
+    biz:personas 3 ;
+    rdfs:comment "Rol"@es .
+proj:Andrea_Torres a biz:Cliente ;
+    rdfs:label "Andrea Torres" ;
+    biz:nombre "Andrea Torres" ;
+    biz:tareas 2 ;
+    rdfs:comment "Cliente / Proyecto"@es .
+proj:David_Guerrero a biz:Cliente ;
+    rdfs:label "David Guerrero" ;
+    biz:nombre "David Guerrero" ;
+    biz:tareas 325 ;
+    rdfs:comment "Cliente / Proyecto"@es .
+proj:Floppy a biz:Cliente ;
+    rdfs:label "Floppy" ;
+    biz:nombre "Floppy" ;
+    biz:tareas 0 ;
+    rdfs:comment "Cliente / Proyecto"@es .
+proj:Ikigai a biz:Cliente ;
+    rdfs:label "Ikigai" ;
+    biz:nombre "Ikigai" ;
+    biz:tareas 2 ;
+    rdfs:comment "Cliente / Proyecto"@es .
+
+### Statements
+mp:S1 biz:precedeA mp:S2 .
+mp:S2 biz:precedeA mp:S7 .
+mp:S7 biz:precedeA mp:S3 .
+mp:S3 biz:precedeA mp:S4 .
+mp:S4 biz:precedeA mp:S5 .
+mp:S5 biz:precedeA mp:S6 .
+mp:S6 biz:precedeA mp:S8 .
+mp:S8 biz:precedeA mp:S9 .
+mp:S9 biz:precedeA mp:S10 .
+mp:S1 biz:seDescomponeEn sop:S1.1 .
+mp:S1 biz:seDescomponeEn sop:S1.2 .
+mp:S10 biz:seDescomponeEn sop:S10.1 .
+mp:S10 biz:seDescomponeEn sop:S10.2 .
+mp:S11 biz:seDescomponeEn sop:S11.1 .
+mp:S11 biz:seDescomponeEn sop:S11.2 .
+mp:S11 biz:seDescomponeEn sop:S11.3 .
+mp:S12 biz:seDescomponeEn sop:S12.1 .
+mp:S12 biz:seDescomponeEn sop:S12.2 .
+mp:S12 biz:seDescomponeEn sop:S12.3 .
+mp:S12 biz:seDescomponeEn sop:S12.4 .
+mp:S2 biz:seDescomponeEn sop:S2.1 .
+mp:S2 biz:seDescomponeEn sop:S2.2 .
+mp:S2 biz:seDescomponeEn sop:S2.3 .
+mp:S3 biz:seDescomponeEn sop:S3.1 .
+mp:S3 biz:seDescomponeEn sop:S3.2 .
+mp:S4 biz:seDescomponeEn sop:S4.1 .
+mp:S4 biz:seDescomponeEn sop:S4.2 .
+mp:S4 biz:seDescomponeEn sop:S4.3 .
+mp:S5 biz:seDescomponeEn sop:S5.1 .
+mp:S5 biz:seDescomponeEn sop:S5.2 .
+mp:S5 biz:seDescomponeEn sop:S5.3 .
+mp:S6 biz:seDescomponeEn sop:S6.1 .
+mp:S6 biz:seDescomponeEn sop:S6.2 .
+mp:S6 biz:seDescomponeEn sop:S6.3 .
+mp:S7 biz:seDescomponeEn sop:S7.1 .
+mp:S7 biz:seDescomponeEn sop:S7.2 .
+mp:S7 biz:seDescomponeEn sop:S7.3 .
+mp:S7 biz:seDescomponeEn sop:S7.4 .
+mp:S8 biz:seDescomponeEn sop:S8.1 .
+mp:S8 biz:seDescomponeEn sop:S8.2 .
+mp:S8 biz:seDescomponeEn sop:S8.3 .
+mp:S8 biz:seDescomponeEn sop:S8.4 .
+mp:S9 biz:seDescomponeEn sop:S9.1 .
+mp:S9 biz:seDescomponeEn sop:S9.2 .
+mp:S9 biz:seDescomponeEn sop:S9.3 .
+sop:S1.1 biz:agrupa arq:A1.1 .
+sop:S1.1 biz:agrupa arq:A1.2 .
+sop:S1.2 biz:agrupa arq:A1.3 .
+sop:S1.1 biz:agrupa arq:A1.4 .
+sop:S1.1 biz:agrupa arq:A1.5 .
+sop:S1.1 biz:agrupa arq:A1.6 .
+sop:S10.1 biz:agrupa arq:A10.1 .
+sop:S10.1 biz:agrupa arq:A10.2 .
+sop:S10.1 biz:agrupa arq:A10.3 .
+sop:S10.2 biz:agrupa arq:A10.4 .
+sop:S10.1 biz:agrupa arq:A10.5 .
+sop:S11.1 biz:agrupa arq:A11.1 .
+sop:S11.2 biz:agrupa arq:A11.2 .
+sop:S11.2 biz:agrupa arq:A11.3 .
+sop:S11.3 biz:agrupa arq:A11.4 .
+sop:S12.1 biz:agrupa arq:A12.1 .
+sop:S12.1 biz:agrupa arq:A12.2 .
+sop:S12.2 biz:agrupa arq:A12.3 .
+sop:S12.2 biz:agrupa arq:A12.4 .
+sop:S12.3 biz:agrupa arq:A12.5 .
+sop:S12.4 biz:agrupa arq:A12.6 .
+sop:S12.2 biz:agrupa arq:A12.7 .
+sop:S2.1 biz:agrupa arq:A2.1 .
+sop:S2.1 biz:agrupa arq:A2.2 .
+sop:S2.1 biz:agrupa arq:A2.3 .
+sop:S2.1 biz:agrupa arq:A2.4 .
+sop:S2.2 biz:agrupa arq:A2.5 .
+sop:S2.1 biz:agrupa arq:A2.6 .
+sop:S2.1 biz:agrupa arq:A2.7 .
+sop:S2.3 biz:agrupa arq:A2.8 .
+sop:S2.3 biz:agrupa arq:A2.9 .
+sop:S3.1 biz:agrupa arq:A3.1 .
+sop:S3.1 biz:agrupa arq:A3.2 .
+sop:S3.2 biz:agrupa arq:A3.3 .
+sop:S3.1 biz:agrupa arq:A3.4 .
+sop:S3.1 biz:agrupa arq:A3.5 .
+sop:S3.2 biz:agrupa arq:A3.6 .
+sop:S4.1 biz:agrupa arq:A4.1 .
+sop:S4.2 biz:agrupa arq:A4.2 .
+sop:S4.3 biz:agrupa arq:A4.3 .
+sop:S4.2 biz:agrupa arq:A4.4 .
+sop:S4.1 biz:agrupa arq:A4.5 .
+sop:S4.1 biz:agrupa arq:A4.6 .
+sop:S5.1 biz:agrupa arq:A5.1 .
+sop:S5.1 biz:agrupa arq:A5.2 .
+sop:S5.2 biz:agrupa arq:A5.3 .
+sop:S5.2 biz:agrupa arq:A5.4 .
+sop:S5.3 biz:agrupa arq:A5.5 .
+sop:S6.1 biz:agrupa arq:A6.1 .
+sop:S6.1 biz:agrupa arq:A6.2 .
+sop:S6.1 biz:agrupa arq:A6.3 .
+sop:S6.2 biz:agrupa arq:A6.4 .
+sop:S6.2 biz:agrupa arq:A6.5 .
+sop:S6.1 biz:agrupa arq:A6.6 .
+sop:S6.3 biz:agrupa arq:A6.7 .
+sop:S7.1 biz:agrupa arq:A7.1 .
+sop:S7.2 biz:agrupa arq:A7.2 .
+sop:S7.3 biz:agrupa arq:A7.3 .
+sop:S7.1 biz:agrupa arq:A7.4 .
+sop:S7.2 biz:agrupa arq:A7.5 .
+sop:S7.1 biz:agrupa arq:A7.6 .
+sop:S7.4 biz:agrupa arq:A7.7 .
+sop:S7.4 biz:agrupa arq:A7.8 .
+sop:S8.1 biz:agrupa arq:A8.1 .
+sop:S8.3 biz:agrupa arq:A8.2 .
+sop:S8.2 biz:agrupa arq:A8.3 .
+sop:S8.4 biz:agrupa arq:A8.4 .
+sop:S8.4 biz:agrupa arq:A8.5 .
+sop:S8.3 biz:agrupa arq:A8.6 .
+sop:S9.1 biz:agrupa arq:A9.1 .
+sop:S9.1 biz:agrupa arq:A9.2 .
+sop:S9.2 biz:agrupa arq:A9.3 .
+sop:S9.3 biz:agrupa arq:A9.4 .
+sop:S9.3 biz:agrupa arq:A9.5 .
+sop:S9.3 biz:agrupa arq:A9.6 .
+sop:S9.3 biz:agrupa arq:A9.7 .
+mp:S1 biz:tieneDueño rol:Copy .
+mp:S1 biz:tieneDueño rol:Estratega .
+mp:S1 biz:tieneDueño rol:Ejecutivo .
+mp:S1 biz:tieneDueño rol:Director_Comercial .
+mp:S1 biz:tieneDueño rol:Contenido .
+mp:S2 biz:tieneDueño rol:Copy .
+mp:S2 biz:tieneDueño rol:Project_Manager .
+mp:S2 biz:tieneDueño rol:Estratega .
+mp:S2 biz:tieneDueño rol:Editor .
+mp:S7 biz:tieneDueño rol:Operaciones .
+mp:S7 biz:tieneDueño rol:Technology .
+mp:S7 biz:tieneDueño rol:Dise_o .
+mp:S7 biz:tieneDueño rol:Ejecutivo .
+mp:S3 biz:tieneDueño rol:Ejecutivo .
+mp:S3 biz:tieneDueño rol:Estratega .
+mp:S4 biz:tieneDueño rol:Contenido .
+mp:S4 biz:tieneDueño rol:Ejecutivo .
+mp:S4 biz:tieneDueño rol:Estratega .
+mp:S4 biz:tieneDueño rol:Setter .
+mp:S5 biz:tieneDueño rol:L_der_de_servicio .
+mp:S5 biz:tieneDueño rol:Editor .
+mp:S5 biz:tieneDueño rol:Project_Manager .
+mp:S5 biz:tieneDueño rol:Copy .
+mp:S5 biz:tieneDueño rol:Director_Comercial .
+mp:S6 biz:tieneDueño rol:Director_Comercial .
+mp:S6 biz:tieneDueño rol:Operaciones .
+mp:S6 biz:tieneDueño rol:Contenido .
+mp:S6 biz:tieneDueño rol:Setter .
+mp:S6 biz:tieneDueño rol:L_der_de_servicio .
+mp:S8 biz:tieneDueño rol:Technology .
+mp:S8 biz:tieneDueño rol:Ejecutivo .
+mp:S8 biz:tieneDueño rol:Director_Comercial .
+mp:S8 biz:tieneDueño rol:Project_Manager .
+mp:S9 biz:tieneDueño rol:Project_Manager .
+mp:S9 biz:tieneDueño rol:Copy .
+mp:S9 biz:tieneDueño rol:Estratega .
+mp:S9 biz:tieneDueño rol:Operaciones .
+mp:S10 biz:tieneDueño rol:Project_Manager .
+mp:S11 biz:tieneDueño rol:Technology .
+mp:S12 biz:tieneDueño rol:Director_Comercial .
+mp:S12 biz:tieneDueño rol:Closer .
+sop:S1.1 biz:tieneDueño rol:Copy .
+sop:S1.1 biz:tieneDueño rol:Estratega .
+sop:S1.1 biz:tieneDueño rol:Ejecutivo .
+sop:S1.1 biz:tieneDueño rol:Contenido .
+sop:S1.2 biz:tieneDueño rol:Director_Comercial .
+sop:S1.2 biz:tieneDueño rol:Copy .
+sop:S10.1 biz:tieneDueño rol:Project_Manager .
+sop:S10.2 biz:tieneDueño rol:Project_Manager .
+sop:S11.1 biz:tieneDueño rol:Technology .
+sop:S11.2 biz:tieneDueño rol:Technology .
+sop:S11.3 biz:tieneDueño rol:Technology .
+sop:S12.1 biz:tieneDueño rol:Director_Comercial .
+sop:S12.2 biz:tieneDueño rol:Director_Comercial .
+sop:S12.3 biz:tieneDueño rol:Director_Comercial .
+sop:S12.4 biz:tieneDueño rol:L_der_de_servicio .
+sop:S2.1 biz:tieneDueño rol:Copy .
+sop:S2.1 biz:tieneDueño rol:Estratega .
+sop:S2.1 biz:tieneDueño rol:Project_Manager .
+sop:S2.2 biz:tieneDueño rol:Editor .
+sop:S2.3 biz:tieneDueño rol:Dise_o .
+sop:S2.3 biz:tieneDueño rol:Copy .
+sop:S2.3 biz:tieneDueño rol:Project_Manager .
+sop:S3.1 biz:tieneDueño rol:Ejecutivo .
+sop:S3.1 biz:tieneDueño rol:Estratega .
+sop:S3.2 biz:tieneDueño rol:Estratega .
+sop:S3.2 biz:tieneDueño rol:Ejecutivo .
+sop:S4.1 biz:tieneDueño rol:Contenido .
+sop:S4.1 biz:tieneDueño rol:Ejecutivo .
+sop:S4.2 biz:tieneDueño rol:Copy .
+sop:S4.2 biz:tieneDueño rol:Contenido .
+sop:S4.3 biz:tieneDueño rol:Contenido .
+sop:S5.1 biz:tieneDueño rol:L_der_de_servicio .
+sop:S5.1 biz:tieneDueño rol:Copy .
+sop:S5.1 biz:tieneDueño rol:Director_Comercial .
+sop:S5.1 biz:tieneDueño rol:Project_Manager .
+sop:S5.2 biz:tieneDueño rol:Editor .
+sop:S5.2 biz:tieneDueño rol:Project_Manager .
+sop:S5.2 biz:tieneDueño rol:Operaciones .
+sop:S5.3 biz:tieneDueño rol:Operaciones .
+sop:S5.3 biz:tieneDueño rol:Director_Comercial .
+sop:S6.1 biz:tieneDueño rol:Operaciones .
+sop:S6.1 biz:tieneDueño rol:Contenido .
+sop:S6.1 biz:tieneDueño rol:Ejecutivo .
+sop:S6.2 biz:tieneDueño rol:Director_Comercial .
+sop:S6.2 biz:tieneDueño rol:Setter .
+sop:S6.2 biz:tieneDueño rol:L_der_de_servicio .
+sop:S6.3 biz:tieneDueño rol:Director_Comercial .
+sop:S6.3 biz:tieneDueño rol:Contenido .
+sop:S7.1 biz:tieneDueño rol:Operaciones .
+sop:S7.1 biz:tieneDueño rol:Ejecutivo .
+sop:S7.1 biz:tieneDueño rol:Dise_o .
+sop:S7.2 biz:tieneDueño rol:Operaciones .
+sop:S7.2 biz:tieneDueño rol:Dise_o .
+sop:S7.3 biz:tieneDueño rol:Technology .
+sop:S7.3 biz:tieneDueño rol:Operaciones .
+sop:S7.4 biz:tieneDueño rol:Copy .
+sop:S7.4 biz:tieneDueño rol:Dise_o .
+sop:S7.4 biz:tieneDueño rol:Technology .
+sop:S7.4 biz:tieneDueño rol:Estratega .
+sop:S8.1 biz:tieneDueño rol:Technology .
+sop:S8.1 biz:tieneDueño rol:Ejecutivo .
+sop:S8.2 biz:tieneDueño rol:Director_Comercial .
+sop:S8.3 biz:tieneDueño rol:Copy .
+sop:S8.3 biz:tieneDueño rol:Estratega .
+sop:S8.3 biz:tieneDueño rol:Setter .
+sop:S8.4 biz:tieneDueño rol:Project_Manager .
+sop:S8.4 biz:tieneDueño rol:Contenido .
+sop:S9.1 biz:tieneDueño rol:Project_Manager .
+sop:S9.1 biz:tieneDueño rol:Copy .
+sop:S9.1 biz:tieneDueño rol:Estratega .
+sop:S9.2 biz:tieneDueño rol:Copy .
+sop:S9.2 biz:tieneDueño rol:Director_Comercial .
+sop:S9.3 biz:tieneDueño rol:Copy .
+sop:S9.3 biz:tieneDueño rol:Project_Manager .
+sop:S9.3 biz:tieneDueño rol:Operaciones .
+sop:S9.3 biz:tieneDueño rol:Ejecutivo .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.1 ; biz:tareas 1 .
+rol:Cliente biz:ejecuta arq:A1.1 .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.4 ; biz:tareas 16 .
+rol:Cliente biz:ejecuta arq:A2.4 .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.5 ; biz:tareas 2 .
+rol:Cliente biz:ejecuta arq:A2.5 .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.7 ; biz:tareas 1 .
+rol:Cliente biz:ejecuta arq:A2.7 .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.5 ; biz:tareas 1 .
+rol:Cliente biz:ejecuta arq:A6.5 .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.2 ; biz:tareas 2 .
+rol:Cliente biz:ejecuta arq:A9.2 .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.5 ; biz:tareas 1 .
+rol:Cliente biz:ejecuta arq:A9.5 .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.6 ; biz:tareas 1 .
+rol:Cliente biz:ejecuta arq:A9.6 .
+[] rdf:subject rol:Cliente ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.7 ; biz:tareas 1 .
+rol:Cliente biz:ejecuta arq:A9.7 .
+[] rdf:subject rol:Closer ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.3 ; biz:tareas 1 .
+rol:Closer biz:ejecuta arq:A8.3 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.6 ; biz:tareas 1 .
+rol:Contenido biz:ejecuta arq:A1.6 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.5 ; biz:tareas 2 .
+rol:Contenido biz:ejecuta arq:A10.5 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.2 ; biz:tareas 1 .
+rol:Contenido biz:ejecuta arq:A2.2 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.5 ; biz:tareas 9 .
+rol:Contenido biz:ejecuta arq:A2.5 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.3 ; biz:tareas 1 .
+rol:Contenido biz:ejecuta arq:A3.3 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.4 ; biz:tareas 1 .
+rol:Contenido biz:ejecuta arq:A3.4 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A4.1 ; biz:tareas 5 .
+rol:Contenido biz:ejecuta arq:A4.1 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A4.2 ; biz:tareas 3 .
+rol:Contenido biz:ejecuta arq:A4.2 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A4.4 ; biz:tareas 2 .
+rol:Contenido biz:ejecuta arq:A4.4 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.1 ; biz:tareas 3 .
+rol:Contenido biz:ejecuta arq:A6.1 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.3 ; biz:tareas 1 .
+rol:Contenido biz:ejecuta arq:A6.3 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.1 ; biz:tareas 1 .
+rol:Contenido biz:ejecuta arq:A7.1 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.7 ; biz:tareas 2 .
+rol:Contenido biz:ejecuta arq:A7.7 .
+[] rdf:subject rol:Contenido ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.1 ; biz:tareas 2 .
+rol:Contenido biz:ejecuta arq:A8.1 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.1 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A1.1 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.2 ; biz:tareas 3 .
+rol:Copy biz:ejecuta arq:A1.2 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.3 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A1.3 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.5 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A1.5 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.6 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A1.6 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.2 ; biz:tareas 4 .
+rol:Copy biz:ejecuta arq:A10.2 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.5 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A10.5 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.1 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A2.1 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.2 ; biz:tareas 14 .
+rol:Copy biz:ejecuta arq:A2.2 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.3 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A2.3 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.5 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A2.5 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.6 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A2.6 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.8 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A2.8 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.3 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A3.3 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.6 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A3.6 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A4.2 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A4.2 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A4.4 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A4.4 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.2 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A5.2 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.5 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A5.5 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.1 ; biz:tareas 3 .
+rol:Copy biz:ejecuta arq:A6.1 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.7 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A6.7 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.1 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A7.1 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.4 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A7.4 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.6 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A7.6 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.2 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A8.2 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.1 ; biz:tareas 1 .
+rol:Copy biz:ejecuta arq:A9.1 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.2 ; biz:tareas 3 .
+rol:Copy biz:ejecuta arq:A9.2 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.4 ; biz:tareas 22 .
+rol:Copy biz:ejecuta arq:A9.4 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.5 ; biz:tareas 2 .
+rol:Copy biz:ejecuta arq:A9.5 .
+[] rdf:subject rol:Copy ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.6 ; biz:tareas 5 .
+rol:Copy biz:ejecuta arq:A9.6 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.3 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A1.3 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A11.2 ; biz:tareas 2 .
+rol:Director_Comercial biz:ejecuta arq:A11.2 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A11.3 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A11.3 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.2 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A12.2 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.4 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A12.4 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.5 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A12.5 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.6 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A12.6 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.4 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A3.4 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.5 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A5.5 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.3 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A6.3 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.4 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A6.4 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.5 ; biz:tareas 2 .
+rol:Director_Comercial biz:ejecuta arq:A6.5 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.7 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A6.7 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.1 ; biz:tareas 3 .
+rol:Director_Comercial biz:ejecuta arq:A8.1 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.2 ; biz:tareas 2 .
+rol:Director_Comercial biz:ejecuta arq:A8.2 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.3 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A8.3 .
+[] rdf:subject rol:Director_Comercial ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.1 ; biz:tareas 1 .
+rol:Director_Comercial biz:ejecuta arq:A9.1 .
+[] rdf:subject rol:Dise_o ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.2 ; biz:tareas 1 .
+rol:Dise_o biz:ejecuta arq:A12.2 .
+[] rdf:subject rol:Dise_o ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.5 ; biz:tareas 8 .
+rol:Dise_o biz:ejecuta arq:A2.5 .
+[] rdf:subject rol:Dise_o ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.6 ; biz:tareas 2 .
+rol:Dise_o biz:ejecuta arq:A2.6 .
+[] rdf:subject rol:Dise_o ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.8 ; biz:tareas 6 .
+rol:Dise_o biz:ejecuta arq:A2.8 .
+[] rdf:subject rol:Dise_o ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.9 ; biz:tareas 2 .
+rol:Dise_o biz:ejecuta arq:A2.9 .
+[] rdf:subject rol:Editor ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.2 ; biz:tareas 2 .
+rol:Editor biz:ejecuta arq:A2.2 .
+[] rdf:subject rol:Editor ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.5 ; biz:tareas 32 .
+rol:Editor biz:ejecuta arq:A2.5 .
+[] rdf:subject rol:Editor ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.3 ; biz:tareas 2 .
+rol:Editor biz:ejecuta arq:A5.3 .
+[] rdf:subject rol:Editor ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.7 ; biz:tareas 1 .
+rol:Editor biz:ejecuta arq:A7.7 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.1 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A1.1 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.2 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A1.2 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.5 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A1.5 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.2 ; biz:tareas 2 .
+rol:Ejecutivo biz:ejecuta arq:A10.2 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.5 ; biz:tareas 4 .
+rol:Ejecutivo biz:ejecuta arq:A10.5 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A11.1 ; biz:tareas 3 .
+rol:Ejecutivo biz:ejecuta arq:A11.1 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A11.2 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A11.2 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A11.3 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A11.3 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.4 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A12.4 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.7 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A12.7 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.2 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A2.2 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.5 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A2.5 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.2 ; biz:tareas 2 .
+rol:Ejecutivo biz:ejecuta arq:A3.2 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.3 ; biz:tareas 2 .
+rol:Ejecutivo biz:ejecuta arq:A3.3 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.6 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A3.6 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A4.4 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A4.4 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.5 ; biz:tareas 2 .
+rol:Ejecutivo biz:ejecuta arq:A5.5 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.1 ; biz:tareas 3 .
+rol:Ejecutivo biz:ejecuta arq:A6.1 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.1 ; biz:tareas 6 .
+rol:Ejecutivo biz:ejecuta arq:A7.1 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.3 ; biz:tareas 4 .
+rol:Ejecutivo biz:ejecuta arq:A7.3 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.4 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A7.4 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.5 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A7.5 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.6 ; biz:tareas 4 .
+rol:Ejecutivo biz:ejecuta arq:A7.6 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.7 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A7.7 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.1 ; biz:tareas 3 .
+rol:Ejecutivo biz:ejecuta arq:A8.1 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.2 ; biz:tareas 2 .
+rol:Ejecutivo biz:ejecuta arq:A8.2 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.4 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A8.4 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.5 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A8.5 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.2 ; biz:tareas 1 .
+rol:Ejecutivo biz:ejecuta arq:A9.2 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.4 ; biz:tareas 2 .
+rol:Ejecutivo biz:ejecuta arq:A9.4 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.5 ; biz:tareas 12 .
+rol:Ejecutivo biz:ejecuta arq:A9.5 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.6 ; biz:tareas 6 .
+rol:Ejecutivo biz:ejecuta arq:A9.6 .
+[] rdf:subject rol:Ejecutivo ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.7 ; biz:tareas 3 .
+rol:Ejecutivo biz:ejecuta arq:A9.7 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.5 ; biz:tareas 1 .
+rol:Estratega biz:ejecuta arq:A10.5 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.1 ; biz:tareas 1 .
+rol:Estratega biz:ejecuta arq:A2.1 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.2 ; biz:tareas 1 .
+rol:Estratega biz:ejecuta arq:A2.2 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.3 ; biz:tareas 1 .
+rol:Estratega biz:ejecuta arq:A2.3 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.5 ; biz:tareas 1 .
+rol:Estratega biz:ejecuta arq:A2.5 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.1 ; biz:tareas 3 .
+rol:Estratega biz:ejecuta arq:A3.1 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.2 ; biz:tareas 4 .
+rol:Estratega biz:ejecuta arq:A3.2 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.3 ; biz:tareas 2 .
+rol:Estratega biz:ejecuta arq:A3.3 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.4 ; biz:tareas 3 .
+rol:Estratega biz:ejecuta arq:A3.4 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.2 ; biz:tareas 1 .
+rol:Estratega biz:ejecuta arq:A8.2 .
+[] rdf:subject rol:Estratega ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.1 ; biz:tareas 1 .
+rol:Estratega biz:ejecuta arq:A9.1 .
+[] rdf:subject rol:L_der_de_servicio ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.4 ; biz:tareas 1 .
+rol:L_der_de_servicio biz:ejecuta arq:A12.4 .
+[] rdf:subject rol:L_der_de_servicio ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.1 ; biz:tareas 1 .
+rol:L_der_de_servicio biz:ejecuta arq:A5.1 .
+[] rdf:subject rol:L_der_de_servicio ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.2 ; biz:tareas 1 .
+rol:L_der_de_servicio biz:ejecuta arq:A5.2 .
+[] rdf:subject rol:L_der_de_servicio ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.5 ; biz:tareas 2 .
+rol:L_der_de_servicio biz:ejecuta arq:A5.5 .
+[] rdf:subject rol:L_der_de_servicio ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.4 ; biz:tareas 1 .
+rol:L_der_de_servicio biz:ejecuta arq:A7.4 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.1 ; biz:tareas 3 .
+rol:Operaciones biz:ejecuta arq:A6.1 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.1 ; biz:tareas 1 .
+rol:Operaciones biz:ejecuta arq:A7.1 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.3 ; biz:tareas 2 .
+rol:Operaciones biz:ejecuta arq:A7.3 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.4 ; biz:tareas 1 .
+rol:Operaciones biz:ejecuta arq:A7.4 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.6 ; biz:tareas 5 .
+rol:Operaciones biz:ejecuta arq:A7.6 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.2 ; biz:tareas 1 .
+rol:Operaciones biz:ejecuta arq:A9.2 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.4 ; biz:tareas 1 .
+rol:Operaciones biz:ejecuta arq:A9.4 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.5 ; biz:tareas 11 .
+rol:Operaciones biz:ejecuta arq:A9.5 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.6 ; biz:tareas 6 .
+rol:Operaciones biz:ejecuta arq:A9.6 .
+[] rdf:subject rol:Operaciones ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.7 ; biz:tareas 2 .
+rol:Operaciones biz:ejecuta arq:A9.7 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.2 ; biz:tareas 2 .
+rol:Project_Manager biz:ejecuta arq:A10.2 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.5 ; biz:tareas 4 .
+rol:Project_Manager biz:ejecuta arq:A10.5 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A11.2 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A11.2 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.5 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A12.5 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.6 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A12.6 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A12.7 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A12.7 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.2 ; biz:tareas 2 .
+rol:Project_Manager biz:ejecuta arq:A2.2 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.3 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A2.3 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.4 ; biz:tareas 4 .
+rol:Project_Manager biz:ejecuta arq:A2.4 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.5 ; biz:tareas 48 .
+rol:Project_Manager biz:ejecuta arq:A2.5 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.7 ; biz:tareas 4 .
+rol:Project_Manager biz:ejecuta arq:A2.7 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A2.8 ; biz:tareas 2 .
+rol:Project_Manager biz:ejecuta arq:A2.8 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.1 ; biz:tareas 2 .
+rol:Project_Manager biz:ejecuta arq:A3.1 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.2 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A3.2 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A3.4 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A3.4 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A4.1 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A4.1 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A4.4 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A4.4 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.1 ; biz:tareas 2 .
+rol:Project_Manager biz:ejecuta arq:A5.1 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.2 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A5.2 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.3 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A5.3 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A5.5 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A5.5 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.1 ; biz:tareas 3 .
+rol:Project_Manager biz:ejecuta arq:A6.1 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.1 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A7.1 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.3 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A7.3 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.5 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A7.5 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.6 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A7.6 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.7 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A7.7 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.2 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A8.2 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A8.3 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A8.3 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.1 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A9.1 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.2 ; biz:tareas 2 .
+rol:Project_Manager biz:ejecuta arq:A9.2 .
+[] rdf:subject rol:Project_Manager ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.6 ; biz:tareas 1 .
+rol:Project_Manager biz:ejecuta arq:A9.6 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A1.1 ; biz:tareas 1 .
+rol:Technology biz:ejecuta arq:A1.1 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A10.5 ; biz:tareas 2 .
+rol:Technology biz:ejecuta arq:A10.5 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A6.1 ; biz:tareas 2 .
+rol:Technology biz:ejecuta arq:A6.1 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.1 ; biz:tareas 4 .
+rol:Technology biz:ejecuta arq:A7.1 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.3 ; biz:tareas 3 .
+rol:Technology biz:ejecuta arq:A7.3 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.6 ; biz:tareas 4 .
+rol:Technology biz:ejecuta arq:A7.6 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A7.7 ; biz:tareas 1 .
+rol:Technology biz:ejecuta arq:A7.7 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.5 ; biz:tareas 1 .
+rol:Technology biz:ejecuta arq:A9.5 .
+[] rdf:subject rol:Technology ; rdf:predicate biz:ejecuta ; rdf:object arq:A9.7 ; biz:tareas 1 .
+rol:Technology biz:ejecuta arq:A9.7 .
+[] rdf:subject proj:Andrea_Torres ; rdf:predicate biz:consume ; rdf:object arq:A1.2 ; biz:tareas 1 .
+proj:Andrea_Torres biz:consume arq:A1.2 .
+[] rdf:subject proj:Andrea_Torres ; rdf:predicate biz:consume ; rdf:object arq:A6.5 ; biz:tareas 1 .
+proj:Andrea_Torres biz:consume arq:A6.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A1.1 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A1.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A1.2 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A1.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A1.3 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A1.3 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A1.5 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A1.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A1.6 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A1.6 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A10.2 ; biz:tareas 5 .
+proj:David_Guerrero biz:consume arq:A10.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A10.5 ; biz:tareas 6 .
+proj:David_Guerrero biz:consume arq:A10.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A11.1 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A11.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A11.2 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A11.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A11.3 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A11.3 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A12.2 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A12.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A12.4 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A12.4 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A12.5 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A12.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A12.6 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A12.6 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A12.7 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A12.7 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.1 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A2.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.2 ; biz:tareas 15 .
+proj:David_Guerrero biz:consume arq:A2.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.3 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A2.3 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.4 ; biz:tareas 16 .
+proj:David_Guerrero biz:consume arq:A2.4 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.5 ; biz:tareas 84 .
+proj:David_Guerrero biz:consume arq:A2.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.6 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A2.6 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.7 ; biz:tareas 4 .
+proj:David_Guerrero biz:consume arq:A2.7 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.8 ; biz:tareas 6 .
+proj:David_Guerrero biz:consume arq:A2.8 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A2.9 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A2.9 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A3.1 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A3.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A3.2 ; biz:tareas 4 .
+proj:David_Guerrero biz:consume arq:A3.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A3.3 ; biz:tareas 4 .
+proj:David_Guerrero biz:consume arq:A3.3 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A3.4 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A3.4 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A3.6 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A3.6 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A4.1 ; biz:tareas 5 .
+proj:David_Guerrero biz:consume arq:A4.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A4.2 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A4.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A4.4 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A4.4 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A5.1 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A5.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A5.2 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A5.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A5.3 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A5.3 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A5.5 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A5.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A6.1 ; biz:tareas 8 .
+proj:David_Guerrero biz:consume arq:A6.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A6.3 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A6.3 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A6.4 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A6.4 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A6.5 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A6.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A6.7 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A6.7 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A7.1 ; biz:tareas 7 .
+proj:David_Guerrero biz:consume arq:A7.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A7.3 ; biz:tareas 5 .
+proj:David_Guerrero biz:consume arq:A7.3 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A7.4 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A7.4 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A7.5 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A7.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A7.6 ; biz:tareas 9 .
+proj:David_Guerrero biz:consume arq:A7.6 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A7.7 ; biz:tareas 3 .
+proj:David_Guerrero biz:consume arq:A7.7 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A7.8 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A7.8 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A8.1 ; biz:tareas 5 .
+proj:David_Guerrero biz:consume arq:A8.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A8.2 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A8.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A8.3 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A8.3 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A8.4 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A8.4 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A8.5 ; biz:tareas 1 .
+proj:David_Guerrero biz:consume arq:A8.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A9.1 ; biz:tareas 2 .
+proj:David_Guerrero biz:consume arq:A9.1 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A9.2 ; biz:tareas 6 .
+proj:David_Guerrero biz:consume arq:A9.2 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A9.4 ; biz:tareas 21 .
+proj:David_Guerrero biz:consume arq:A9.4 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A9.5 ; biz:tareas 15 .
+proj:David_Guerrero biz:consume arq:A9.5 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A9.6 ; biz:tareas 10 .
+proj:David_Guerrero biz:consume arq:A9.6 .
+[] rdf:subject proj:David_Guerrero ; rdf:predicate biz:consume ; rdf:object arq:A9.7 ; biz:tareas 4 .
+proj:David_Guerrero biz:consume arq:A9.7 .
+[] rdf:subject proj:Ikigai ; rdf:predicate biz:consume ; rdf:object arq:A6.1 ; biz:tareas 1 .
+proj:Ikigai biz:consume arq:A6.1 .
+[] rdf:subject proj:Ikigai ; rdf:predicate biz:consume ; rdf:object arq:A8.1 ; biz:tareas 1 .
+proj:Ikigai biz:consume arq:A8.1 .
+arq:A1.1 biz:requiere io:content_draft .
+arq:A1.1 biz:requiere io:strategy_document .
+arq:A1.1 biz:produce io:strategy_document .
+arq:A1.2 biz:requiere io:content_draft .
+arq:A1.2 biz:requiere io:strategy_document .
+arq:A1.2 biz:produce io:content_draft .
+arq:A1.3 biz:requiere io:documentation .
+arq:A1.3 biz:requiere io:strategy_document .
+arq:A1.3 biz:produce io:strategy_document .
+arq:A1.5 biz:requiere io:strategy_document .
+arq:A1.5 biz:produce io:task_approval .
+arq:A1.6 biz:requiere io:strategy_document .
+arq:A1.6 biz:produce io:strategy_document .
+arq:A10.2 biz:requiere io:message_or_communication .
+arq:A10.2 biz:produce io:task_approval .
+arq:A10.5 biz:requiere io:strategy_document .
+arq:A10.5 biz:produce io:schedule_event .
+arq:A11.1 biz:requiere io:documentation .
+arq:A11.1 biz:requiere io:strategy_document .
+arq:A11.1 biz:produce io:system_configuration .
+arq:A11.2 biz:requiere io:credentials_access .
+arq:A11.2 biz:requiere io:strategy_document .
+arq:A11.2 biz:produce io:system_configuration .
+arq:A11.3 biz:requiere io:credentials_access .
+arq:A11.3 biz:requiere io:strategy_document .
+arq:A11.3 biz:produce io:system_configuration .
+arq:A12.2 biz:requiere io:documentation .
+arq:A12.2 biz:requiere io:schedule_event .
+arq:A12.2 biz:produce io:documentation .
+arq:A12.2 biz:produce io:task_approval .
+arq:A12.5 biz:requiere io:analytics_report .
+arq:A12.5 biz:requiere io:strategy_document .
+arq:A12.5 biz:produce io:analytics_report .
+arq:A12.6 biz:requiere io:analytics_report .
+arq:A12.6 biz:requiere io:message_or_communication .
+arq:A12.6 biz:produce io:credentials_access .
+arq:A12.7 biz:requiere io:contact_info .
+arq:A12.7 biz:produce io:system_configuration .
+arq:A2.1 biz:requiere io:analytics_report .
+arq:A2.1 biz:requiere io:strategy_document .
+arq:A2.1 biz:produce io:strategy_document .
+arq:A2.2 biz:requiere io:strategy_document .
+arq:A2.2 biz:produce io:content_draft .
+arq:A2.3 biz:requiere io:content_draft .
+arq:A2.3 biz:requiere io:strategy_document .
+arq:A2.3 biz:produce io:content_draft .
+arq:A2.4 biz:requiere io:content_draft .
+arq:A2.4 biz:requiere io:strategy_document .
+arq:A2.4 biz:produce io:video_asset .
+arq:A2.5 biz:requiere io:content_draft .
+arq:A2.5 biz:requiere io:video_asset .
+arq:A2.5 biz:produce io:ad_creative .
+arq:A2.6 biz:requiere io:content_draft .
+arq:A2.6 biz:requiere io:strategy_document .
+arq:A2.6 biz:produce io:ad_creative .
+arq:A2.7 biz:requiere io:contact_info .
+arq:A2.7 biz:requiere io:content_draft .
+arq:A2.7 biz:produce io:schedule_event .
+arq:A2.7 biz:produce io:video_asset .
+arq:A2.8 biz:requiere io:content_draft .
+arq:A2.8 biz:produce io:image_asset .
+arq:A2.9 biz:requiere io:content_draft .
+arq:A2.9 biz:produce io:documentation .
+arq:A3.1 biz:requiere io:analytics_report .
+arq:A3.1 biz:requiere io:strategy_document .
+arq:A3.1 biz:produce io:decision .
+arq:A3.1 biz:produce io:system_configuration .
+arq:A3.2 biz:requiere io:analytics_report .
+arq:A3.2 biz:requiere io:decision .
+arq:A3.2 biz:produce io:system_configuration .
+arq:A3.3 biz:requiere io:ad_creative .
+arq:A3.3 biz:requiere io:credentials_access .
+arq:A3.3 biz:requiere io:strategy_document .
+arq:A3.3 biz:produce io:system_configuration .
+arq:A3.4 biz:requiere io:credentials_access .
+arq:A3.4 biz:requiere io:strategy_document .
+arq:A3.4 biz:produce io:analytics_report .
+arq:A3.6 biz:requiere io:strategy_document .
+arq:A3.6 biz:requiere io:system_configuration .
+arq:A3.6 biz:produce io:documentation .
+arq:A4.1 biz:requiere io:content_draft .
+arq:A4.1 biz:requiere io:strategy_document .
+arq:A4.1 biz:requiere io:video_asset .
+arq:A4.1 biz:produce io:ad_creative .
+arq:A4.2 biz:requiere io:analytics_report .
+arq:A4.2 biz:requiere io:strategy_document .
+arq:A4.2 biz:produce io:strategy_document .
+arq:A4.4 biz:requiere io:analytics_report .
+arq:A4.4 biz:requiere io:strategy_document .
+arq:A4.4 biz:produce io:strategy_document .
+arq:A5.1 biz:requiere io:analytics_report .
+arq:A5.1 biz:produce io:contact_info .
+arq:A5.2 biz:requiere io:documentation .
+arq:A5.2 biz:produce io:video_asset .
+arq:A5.3 biz:requiere io:video_asset .
+arq:A5.3 biz:produce io:video_asset .
+arq:A5.4 biz:requiere io:video_asset .
+arq:A5.4 biz:produce io:system_configuration .
+arq:A5.5 biz:requiere io:analytics_report .
+arq:A5.5 biz:produce io:system_configuration .
+arq:A6.1 biz:requiere io:content_draft .
+arq:A6.1 biz:requiere io:credentials_access .
+arq:A6.1 biz:produce io:system_configuration .
+arq:A6.3 biz:requiere io:audio_asset .
+arq:A6.3 biz:requiere io:strategy_document .
+arq:A6.3 biz:produce io:system_configuration .
+arq:A6.4 biz:requiere io:contact_info .
+arq:A6.4 biz:requiere io:documentation .
+arq:A6.4 biz:produce io:documentation .
+arq:A6.4 biz:produce io:task_approval .
+arq:A6.5 biz:requiere io:contact_info .
+arq:A6.5 biz:requiere io:strategy_document .
+arq:A6.5 biz:produce io:schedule_event .
+arq:A6.7 biz:requiere io:analytics_report .
+arq:A6.7 biz:requiere io:strategy_document .
+arq:A6.7 biz:produce io:strategy_document .
+arq:A7.1 biz:requiere io:content_draft .
+arq:A7.1 biz:requiere io:strategy_document .
+arq:A7.1 biz:requiere io:system_configuration .
+arq:A7.1 biz:produce io:system_configuration .
+arq:A7.3 biz:requiere io:credentials_access .
+arq:A7.3 biz:requiere io:strategy_document .
+arq:A7.3 biz:requiere io:video_asset .
+arq:A7.3 biz:produce io:system_configuration .
+arq:A7.4 biz:requiere io:content_draft .
+arq:A7.4 biz:requiere io:system_configuration .
+arq:A7.4 biz:produce io:system_configuration .
+arq:A7.6 biz:requiere io:strategy_document .
+arq:A7.6 biz:requiere io:system_configuration .
+arq:A7.6 biz:produce io:system_configuration .
+arq:A7.7 biz:requiere io:strategy_document .
+arq:A7.7 biz:produce io:content_draft .
+arq:A7.8 biz:requiere io:strategy_document .
+arq:A7.8 biz:produce io:system_configuration .
+arq:A8.1 biz:requiere io:analytics_report .
+arq:A8.1 biz:produce io:system_configuration .
+arq:A8.2 biz:requiere io:analytics_report .
+arq:A8.2 biz:requiere io:credentials_access .
+arq:A8.2 biz:produce io:analytics_report .
+arq:A8.3 biz:requiere io:analytics_report .
+arq:A8.3 biz:requiere io:documentation .
+arq:A8.3 biz:produce io:analytics_report .
+arq:A8.4 biz:requiere io:analytics_report .
+arq:A8.4 biz:requiere io:strategy_document .
+arq:A8.4 biz:produce io:analytics_report .
+arq:A8.5 biz:requiere io:analytics_report .
+arq:A8.5 biz:requiere io:documentation .
+arq:A8.5 biz:produce io:analytics_report .
+arq:A9.1 biz:requiere io:documentation .
+arq:A9.1 biz:requiere io:strategy_document .
+arq:A9.1 biz:produce io:strategy_document .
+arq:A9.2 biz:requiere io:content_draft .
+arq:A9.2 biz:requiere io:strategy_document .
+arq:A9.2 biz:produce io:strategy_document .
+arq:A9.4 biz:requiere io:strategy_document .
+arq:A9.4 biz:produce io:content_draft .
+arq:A9.5 biz:requiere io:content_draft .
+arq:A9.5 biz:requiere io:credentials_access .
+arq:A9.5 biz:produce io:system_configuration .
+arq:A9.6 biz:requiere io:strategy_document .
+arq:A9.6 biz:produce io:message_or_communication .
+arq:A9.7 biz:requiere io:strategy_document .
+arq:A9.7 biz:produce io:system_configuration .

@@ -1,0 +1,18 @@
+ad_creative	Ad Creative	document
+analytics_report	Analytics Report	data
+audio_asset	Audio Asset	document
+contact_info	Contact Info	resource
+content_draft	Content Draft	document
+credentials_access	Credentials Access	resource
+decision	Decision	decision
+documentation	Documentation	document
+image_asset	Image Asset	document
+meeting_report	Meeting Report	document
+message_or_communication	Message Or Communication	document
+schedule_event	Schedule Event	data
+strategy_document	Strategy Document	document
+system_configuration	System Configuration	data
+task_approval	Task Approval	approval
+team_member	Team Member	resource
+transcript	Meeting Transcript	document
+video_asset	Video Asset	document

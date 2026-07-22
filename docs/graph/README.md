@@ -1,4 +1,20 @@
-# Grafo de entidades — esquema `ikigaigm`
+# Grafo de Ikigai — dos capas de ontología
+
+La ontología vive en **dos capas**, cada una con su grafo, su Turtle y su visor.
+Un solo motor las dibuja (`build_viewer.py --profile schema|business`).
+
+| Capa | Qué modela | Artefactos |
+|---|---|---|
+| **Dato** (abajo) | las 98 entidades de la DB, sus relaciones y reglas | `graph.json` · `schema.ttl` · `schema-graph.html` |
+| **Negocio** (arriba) | los conceptos de la organización: cadena de valor → macro-proceso → SOP → arquetipo → tarea, con roles, clientes y entregables | `business.json` · `business.ttl` · `business-graph.html` |
+
+Las capas están **puenteadas**: cada clase conceptual declara en `meta.realized_by`
+qué tablas de la capa de dato la realizan (p. ej. `Rol` ← `team_roles`,
+`team_members`, `users`, `persons`), así las dos ontologías no crecen en paralelo.
+
+---
+
+# Capa de dato — esquema `ikigaigm`
 
 Ontología del **dato**: todas las entidades de la DB (Supabase/Postgres), sus
 relaciones y las **reglas** que las gobiernan, levantadas desde el **catálogo de
@@ -92,3 +108,62 @@ una tercera apuntaba a una columna inexistente. Quedan registradas en
 - `llm_calls.prompt_sections`, `okr_reviews.key_result_snapshots` y
   `task_attestations.responsible_contact` están **vacías** (0 filas no nulas):
   no hay nada que extraer todavía.
+
+---
+
+# Capa de negocio — la ontología de la organización
+
+Los conceptos sobre los que la empresa opera, no las tablas donde se guardan.
+**167 conceptos** · **644 relaciones** · 6 clases. Se levanta del catálogo de
+procesos (`macro_processes`/`sops`/`activity_archetypes` + sus contratos de IO)
+y de las **329 tareas reales**.
+
+```
+cadena de valor → macro-proceso (S1…S12) → SOP (Sx.y) → arquetipo (A_.__) → tarea
+```
+
+| Clase | N | Realizada por (capa de dato) |
+|---|---|---|
+| Macro-proceso | 12 | `macro_processes` |
+| SOP | 36 | `sops` |
+| Arquetipo de actividad | 76 | `activity_archetypes`, `archetype_*`, `tasks` |
+| Rol | 21 | `team_roles`, `team_members`, `users`, `persons` |
+| Cliente / Proyecto | 4 | `projects` |
+| Tipo de entregable | 18 | `io_types`, `artifact_types`, `task_inputs/outputs` |
+
+## Declarado vs. observado — la razón de ser de esta capa
+
+Las relaciones se guardan en dos sabores y **no se mezclan**:
+
+- **Declaradas** por el catálogo: `descompone`, `agrupa`, `dueño`, `requiere`,
+  `produce`, `precede` (línea sólida).
+- **Observadas** en las tareas reales: `ejecuta` (rol→arquetipo),
+  `consume` (cliente→arquetipo), con el número de tareas (línea punteada).
+
+El hueco entre ambas es el hallazgo, no un error de datos:
+
+- **103 pares rol×arquetipo se ejecutan fuera de lo declarado.** El caso mayor:
+  A2.5 *«Editar audio/video de anuncios»* declara dueño **Editor**, pero lo
+  ejecuta el **Project Manager** en 48 tareas (el Editor, 32).
+- **A2.5 concentra 84 de 329 tareas** (26%): la organización es, en volumen, una
+  máquina de editar creativos.
+- **17 de 76 arquetipos nunca se instanciaron**: catálogo declarado que la
+  operación todavía no usa.
+
+## Regenerar
+
+```bash
+docs/graph/dump_business.sh                                        # capa de negocio → business/*.tsv
+python3 docs/graph/build_business_graph.py docs/graph/business docs/graph
+python3 docs/graph/build_viewer.py docs/graph --profile business
+```
+
+## Notas
+
+- Los roles se identifican **por nombre**, no por `role_id`: las filas de
+  `team_roles` están duplicadas por equipo. El catálogo y la DB discrepan en dos
+  nombres (`PM`/`Project Manager`, `Líder de Servicio`/`Líder de servicio`);
+  se alían explícitamente en `ALIASES`/`rkey()` en vez de normalizar en silencio.
+- El visor de negocio abre con las clases **Rol**, **Cliente** y **Tipo de
+  entregable** plegadas: 644 aristas de golpe son una madeja. Encender una clase
+  trae sus relaciones con ella.
