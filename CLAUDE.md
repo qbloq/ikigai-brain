@@ -348,46 +348,29 @@ The viz `localdb` page (seeded as «Bases locales») is the explorer: left,
 every db with its tables + counts; right, a ≤200-row preview. The selection
 travels as `?db=&table=`, so any view is URL-addressable (`/u/<id>?db=…`).
 
-## Deltas domain — copilot pipeline ([bash/deltas/](bash/deltas/))
+## Forks — copilotos
 
-The Fase-1 MVP of [docs/deltas-architecture.md](docs/deltas-architecture.md).
 Each employee's copilot is a git FORK of this repo (configured with
-`pull.rebase=true`, so its deltas always sit on top of the genome) whose
+`pull.rebase=true`, so its deltas always sit on top of the brain) whose
 identity is a `copilot.json` at the root (`{employee, team_member_id, role}`)
-plus its agent-readable twin `identidad.md` (written at birth from the plataforma's
+plus its agent-readable twin `identidad.md` (written at birth from
 `plantillas/identidad-copiloto/`; it imports `docs/roles/<rol>.md`). The
 CLAUDE.md stays byte-identical across brain and forks — it composes identity
 via `@identidad.md`, never by assembling a per-fork copy. The viz store loads
 ONLY that role's spec layer and stamps `owner`/`role` on everything created.
 The brain (no copilot.json) sees org + all roles.
 Everything a copilot writes lands in `viz/specs/local/` and auto-commits —
-git IS the telemetry; structure is observed, content never.
+git IS the telemetry; structure is observed, content never. Structural
+changes propose themselves by push; governance reviews and, when approved,
+promotes a spec into `org/` or `roles/<rol>/` with `promoted_from` lineage.
+Each fork's own CLAUDE.md/copilot.json belongs to that copilot — never edit
+them from the brain.
 
-| Script | Use it to… |
-|--------|-----------|
-| `scan.sh <fork-path> [--base origin/main] [--json]` | **Read-only** digest of one fork's deltas: `git diff origin/main...HEAD` classified by path (`viz/specs`→ui-spec · `catalog`→ontología · `*/migrations`→esquema · `copilot.json`→identidad · else→código), with slug/name/lineage for ui-specs. Feeds the Gobernanza session. |
-| `elevate_ui.sh <fork-path> <slug> [--to org\|roles/<rol>] [--dry-run] [--json]` **[WRITE to the central tree]** | The spec-pure lane: a fork's `viz/specs/local/<slug>.json` → central `org/` or `roles/<rol>/` (default: the fork's role), validated against the central genome (`validateSpec`), stamped `promoted_from: <employee>/local/<slug>@<fork-sha>` and committed with `Delta-Type`/`Delta-Scope`/`Promoted-From` trailers. Slug collision aborts. |
-
-Pilot fork lives at `data/forks/piloto` (git-ignored), kept as-is as the
-historical reference. Loop demonstrated end-to-end (2026-07-08): capture in
-the fork (auto-commit) → scan digest → elevate (commit f8b2843) → pull →
-shadow → unfork. The fleet (19 copilotos, forks under `data/forks/`) is
-created and governed from the PLATAFORMA (`crear-copiloto`, `bash/fleet/`, torre —
-all extracted out of this repo in F0); each fork's own CLAUDE.md/copilot.json
-belongs to that copilot — never edit them from the brain.
-
-## Snapshot exports + elevación ([scripts/](scripts/))
+## Snapshot exports ([scripts/](scripts/))
 
 Regenerate the `backups/` snapshots from the live DB (read-only, open tasks).
 `npm run export` runs all three; or `export:json` / `export:by-role` /
 `export:by-due-date` individually. See [scripts/README.md](scripts/README.md).
-
-`elevate_núcleo.sh <path>... [-m T] [--commit SHA] [--yes]` **[WRITE al
-producto]** — el carril manual de elevación org→núcleo (nivel 0→1): eleva el
-delta committeado de este cerebro a `núcleo.git` con guarda de
-des-clientización, ensayo 3-way sobre la punta real y trailers de provenance
-(`Promoted-From: ikigai@<sha>`). Preview por defecto; solo `--yes`
-pushea. Detalle en [scripts/README.md](scripts/README.md).
 
 ## On-demand UIs — viz server ([viz/](viz/))
 
