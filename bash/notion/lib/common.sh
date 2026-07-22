@@ -11,26 +11,33 @@ NOTION_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NOTION_DIR="$(cd "$NOTION_LIB_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$NOTION_DIR/../.." && pwd)"
 
-# --- Load token from .env ---------------------------------------------------
-# .env holds NOTION=ntn_... (the integration's internal token).
-if [[ -z "${NOTION_TOKEN:-}" && -f "$REPO_ROOT/.env" ]]; then
+# --- Credential: proxy mode or direct mode ----------------------------------
+# proxy  — CEREBRO_API + CEREBRO_TOKEN en .env: la llamada va por el plataforma-proxy;
+#          el token de la org vive en el SERVIDOR (así corren los copilotos).
+# direct — NOTION=ntn_... en .env (el cerebro/operador). El proxy gana.
+if [[ -f "$REPO_ROOT/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
   source "$REPO_ROOT/.env"
   set +a
 fi
 NOTION_TOKEN="${NOTION_TOKEN:-${NOTION:-}}"
-: "${NOTION_TOKEN:?NOTION token not set (expected NOTION=ntn_... in $REPO_ROOT/.env)}"
-
 NOTION_VERSION="${NOTION_VERSION:-2022-06-28}"
-NOTION_API="https://api.notion.com/v1"
+if [[ -n "${CEREBRO_API:-}" && -n "${CEREBRO_TOKEN:-}" ]]; then
+  NOTION_API="${CEREBRO_API%/}/v1/notion/v1"
+  NOTION_AUTH="$CEREBRO_TOKEN"
+else
+  : "${NOTION_TOKEN:?Notion sin credencial: falta NOTION=ntn_... o el par CEREBRO_API+CEREBRO_TOKEN en $REPO_ROOT/.env}"
+  NOTION_API="https://api.notion.com/v1"
+  NOTION_AUTH="$NOTION_TOKEN"
+fi
 
 # notion_api <METHOD> <path> [curl-args...] : raw API call, returns JSON on stdout.
 # path is relative to NOTION_API (e.g. /pages/<id>, /blocks/<id>/children).
 notion_api() {
   local method="$1" path="$2"; shift 2
   curl -sS -X "$method" "${NOTION_API}${path}" \
-    -H "Authorization: Bearer ${NOTION_TOKEN}" \
+    -H "Authorization: Bearer ${NOTION_AUTH}" \
     -H "Notion-Version: ${NOTION_VERSION}" \
     -H "Content-Type: application/json" \
     "$@"
