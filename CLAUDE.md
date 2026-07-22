@@ -304,6 +304,14 @@ a task instantiates an archetype. A task rolls up archetype → sop → macro.
 - `bash/catalog/sops.sh [--macro CODE] [--json]` — **read-only** listing of the
   ontology: one row per archetype (SOP + macro-process + task count). Feeds the
   viz `sop-tree` UI for navigating SOPs with their activities.
+- `bash/graph/ontology_stats.sh [--json] [--no-db]` — health + findings of the
+  **ontology itself**, over the built graph artifacts in [docs/graph/](docs/graph/README.md)
+  (not the DB: the graph is a *curated* artifact about it). Feeds the viz
+  `ontologia` source / `ontology` dashboard. Rebuilding the graph refreshes it;
+  the freshness bar reports build dates + drift vs the live DB. The graph has two
+  layers — **dato** (98 entidades, FKs+reglas) and **negocio** (cadena de valor →
+  macro → SOP → arquetipo), each with `graph.json`/`business.json`, a validated
+  `.ttl` and a self-contained viewer built by `build_viewer.py --profile`.
 - **Schema of record:** [catalog/migrations/001_process_ontology.sql](catalog/migrations/001_process_ontology.sql)
   — the documented, idempotent DDL for all tables/columns added (the 7 tables above
   + the 3 `tasks.archetype_*` columns). DDL only; seeding is `sync_catalog.sh`'s job.

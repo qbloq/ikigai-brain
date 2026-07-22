@@ -85,6 +85,16 @@ const SOURCES = {
     args: { macro: "--macro" },
     cache: 60_000,
   },
+  // Health + findings of the ontology itself. Reads the BUILT graph artifacts
+  // (docs/graph/*.json), so it is cheap and safe to cache: it only changes when
+  // the graph is rebuilt, and rebuilding is what refreshes this dashboard.
+  ontologia: {
+    label: "Ontología (salud y hallazgos)",
+    script: "bash/graph/ontology_stats.sh",
+    emits: "object",
+    args: {},
+    cache: 60_000,
+  },
   // Single task detail (one JSON object). `id` is a positional arg (no flag).
   task_detail: {
     label: "Detalle de tarea",

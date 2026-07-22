@@ -91,6 +91,9 @@
         "A9.3"
       ],
       "roles_del_catalogo_sin_rol_en_db": [],
+      "n_ejecucion_fuera_de_lo_declarado": 103,
+      "tareas_fuera_de_lo_declarado": 231,
+      "tareas_observadas": 475,
       "ejecucion_fuera_de_lo_declarado": [
         {
           "archetype": "A2.5",

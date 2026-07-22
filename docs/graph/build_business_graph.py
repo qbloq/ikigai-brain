@@ -220,6 +220,11 @@ meta = {
     "findings": {
         "arquetipos_sin_tareas": never,
         "roles_del_catalogo_sin_rol_en_db": sorted(unmatched_roles),
+        # the list is truncated for display; the totals must NOT be re-derived
+        # from it (counting the truncated list would under-report 103 as 20)
+        "n_ejecucion_fuera_de_lo_declarado": len(gaps),
+        "tareas_fuera_de_lo_declarado": sum(g["tasks"] for g in gaps),
+        "tareas_observadas": sum(int(c) for _, _, c in role_arch),
         "ejecucion_fuera_de_lo_declarado": gaps[:20],
     },
 }

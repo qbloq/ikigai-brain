@@ -118,6 +118,14 @@ Páginas, por `ui.component`:
   «Tareas por proyecto» (barras), ambas sobre `task_stats`.
 - **`sop-tree`** — árbol plegable macro→SOP→arquetipo sobre la fuente `sops`;
   fetch único (fuente cacheada) y filtrado en el navegador.
+- **`ontology`** — tablero de la ontología sobre la fuente `ontologia`: salud del
+  grafo de conocimiento (componentes conexos, aisladas, grado, cobertura de
+  reglas, resolución de las implícitas) y hallazgos de la capa conceptual
+  (instanciación de arquetipos, concentración del trabajo, ejecución fuera de lo
+  declarado, cadena de valor). Lee los artefactos **construidos** del grafo, así
+  que **reconstruir el grafo lo actualiza** (hasta 60s de caché); la barra de
+  frescura muestra fecha de build y deriva contra la DB para que no se vea al día
+  cuando no lo está. UI sembrada: «Ontología».
 - **`localdb`** — explorador de SQLite local: izquierda, cada db con tablas +
   counts; derecha, preview ≤200 filas. La selección viaja como `?db=&table=`,
   así toda vista es URL-direccionable (`/u/<id>?db=…`).
