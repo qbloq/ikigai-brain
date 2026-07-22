@@ -1,49 +1,94 @@
 # Grafo de entidades — esquema `ikigaigm`
 
-Grafo inicial de todas las entidades de la DB (Supabase/Postgres) y sus
-relaciones, levantado desde el **catálogo de Postgres** (fuente determinista)
-+ las **relaciones implícitas** documentadas en `CLAUDE.md` (no forzadas por FK).
+Ontología del **dato**: todas las entidades de la DB (Supabase/Postgres), sus
+relaciones y las **reglas** que las gobiernan, levantadas desde el **catálogo de
+Postgres** (fuente determinista) + un **sondeo verificado** de las columnas
+`jsonb`/array que cargan relaciones que ningún FK obliga.
 
-**98 entidades** (97 tablas + 1 vista) · **148 relaciones** (142 FK + 6 implícitas)
-· **13 dominios**. Hubs: `projects` (grado 40 — la columna del org),
-`users` (24), `tasks` (10), `meetings` (8).
+**98 entidades** (97 tablas + 1 vista) · **154 relaciones** (143 FK + 11
+implícitas verificadas) · **85 reglas** (20 enums + 22 checks + 43 únicos) ·
+**13 dominios**. Hubs: `projects` (grado 40 — la columna del org),
+`users` (25), `tasks` (10), `meetings` (8), `team_roles` (8).
+
+## Qué carga el modelo (más allá de "tabla → tabla")
+
+| Dimensión | De dónde sale | Para qué sirve |
+|---|---|---|
+| **Cardinalidad** (`1:1` / `N:1`) | índice único de una sola columna sobre la columna FK | distinguir un perfil (1:1) de una colección (N:1) |
+| **Participación** (obligatoria / opcional) | `NOT NULL` en la columna FK | saber si la relación puede faltar |
+| **Acción referencial** (`ON DELETE`) | `pg_constraint.confdeltype` | qué se lleva por delante un borrado |
+| **Reglas de valor** | enums + `CHECK` (incl. el idiom *check-as-enum*) | los estados legales de cada entidad |
+| **Identidad y unicidad** | PK + constraints `UNIQUE` | qué hace única a una fila |
+| **Relaciones implícitas** | sondeo de `jsonb`/arrays **verificado contra datos vivos** | el 7% del grafo que no está en los FK |
+
+Reparto de cardinalidad: **9** relaciones `1:1` obligatorias, **1** `1:1`
+opcional, **64** `N:1` obligatorias, **80** `N:1` opcionales.
 
 ## Artefactos
 
 | Archivo | Qué es | Para qué |
 |---------|--------|----------|
-| `graph.json` | Node-link neutral (`{meta, nodes[], edges[]}`). Cada nodo lleva `domain`, `kind`, `rows`, `cols`, `degree`; cada edge `kind` (`fk`\|`implicit`), `src_col`/`tgt_col`. | Fuente de verdad. Alimenta el visor y cualquier consumidor downstream (D3, cytoscape, networkx, un import a GraphDB). |
-| `schema.ttl` | Ontología **RDF/Turtle**: entidades → `owl:Class` (subclase de su dominio), FKs → `owl:ObjectProperty` con `rdfs:domain`/`rdfs:range`. Las implícitas quedan marcadas en `rdfs:comment`. | Semantic layer / triple-store (GraphDB, Fuseki, rdflib, Neo4j n10s). |
-| `schema-graph.html` | Visor interactivo self-contained (force-directed, sin dependencias externas). Filtro por dominio, toggle FK/implícitas, click → panel de relaciones, búsqueda, zoom/pan. | Visualizar y navegar. Se publica como Artifact. |
+| `dump_catalog.sh` | Vuelca el catálogo a 6 TSV (`catalog/`). **Read-only**. | Hacer reproducible la extracción. |
+| `graph.json` | Node-link neutral (`{meta, nodes[], edges[]}`). Cada nodo lleva `domain`, `kind`, `rows`, `cols`, `degree`, `pk`, `enums`, `checks`, `uniques`, `jsonb`, `arrays`; cada edge `kind`, `card`, `optional`, `on_delete` y, si es implícita, `verified`. | Fuente de verdad. Alimenta el visor y cualquier consumidor (D3, cytoscape, networkx, import a GraphDB). |
+| `schema.ttl` | Ontología **RDF/Turtle**: entidades → `owl:Class`, relaciones → `owl:ObjectProperty` con `rdfs:domain`/`rdfs:range`, más el vocabulario `rule:` (`cardinality`, `participation`, `onDelete`, `enumerated`, `primaryKey`, `unique`, `enforced`, `resolution`). **2.177 triples**, validado con rdflib. | Semantic layer / triple-store (GraphDB, Fuseki, rdflib, Neo4j n10s) y consultas SPARQL. |
+| `schema-graph.html` | Visor interactivo self-contained (force-directed, sin dependencias externas). Filtro y aislamiento por dominio, toggle FK/implícitas, click → panel con relaciones (cardinalidad + participación + evidencia), reglas y columnas semiestructuradas. | Visualizar y navegar. Se publica como Artifact. |
 
 ## Regenerar (cuando cambie el esquema)
 
 ```bash
-# 1) re-dumpear el catálogo (read-only) a TSV
-source bash/lib/common.sh
-psql_ro -t -A -F$'\t' -c "SELECT c.relname, CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'm' THEN 'matview' WHEN 'p' THEN 'parted' ELSE c.relkind::text END, GREATEST(c.reltuples::bigint,0), (SELECT count(*) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='ikigaigm' AND c.relkind IN ('r','v','m','p') ORDER BY c.relname;" > tables.tsv
-psql_ro -t -A -F$'\t' -c "SELECT kcu.table_name, kcu.column_name, ccu.table_name, ccu.column_name, tc.constraint_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_name=kcu.constraint_name AND tc.table_schema=kcu.table_schema JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name=tc.constraint_name AND ccu.table_schema=tc.table_schema WHERE tc.constraint_type='FOREIGN KEY' AND tc.table_schema='ikigaigm' ORDER BY kcu.table_name;" > fks.tsv
-
-# 2) reconstruir graph.json + schema.ttl (leyendo los TSV del dir actual)
-python3 docs/graph/build_graph.py . docs/graph
-
-# 3) regenerar el visor con los datos embebidos
-python3 docs/graph/build_viewer.py docs/graph
+docs/graph/dump_catalog.sh                              # 1) catálogo → docs/graph/catalog/*.tsv
+python3 docs/graph/build_graph.py docs/graph/catalog docs/graph   # 2) graph.json + schema.ttl
+python3 docs/graph/build_viewer.py docs/graph           # 3) visor con los datos embebidos
 ```
 
-## Relaciones implícitas incluidas
+## Relaciones implícitas (verificadas, no supuestas)
 
-No las fuerza ningún FK, pero el dominio las usa a diario (viven en `build_graph.py` → `IMPLICIT`):
+No las fuerza ningún FK, pero el dominio las usa a diario. Cada una se comprobó
+con un join real contra datos vivos; `resuelve` es la fracción de valores
+distintos de origen que encuentran destino. Viven en `build_graph.py` → `IMPLICIT`.
 
-- `tasks.assignee[]` → `team_members.id` (uuid array, sin FK)
-- `meetings.event.booking.contact_id` ≈ `crm_contacts.ghl_contact_id` (traza del closer)
-- `project_ad_account_mappings.account_id` → `ad_accounts` (id externo de Meta)
-- `project_campaign_mappings.campaign_id` → `campaigns` (id externo)
-- `users.crm_id` → `crm_opportunities.user_id` (resolución del closer)
-- `meta_capi_events` → `crm_contacts.ghl_contact_id` (evento CAPI ↔ lead)
+| Origen | Camino | Destino | Resuelve |
+|---|---|---|---|
+| `tasks` | `assignee[]` | `team_members.id` | 18/18 (100%) |
+| `crm_opportunities` | `ghl_stage_id` | `crm_pipelines.stages[].id` | 15/15 (100%) |
+| `project_campaign_mappings` | `campaign_id` | `campaigns.id` | 23/23 (100%) |
+| `project_ad_account_mappings` | `ad_account_id` | `ad_accounts.id` | 8/8 (100%) |
+| `output_channels` | `config.whatsapp_config_id` | `project_whatsapp_configs.id` | 1/1 (100%) |
+| `task_inputs` | `artifact_reference.file_id` | `drive_index.file_id` | 1/1 (100%) |
+| `macro_processes` | `owner_roles[]` | `team_roles.name` | 13/14 (93%) |
+| `sops` | `owner_roles[]` | `team_roles.name` | 12/13 (92%) |
+| `meetings` | `event.booking.contact_id` | `crm_contacts.ghl_contact_id` | 1267/1559 (81%) |
+| `crm_contacts` | `custom_fields[].id` | `crm_custom_fields.ghl_field_id` | 73/94 (78%) |
+| `users` | `integrations{location}` | `project_crm_configs.location_id` | 2/4 (50%) |
+
+Las tres últimas no llegan al 100% y eso **es el dato**: marcan la cola de higiene
+(el 19% de reuniones sin contacto resuelto es la misma cola S8.2 que documenta
+`CLAUDE.md` para el closer).
+
+### Correcciones de esta pasada
+
+Al verificar se cayeron dos relaciones que estaban documentadas como reales, y
+una tercera apuntaba a una columna inexistente. Quedan registradas en
+`graph.json` → `meta.rejected` para que no vuelvan por folclore:
+
+- ❌ `users.crm_id → crm_opportunities.user_id` — `crm_id` guarda un **id de
+  usuario de GHL** (texto, p.ej. `61qHdbyUdafDb9nDxit3`): 0 de 6 valores parecen
+  uuid. El camino real ya era la **FK** `crm_opportunities.user_id → users.id` (10/10).
+- ❌ `meta_capi_events → crm_contacts.ghl_contact_id` — `payload->data` solo trae
+  `user_data` hasheado (PII para CAPI); no hay id de contacto. Sus relaciones
+  reales ya son FK a `installments` y `projects`.
+- ⚠️ `project_ad_account_mappings.account_id` no existe: la columna es
+  **`ad_account_id`** (corregida; resuelve 8/8).
 
 ## Notas
 
 - `rows` es la estimación de `pg_class.reltuples` (aprox, no `count(*)`).
-- Falta por modelar: relaciones que viajan por columnas jsonb (p.ej. `users.integrations`,
-  `meetings.event`) más allá de las 6 implícitas anotadas. Se agregan a `IMPLICIT` cuando se necesiten.
+- Los enums se anclan por **OID del tipo**, no por nombre: esta DB aloja un
+  segundo proyecto no relacionado y hay nombres de enum repetidos entre esquemas
+  (filtrar por `typname` fusionaba los labels de ambos).
+- Quedan **50 columnas jsonb** en el esquema; solo las que probaron cargar una
+  relación están como aristas. El resto es configuración, payloads o esquemas
+  (`skills.input_schema`, `settings.config`, `llm_calls.*`), no relaciones.
+- `llm_calls.prompt_sections`, `okr_reviews.key_result_snapshots` y
+  `task_attestations.responsible_contact` están **vacías** (0 filas no nulas):
+  no hay nada que extraer todavía.

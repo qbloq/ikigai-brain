@@ -1,0 +1,15 @@
+commission_type	sale|lead|service
+commission_value_type	fixed|pct_installment|pct_plan_total
+cost_recurrence	one_time|weekly|biweekly|monthly|quarterly|annual
+employment_type	contracted|commissioned
+installment_frequency	Monthly|Bi-weekly|Weekly|Quarterly|Semi-annual|Annual
+installment_status	Scheduled|Paid|Overdue|Cancelled|Partial
+kr_scoring	binary|percentage|threshold
+okr_cadence	weekly|monthly|quarterly|annual
+okr_status	draft|active|completed|cancelled
+payment_plan_status	Active|Completed|Cancelled|Defaulted
+payout_status	pending|approved|paid|rejected|cancelled
+payroll_frequency	weekly|biweekly|monthly
+payroll_rate_unit	h|d|w|m
+task_priority	Low|Medium|High
+task_status	pending|in_progress|completed|blocked|cancelled

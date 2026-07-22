@@ -106,11 +106,25 @@ header{position:fixed;top:0;left:0;right:0;height:60px;z-index:20;
   border-radius:6px;padding:2px 7px;color:var(--muted);font-variant-numeric:tabular-nums}
 .dbody{overflow-y:auto;padding:4px 0 10px}
 .rel-t{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:12px 14px 5px}
-.rel{display:flex;align-items:baseline;gap:7px;padding:5px 14px;cursor:pointer;border-left:2px solid transparent}
+.rel{display:block;padding:6px 14px;cursor:pointer;border-left:2px solid transparent}
 .rel:hover{background:var(--panel2);border-left-color:var(--accent)}
+.rel .r1{display:flex;align-items:baseline;gap:7px}
+.rel .r2{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin-top:2px}
 .rel .to{font-family:var(--mono);font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rel .via{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.rel .via{font-family:var(--mono);font-size:10px;color:var(--muted);word-break:break-all}
+.rel .meta{font-size:9.5px;color:var(--muted)}
 .rel .kb{font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:4px;flex:none}
+.cardb{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:4px;flex:none;
+  background:var(--panel2);border:1px solid var(--line2);color:var(--muted)}
+.opt{font-style:italic}
+/* rules block */
+.rule{padding:5px 14px;line-height:1.55}
+.rule .rt{font-size:9px;font-family:var(--mono);padding:0 4px;border-radius:3px;margin-right:6px;
+  background:var(--panel2);border:1px solid var(--line2);color:var(--muted)}
+.rule .rc{font-family:var(--mono);font-size:11px}
+.rule .rv{font-family:var(--mono);font-size:10px;color:var(--muted);word-break:break-word}
+.cols{padding:2px 14px 8px;font-family:var(--mono);font-size:10.5px;color:var(--muted);
+  word-break:break-word;line-height:1.75}
 .kb.fk{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
 .kb.impl{background:color-mix(in srgb,#E0A458 26%,transparent);color:#E0A458;border:1px dashed #E0A458}
 .close{position:absolute;top:12px;right:12px;cursor:pointer;color:var(--muted);
@@ -155,7 +169,8 @@ canvas{position:fixed;inset:0;z-index:1;display:block;touch-action:none}
       <b>click</b> un nodo para ver sus relaciones · <b>arrastra</b> para fijarlo ·
       rueda para <b>zoom</b> · fondo para desplazar.<br>
       <b>doble-click</b> un dominio para aislarlo · el <b>tamaño</b> del nodo crece con sus conexiones ·
-      línea <code>punteada</code> = relación implícita (no forzada por FK).
+      línea <code>punteada</code> = relación <b>implícita</b>: no la fuerza ningún FK, se verificó contra
+      datos reales y el panel muestra su tasa de resolución.
     </div>
   </div>
 </div>
@@ -198,7 +213,8 @@ const state = { domOff:new Set(), ekOff:new Set(), sel:null, hover:null, query:"
 // ---- header stats ----
 const m = GRAPH.meta;
 document.getElementById('stats').innerHTML =
-  [['entidades',m.n_nodes],['foreign keys',m.n_fk],['implícitas',m.n_implicit],['dominios',Object.keys(DOMS).length]]
+  [['entidades',m.n_nodes],['foreign keys',m.n_fk],['implícitas',m.n_implicit],
+   ['reglas',m.n_rules],['dominios',Object.keys(DOMS).length]]
   .map(([l,v])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
 document.getElementById('cfk').textContent=m.n_fk;
 document.getElementById('cimpl').textContent=m.n_implicit;
@@ -425,21 +441,51 @@ function renderDetail(){
   document.getElementById('d-stripe').style.background=COL[n.domain];
   document.getElementById('d-dom').textContent=DOMS[n.domain];
   document.getElementById('d-name').textContent=n.id;
-  document.getElementById('d-chips').innerHTML=
-    [`${n.kind}`,`~${n.rows.toLocaleString()} filas`,`${n.cols} columnas`,`${n.degree} conexiones`]
-    .map(c=>`<span class="chip">${c}</span>`).join('');
+  const chips=[`${n.kind}`,`~${n.rows.toLocaleString()} filas`,`${n.cols} columnas`,`${n.degree} conexiones`];
+  if(n.pk) chips.push(`pk ${n.pk}`);
+  document.getElementById('d-chips').innerHTML=chips.map(c=>`<span class="chip">${c}</span>`).join('');
+  const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const out=adj.get(n.id).filter(e=>e.source===n.id);
   const inc=adj.get(n.id).filter(e=>e.target===n.id && e.source!==n.id);
   const row=e=>{ const other=e.source===n.id?e.t:e.s;
+    const ev=e.verified?` · resuelve ${e.verified.matched}/${e.verified.total} (${e.verified.pct}%)`:'';
+    const od=(e.kind==='fk'&&e.on_delete&&e.on_delete!=='no action')?` · on delete ${esc(e.on_delete)}`:'';
+    const part=e.optional?'<span class="opt">opcional</span>':'obligatoria';
     return `<div class="rel" data-go="${other.id}">
-      <span class="kb ${e.kind==='fk'?'fk':'impl'}">${e.kind==='fk'?'FK':'impl'}</span>
-      <span class="to" style="color:${COL[other.domain]}">${other.id}</span>
-      <span class="via">${e.label}</span></div>`; };
+      <div class="r1">
+        <span class="kb ${e.kind==='fk'?'fk':'impl'}">${e.kind==='fk'?'FK':'impl'}</span>
+        <span class="to" style="color:${COL[other.domain]}">${other.id}</span>
+        <span class="cardb">${esc(e.card)}</span>
+      </div>
+      <div class="r2"><span class="via">${esc(e.label)}</span>
+        <span class="meta">${part}${od}${ev}</span></div></div>`; };
   let html='';
   html+=`<div class="rel-t">Apunta a → (${out.length})</div>`;
   html+= out.length? out.map(row).join('') : `<div class="empty">no referencia otras entidades</div>`;
   html+=`<div class="rel-t">← Referenciada por (${inc.length})</div>`;
   html+= inc.length? inc.map(row).join('') : `<div class="empty">ninguna entidad la referencia</div>`;
+
+  // rules: enums, CHECK (incl. the check-as-enum idiom) and unique constraints
+  const enums=n.enums||[], checks=n.checks||[], uniq=n.uniques||[];
+  const nRules=enums.length+checks.length+uniq.length;
+  if(nRules){
+    html+=`<div class="rel-t">Reglas (${nRules})</div>`;
+    enums.forEach(en=>{ html+=`<div class="rule"><span class="rt">enum</span><span class="rc">${esc(en.col)}</span>
+      <div class="rv">${en.values.map(esc).join(' · ')}</div></div>`; });
+    checks.forEach(ck=>{ html+= ck.type==='allowed_values'
+      ? `<div class="rule"><span class="rt">check</span><span class="rc">${esc(ck.col)}</span>
+         <div class="rv">${ck.values.map(esc).join(' · ')}</div></div>`
+      : `<div class="rule"><span class="rt">check</span><span class="rv">${esc(ck.expr)}</span></div>`; });
+    uniq.forEach(u=>{ html+=`<div class="rule"><span class="rt">único</span><span class="rv">${u.cols.map(esc).join(', ')}</span></div>`; });
+  }
+  // columns that can hide relations no FK enforces
+  const js=n.jsonb||[], ar=n.arrays||[];
+  if(js.length||ar.length){
+    html+=`<div class="rel-t">Columnas semiestructuradas</div><div class="cols">`;
+    if(js.length) html+=`jsonb: ${js.map(esc).join(' · ')}<br>`;
+    if(ar.length) html+=`array: ${ar.map(a=>esc(a.col)+'['+esc(a.of)+']').join(' · ')}`;
+    html+=`</div>`;
+  }
   const body=document.getElementById('d-body'); body.innerHTML=html;
   body.querySelectorAll('.rel').forEach(r=>r.onclick=()=>{ const g=byId.get(r.dataset.go); if(g){select(g);centerOn(g);} });
 }

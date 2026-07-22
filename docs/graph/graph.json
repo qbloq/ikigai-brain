@@ -1,11 +1,16 @@
 {
   "meta": {
     "schema": "ikigaigm",
-    "generated_from": "pg_catalog + information_schema (FK) + CLAUDE.md (implicit)",
+    "generated_from": "pg_catalog (entidades, FK+cardinalidad, PK, enums, checks, únicos) + sondeo verificado de jsonb/arrays",
     "n_nodes": 98,
-    "n_edges": 148,
-    "n_fk": 142,
-    "n_implicit": 6,
+    "n_edges": 154,
+    "n_fk": 143,
+    "n_implicit": 11,
+    "n_rules": 85,
+    "n_enums": 20,
+    "n_checks": 22,
+    "n_uniques": 43,
+    "n_jsonb": 50,
     "domains": {
       "tasks": "Tareas",
       "meetings": "Reuniones",
@@ -20,7 +25,17 @@
       "content": "Contenido (Notion/Drive)",
       "whatsapp": "WhatsApp",
       "misc": "Otros"
-    }
+    },
+    "rejected": [
+      {
+        "claim": "users.crm_id → crm_opportunities.user_id",
+        "why": "crm_id guarda un id de usuario de GHL (texto, p.ej. '61qHdbyUdafDb9nDxit3'), no un uuid: 0/6 parecen uuid. El camino real ya es la FK crm_opportunities.user_id → users.id (10/10)."
+      },
+      {
+        "claim": "meta_capi_events → crm_contacts.ghl_contact_id",
+        "why": "payload->data solo trae user_data hasheado (PII para CAPI); no hay id de contacto. Sus relaciones reales ya son FK a installments y projects."
+      }
+    ]
   },
   "nodes": [
     {
@@ -30,6 +45,19 @@
       "cols": 15,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "activity_archetypes_slug_key",
+          "cols": [
+            "slug"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -39,6 +67,12 @@
       "cols": 8,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -48,6 +82,14 @@
       "cols": 36,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "conversions"
+      ],
+      "arrays": [],
       "degree": 0
     },
     {
@@ -57,6 +99,14 @@
       "cols": 17,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "targeting"
+      ],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -66,6 +116,12 @@
       "cols": 9,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -75,6 +131,12 @@
       "cols": 7,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -84,6 +146,12 @@
       "cols": 8,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -93,6 +161,12 @@
       "cols": 8,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 4
     },
     {
@@ -102,6 +176,25 @@
       "cols": 8,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "archetype_params_archetype_id_key_key",
+          "cols": [
+            "archetype_id",
+            "key"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [
+        {
+          "col": "enum_options",
+          "of": "text"
+        }
+      ],
       "degree": 1
     },
     {
@@ -111,6 +204,12 @@
       "cols": 2,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": null,
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 0
     },
     {
@@ -120,6 +219,12 @@
       "cols": 2,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": null,
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 0
     },
     {
@@ -129,6 +234,51 @@
       "cols": 11,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "artifact_types_resolver_type_check",
+          "type": "allowed_values",
+          "col": "resolver_type",
+          "values": [
+            "table",
+            "storage",
+            "api",
+            "computed",
+            "inline",
+            "gdrive",
+            "sql",
+            "notion"
+          ]
+        },
+        {
+          "name": "artifact_types_category_check",
+          "type": "allowed_values",
+          "col": "category",
+          "values": [
+            "document",
+            "approval",
+            "data",
+            "resource",
+            "decision"
+          ]
+        }
+      ],
+      "uniques": [
+        {
+          "name": "artifact_types_name_key",
+          "cols": [
+            "name"
+          ]
+        }
+      ],
+      "jsonb": [
+        "binding_schema",
+        "reference_schema",
+        "resolver_config"
+      ],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -138,6 +288,21 @@
       "cols": 5,
       "domain": "meetings",
       "domain_label": "Reuniones",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "call_meeting_results_meeting_id_key",
+          "cols": [
+            "meeting_id"
+          ]
+        }
+      ],
+      "jsonb": [
+        "results"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -147,6 +312,24 @@
       "cols": 20,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "campaign_insights_daily_campaign_id_date_start_date_stop_key",
+          "cols": [
+            "campaign_id",
+            "date_start",
+            "date_stop"
+          ]
+        }
+      ],
+      "jsonb": [
+        "conversions",
+        "cost_per_conversion"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -156,6 +339,12 @@
       "cols": 14,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 4
     },
     {
@@ -165,6 +354,42 @@
       "cols": 26,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "commission_type",
+          "type": "commission_type",
+          "values": [
+            "sale",
+            "lead",
+            "service"
+          ]
+        },
+        {
+          "col": "rule_value_type",
+          "type": "commission_value_type",
+          "values": [
+            "fixed",
+            "pct_installment",
+            "pct_plan_total"
+          ]
+        },
+        {
+          "col": "status",
+          "type": "payout_status",
+          "values": [
+            "pending",
+            "approved",
+            "paid",
+            "rejected",
+            "cancelled"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 7
     },
     {
@@ -174,6 +399,31 @@
       "cols": 16,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "commission_type",
+          "type": "commission_type",
+          "values": [
+            "sale",
+            "lead",
+            "service"
+          ]
+        },
+        {
+          "col": "value_type",
+          "type": "commission_value_type",
+          "values": [
+            "fixed",
+            "pct_installment",
+            "pct_plan_total"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 7
     },
     {
@@ -183,6 +433,20 @@
       "cols": 8,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "crm_calendars_project_id_ghl_calendar_id_key",
+          "cols": [
+            "project_id",
+            "ghl_calendar_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -192,6 +456,27 @@
       "cols": 13,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "crm_contacts_project_id_ghl_contact_id_key",
+          "cols": [
+            "project_id",
+            "ghl_contact_id"
+          ]
+        }
+      ],
+      "jsonb": [
+        "custom_fields"
+      ],
+      "arrays": [
+        {
+          "col": "tags",
+          "of": "text"
+        }
+      ],
       "degree": 5
     },
     {
@@ -201,7 +486,24 @@
       "cols": 17,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
-      "degree": 1
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "crm_custom_fields_project_id_ghl_field_id_key",
+          "cols": [
+            "project_id",
+            "ghl_field_id"
+          ]
+        }
+      ],
+      "jsonb": [
+        "picklist_image_options",
+        "picklist_options"
+      ],
+      "arrays": [],
+      "degree": 2
     },
     {
       "id": "crm_opportunities",
@@ -210,6 +512,20 @@
       "cols": 16,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "crm_opportunities_project_id_ghl_opportunity_id_key",
+          "cols": [
+            "project_id",
+            "ghl_opportunity_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -219,7 +535,23 @@
       "cols": 10,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
-      "degree": 2
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "crm_pipelines_project_id_ghl_pipeline_id_key",
+          "cols": [
+            "project_id",
+            "ghl_pipeline_id"
+          ]
+        }
+      ],
+      "jsonb": [
+        "stages"
+      ],
+      "arrays": [],
+      "degree": 3
     },
     {
       "id": "drive_index",
@@ -228,7 +560,13 @@
       "cols": 16,
       "domain": "content",
       "domain_label": "Contenido (Notion/Drive)",
-      "degree": 0
+      "pk": "file_id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
+      "degree": 1
     },
     {
       "id": "drive_index_type_stats",
@@ -237,6 +575,12 @@
       "cols": 3,
       "domain": "content",
       "domain_label": "Contenido (Notion/Drive)",
+      "pk": null,
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 0
     },
     {
@@ -246,6 +590,25 @@
       "cols": 12,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "economics_ledger_entry_type_check",
+          "type": "allowed_values",
+          "col": "entry_type",
+          "values": [
+            "revenue",
+            "expense_opex",
+            "expense_payroll",
+            "expense_commission",
+            "distribution"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -255,6 +618,20 @@
       "cols": 8,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "expense_categories_project_id_name_key",
+          "cols": [
+            "project_id",
+            "name"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -264,6 +641,25 @@
       "cols": 13,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "recurrence",
+          "type": "cost_recurrence",
+          "values": [
+            "one_time",
+            "weekly",
+            "biweekly",
+            "monthly",
+            "quarterly",
+            "annual"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -273,6 +669,25 @@
       "cols": 15,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "recurrence",
+          "type": "cost_recurrence",
+          "values": [
+            "one_time",
+            "weekly",
+            "biweekly",
+            "monthly",
+            "quarterly",
+            "annual"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 4
     },
     {
@@ -282,6 +697,20 @@
       "cols": 7,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "funnel_goals_project_id_metric_symbol_key",
+          "cols": [
+            "project_id",
+            "metric_symbol"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 0
     },
     {
@@ -291,6 +720,12 @@
       "cols": 5,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -300,6 +735,24 @@
       "cols": 9,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "graph_messages_role_check",
+          "type": "allowed_values",
+          "col": "role",
+          "values": [
+            "user",
+            "assistant"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [
+        "result_data"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -309,6 +762,22 @@
       "cols": 11,
       "domain": "people",
       "domain_label": "Personas / Equipo",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "identities_provider_uid_key",
+          "cols": [
+            "provider",
+            "uid"
+          ]
+        }
+      ],
+      "jsonb": [
+        "identity_data"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -318,6 +787,32 @@
       "cols": 14,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "installment_id",
+      "enums": [
+        {
+          "col": "status",
+          "type": "installment_status",
+          "values": [
+            "Scheduled",
+            "Paid",
+            "Overdue",
+            "Cancelled",
+            "Partial"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "unique_plan_installment_number",
+          "cols": [
+            "plan_id",
+            "installment_number"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -327,6 +822,32 @@
       "cols": 9,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "io_types_category_check",
+          "type": "allowed_values",
+          "col": "category",
+          "values": [
+            "document",
+            "approval",
+            "data",
+            "resource",
+            "decision"
+          ]
+        }
+      ],
+      "uniques": [
+        {
+          "name": "io_types_name_key",
+          "cols": [
+            "name"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -336,6 +857,22 @@
       "cols": 15,
       "domain": "okr",
       "domain_label": "OKR / KPI",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "scoring",
+          "type": "kr_scoring",
+          "values": [
+            "binary",
+            "percentage",
+            "threshold"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -345,6 +882,14 @@
       "cols": 7,
       "domain": "okr",
       "domain_label": "OKR / KPI",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "parameters"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -354,6 +899,19 @@
       "cols": 17,
       "domain": "okr",
       "domain_label": "OKR / KPI",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "parameters"
+      ],
+      "arrays": [
+        {
+          "col": "data_sources",
+          "of": "text"
+        }
+      ],
       "degree": 4
     },
     {
@@ -363,6 +921,16 @@
       "cols": 25,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "full_messages_json",
+        "prompt_sections",
+        "tool_calls_json"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -372,6 +940,12 @@
       "cols": 14,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 0
     },
     {
@@ -381,7 +955,18 @@
       "cols": 10,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
-      "degree": 1
+      "pk": "code",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [
+        {
+          "col": "owner_roles",
+          "of": "text"
+        }
+      ],
+      "degree": 2
     },
     {
       "id": "meeting_participants",
@@ -390,6 +975,20 @@
       "cols": 11,
       "domain": "meetings",
       "domain_label": "Reuniones",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "unique_meeting_participant",
+          "cols": [
+            "meeting_id",
+            "uid"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -399,6 +998,22 @@
       "cols": 6,
       "domain": "meetings",
       "domain_label": "Reuniones",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "meeting_reports_meeting_id_key",
+          "cols": [
+            "meeting_id"
+          ]
+        }
+      ],
+      "jsonb": [
+        "report",
+        "report_es"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -408,15 +1023,36 @@
       "cols": 5,
       "domain": "meetings",
       "domain_label": "Reuniones",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "meeting_transcripts_meeting_id_key",
+          "cols": [
+            "meeting_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
       "id": "meetings",
       "kind": "table",
-      "rows": 2137,
+      "rows": 2226,
       "cols": 20,
       "domain": "meetings",
       "domain_label": "Reuniones",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "event"
+      ],
+      "arrays": [],
       "degree": 8
     },
     {
@@ -426,7 +1062,23 @@
       "cols": 9,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
-      "degree": 3
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "meta_capi_events_installment_id_key",
+          "cols": [
+            "installment_id"
+          ]
+        }
+      ],
+      "jsonb": [
+        "payload",
+        "response"
+      ],
+      "arrays": [],
+      "degree": 2
     },
     {
       "id": "notion_content_index",
@@ -435,6 +1087,20 @@
       "cols": 14,
       "domain": "content",
       "domain_label": "Contenido (Notion/Drive)",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "notion_content_index_project_id_notion_id_key",
+          "cols": [
+            "project_id",
+            "notion_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -444,6 +1110,33 @@
       "cols": 12,
       "domain": "okr",
       "domain_label": "OKR / KPI",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "cadence",
+          "type": "okr_cadence",
+          "values": [
+            "weekly",
+            "monthly",
+            "quarterly",
+            "annual"
+          ]
+        },
+        {
+          "col": "status",
+          "type": "okr_status",
+          "values": [
+            "draft",
+            "active",
+            "completed",
+            "cancelled"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 4
     },
     {
@@ -453,6 +1146,15 @@
       "cols": 11,
       "domain": "okr",
       "domain_label": "OKR / KPI",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "key_result_snapshots",
+        "llm_recommendations"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -462,7 +1164,30 @@
       "cols": 10,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
-      "degree": 1
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "output_channels_channel_type_check",
+          "type": "allowed_values",
+          "col": "channel_type",
+          "values": [
+            "sql_table",
+            "html_report",
+            "csv_file",
+            "http_webhook",
+            "email",
+            "whatsapp",
+            "slack"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [
+        "config"
+      ],
+      "arrays": [],
+      "degree": 2
     },
     {
       "id": "payment_plans",
@@ -471,6 +1196,35 @@
       "cols": 16,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "plan_id",
+      "enums": [
+        {
+          "col": "installment_frequency",
+          "type": "installment_frequency",
+          "values": [
+            "Monthly",
+            "Bi-weekly",
+            "Weekly",
+            "Quarterly",
+            "Semi-annual",
+            "Annual"
+          ]
+        },
+        {
+          "col": "plan_status",
+          "type": "payment_plan_status",
+          "values": [
+            "Active",
+            "Completed",
+            "Cancelled",
+            "Defaulted"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -480,6 +1234,34 @@
       "cols": 18,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "status",
+          "type": "payout_status",
+          "values": [
+            "pending",
+            "approved",
+            "paid",
+            "rejected",
+            "cancelled"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "payroll_actuals_project_id_payroll_rule_id_user_id_period_s_key",
+          "cols": [
+            "project_id",
+            "payroll_rule_id",
+            "user_id",
+            "period_start"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 4
     },
     {
@@ -489,6 +1271,49 @@
       "cols": 15,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "employment_type",
+          "type": "employment_type",
+          "values": [
+            "contracted",
+            "commissioned"
+          ]
+        },
+        {
+          "col": "frequency",
+          "type": "payroll_frequency",
+          "values": [
+            "weekly",
+            "biweekly",
+            "monthly"
+          ]
+        },
+        {
+          "col": "rate_unit",
+          "type": "payroll_rate_unit",
+          "values": [
+            "h",
+            "d",
+            "w",
+            "m"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "payroll_rules_project_id_role_id_user_id_key",
+          "cols": [
+            "project_id",
+            "role_id",
+            "user_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -498,6 +1323,19 @@
       "cols": 7,
       "domain": "people",
       "domain_label": "Personas / Equipo",
+      "pk": "person_id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "ikigaigm_persons_email_uk",
+          "cols": [
+            "email"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -507,6 +1345,19 @@
       "cols": 14,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "products_product_id_key",
+          "cols": [
+            "product_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 4
     },
     {
@@ -516,6 +1367,20 @@
       "cols": 5,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_ad_account_mappings_project_id_ad_account_id_key",
+          "cols": [
+            "project_id",
+            "ad_account_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -525,6 +1390,20 @@
       "cols": 6,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_campaign_mappings_project_id_campaign_id_key",
+          "cols": [
+            "project_id",
+            "campaign_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -534,7 +1413,21 @@
       "cols": 13,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
-      "degree": 1
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_crm_configs_project_id_provider_key",
+          "cols": [
+            "project_id",
+            "provider"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
+      "degree": 2
     },
     {
       "id": "project_google_configs",
@@ -543,6 +1436,19 @@
       "cols": 20,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_google_configs_project_id_key",
+          "cols": [
+            "project_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -552,6 +1458,19 @@
       "cols": 6,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_meta_configs_project_id_key",
+          "cols": [
+            "project_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -561,6 +1480,19 @@
       "cols": 22,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_notion_configs_project_id_key",
+          "cols": [
+            "project_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -570,6 +1502,19 @@
       "cols": 8,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_panda_video_configs_project_id_key",
+          "cols": [
+            "project_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -579,6 +1524,20 @@
       "cols": 8,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_panda_video_selections_project_id_video_id_key",
+          "cols": [
+            "project_id",
+            "video_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -588,6 +1547,20 @@
       "cols": 4,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_teams_project_id_team_id_key",
+          "cols": [
+            "project_id",
+            "team_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -597,6 +1570,19 @@
       "cols": 8,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_vturb_video_configs_project_id_key",
+          "cols": [
+            "project_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -606,6 +1592,20 @@
       "cols": 8,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_vturb_video_selections_project_id_video_id_key",
+          "cols": [
+            "project_id",
+            "video_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -615,7 +1615,20 @@
       "cols": 23,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
-      "degree": 1
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "project_whatsapp_configs_project_id_key",
+          "cols": [
+            "project_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
+      "degree": 2
     },
     {
       "id": "projects",
@@ -624,6 +1637,22 @@
       "cols": 8,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "projects_video_provider_key_check",
+          "type": "allowed_values",
+          "col": "video_provider_key",
+          "values": [
+            "panda",
+            "vturb"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 40
     },
     {
@@ -633,6 +1662,19 @@
       "cols": 12,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "prompt_budgets_agent_id_key",
+          "cols": [
+            "agent_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 0
     },
     {
@@ -642,6 +1684,18 @@
       "cols": 11,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "prompt_sections_quality_rating_check",
+          "type": "expr",
+          "expr": "quality_rating >= 1) AND (quality_rating <= 5"
+        }
+      ],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -651,6 +1705,12 @@
       "cols": 9,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -660,6 +1720,24 @@
       "cols": 12,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "status",
+          "type": "payout_status",
+          "values": [
+            "pending",
+            "approved",
+            "paid",
+            "rejected",
+            "cancelled"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -669,6 +1747,26 @@
       "cols": 11,
       "domain": "finance",
       "domain_label": "Finanzas",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "revenue_share_rules_share_pct_check",
+          "type": "expr",
+          "expr": "share_pct > (0)::numeric) AND (share_pct <= (1)::numeric"
+        }
+      ],
+      "uniques": [
+        {
+          "name": "revenue_share_rules_project_id_user_id_key",
+          "cols": [
+            "project_id",
+            "user_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -678,6 +1776,35 @@
       "cols": 9,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "runner_runs_status_check",
+          "type": "allowed_values",
+          "col": "status",
+          "values": [
+            "pending",
+            "running",
+            "success",
+            "partial",
+            "error"
+          ]
+        }
+      ],
+      "uniques": [
+        {
+          "name": "runner_runs_idempotency_key_key",
+          "cols": [
+            "idempotency_key"
+          ]
+        }
+      ],
+      "jsonb": [
+        "output_results",
+        "trigger_payload"
+      ],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -687,6 +1814,36 @@
       "cols": 14,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "runners_trigger_type_check",
+          "type": "allowed_values",
+          "col": "trigger_type",
+          "values": [
+            "cron",
+            "event",
+            "manual"
+          ]
+        },
+        {
+          "name": "runners_status_check",
+          "type": "allowed_values",
+          "col": "status",
+          "values": [
+            "active",
+            "paused",
+            "error"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [
+        "input_mapping",
+        "trigger_config"
+      ],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -696,6 +1853,14 @@
       "cols": 4,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "config"
+      ],
+      "arrays": [],
       "degree": 0
     },
     {
@@ -705,6 +1870,17 @@
       "cols": 13,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "examples",
+        "input_schema",
+        "output_schema",
+        "tags"
+      ],
+      "arrays": [],
       "degree": 4
     },
     {
@@ -714,7 +1890,18 @@
       "cols": 8,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
-      "degree": 2
+      "pk": "code",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [
+        {
+          "col": "owner_roles",
+          "of": "text"
+        }
+      ],
+      "degree": 3
     },
     {
       "id": "spaces",
@@ -723,6 +1910,12 @@
       "cols": 12,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -732,6 +1925,12 @@
       "cols": 5,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -741,6 +1940,24 @@
       "cols": 10,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "sql_messages_role_check",
+          "type": "allowed_values",
+          "col": "role",
+          "values": [
+            "user",
+            "assistant"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [
+        "result_data"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -750,6 +1967,48 @@
       "cols": 21,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "pass_threshold_check",
+          "type": "allowed_values",
+          "col": "pass_threshold",
+          "values": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        {
+          "name": "task_acceptance_criteria_verification_method_check",
+          "type": "allowed_values",
+          "col": "verification_method",
+          "values": [
+            "llm",
+            "manual",
+            "automated",
+            "test",
+            "attested"
+          ]
+        },
+        {
+          "name": "task_acceptance_criteria_confidence_check",
+          "type": "allowed_values",
+          "col": "confidence",
+          "values": [
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [
+        "metadata",
+        "validator"
+      ],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -759,6 +2018,38 @@
       "cols": 16,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "attestation_channel_check",
+          "type": "allowed_values",
+          "col": "channel",
+          "values": [
+            "whatsapp",
+            "app",
+            "email"
+          ]
+        },
+        {
+          "name": "attestation_status_check",
+          "type": "allowed_values",
+          "col": "status",
+          "values": [
+            "pending",
+            "sent",
+            "answered",
+            "expired",
+            "escalated"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [
+        "evidence",
+        "responsible_contact"
+      ],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -768,6 +2059,12 @@
       "cols": 6,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -777,6 +2074,12 @@
       "cols": 8,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -786,7 +2089,16 @@
       "cols": 15,
       "domain": "tasks",
       "domain_label": "Tareas",
-      "degree": 4
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "artifact_reference",
+        "metadata"
+      ],
+      "arrays": [],
+      "degree": 5
     },
     {
       "id": "task_outputs",
@@ -795,6 +2107,15 @@
       "cols": 16,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "deliverable_reference",
+        "metadata"
+      ],
+      "arrays": [],
       "degree": 5
     },
     {
@@ -804,6 +2125,12 @@
       "cols": 7,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -813,6 +2140,38 @@
       "cols": 20,
       "domain": "tasks",
       "domain_label": "Tareas",
+      "pk": "id",
+      "enums": [
+        {
+          "col": "priority",
+          "type": "task_priority",
+          "values": [
+            "Low",
+            "Medium",
+            "High"
+          ]
+        },
+        {
+          "col": "status",
+          "type": "task_status",
+          "values": [
+            "pending",
+            "in_progress",
+            "completed",
+            "blocked",
+            "cancelled"
+          ]
+        }
+      ],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [
+        {
+          "col": "assignee",
+          "of": "uuid"
+        }
+      ],
       "degree": 10
     },
     {
@@ -822,6 +2181,20 @@
       "cols": 4,
       "domain": "people",
       "domain_label": "Personas / Equipo",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "team_member_roles_team_member_id_role_id_key",
+          "cols": [
+            "team_member_id",
+            "role_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
       "degree": 2
     },
     {
@@ -831,6 +2204,12 @@
       "cols": 8,
       "domain": "people",
       "domain_label": "Personas / Equipo",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 6
     },
     {
@@ -840,7 +2219,13 @@
       "cols": 6,
       "domain": "people",
       "domain_label": "Personas / Equipo",
-      "degree": 6
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
+      "degree": 8
     },
     {
       "id": "teams",
@@ -849,6 +2234,24 @@
       "cols": 6,
       "domain": "people",
       "domain_label": "Personas / Equipo",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "teams_team_type_check",
+          "type": "allowed_values",
+          "col": "team_type",
+          "values": [
+            "operations",
+            "sales",
+            "partners",
+            "services"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -858,7 +2261,21 @@
       "cols": 6,
       "domain": "whatsapp",
       "domain_label": "WhatsApp",
-      "degree": 1
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "user_evolution_instances_user_id_project_id_key",
+          "cols": [
+            "user_id",
+            "project_id"
+          ]
+        }
+      ],
+      "jsonb": [],
+      "arrays": [],
+      "degree": 2
     },
     {
       "id": "users",
@@ -867,7 +2284,22 @@
       "cols": 15,
       "domain": "people",
       "domain_label": "Personas / Equipo",
-      "degree": 24
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "ikigaigm_users_email_uk",
+          "cols": [
+            "email"
+          ]
+        }
+      ],
+      "jsonb": [
+        "integrations"
+      ],
+      "arrays": [],
+      "degree": 25
     },
     {
       "id": "verification_templates",
@@ -876,6 +2308,12 @@
       "cols": 8,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -885,6 +2323,22 @@
       "cols": 14,
       "domain": "whatsapp",
       "domain_label": "WhatsApp",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "whatsapp_messages_project_id_evolution_message_id_key",
+          "cols": [
+            "project_id",
+            "evolution_message_id"
+          ]
+        }
+      ],
+      "jsonb": [
+        "raw_message"
+      ],
+      "arrays": [],
       "degree": 1
     },
     {
@@ -894,6 +2348,27 @@
       "cols": 11,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "worker_runs_status_check",
+          "type": "allowed_values",
+          "col": "status",
+          "values": [
+            "pending",
+            "running",
+            "success",
+            "error"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [
+        "input",
+        "output"
+      ],
+      "arrays": [],
       "degree": 3
     },
     {
@@ -903,6 +2378,35 @@
       "cols": 9,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "workers_status_check",
+          "type": "allowed_values",
+          "col": "status",
+          "values": [
+            "active",
+            "paused",
+            "error"
+          ]
+        },
+        {
+          "name": "workers_worker_type_check",
+          "type": "allowed_values",
+          "col": "worker_type",
+          "values": [
+            "gemini_structured",
+            "ax_llm",
+            "graph"
+          ]
+        }
+      ],
+      "uniques": [],
+      "jsonb": [
+        "config"
+      ],
+      "arrays": [],
       "degree": 3
     }
   ],
@@ -914,16 +2418,11 @@
       "tgt_col": "code",
       "kind": "fk",
       "self": false,
-      "label": "sop_code→code"
-    },
-    {
-      "source": "ad_sets",
-      "target": "campaigns",
-      "src_col": "campaign_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "campaign_id→id"
+      "label": "sop_code→code",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "activity_archetypes_sop_code_fkey"
     },
     {
       "source": "ad_sets",
@@ -932,7 +2431,37 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "ad_account_id→id"
+      "label": "ad_account_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "ad_sets_ad_account_id_fkey"
+    },
+    {
+      "source": "ad_sets",
+      "target": "campaigns",
+      "src_col": "campaign_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "campaign_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "ad_sets_campaign_id_fkey"
+    },
+    {
+      "source": "ads",
+      "target": "ad_accounts",
+      "src_col": "ad_account_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "ad_account_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "ads_ad_account_id_fkey"
     },
     {
       "source": "ads",
@@ -941,16 +2470,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "ad_set_id→id"
-    },
-    {
-      "source": "ads",
-      "target": "ad_accounts",
-      "src_col": "ad_account_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "ad_account_id→id"
+      "label": "ad_set_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "ads_ad_set_id_fkey"
     },
     {
       "source": "ads",
@@ -959,7 +2483,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "campaign_id→id"
+      "label": "campaign_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "ads_campaign_id_fkey"
     },
     {
       "source": "archetype_acceptance_criteria",
@@ -968,25 +2496,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "output_id→id"
-    },
-    {
-      "source": "archetype_inputs",
-      "target": "io_types",
-      "src_col": "io_type_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "io_type_id→id"
-    },
-    {
-      "source": "archetype_inputs",
-      "target": "artifact_types",
-      "src_col": "artifact_type_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "artifact_type_id→id"
+      "label": "output_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "cascade",
+      "constraint": "archetype_acceptance_criteria_output_id_fkey"
     },
     {
       "source": "archetype_inputs",
@@ -995,25 +2509,37 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "archetype_id→id"
+      "label": "archetype_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "cascade",
+      "constraint": "archetype_inputs_archetype_id_fkey"
     },
     {
-      "source": "archetype_outputs",
-      "target": "io_types",
-      "src_col": "io_type_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "io_type_id→id"
-    },
-    {
-      "source": "archetype_outputs",
+      "source": "archetype_inputs",
       "target": "artifact_types",
       "src_col": "artifact_type_id",
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "artifact_type_id→id"
+      "label": "artifact_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "archetype_inputs_artifact_type_id_fkey"
+    },
+    {
+      "source": "archetype_inputs",
+      "target": "io_types",
+      "src_col": "io_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "io_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "archetype_inputs_io_type_id_fkey"
     },
     {
       "source": "archetype_outputs",
@@ -1022,7 +2548,37 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "archetype_id→id"
+      "label": "archetype_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "cascade",
+      "constraint": "archetype_outputs_archetype_id_fkey"
+    },
+    {
+      "source": "archetype_outputs",
+      "target": "artifact_types",
+      "src_col": "artifact_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "artifact_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "archetype_outputs_artifact_type_id_fkey"
+    },
+    {
+      "source": "archetype_outputs",
+      "target": "io_types",
+      "src_col": "io_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "io_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "archetype_outputs_io_type_id_fkey"
     },
     {
       "source": "archetype_params",
@@ -1031,7 +2587,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "archetype_id→id"
+      "label": "archetype_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "cascade",
+      "constraint": "archetype_params_archetype_id_fkey"
     },
     {
       "source": "call_meeting_results",
@@ -1040,7 +2600,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "meeting_id→id"
+      "label": "meeting_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "call_meeting_results_meeting_id_fkey"
     },
     {
       "source": "campaign_insights_daily",
@@ -1049,7 +2613,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "ad_account_id→id"
+      "label": "ad_account_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "campaign_insights_daily_ad_account_id_fkey"
     },
     {
       "source": "campaigns",
@@ -1058,43 +2626,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "ad_account_id→id"
-    },
-    {
-      "source": "commission_payouts",
-      "target": "team_roles",
-      "src_col": "role_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "role_id→id"
-    },
-    {
-      "source": "commission_payouts",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "commission_payouts",
-      "target": "installments",
-      "src_col": "installment_id",
-      "tgt_col": "installment_id",
-      "kind": "fk",
-      "self": false,
-      "label": "installment_id→installment_id"
-    },
-    {
-      "source": "commission_payouts",
-      "target": "payment_plans",
-      "src_col": "plan_id",
-      "tgt_col": "plan_id",
-      "kind": "fk",
-      "self": false,
-      "label": "plan_id→plan_id"
+      "label": "ad_account_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "campaigns_ad_account_id_fkey"
     },
     {
       "source": "commission_payouts",
@@ -1103,7 +2639,50 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "commission_rule_id→id"
+      "label": "commission_rule_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "commission_payouts_commission_rule_id_fkey"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "installments",
+      "src_col": "installment_id",
+      "tgt_col": "installment_id",
+      "kind": "fk",
+      "self": false,
+      "label": "installment_id→installment_id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "commission_payouts_installment_id_fkey"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "payment_plans",
+      "src_col": "plan_id",
+      "tgt_col": "plan_id",
+      "kind": "fk",
+      "self": false,
+      "label": "plan_id→plan_id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "commission_payouts_plan_id_fkey"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "commission_payouts_project_id_fkey"
     },
     {
       "source": "commission_payouts",
@@ -1112,7 +2691,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "reviewed_by→id"
+      "label": "reviewed_by→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "commission_payouts_reviewed_by_fkey"
+    },
+    {
+      "source": "commission_payouts",
+      "target": "team_roles",
+      "src_col": "role_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "role_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "commission_payouts_role_id_fkey"
     },
     {
       "source": "commission_payouts",
@@ -1121,16 +2717,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "user_id→id"
-    },
-    {
-      "source": "commission_rules",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "commission_payouts_user_id_fkey"
     },
     {
       "source": "commission_rules",
@@ -1139,16 +2730,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "product_id→id"
+      "label": "product_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "commission_rules_product_id_fkey"
     },
     {
       "source": "commission_rules",
-      "target": "users",
-      "src_col": "user_id",
+      "target": "projects",
+      "src_col": "project_id",
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "user_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "commission_rules_project_id_fkey"
     },
     {
       "source": "commission_rules",
@@ -1157,7 +2756,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "role_id→id"
+      "label": "role_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "commission_rules_role_id_fkey"
+    },
+    {
+      "source": "commission_rules",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "commission_rules_user_id_fkey"
     },
     {
       "source": "crm_calendars",
@@ -1166,7 +2782,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "crm_calendars_project_id_fkey"
     },
     {
       "source": "crm_contacts",
@@ -1175,7 +2795,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "crm_contacts_project_id_fkey"
     },
     {
       "source": "crm_contacts",
@@ -1184,7 +2808,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "user_id→id"
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "crm_contacts_user_id_fkey"
     },
     {
       "source": "crm_custom_fields",
@@ -1193,34 +2821,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "crm_opportunities",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "crm_opportunities",
-      "target": "crm_pipelines",
-      "src_col": "pipeline_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "pipeline_id→id"
-    },
-    {
-      "source": "crm_opportunities",
-      "target": "users",
-      "src_col": "user_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "user_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "crm_custom_fields_project_id_fkey"
     },
     {
       "source": "crm_opportunities",
@@ -1229,7 +2834,50 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "contact_id→id"
+      "label": "contact_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "crm_opportunities_contact_id_fkey"
+    },
+    {
+      "source": "crm_opportunities",
+      "target": "crm_pipelines",
+      "src_col": "pipeline_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "pipeline_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "crm_opportunities_pipeline_id_fkey"
+    },
+    {
+      "source": "crm_opportunities",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "crm_opportunities_project_id_fkey"
+    },
+    {
+      "source": "crm_opportunities",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "crm_opportunities_user_id_fkey"
     },
     {
       "source": "crm_pipelines",
@@ -1238,7 +2886,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "crm_pipelines_project_id_fkey"
     },
     {
       "source": "economics_ledger",
@@ -1247,7 +2899,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "economics_ledger_project_id_fkey"
     },
     {
       "source": "expense_categories",
@@ -1256,7 +2912,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "expense_categories_project_id_fkey"
     },
     {
       "source": "expense_templates",
@@ -1265,7 +2925,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "category_id→id"
+      "label": "category_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "expense_templates_category_id_fkey"
     },
     {
       "source": "expense_templates",
@@ -1274,7 +2938,37 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "expense_templates_project_id_fkey"
+    },
+    {
+      "source": "expenses",
+      "target": "expense_categories",
+      "src_col": "category_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "category_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "expenses_category_id_fkey"
+    },
+    {
+      "source": "expenses",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "expenses_project_id_fkey"
     },
     {
       "source": "expenses",
@@ -1283,7 +2977,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "registered_by→id"
+      "label": "registered_by→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "expenses_registered_by_fkey"
     },
     {
       "source": "expenses",
@@ -1292,25 +2990,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "template_id→id"
-    },
-    {
-      "source": "expenses",
-      "target": "expense_categories",
-      "src_col": "category_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "category_id→id"
-    },
-    {
-      "source": "expenses",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
+      "label": "template_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "expenses_template_id_fkey"
     },
     {
       "source": "graph_messages",
@@ -1319,7 +3003,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "conversation_id→id"
+      "label": "conversation_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "graph_messages_conversation_id_fkey"
     },
     {
       "source": "installments",
@@ -1328,7 +3016,11 @@
       "tgt_col": "plan_id",
       "kind": "fk",
       "self": false,
-      "label": "plan_id→plan_id"
+      "label": "plan_id→plan_id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "installments_plan_id_fkey"
     },
     {
       "source": "io_types",
@@ -1337,7 +3029,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "default_artifact_type_id→id"
+      "label": "default_artifact_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "io_types_default_artifact_type_id_fkey"
     },
     {
       "source": "key_results",
@@ -1346,7 +3042,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "kpi_id→id"
+      "label": "kpi_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "key_results_kpi_id_fkey"
     },
     {
       "source": "key_results",
@@ -1355,7 +3055,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "objective_id→id"
+      "label": "objective_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "key_results_objective_id_fkey"
     },
     {
       "source": "kpi_snapshots",
@@ -1364,7 +3068,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "kpi_id→id"
+      "label": "kpi_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "kpi_snapshots_kpi_id_fkey"
     },
     {
       "source": "kpis",
@@ -1373,7 +3081,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "created_by→id"
+      "label": "created_by→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "kpis_created_by_fkey"
     },
     {
       "source": "kpis",
@@ -1382,16 +3094,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "meeting_participants",
-      "target": "users",
-      "src_col": "user_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "user_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "kpis_project_id_fkey"
     },
     {
       "source": "meeting_participants",
@@ -1400,7 +3107,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "meeting_id→id"
+      "label": "meeting_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "meeting_participants_meeting_id_fkey"
+    },
+    {
+      "source": "meeting_participants",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "meeting_participants_user_id_fkey"
     },
     {
       "source": "meeting_reports",
@@ -1409,7 +3133,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "meeting_id→id"
+      "label": "meeting_id→id",
+      "card": "1:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "meeting_reports_meeting_id_fkey"
     },
     {
       "source": "meeting_transcripts",
@@ -1418,7 +3146,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "meeting_id→id"
+      "label": "meeting_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "meeting_transcripts_meeting_id_fkey"
+    },
+    {
+      "source": "meetings",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "meetings_project_id_fkey"
     },
     {
       "source": "meetings",
@@ -1427,25 +3172,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "space_id→id"
-    },
-    {
-      "source": "meetings",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "meta_capi_events",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
+      "label": "space_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "meetings_space_id_fkey"
     },
     {
       "source": "meta_capi_events",
@@ -1454,7 +3185,24 @@
       "tgt_col": "installment_id",
       "kind": "fk",
       "self": false,
-      "label": "installment_id→installment_id"
+      "label": "installment_id→installment_id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "meta_capi_events_installment_id_fkey"
+    },
+    {
+      "source": "meta_capi_events",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "meta_capi_events_project_id_fkey"
     },
     {
       "source": "notion_content_index",
@@ -1463,7 +3211,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "notion_content_index_project_id_fkey"
     },
     {
       "source": "objectives",
@@ -1472,7 +3224,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "owner_id→id"
+      "label": "owner_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "objectives_owner_id_fkey"
     },
     {
       "source": "objectives",
@@ -1481,7 +3237,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "objectives_project_id_fkey"
     },
     {
       "source": "okr_reviews",
@@ -1490,7 +3250,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "objective_id→id"
+      "label": "objective_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "okr_reviews_objective_id_fkey"
     },
     {
       "source": "output_channels",
@@ -1499,7 +3263,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "runner_id→id"
+      "label": "runner_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "output_channels_runner_id_fkey"
     },
     {
       "source": "payment_plans",
@@ -1508,7 +3276,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "product_uuid→id"
+      "label": "product_uuid→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "payment_plans_product_uuid_fkey"
     },
     {
       "source": "payment_plans",
@@ -1517,7 +3289,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "payment_plans_project_id_fkey"
     },
     {
       "source": "payment_plans",
@@ -1526,34 +3302,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "user_id→id"
-    },
-    {
-      "source": "payroll_actuals",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "payroll_actuals",
-      "target": "payroll_rules",
-      "src_col": "payroll_rule_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "payroll_rule_id→id"
-    },
-    {
-      "source": "payroll_actuals",
-      "target": "users",
-      "src_col": "user_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "user_id→id"
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "payment_plans_user_id_fkey"
     },
     {
       "source": "payroll_actuals",
@@ -1562,7 +3315,50 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "overridden_by→id"
+      "label": "overridden_by→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "payroll_actuals_overridden_by_fkey"
+    },
+    {
+      "source": "payroll_actuals",
+      "target": "payroll_rules",
+      "src_col": "payroll_rule_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "payroll_rule_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "payroll_actuals_payroll_rule_id_fkey"
+    },
+    {
+      "source": "payroll_actuals",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "payroll_actuals_project_id_fkey"
+    },
+    {
+      "source": "payroll_actuals",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "payroll_actuals_user_id_fkey"
     },
     {
       "source": "payroll_rules",
@@ -1571,25 +3367,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "commission_rule_id→id"
-    },
-    {
-      "source": "payroll_rules",
-      "target": "users",
-      "src_col": "user_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "user_id→id"
-    },
-    {
-      "source": "payroll_rules",
-      "target": "team_roles",
-      "src_col": "role_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "role_id→id"
+      "label": "commission_rule_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "payroll_rules_commission_rule_id_fkey"
     },
     {
       "source": "payroll_rules",
@@ -1598,7 +3380,37 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "payroll_rules_project_id_fkey"
+    },
+    {
+      "source": "payroll_rules",
+      "target": "team_roles",
+      "src_col": "role_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "role_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "payroll_rules_role_id_fkey"
+    },
+    {
+      "source": "payroll_rules",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "payroll_rules_user_id_fkey"
     },
     {
       "source": "products",
@@ -1607,7 +3419,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "default_commission_rule_id→id"
+      "label": "default_commission_rule_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "fk_product_default_commission_rule"
     },
     {
       "source": "products",
@@ -1616,7 +3432,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "products_project_id_fkey"
     },
     {
       "source": "project_ad_account_mappings",
@@ -1625,7 +3445,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_ad_account_mappings_project_id_fkey"
     },
     {
       "source": "project_campaign_mappings",
@@ -1634,7 +3458,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_campaign_mappings_project_id_fkey"
     },
     {
       "source": "project_crm_configs",
@@ -1643,7 +3471,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_crm_configs_project_id_fkey"
     },
     {
       "source": "project_google_configs",
@@ -1652,7 +3484,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_google_configs_project_id_fkey"
     },
     {
       "source": "project_meta_configs",
@@ -1661,7 +3497,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_meta_configs_project_id_fkey"
     },
     {
       "source": "project_notion_configs",
@@ -1670,7 +3510,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_notion_configs_project_id_fkey"
     },
     {
       "source": "project_panda_video_configs",
@@ -1679,7 +3523,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_panda_video_configs_project_id_fkey"
     },
     {
       "source": "project_panda_video_selections",
@@ -1688,16 +3536,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "project_teams",
-      "target": "teams",
-      "src_col": "team_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "team_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_panda_video_selections_project_id_fkey"
     },
     {
       "source": "project_teams",
@@ -1706,7 +3549,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_teams_project_id_fkey"
+    },
+    {
+      "source": "project_teams",
+      "target": "teams",
+      "src_col": "team_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "team_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_teams_team_id_fkey"
     },
     {
       "source": "project_vturb_video_configs",
@@ -1715,7 +3575,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_vturb_video_configs_project_id_fkey"
     },
     {
       "source": "project_vturb_video_selections",
@@ -1724,7 +3588,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_vturb_video_selections_project_id_fkey"
     },
     {
       "source": "project_whatsapp_configs",
@@ -1733,7 +3601,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "project_whatsapp_configs_project_id_fkey"
     },
     {
       "source": "prompt_sections",
@@ -1742,7 +3614,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "llm_call_id→id"
+      "label": "llm_call_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "prompt_sections_llm_call_id_fkey"
+    },
+    {
+      "source": "revenue_share_distributions",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "revenue_share_distributions_project_id_fkey"
     },
     {
       "source": "revenue_share_distributions",
@@ -1751,16 +3640,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "triggered_by→id"
-    },
-    {
-      "source": "revenue_share_distributions",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
+      "label": "triggered_by→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "revenue_share_distributions_triggered_by_fkey"
     },
     {
       "source": "revenue_share_payouts",
@@ -1769,16 +3653,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "distribution_id→id"
-    },
-    {
-      "source": "revenue_share_payouts",
-      "target": "users",
-      "src_col": "user_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "user_id→id"
+      "label": "distribution_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "revenue_share_payouts_distribution_id_fkey"
     },
     {
       "source": "revenue_share_payouts",
@@ -1787,7 +3666,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "revenue_share_payouts_project_id_fkey"
+    },
+    {
+      "source": "revenue_share_payouts",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "revenue_share_payouts_user_id_fkey"
     },
     {
       "source": "revenue_share_rules",
@@ -1796,7 +3692,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "revenue_share_rules_project_id_fkey"
     },
     {
       "source": "revenue_share_rules",
@@ -1805,16 +3705,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "user_id→id"
-    },
-    {
-      "source": "runner_runs",
-      "target": "worker_runs",
-      "src_col": "worker_run_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "worker_run_id→id"
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "revenue_share_rules_user_id_fkey"
     },
     {
       "source": "runner_runs",
@@ -1823,7 +3718,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "runner_id→id"
+      "label": "runner_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "runner_runs_runner_id_fkey"
+    },
+    {
+      "source": "runner_runs",
+      "target": "worker_runs",
+      "src_col": "worker_run_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "worker_run_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "set null",
+      "constraint": "runner_runs_worker_run_id_fkey"
     },
     {
       "source": "runners",
@@ -1832,16 +3744,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "runners",
-      "target": "workers",
-      "src_col": "worker_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "worker_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "cascade",
+      "constraint": "runners_project_id_fkey"
     },
     {
       "source": "runners",
@@ -1850,7 +3757,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "skill_id→id"
+      "label": "skill_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "runners_skill_id_fkey"
+    },
+    {
+      "source": "runners",
+      "target": "workers",
+      "src_col": "worker_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "worker_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "runners_worker_id_fkey"
     },
     {
       "source": "skills",
@@ -1859,7 +3783,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "cascade",
+      "constraint": "skills_project_id_fkey"
     },
     {
       "source": "sops",
@@ -1868,7 +3796,11 @@
       "tgt_col": "code",
       "kind": "fk",
       "self": false,
-      "label": "macro_process_code→code"
+      "label": "macro_process_code→code",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "sops_macro_process_code_fkey"
     },
     {
       "source": "spaces",
@@ -1877,7 +3809,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "id_id→id"
+      "label": "id_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "spaces_id_id_fkey"
     },
     {
       "source": "spaces",
@@ -1886,7 +3822,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "user_id→id"
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "spaces_user_id_fkey"
     },
     {
       "source": "sql_messages",
@@ -1895,16 +3835,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "conversation_id→id"
-    },
-    {
-      "source": "task_acceptance_criteria",
-      "target": "verification_templates",
-      "src_col": "template_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "template_id→id"
+      "label": "conversation_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "sql_messages_conversation_id_fkey"
     },
     {
       "source": "task_acceptance_criteria",
@@ -1913,7 +3848,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "output_id→id"
+      "label": "output_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "task_acceptance_criteria_output_id_fkey"
+    },
+    {
+      "source": "task_acceptance_criteria",
+      "target": "verification_templates",
+      "src_col": "template_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "template_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_acceptance_criteria_template_id_fkey"
     },
     {
       "source": "task_attestations",
@@ -1922,7 +3874,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "criterion_id→id"
+      "label": "criterion_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "task_attestations_criterion_id_fkey"
     },
     {
       "source": "task_attestations",
@@ -1931,16 +3887,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "responsible_team_member_id→id"
-    },
-    {
-      "source": "task_comments",
-      "target": "users",
-      "src_col": "user_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "user_id→id"
+      "label": "responsible_team_member_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_attestations_responsible_team_member_id_fkey"
     },
     {
       "source": "task_comments",
@@ -1949,16 +3900,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "task_id→id"
+      "label": "task_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "cascade",
+      "constraint": "task_comments_task_id_fkey"
     },
     {
-      "source": "task_inputs",
-      "target": "io_types",
-      "src_col": "io_type_id",
+      "source": "task_comments",
+      "target": "users",
+      "src_col": "user_id",
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "io_type_id→id"
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_comments_user_id_fkey"
     },
     {
       "source": "task_inputs",
@@ -1967,7 +3926,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "artifact_type_id→id"
+      "label": "artifact_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_inputs_artifact_type_id_fkey"
+    },
+    {
+      "source": "task_inputs",
+      "target": "io_types",
+      "src_col": "io_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "io_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_inputs_io_type_id_fkey"
     },
     {
       "source": "task_inputs",
@@ -1976,7 +3952,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "satisfied_by→id"
+      "label": "satisfied_by→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_inputs_satisfied_by_fkey"
     },
     {
       "source": "task_inputs",
@@ -1985,7 +3965,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "task_id→id"
+      "label": "task_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "task_inputs_task_id_fkey"
     },
     {
       "source": "task_outputs",
@@ -1994,16 +3978,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "artifact_type_id→id"
-    },
-    {
-      "source": "task_outputs",
-      "target": "io_types",
-      "src_col": "io_type_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "io_type_id→id"
+      "label": "artifact_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_outputs_artifact_type_id_fkey"
     },
     {
       "source": "task_outputs",
@@ -2012,7 +3991,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "delivered_by→id"
+      "label": "delivered_by→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_outputs_delivered_by_fkey"
+    },
+    {
+      "source": "task_outputs",
+      "target": "io_types",
+      "src_col": "io_type_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "io_type_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "task_outputs_io_type_id_fkey"
     },
     {
       "source": "task_outputs",
@@ -2021,7 +4017,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "task_id→id"
+      "label": "task_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "task_outputs_task_id_fkey"
     },
     {
       "source": "task_todos",
@@ -2030,34 +4030,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "task_id→id"
-    },
-    {
-      "source": "tasks",
-      "target": "projects",
-      "src_col": "project_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "project_id→id"
-    },
-    {
-      "source": "tasks",
-      "target": "task_columns",
-      "src_col": "column_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "column_id→id"
-    },
-    {
-      "source": "tasks",
-      "target": "meetings",
-      "src_col": "source_meeting_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "source_meeting_id→id"
+      "label": "task_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "cascade",
+      "constraint": "task_todos_task_id_fkey"
     },
     {
       "source": "tasks",
@@ -2066,7 +4043,50 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "archetype_id→id"
+      "label": "archetype_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "tasks_archetype_id_fkey"
+    },
+    {
+      "source": "tasks",
+      "target": "task_columns",
+      "src_col": "column_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "column_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "tasks_column_id_fkey"
+    },
+    {
+      "source": "tasks",
+      "target": "projects",
+      "src_col": "project_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "tasks_project_id_fkey"
+    },
+    {
+      "source": "tasks",
+      "target": "meetings",
+      "src_col": "source_meeting_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "source_meeting_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "tasks_source_meeting_id_fkey"
     },
     {
       "source": "tasks",
@@ -2075,7 +4095,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "user_id→id"
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "tasks_user_id_fkey"
     },
     {
       "source": "team_member_roles",
@@ -2084,7 +4108,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "role_id→id"
+      "label": "role_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "team_member_roles_role_id_fkey"
     },
     {
       "source": "team_member_roles",
@@ -2093,16 +4121,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "team_member_id→id"
-    },
-    {
-      "source": "team_members",
-      "target": "teams",
-      "src_col": "team_id",
-      "tgt_col": "id",
-      "kind": "fk",
-      "self": false,
-      "label": "team_id→id"
+      "label": "team_member_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "team_member_roles_team_member_id_fkey"
     },
     {
       "source": "team_members",
@@ -2111,7 +4134,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "role_id→id"
+      "label": "role_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "team_members_role_id_fkey"
+    },
+    {
+      "source": "team_members",
+      "target": "teams",
+      "src_col": "team_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "team_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "team_members_team_id_fkey"
     },
     {
       "source": "team_members",
@@ -2120,7 +4160,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "user_id→id"
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "team_members_user_id_fkey"
     },
     {
       "source": "team_roles",
@@ -2129,7 +4173,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "team_id→id"
+      "label": "team_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "team_roles_team_id_fkey"
     },
     {
       "source": "user_evolution_instances",
@@ -2138,7 +4186,24 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "user_evolution_instances_project_id_fkey"
+    },
+    {
+      "source": "user_evolution_instances",
+      "target": "users",
+      "src_col": "user_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "user_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "user_evolution_instances_user_id_fkey"
     },
     {
       "source": "users",
@@ -2147,7 +4212,11 @@
       "tgt_col": "person_id",
       "kind": "fk",
       "self": false,
-      "label": "person_id→person_id"
+      "label": "person_id→person_id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "no action",
+      "constraint": "users_person_id_fkey"
     },
     {
       "source": "whatsapp_messages",
@@ -2156,7 +4225,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "project_id→id"
+      "label": "project_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "whatsapp_messages_project_id_fkey"
     },
     {
       "source": "worker_runs",
@@ -2165,7 +4238,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "skill_id→id"
+      "label": "skill_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "worker_runs_skill_id_fkey"
     },
     {
       "source": "worker_runs",
@@ -2174,7 +4251,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "worker_id→id"
+      "label": "worker_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "worker_runs_worker_id_fkey"
     },
     {
       "source": "workers",
@@ -2183,7 +4264,11 @@
       "tgt_col": "id",
       "kind": "fk",
       "self": false,
-      "label": "skill_id→id"
+      "label": "skill_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "workers_skill_id_fkey"
     },
     {
       "source": "tasks",
@@ -2193,7 +4278,15 @@
       "kind": "implicit",
       "self": false,
       "label": "assignee[]→id",
-      "note": "assignee uuid[] resuelve a team_members (no hay FK sobre el array)"
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "assignee uuid[]: cada elemento resuelve a team_members.id (no hay FK sobre el array)",
+      "verified": {
+        "matched": 18,
+        "total": 18,
+        "pct": 100
+      }
     },
     {
       "source": "meetings",
@@ -2203,47 +4296,177 @@
       "kind": "implicit",
       "self": false,
       "label": "event.booking.contact_id→ghl_contact_id",
-      "note": "traza del closer: booking.contact_id ≈ crm_contacts.ghl_contact_id"
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "traza del closer: el booking de GHL embebido en event apunta al contacto",
+      "verified": {
+        "matched": 1267,
+        "total": 1559,
+        "pct": 81
+      }
+    },
+    {
+      "source": "crm_opportunities",
+      "target": "crm_pipelines",
+      "src_col": "ghl_stage_id",
+      "tgt_col": "stages[].id",
+      "kind": "implicit",
+      "self": false,
+      "label": "ghl_stage_id→stages[].id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "la etapa del tablero vive DENTRO del jsonb stages del pipeline, no en una tabla",
+      "verified": {
+        "matched": 15,
+        "total": 15,
+        "pct": 100
+      }
+    },
+    {
+      "source": "crm_contacts",
+      "target": "crm_custom_fields",
+      "src_col": "custom_fields[].id",
+      "tgt_col": "ghl_field_id",
+      "kind": "implicit",
+      "self": false,
+      "label": "custom_fields[].id→ghl_field_id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "cada valor de campo personalizado referencia su definición por id de GHL",
+      "verified": {
+        "matched": 73,
+        "total": 94,
+        "pct": 78
+      }
     },
     {
       "source": "project_ad_account_mappings",
       "target": "ad_accounts",
-      "src_col": "account_id",
-      "tgt_col": "(externo)",
+      "src_col": "ad_account_id",
+      "tgt_col": "id",
       "kind": "implicit",
       "self": false,
-      "label": "account_id→(externo)",
-      "note": "mapea cuenta publicitaria→proyecto por id externo de Meta"
+      "label": "ad_account_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "mapea cuenta publicitaria→proyecto por id externo de Meta",
+      "verified": {
+        "matched": 8,
+        "total": 8,
+        "pct": 100
+      }
     },
     {
       "source": "project_campaign_mappings",
       "target": "campaigns",
       "src_col": "campaign_id",
-      "tgt_col": "(externo)",
+      "tgt_col": "id",
       "kind": "implicit",
       "self": false,
-      "label": "campaign_id→(externo)",
-      "note": "mapea campaña→proyecto por id externo"
+      "label": "campaign_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "mapea campaña→proyecto por id externo de Meta",
+      "verified": {
+        "matched": 23,
+        "total": 23,
+        "pct": 100
+      }
     },
     {
       "source": "users",
-      "target": "crm_opportunities",
-      "src_col": "crm_id",
-      "tgt_col": "user_id",
+      "target": "project_crm_configs",
+      "src_col": "integrations{location}",
+      "tgt_col": "location_id",
       "kind": "implicit",
       "self": false,
-      "label": "crm_id→user_id",
-      "note": "crm_id (integrations jsonb) es lo que la resolución del closer lee"
+      "label": "integrations{location}→location_id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "las LLAVES del jsonb integrations son location_id de GHL; el valor es el ghl_user",
+      "verified": {
+        "matched": 2,
+        "total": 4,
+        "pct": 50
+      }
     },
     {
-      "source": "meta_capi_events",
-      "target": "crm_contacts",
-      "src_col": "(evento)",
-      "tgt_col": "ghl_contact_id",
+      "source": "output_channels",
+      "target": "project_whatsapp_configs",
+      "src_col": "config.whatsapp_config_id",
+      "tgt_col": "id",
       "kind": "implicit",
       "self": false,
-      "label": "(evento)→ghl_contact_id",
-      "note": "eventos CAPI ligados al contacto/lead"
+      "label": "config.whatsapp_config_id→id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "el canal de salida de WhatsApp apunta a la config del proyecto desde su jsonb",
+      "verified": {
+        "matched": 1,
+        "total": 1,
+        "pct": 100
+      }
+    },
+    {
+      "source": "task_inputs",
+      "target": "drive_index",
+      "src_col": "artifact_reference.file_id",
+      "tgt_col": "file_id",
+      "kind": "implicit",
+      "self": false,
+      "label": "artifact_reference.file_id→file_id",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "un input ligado a un archivo de Drive guarda el file_id en su binding jsonb",
+      "verified": {
+        "matched": 1,
+        "total": 1,
+        "pct": 100
+      }
+    },
+    {
+      "source": "macro_processes",
+      "target": "team_roles",
+      "src_col": "owner_roles[]",
+      "tgt_col": "name",
+      "kind": "implicit",
+      "self": false,
+      "label": "owner_roles[]→name",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "el dueño del macro-proceso se referencia por NOMBRE de rol, no por id",
+      "verified": {
+        "matched": 13,
+        "total": 14,
+        "pct": 93
+      }
+    },
+    {
+      "source": "sops",
+      "target": "team_roles",
+      "src_col": "owner_roles[]",
+      "tgt_col": "name",
+      "kind": "implicit",
+      "self": false,
+      "label": "owner_roles[]→name",
+      "card": "N:1",
+      "optional": true,
+      "on_delete": "—",
+      "note": "el dueño del SOP se referencia por NOMBRE de rol, no por id",
+      "verified": {
+        "matched": 12,
+        "total": 13,
+        "pct": 92
+      }
     }
   ]
 }
