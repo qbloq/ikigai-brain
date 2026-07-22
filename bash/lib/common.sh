@@ -6,6 +6,16 @@ set -euo pipefail
 BASH_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$BASH_LIB_DIR/../.." && pwd)"
 
+# --- Dependency guard -------------------------------------------------------
+# psql es la única dependencia no-estándar de esta capa. Mensaje accionable:
+# quien lo lea (persona o agente) sabe exactamente cómo instalarlo.
+command -v psql >/dev/null 2>&1 || {
+  echo "Falta psql (el cliente de Postgres) — los scripts de datos lo necesitan." >&2
+  echo "  macOS : brew install libpq && brew link --force libpq" >&2
+  echo "  Linux : sudo apt install postgresql-client" >&2
+  exit 3
+}
+
 # --- Load DATABASE_URL from .env -------------------------------------------
 if [[ -z "${DATABASE_URL:-}" && -f "$REPO_ROOT/.env" ]]; then
   set -a
