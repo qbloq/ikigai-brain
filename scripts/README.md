@@ -1,20 +1,5 @@
 # Export scripts
 
-## elevate_núcleo.sh — el carril manual org→núcleo
-
-`elevate_núcleo.sh <path>... [-m "título"] [--commit SHA] [--scope S] [--yes]`
-**[WRITE al producto]** — eleva el delta de este cerebro sobre unos paths a
-`núcleo.git` (nivel 0→1), mientras la plataforma no tenga la herramienta definitiva.
-Codifica la liturgia demostrada en núcleo `5948844`: exige paths committeados
-(el `Promoted-From` debe ser verdad), guarda de **des-clientización** (grep de
-nombres del cliente en las líneas añadidas; `--force-names` lo salta,
-`$CLIENT_PATTERNS` lo ajusta), ensaya el apply real en un worktree temporal
-sobre la punta del núcleo (3-way; conflicto = aborta; no-op = "ya elevado") y
-commitea con trailers `Delta-Type` (clasificado por path) / `Delta-Scope` /
-`Promoted-From: cerebros/<org>@<sha>`. **Seguro por defecto:** siempre muestra
-diffstat + mensaje y solo `--yes` pushea. `--commit SHA` eleva un commit
-puntual; sin él, todo el delta del cerebro en esos paths.
-
 ## Snapshot exports
 
 Regenerate the snapshots under [`backups/`](../backups/) from the live database.

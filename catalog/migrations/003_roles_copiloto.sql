@@ -76,6 +76,36 @@ BEGIN
   END LOOP;
 END $$;
 
+-- ── 2b · Tier sensible: FUERA de todo copiloto (aplicado 2026-07-22) ────────
+-- El GRANT SELECT ON ALL TABLES del §1 alcanzaba el tier que docs/roles/
+-- slices.md excluye de TODO slice. Se revoca por lista explícita (cinturón:
+-- REVOKE; tirantes: fuera la política RLS). Idempotente. OJO: el ALTER
+-- DEFAULT PRIVILEGES del §1 re-abriría una tabla sensible NUEVA — al crear
+-- una, añadirla aquí y re-aplicar.
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    -- runtime agéntico / LLM (14, dominio del grafo)
+    'llm_calls','llmrouter_api_keys','prompt_sections','prompt_budgets',
+    'runners','runner_runs','workers','worker_runs','skills','output_channels',
+    'graph_conversations','graph_messages','sql_conversations','sql_messages',
+    -- llavero estructural de integraciones (7)
+    'project_crm_configs','project_google_configs','project_meta_configs',
+    'project_notion_configs','project_panda_video_configs',
+    'project_vturb_video_configs','project_whatsapp_configs',
+    -- compensación (8)
+    'payroll_actuals','payroll_rules','commission_payouts','commission_rules',
+    'economics_ledger','revenue_share_distributions','revenue_share_payouts',
+    'revenue_share_rules',
+    -- material de autenticación (2)
+    'identities','user_evolution_instances'
+  ] LOOP
+    EXECUTE format('REVOKE ALL ON ikigaigm.%I FROM ikigai_copiloto_base', t);
+    EXECUTE format('DROP POLICY IF EXISTS copiloto_acceso ON ikigaigm.%I', t);
+  END LOOP;
+END $$;
+
 COMMIT;
 
 -- ── 3 · Alta de UN copiloto (plantilla; la contraseña por stdin, jamás -c) ──

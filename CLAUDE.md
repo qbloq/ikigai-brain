@@ -1,12 +1,12 @@
-<!-- CLAUDE.md del CEREBRO DE IKIGAI (org) — fork del núcleo
-     (cerebro.json: org ikigai, vertical agencia). La gobernanza de la flota
-     vive en la plataforma (/projects/plataforma), no aquí. -->
+<!-- CLAUDE.md del CEREBRO DE IKIGAI — org ikigai, vertical agencia
+     (cerebro.json). Byte-idéntico en todos los forks: la identidad se
+     compone vía @identidad.md, jamás editando este archivo. -->
 
 @identidad.md
 
 - The DB connection string is DATABASE_URL in .env
 - We only use the ´ikigaigm´ schema
-- Git lineage: `upstream` = the genome (`núcleo.git`) — integrate its updates with **merge**, never rebase (this brain is the long-lived fork); `origin` = plataforma git server (`ikigai`); `github` = mirror (mirror/ikigai-brain)
+- Git lineage: `upstream` = el repo del que este nació — sus updates se integran con **merge** en el cerebro (los forks, en cambio, rebasean sus deltas encima); `origin` = el remoto de trabajo propio. Los remotos concretos: `git remote -v`.
 
 # Data access via bash/ scripts
 
