@@ -7,12 +7,15 @@ BASH_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$BASH_LIB_DIR/../.." && pwd)"
 
 # --- Dependency guard -------------------------------------------------------
-# psql es la única dependencia no-estándar de esta capa. Mensaje accionable:
-# quien lo lea (persona o agente) sabe exactamente cómo instalarlo.
+# psql es la única dependencia no-estándar de esta capa. El repo puede llevar
+# su propio cliente en bin/ (git-ignored, lo puebla el onboarding cuando no
+# hay gestor de paquetes) — privado del copiloto, jamás en el PATH global.
+export PATH="$REPO_ROOT/bin:$PATH"
 command -v psql >/dev/null 2>&1 || {
   echo "Falta psql (el cliente de Postgres) — los scripts de datos lo necesitan." >&2
-  echo "  macOS : brew install libpq && brew link --force libpq" >&2
-  echo "  Linux : sudo apt install postgresql-client" >&2
+  echo "  macOS con brew : brew install libpq && brew link --force libpq" >&2
+  echo "  macOS sin brew : binarios del cliente en $REPO_ROOT/bin/ (psql + lib/)" >&2
+  echo "  Linux          : sudo apt install postgresql-client" >&2
   exit 3
 }
 
