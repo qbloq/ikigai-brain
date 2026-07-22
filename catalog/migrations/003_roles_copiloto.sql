@@ -1,5 +1,5 @@
 -- 003_roles_copiloto.sql — acceso por rol para copilotos, Etapa 1 (mínimo
--- privilegio). APLICADA 2026-07-22 sobre la instancia del org.
+-- privilegio). APLICADA 2026-07-22 sobre la instancia de la org.
 --
 -- Problema: el .env de un copiloto llevaba el rol admin del cluster
 -- (createrole/createdb/BYPASSRLS, escritura en schemas de otras orgs).

@@ -23,7 +23,7 @@ Postgres** (fuente determinista) + un **sondeo verificado** de las columnas
 
 **98 entidades** (97 tablas + 1 vista) · **154 relaciones** (143 FK + 11
 implícitas verificadas) · **85 reglas** (20 enums + 22 checks + 43 únicos) ·
-**13 dominios**. Hubs: `projects` (grado 40 — la columna del org),
+**13 dominios**. Hubs: `projects` (grado 40 — la columna de la org),
 `users` (25), `tasks` (10), `meetings` (8), `team_roles` (8).
 
 ## Qué carga el modelo (más allá de "tabla → tabla")
