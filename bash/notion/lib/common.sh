@@ -12,7 +12,7 @@ NOTION_DIR="$(cd "$NOTION_LIB_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$NOTION_DIR/../.." && pwd)"
 
 # --- Credential: proxy mode or direct mode ----------------------------------
-# proxy  — CEREBRO_API + CEREBRO_TOKEN en .env: la llamada va por el plataforma-proxy;
+# proxy  — CEREBRO_API + CEREBRO_TOKEN en .env: la llamada va por el API del cerebro;
 #          el token de la org vive en el SERVIDOR (así corren los copilotos).
 # direct — NOTION=ntn_... en .env (el cerebro/operador). El proxy gana.
 if [[ -f "$REPO_ROOT/.env" ]]; then
