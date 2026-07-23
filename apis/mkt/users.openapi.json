@@ -7,8 +7,8 @@
     },
     "servers": [
         {
-            "url": "http://localhost:3001",
-            "description": "Local development server"
+            "url": "https://ikigaigm.api.parallelo.ai",
+            "description": "Production server"
         }
     ],
     "security": [

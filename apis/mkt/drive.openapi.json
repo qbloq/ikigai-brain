@@ -1,0 +1,1044 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Meetico Google Drive API",
+        "description": "Endpoints for talking to Google Drive from the Agentico/Meetico backend (google-meet-express). Two families of endpoints:\n\n- **Live Drive** (`/drive/contents`): proxies the Google Drive API in real time using the org's stored Google identity. Requires Google auth.\n- **Drive Index** (`/drive/index`, `/drive/index/stats`): reads the cached catalog in the `drive_index` table (populated by `scripts/indexDrive.js`). Does not call Google, so it only needs a logged-in session.\n\nAll routes are mounted under the `/drive` prefix.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://ikigaigm.meetico.parallelo.ai",
+            "description": "Local development server"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Live Drive",
+            "description": "Real-time Google Drive access via the org's Google identity."
+        },
+        {
+            "name": "Drive Index",
+            "description": "Cached Drive catalog stored in the tenant `drive_index` table."
+        }
+    ],
+    "paths": {
+        "/drive/contents": {
+            "get": {
+                "tags": [
+                    "Live Drive"
+                ],
+                "summary": "List a folder's contents from Google Drive",
+                "description": "Fetches the direct children of a folder in real time from the Google Drive API. Specify the folder by `path` or by `folderId` (mutually exclusive). If neither is provided, the user's Drive root is listed. Results can be filtered by one or more MIME types.",
+                "operationId": "getDriveContents",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "path",
+                        "in": "query",
+                        "required": false,
+                        "description": "Slash-delimited folder path resolved from the Drive root, e.g. `/My Folder/Sub`. Mutually exclusive with `folderId`. Defaults to the root folder when neither is given.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "/Recordings/2026"
+                    },
+                    {
+                        "name": "folderId",
+                        "in": "query",
+                        "required": false,
+                        "description": "Google Drive file id of the folder to list. Mutually exclusive with `path`.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+                    },
+                    {
+                        "name": "mimeType",
+                        "in": "query",
+                        "required": false,
+                        "description": "One or more MIME types to filter results by. Repeat the parameter for multiple values (e.g. `?mimeType=application/pdf&mimeType=application/vnd.google-apps.folder`).",
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "example": [
+                            "application/vnd.google-apps.folder",
+                            "application/pdf"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The folder's files and subfolders.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DriveFile"
+                                    }
+                                },
+                                "example": [
+                                    {
+                                        "id": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345",
+                                        "name": "Q3 Planning",
+                                        "mimeType": "application/vnd.google-apps.folder",
+                                        "webViewLink": "https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+                                    },
+                                    {
+                                        "id": "9ZyXwVuTsRqPoNmLkJiHgFeDcBa987654",
+                                        "name": "Brief.pdf",
+                                        "mimeType": "application/pdf",
+                                        "webViewLink": "https://drive.google.com/file/d/9ZyXwVuTsRqPoNmLkJiHgFeDcBa987654/view"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated, or the org's Google identity is missing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch Drive contents (e.g. both `path` and `folderId` supplied, path not found, or Google API error).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/drive/resolve": {
+            "post": {
+                "tags": [
+                    "Live Drive"
+                ],
+                "summary": "Resolve a Drive URL or bare id into a structured reference",
+                "description": "Parses a pasted Google Drive / Docs / Sheets / Slides URL — or a bare file id — into `{ file_id, kind, tab }`. `kind` classifies the link (`google_doc`, `google_sheet`, `google_slides`, `google_drive_file`, or `null` for a bare id); `tab` carries the Sheets `gid` when present. Pure string parsing: it does **not** call Google, so it needs only a session and never touches Drive. Returns `400` when no file id can be extracted (e.g. junk input).",
+                "operationId": "resolveDriveReference",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "input": {
+                                        "type": "string",
+                                        "description": "A pasted Drive/Docs/Sheets/Slides URL or a raw file id.",
+                                        "example": "https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/edit#gid=42"
+                                    }
+                                },
+                                "required": [
+                                    "input"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The parsed reference.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriveReference"
+                                },
+                                "example": {
+                                    "file_id": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345",
+                                    "kind": "google_sheet",
+                                    "tab": "42"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing `input`, or no file id could be extracted from it.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/drive/files/{fileId}": {
+            "get": {
+                "tags": [
+                    "Live Drive"
+                ],
+                "summary": "Get a single file's metadata",
+                "description": "Fetches metadata for one Drive file in real time via the Google Drive API: `id`, `name`, `mimeType`, `createdTime`, `webViewLink`, and (for videos) `videoMediaMetadata.durationMillis`. Use this to resolve a specific id without listing its parent folder.",
+                "operationId": "getDriveFileMeta",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/FileIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The file's metadata.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriveFileMeta"
+                                },
+                                "example": {
+                                    "id": "9ZyXwVuTsRqPoNmLkJiHgFeDcBa987654",
+                                    "name": "Kickoff call.mp4",
+                                    "mimeType": "video/mp4",
+                                    "createdTime": "2026-05-01T14:03:00.000Z",
+                                    "webViewLink": "https://drive.google.com/file/d/9ZyXwVuTsRqPoNmLkJiHgFeDcBa987654/view",
+                                    "videoMediaMetadata": {
+                                        "durationMillis": "1830000"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated, or the org's Google identity is missing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No file with that id is accessible to the org identity.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch file metadata (Google API error).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Live Drive"
+                ],
+                "summary": "Rename a file",
+                "description": "Renames a Drive file by id via `files.update`. Only the `name` field is changed; the file's content, location, and sharing are untouched. Returns the updated file resource.",
+                "operationId": "renameDriveFile",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/FileIdPath"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "The new file name.",
+                                        "example": "Kickoff call — 2026-05-01.mp4"
+                                    }
+                                },
+                                "required": [
+                                    "name"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The updated file resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriveFileMeta"
+                                },
+                                "example": {
+                                    "id": "9ZyXwVuTsRqPoNmLkJiHgFeDcBa987654",
+                                    "name": "Kickoff call — 2026-05-01.mp4",
+                                    "mimeType": "video/mp4"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or empty `name`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated, or the org's Google identity is missing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to rename the file (Google API error).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/drive/files/{fileId}/content": {
+            "get": {
+                "tags": [
+                    "Live Drive"
+                ],
+                "summary": "Read a file's text content",
+                "description": "Returns a file's metadata plus its text content. Native Google types are exported (Doc → plain text, Sheet → CSV, Slides → plain text); text-ish binaries (json/csv/xml/markdown/html/…) are downloaded inline; everything else returns metadata with `content_text: null`. This is the same read the task-validation engine uses to inspect a bound artifact. A non-existent id returns `200` with `{ \"exists\": false }` rather than a 404.",
+                "operationId": "getDriveFileContent",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/FileIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The artifact's metadata and (when readable) text content. Check `exists`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriveArtifactContent"
+                                },
+                                "example": {
+                                    "exists": true,
+                                    "id": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345",
+                                    "name": "Meeting notes",
+                                    "mime": "application/vnd.google-apps.document",
+                                    "size": null,
+                                    "url": "https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/edit",
+                                    "modifiedTime": "2026-07-20T09:15:00.000Z",
+                                    "content_text": "Attendees: ...\nAction items: ..."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated, or the org's Google identity is missing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to read the file (Google API error other than not-found).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/drive/files/{fileId}/download": {
+            "get": {
+                "tags": [
+                    "Live Drive"
+                ],
+                "summary": "Download a file's raw bytes",
+                "description": "Streams the raw binary content of a Drive file straight to the response, with `Content-Type` and `Content-Disposition` set from the file's metadata. Works for binary/uploaded files (PDF, images, video, …). **Native Google types** (Docs/Sheets/Slides) have no downloadable bytes via `alt=media` and will error — use `/drive/files/{fileId}/content` to export those as text instead.",
+                "operationId": "downloadDriveFile",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/FileIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The file's raw bytes.",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated, or the org's Google identity is missing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to download the file (e.g. a native Google type, or a Google API error).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/drive/index": {
+            "get": {
+                "tags": [
+                    "Drive Index"
+                ],
+                "summary": "Browse the cached Drive index",
+                "description": "Reads from the `drive_index` table rather than calling Google. Modes are mutually exclusive and applied in priority order:\n\n1. `search` — case-insensitive name match across the whole drive.\n2. `parentId` — direct children of that folder.\n3. default — top-level (root) items.\n\nThe `type` and `isFolder` filters can further narrow any mode.",
+                "operationId": "getDriveIndex",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "description": "Case-insensitive substring matched against file/folder names across the entire drive. Takes priority over `parentId`.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "invoice"
+                    },
+                    {
+                        "name": "parentId",
+                        "in": "query",
+                        "required": false,
+                        "description": "List direct children of this folder's `file_id`. Ignored when `search` is set.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "description": "Friendly type label to filter by (e.g. `PDF`, `Folder`, `Google Doc`). See `/drive/index/stats` for the available labels.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "PDF"
+                    },
+                    {
+                        "name": "isFolder",
+                        "in": "query",
+                        "required": false,
+                        "description": "Restrict to folders (`true`) or files (`false`).",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "example": false
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "description": "Page size. Clamped to a maximum of 1000.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 200,
+                            "minimum": 1,
+                            "maximum": 1000
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "description": "Page offset.",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "minimum": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A page of indexed Drive items plus pagination metadata.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriveIndexPage"
+                                },
+                                "example": {
+                                    "items": [
+                                        {
+                                            "file_id": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345",
+                                            "name": "Q3 Planning",
+                                            "type": "Folder",
+                                            "mime_type": "application/vnd.google-apps.folder",
+                                            "is_folder": true,
+                                            "is_root": true,
+                                            "path": "/Q3 Planning",
+                                            "parent_id": null,
+                                            "size": null,
+                                            "created_time": "2026-01-04T10:00:00.000Z",
+                                            "modified_time": "2026-06-30T18:22:11.000Z",
+                                            "owner": "ops@example.com",
+                                            "web_view_link": "https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOpQrStUvWxYz012345",
+                                            "shortcut_target": null,
+                                            "synced_at": "2026-07-22T02:00:00.000Z"
+                                        }
+                                    ],
+                                    "total": 1,
+                                    "limit": 200,
+                                    "offset": 0
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch the Drive index.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/drive/index/stats": {
+            "get": {
+                "tags": [
+                    "Drive Index"
+                ],
+                "summary": "Per-type counts and total size for the index",
+                "description": "Returns aggregate stats from the `drive_index_type_stats` view: one row per friendly type label with its item count and cumulative size. Drives the type filter and header in the admin browser.",
+                "operationId": "getDriveIndexStats",
+                "security": [
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Aggregate per-type statistics.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DriveIndexTypeStat"
+                                    }
+                                },
+                                "example": [
+                                    {
+                                        "type": "Folder",
+                                        "count": 42,
+                                        "total_size": 0
+                                    },
+                                    {
+                                        "type": "PDF",
+                                        "count": 118,
+                                        "total_size": 254881232
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to fetch Drive index stats.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "parameters": {
+            "FileIdPath": {
+                "name": "fileId",
+                "in": "path",
+                "required": true,
+                "description": "Google Drive file id.",
+                "schema": {
+                    "type": "string"
+                },
+                "example": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+            }
+        },
+        "securitySchemes": {
+            "cookieAuth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "connect.sid",
+                "description": "Session cookie set after login; `requireAuth` accepts a session with `userinfo`."
+            },
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "JWT bearer token, used as a fallback when no session cookie is present."
+            }
+        },
+        "schemas": {
+            "DriveFile": {
+                "type": "object",
+                "description": "A Google Drive file or folder as returned live by the Drive API.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Google Drive file id.",
+                        "example": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Brief.pdf"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "description": "Google Drive MIME type; folders use `application/vnd.google-apps.folder`.",
+                        "example": "application/pdf"
+                    },
+                    "webViewLink": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "Link to open the item in the Drive web UI.",
+                        "example": "https://drive.google.com/file/d/9ZyXwVuTsRqPoNmLkJiHgFeDcBa987654/view"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "mimeType"
+                ]
+            },
+            "DriveFileMeta": {
+                "type": "object",
+                "description": "Metadata for a single Drive file as returned live by the Drive API. Fields vary by type — `videoMediaMetadata` is present only for videos.",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "9ZyXwVuTsRqPoNmLkJiHgFeDcBa987654"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Kickoff call.mp4"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "example": "video/mp4"
+                    },
+                    "createdTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "webViewLink": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    },
+                    "videoMediaMetadata": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Present only for video files.",
+                        "properties": {
+                            "durationMillis": {
+                                "type": "string",
+                                "description": "Video duration in milliseconds (returned as a string by Drive).",
+                                "example": "1830000"
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "mimeType"
+                ]
+            },
+            "DriveArtifactContent": {
+                "type": "object",
+                "description": "A Drive file's metadata plus its extracted text content. When the file id does not resolve, only `exists: false` is returned.",
+                "properties": {
+                    "exists": {
+                        "type": "boolean",
+                        "description": "False when no file with that id is accessible.",
+                        "example": true
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Meeting notes"
+                    },
+                    "mime": {
+                        "type": "string",
+                        "description": "The file's MIME type.",
+                        "example": "application/vnd.google-apps.document"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Size in bytes; null for native Google types.",
+                        "example": null
+                    },
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    },
+                    "modifiedTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "content_text": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Exported/inlined text; null when the type is not text-extractable or extraction failed."
+                    }
+                },
+                "required": [
+                    "exists"
+                ]
+            },
+            "DriveReference": {
+                "type": "object",
+                "description": "A parsed Drive reference produced from a URL or bare id.",
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "description": "Extracted Drive file id.",
+                        "example": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Link classification, or null for a bare id.",
+                        "enum": [
+                            "google_doc",
+                            "google_sheet",
+                            "google_slides",
+                            "google_drive_file",
+                            null
+                        ],
+                        "example": "google_sheet"
+                    },
+                    "tab": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Sheets tab `gid` when present in the URL.",
+                        "example": "42"
+                    }
+                },
+                "required": [
+                    "file_id"
+                ]
+            },
+            "DriveIndexPage": {
+                "type": "object",
+                "description": "A paginated slice of the cached Drive index.",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DriveIndexItem"
+                        }
+                    },
+                    "total": {
+                        "type": "integer",
+                        "description": "Total rows matching the query (before pagination).",
+                        "example": 350
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 200
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                ]
+            },
+            "DriveIndexItem": {
+                "type": "object",
+                "description": "A row from the `drive_index` table (cached Drive catalog).",
+                "properties": {
+                    "file_id": {
+                        "type": "string",
+                        "description": "Google Drive file id (primary key).",
+                        "example": "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Brief.pdf"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Friendly type label (e.g. `PDF`, `Folder`, `Google Doc`).",
+                        "example": "PDF"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "example": "application/pdf"
+                    },
+                    "is_folder": {
+                        "type": "boolean"
+                    },
+                    "is_root": {
+                        "type": "boolean",
+                        "description": "True when the item sits at the top level of the indexed drive."
+                    },
+                    "path": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Computed slash-delimited path from the root.",
+                        "example": "/Q3 Planning/Brief.pdf"
+                    },
+                    "parent_id": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "`file_id` of the parent folder, or null at the root."
+                    },
+                    "size": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Size in bytes; null for folders and native Google types.",
+                        "example": 254881
+                    },
+                    "created_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "modified_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "owner": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Owner display name or email.",
+                        "example": "ops@example.com"
+                    },
+                    "web_view_link": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true
+                    },
+                    "shortcut_target": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Target file id when the item is a Drive shortcut."
+                    },
+                    "synced_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "When this row was last written by the indexer."
+                    }
+                },
+                "required": [
+                    "file_id",
+                    "name",
+                    "type",
+                    "mime_type",
+                    "is_folder",
+                    "is_root"
+                ]
+            },
+            "DriveIndexTypeStat": {
+                "type": "object",
+                "description": "A row from the `drive_index_type_stats` view.",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Friendly type label.",
+                        "example": "PDF"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of indexed items of this type.",
+                        "example": 118
+                    },
+                    "total_size": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Cumulative size in bytes for this type.",
+                        "example": 254881232
+                    }
+                },
+                "required": [
+                    "type",
+                    "count"
+                ]
+            },
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "description": "Human-readable error message.",
+                        "example": "Failed to fetch Drive contents."
+                    },
+                    "details": {
+                        "type": "string",
+                        "description": "Underlying error detail, when available."
+                    }
+                },
+                "required": [
+                    "error"
+                ]
+            }
+        }
+    }
+}
