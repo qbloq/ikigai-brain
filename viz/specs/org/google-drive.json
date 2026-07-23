@@ -1,9 +1,0 @@
-{
-  "id": "google-drive",
-  "name": "Google Drive",
-  "component": "drive",
-  "source": "drive_files",
-  "params": {},
-  "scope": "org",
-  "created_at": "2026-07-14T18:40:00.000Z"
-}
