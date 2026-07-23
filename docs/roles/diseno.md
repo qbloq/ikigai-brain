@@ -1,7 +1,7 @@
 # Rol: Diseño
 
 **Quiénes:** Camilo Beltrán (copiloto `camilo-beltran`) · Héctor Morales (copiloto `hector-morales`)
-**Capa de rol (viz):** `viz/specs/roles/diseno/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/diseno/` — aún no creada
 **Tareas históricas:** 19 asignadas · 19 etiquetadas con arquetipo · 0 abiertas hoy
 
 **Misión.** Diseño de páginas de oferta y checkout (Hotmart, Premium, S7) y apoyo visual a la producción de creativos (S2).

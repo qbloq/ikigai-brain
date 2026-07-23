@@ -1,7 +1,7 @@
 # Rol: Líder de servicio
 
 **Quiénes:** Francisco Otalvaro (copiloto `francisco-otalvaro`)
-**Capa de rol (viz):** `viz/specs/roles/lider-de-servicio/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/lider-de-servicio/` — aún no creada
 **Tareas históricas:** 6 asignadas · 6 etiquetadas con arquetipo · 2 abiertas hoy
 
 **Misión.** Sostiene la experiencia post-venta y la infraestructura de chat compartida con Setter (S6); recolecta y sistematiza testimonios (S5) y provee datos de soporte a los closers.

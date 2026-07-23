@@ -1,7 +1,7 @@
 # Rol: Operaciones
 
 **Quiénes:** Roberto Maestre (copiloto `roberto-maestre`)
-**Capa de rol (viz):** `viz/specs/roles/operaciones/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/operaciones/` — aún no creada
 **Tareas históricas:** 33 asignadas · 33 etiquetadas con arquetipo · 3 abiertas hoy
 
 **Misión.** Construye la infraestructura del funnel: landings y páginas (S7), checkout y pagos (Hotmart + webhook GHL), A/B de VSL en Biturbo, y la automatización de calificación de leads (S6).

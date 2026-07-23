@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// One-time migration: legacy viz/store/*.json → the layered spec store
-// (viz/specs/, docs/deltas-architecture.md paso 5).
+// One-time migration: legacy .viz/store/*.json → the layered spec store
+// (.viz/specs/, docs/deltas-architecture.md paso 5).
 //
 //   · A stored spec that IS one of the org seeds (matched by component+source
 //     [+params.by for charts]) is dropped — the org/ genome file covers it.
 //     If it was archived, a local FORK of the org twin keeps that personal
 //     flag (archiving is personal state; the genome is immutable).
 //   · Everything else is a personal creation by definition → moved to
-//     viz/specs/local/ (id preserved, so /u/<id> URLs keep working).
+//     .viz/specs/local/ (id preserved, so /u/<id> URLs keep working).
 //
-// Idempotent: an empty/missing viz/store/ is a no-op. Run: node viz/scripts/migrate-store-to-specs.js
+// Idempotent: an empty/missing .viz/store/ is a no-op. Run: node .viz/scripts/migrate-store-to-specs.js
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -19,7 +19,7 @@ const STORE = path.join(VIZ, "store");
 const ORG = path.join(VIZ, "specs", "org");
 const LOCAL = path.join(VIZ, "specs", "local");
 
-// (component, source[, by]) → org slug. Mirrors the seeds in viz/specs/org/.
+// (component, source[, by]) → org slug. Mirrors the seeds in .viz/specs/org/.
 function orgTwin(s) {
   const key = `${s.component || "table"}|${s.source}`;
   const MAP = {
@@ -45,7 +45,7 @@ try {
   /* no legacy store */
 }
 if (!files.length) {
-  console.log("viz/store/ vacío — nada que migrar.");
+  console.log(".viz/store/ vacío — nada que migrar.");
   process.exit(0);
 }
 fs.mkdirSync(LOCAL, { recursive: true });

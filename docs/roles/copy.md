@@ -1,7 +1,7 @@
 # Rol: Copy
 
 **Quiénes:** Andrés Alzate (copiloto `andres-alzate`) · Jhonatan Rengifo (copiloto `jhonatan-rengifo`)
-**Capa de rol (viz):** `viz/specs/roles/copy/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/copy/` — aún no creada
 **Tareas históricas:** 83 asignadas · 83 etiquetadas con arquetipo · 16 abiertas hoy
 
 **Misión.** Dueño de la narrativa: big idea, mecanismo único, VSL/SL/TSL, hooks y el copy de los creativos. Todo lo que la organización le dice al mercado pasa por este rol.
