@@ -180,26 +180,26 @@ to Markdown (`--search` lists everything shared with the bot);
 `Proyectos brief` relation points to that project. Gotchas (data-source model,
 linked views that report `data_sources: []`) in [bash/notion/README.md](bash/notion/README.md).
 
-## Google domain — Drive + Docs + Sheets ([bash/google/](bash/google/))
+## Google domain — Drive vía el API mkt ([bash/google/](bash/google/))
 
-**Read-only** access to the `ikigaigrowthmarketing@gmail.com` Drive via HTTP
-(curl/python3 stdlib, no npm deps). **Auth is DB-borne**: the OAuth token lives
-in `ikigaigm.identities` (`provider='google'`, full `drive` scope) and the
-backend keeps it fresh — no local client_secret, so an expired token errors
-clearly instead of refreshing. All scripts take raw ids or docs/drive URLs and
-accept `--json`. **Caveat:** the OAuth project only has the Drive API enabled —
-Sheets/Docs APIs are off, so `sheet_read.sh` falls back to Drive CSV export
-(first tab only) and `sheet_show.sh`/`doc_read.sh --raw` fail with instructions
-(enable `sheets.googleapis.com` for full mode). See [bash/google/README.md](bash/google/README.md).
+**Read-only** access to the org's Drive through the **Meetico backend**
+(contract: [apis/mkt/drive.openapi.json](apis/mkt/drive.openapi.json)) — the
+backend owns the Google identity (token, refresh, index); these scripts never
+see Google credentials and never touch the DB. Mode picked from `.env`:
+**copiloto** (`CEREBRO_API`+`CEREBRO_TOKEN` → forja-proxy `/v1/mkt/…`, audited
+per employee) or **cerebro** (`MEETICO_BASE`+`MEETICO_JWT_TOKEN`, direct — the
+same pair the viz uses for IO binding). All scripts take raw ids or docs/drive
+URLs and accept `--json`. Endpoints not yet deployed by the backend fail with
+a clear «el backend aún no expone …» message. See [bash/google/README.md](bash/google/README.md).
 
 | Script | Use it to… |
 |--------|-----------|
-| `auth_status.sh` | Show the active identity: email, scopes, expiry (DB row + live tokeninfo). |
-| `drive_ls.sh [--folder ID\|url\|name] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf\|MIME] [--trashed] [--limit N]` | List/search files, newest first. `--folder` accepts a unique name fragment. |
-| `drive_file.sh <id\|url>` | Metadata of one file (name, mime, owner, dates, parents, link). |
-| `doc_read.sh <id\|url> [--out F] [--txt] [--raw]` | Distill a Google Doc to **Markdown** (Drive export). `--out` writes a file. |
-| `sheet_show.sh <id\|url>` | Sheet title + tabs with dimensions (needs Sheets API — see caveat). |
-| `sheet_read.sh <id\|url> [--tab N] [--range A1] [--limit N] [--raw]` | One tab's values as an aligned table (row 1 = header); `--json` = array of objects keyed by header. |
+| `auth_status.sh` | Mode, base and a live probe against the backend. |
+| `drive_ls.sh [--folder ID\|url\|name] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf] [--limit N]` | List a folder live (`/drive/contents`) or search the whole drive (index). |
+| `drive_file.sh <id\|url>` | Metadata of one file. |
+| `doc_read.sh <id\|url> [--out F] [--txt]` | A Google Doc as **Markdown** (`?format=markdown`). `--out` writes a file. |
+| `sheet_show.sh <id\|url>` | Sheet metadata (tabs not exposed by the backend yet). |
+| `sheet_read.sh <id\|url> [--limit N] [--raw]` | First tab's values as an aligned table (CSV; row 1 = header); `--json` = array of objects. |
 
 ## Users domain — Marketico API ([bash/users/](bash/users/))
 
