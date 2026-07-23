@@ -30,8 +30,10 @@ Todos aceptan ids crudos o URLs de docs.google.com / drive.google.com.
 
 ## Estado del backend (2026-07-23)
 
-La familia **live** (`/drive/contents`) está desplegada; el resto del contrato
-(`/drive/files/:id`, `/content`, `/resolve`, `/drive/index*`) está pedido a
-Meetico y los scripts ya hablan ese contrato — mientras llega el deploy fallan
-con un mensaje claro («el backend aún no expone …»). Igual el `?format=markdown`
-de `/content` y los campos ricos de metadata (size/modified/owners/parents).
+Desplegado y verificado: `/drive/contents` · `/drive/files/:id` · `/content`
+(con `?format=markdown` — Docs llegan como markdown real) · `/resolve` ·
+`/drive/index` + `/stats` (~19k items indexados; la búsqueda es sobre el
+índice, así que un archivo recién creado tarda en aparecer — la navegación
+por carpeta sí es live). Pendiente en Meetico: campos ricos en
+`/drive/files/:id` (size/modified/owners/**parents** — sin parents el «↑» del
+explorador no navega) y pestañas de Sheets.
