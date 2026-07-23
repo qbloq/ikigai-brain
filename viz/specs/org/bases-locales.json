@@ -1,0 +1,9 @@
+{
+  "id": "bases-locales",
+  "name": "Bases locales",
+  "component": "localdb",
+  "source": "localdbs",
+  "params": {},
+  "scope": "org",
+  "created_at": "2026-07-08T18:07:00.000Z"
+}

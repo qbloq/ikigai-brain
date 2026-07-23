@@ -1,0 +1,10 @@
+{
+  "spec_version": 2,
+  "id": "editor-io",
+  "name": "Editor de IO",
+  "pattern": "master-detail",
+  "master": { "block": "tasks-table", "source": "tasks", "params": { "open": "1", "limit": "0" } },
+  "detail": { "block": "task-edit-form" },
+  "scope": "org",
+  "created_at": "2026-07-08T18:01:00.000Z"
+}
