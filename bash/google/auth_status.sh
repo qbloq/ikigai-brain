@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # auth_status.sh [--json]
 #
-# Read-only. Show the Google identity the scripts run as: the identities row
-# (email, scopes, expiry) plus a live tokeninfo check against Google.
+# Read-only. Show how this workspace reaches the org's Drive: the mode
+# (copiloto vía proxy · cerebro directo), the base, and a live probe against
+# the mkt API. Las credenciales de Google viven en el backend — aquí no hay
+# token de Google que inspeccionar.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
@@ -11,55 +13,37 @@ source "$HERE/lib/common.sh"
 for a in "$@"; do
   case "$a" in
     --json) FORMAT=json;;
-    -h|--help) sed -n '2,5p' "$0"; exit 0;;
+    -h|--help) sed -n '2,7p' "$0"; exit 0;;
     *) echo "unknown arg: $a" >&2; exit 1;;
   esac
 done
 
-row="$(_psql_ro -t -A -F$'\t' -c "
-  SELECT email, scope, expiry_date,
-         to_char(to_timestamp(expiry_date/1000) AT TIME ZONE 'America/Bogota', 'YYYY-MM-DD HH24:MI') AS expira,
-         (to_timestamp(expiry_date/1000) > now()) AS vigente,
-         to_char(updated_at AT TIME ZONE 'America/Bogota', 'YYYY-MM-DD HH24:MI') AS actualizado
-  FROM ikigaigm.identities
-  WHERE provider = '${GOOGLE_IDENTITY_PROVIDER//\'/\'\'}'
-  ORDER BY updated_at DESC LIMIT 1;")"
-[[ -z "$row" ]] && { echo "no identities row for provider='$GOOGLE_IDENTITY_PROVIDER'" >&2; exit 1; }
-
-live="null"
-if google_token 2>/dev/null; then
-  live="$(curl -sS --get "https://www.googleapis.com/oauth2/v3/tokeninfo" \
-    --data-urlencode "access_token=$GOOGLE_TOKEN" || echo null)"
+# probe: stats del índice si está desplegado; si no, la raíz live
+alcanza=false probe="" n=""
+if out="$(mapi GET "/drive/index/stats" 2>/dev/null)"; then
+  alcanza=true probe="index/stats"
+  n="$(printf '%s' "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("total", len(d) if isinstance(d, list) else "")) ' 2>/dev/null || true)"
+elif out="$(mapi GET "/drive/contents" 2>/dev/null)"; then
+  alcanza=true probe="contents (raíz live)"
+  n="$(printf '%s' "$out" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' 2>/dev/null || true)"
 fi
 
-ROW="$row" LIVE="$live" python3 - "$FORMAT" <<'PY'
-import json, os, sys
-fmt = sys.argv[1]
-email, scope, expiry_ms, expira, vigente, actualizado = os.environ["ROW"].split("\t")
-try:
-    live = json.loads(os.environ["LIVE"])
-except json.JSONDecodeError:
-    live = None
-info = {
-    "provider_email": email,
-    "vigente": vigente == "t",
-    "expira_bogota": expira,
-    "actualizado_bogota": actualizado,
-    "scopes": scope.split(),
-    "tokeninfo": {"expires_in_s": int(live["expires_in"]), "scopes_ok": True} if live and "expires_in" in live else None,
-}
-if fmt == "json":
-    print(json.dumps(info, indent=2, ensure_ascii=False))
-else:
-    print(f"cuenta      {email}")
-    print(f"vigente     {'sí' if info['vigente'] else 'NO — token vencido'}")
-    print(f"expira      {expira} (Bogotá)")
-    print(f"actualizado {actualizado} (Bogotá)")
-    if info["tokeninfo"]:
-        print(f"tokeninfo   OK, expira en {info['tokeninfo']['expires_in_s']}s")
-    else:
-        print("tokeninfo   sin verificación en vivo (token vencido o sin red)")
-    print("scopes:")
-    for s in info["scopes"]:
-        print(f"  - {s}")
+if [[ "$FORMAT" == "json" ]]; then
+  python3 - "$MKT_MODE" "$MKT_BASE" "$alcanza" "$probe" "$n" <<'PY'
+import json, sys
+mode, base, ok, probe, n = sys.argv[1:6]
+print(json.dumps({
+    "modo": mode, "base": base, "alcanza": ok == "true",
+    "probe": probe or None, "items_visibles": int(n) if n.isdigit() else None,
+}, indent=2, ensure_ascii=False))
 PY
+else
+  echo "modo     $MKT_MODE $( [[ "$MKT_MODE" == proxy ]] && echo '(copiloto → forja-proxy → backend)' || echo '(cerebro → backend directo)')"
+  echo "base     $MKT_BASE"
+  if [[ "$alcanza" == true ]]; then
+    echo "alcanza  sí — probe: $probe${n:+ ($n items)}"
+  else
+    echo "alcanza  NO — revisa credenciales (.env) o la salud del backend"
+    exit 1
+  fi
+fi

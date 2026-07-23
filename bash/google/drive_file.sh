@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # drive_file.sh <id|url> [--json]
 #
-# Read-only. Metadata of one Drive file: name, type, size, dates, owner,
-# parent folder, link. --json dumps the raw API object.
+# Read-only. Metadata of one Drive file via the mkt API (GET /drive/files/:id).
+# --json dumps the API object untouched (keys estilo Google: id, name,
+# mimeType, createdTime, webViewLink, …).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
@@ -12,14 +13,14 @@ ref=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --json) FORMAT=json; shift;;
-    -h|--help) sed -n '2,5p' "$0"; exit 0;;
+    -h|--help) sed -n '2,6p' "$0"; exit 0;;
     *) ref="$1"; shift;;
   esac
 done
 [[ -z "$ref" ]] && { echo "usage: drive_file.sh <id|url> [--json]" >&2; exit 1; }
 id="$(gid "$ref")"
 
-meta="$(gapi GET "$DRIVE_API/files/$id?fields=id,name,mimeType,size,createdTime,modifiedTime,owners(displayName,emailAddress),lastModifyingUser(displayName),parents,webViewLink,trashed,shortcutDetails")"
+meta="$(mapi GET "/drive/files/$id")"
 
 if [[ "$FORMAT" == "json" ]]; then
   printf '%s\n' "$meta" | python3 -m json.tool
@@ -31,20 +32,18 @@ import json, os
 f = json.loads(os.environ["META"])
 owner = (f.get("owners") or [{}])[0]
 rows = [
-    ("id", f["id"]),
+    ("id", f.get("id", "")),
     ("name", f.get("name", "")),
     ("mime", f.get("mimeType", "")),
-    ("size", f.get("size", "—")),
+    ("size", f.get("size") or "—"),
     ("created", f.get("createdTime", "")),
-    ("modified", f.get("modifiedTime", "")),
-    ("owner", f"{owner.get('displayName','')} <{owner.get('emailAddress','')}>"),
-    ("last edit by", (f.get("lastModifyingUser") or {}).get("displayName", "")),
-    ("parents", ", ".join(f.get("parents", []))),
-    ("trashed", str(f.get("trashed", False)).lower()),
+    ("modified", f.get("modifiedTime", "") or "—"),
+    ("owner", f"{owner.get('displayName','')} <{owner.get('emailAddress','')}>" if owner else "—"),
     ("url", f.get("webViewLink", "")),
 ]
-if "shortcutDetails" in f:
-    rows.append(("shortcut →", f["shortcutDetails"].get("targetId", "")))
+if f.get("videoMediaMetadata"):
+    v = f["videoMediaMetadata"]
+    rows.append(("video", f"{v.get('width','?')}×{v.get('height','?')} · {v.get('durationMillis','?')}ms"))
 for k, v in rows:
     print(f"{k:<13} {v}")
 PY

@@ -1,47 +1,37 @@
-# bash/google/ — Google Drive + Docs + Sheets (read-only)
+# bash/google/ — Google Drive vía el API mkt (read-only)
 
-Scripts para leer el Drive de la cuenta `ikigaigrowthmarketing@gmail.com`
-vía HTTP (curl + python3 stdlib, sin npm deps). **Read-only**: nunca crean,
-editan ni borran nada en Google.
+Scripts para leer el Drive de la org a través del **backend Meetico**
+(contrato: [apis/mkt/drive.openapi.json](../../apis/mkt/drive.openapi.json)),
+con curl + python3 stdlib. **Read-only**: nunca crean, editan ni borran nada.
 
-## Auth — el token vive en la DB
+## Auth — las credenciales de Google viven en el backend
 
-No hay API key ni client_secret local. El OAuth `access_token` (+ refresh)
-está en `ikigaigm.identities` con `provider='google'` — la fila que el
-backend (bot de meetings) mantiene fresca al usarla. `lib/common.sh` la lee
-con una conexión Postgres read-only y expone `gapi` (curl autenticado).
+Aquí no hay token de Google, ni client_secret, ni acceso a la base de datos:
+el backend es el dueño de la identidad Google de la org (la refresca solo).
+`lib/common.sh` elige el modo por el `.env`:
 
-- **Scope**: `…/auth/drive` completo → cubre Drive y los exports; también
-  autorizaría los APIs de Sheets/Docs (ver caveat abajo).
-- **Token vencido**: los scripts fallan con mensaje claro. No podemos
-  refrescarlo localmente (no hay client_secret); se refresca cuando el
-  backend lo usa, o re-autenticando Google en la app.
-- La fila `provider='google1'` es vieja (expiró 2025-10) — se ignora.
-  `GOOGLE_IDENTITY_PROVIDER` overridea cuál fila usar.
+| Modo | Credenciales | Camino |
+|------|--------------|--------|
+| **copiloto** | `CEREBRO_API` + `CEREBRO_TOKEN` | forja-proxy (`/v1/mkt/…`) — inyecta el JWT de la org y audita cada llamada |
+| **cerebro** | `MEETICO_BASE` + `MEETICO_JWT_TOKEN` | directo al backend (mismo par que usa el viz para el bind de artefactos) |
 
 ## Scripts
 
 | Script | Para… |
 |--------|-------|
-| `auth_status.sh [--json]` | Ver la identidad activa: email, scopes, vigencia (DB + tokeninfo en vivo). |
-| `drive_ls.sh [--folder ID\|url\|nombre] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf\|MIME] [--trashed] [--limit N] [--json]` | Listar/buscar archivos, más recientes primero. `--folder` acepta fragmento de nombre único. |
-| `drive_file.sh <id\|url> [--json]` | Metadata de un archivo (nombre, mime, dueño, fechas, link). |
-| `doc_read.sh <id\|url> [--out F] [--txt] [--raw]` | Un Google Doc como **Markdown** (Drive export). `--out` escribe archivo. |
-| `sheet_show.sh <id\|url> [--json]` | Título + pestañas de un Sheet (requiere Sheets API — ver caveat). |
-| `sheet_read.sh <id\|url> [--tab N] [--range A1] [--limit N] [--raw] [--json]` | Valores de una pestaña como tabla (fila 1 = header). `--json` = array de objetos. |
+| `auth_status.sh [--json]` | Modo, base y probe en vivo contra el backend. |
+| `drive_ls.sh [--folder ID\|url\|nombre] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf] [--limit N] [--json]` | Listar (live por carpeta) y buscar (índice global del backend). |
+| `drive_file.sh <id\|url> [--json]` | Metadata de un archivo. |
+| `doc_read.sh <id\|url> [--out F] [--txt] [--json]` | Un Google Doc como **Markdown** (`?format=markdown`). |
+| `sheet_read.sh <id\|url> [--limit N] [--raw] [--json]` | Primera pestaña de un Sheet como tabla (CSV del backend; fila 1 = header). |
+| `sheet_show.sh <id\|url> [--json]` | Metadata del Sheet (pestañas: aún no expuestas por el backend). |
 
 Todos aceptan ids crudos o URLs de docs.google.com / drive.google.com.
 
-## Caveat — APIs deshabilitados en el proyecto OAuth
+## Estado del backend (2026-07-23)
 
-El client OAuth pertenece al proyecto GCP `564990031857`, que solo tiene el
-**Drive API** habilitado. Los APIs de **Sheets** y **Docs** están apagados:
-
-- `sheet_read.sh` cae solo a **Drive export CSV** (primera pestaña, sin
-  `--tab`/`--range`) y lo avisa por stderr.
-- `sheet_show.sh` (pestañas) y `doc_read.sh --raw` fallan con instrucción.
-- Para el modo completo: habilitar `sheets.googleapis.com` (y opcionalmente
-  `docs.googleapis.com`) en ese proyecto — un click de quien tenga acceso a
-  la consola de Google Cloud.
-
-La lectura de Docs no sufre: el export a Markdown va por Drive.
+La familia **live** (`/drive/contents`) está desplegada; el resto del contrato
+(`/drive/files/:id`, `/content`, `/resolve`, `/drive/index*`) está pedido a
+Meetico y los scripts ya hablan ese contrato — mientras llega el deploy fallan
+con un mensaje claro («el backend aún no expone …»). Igual el `?format=markdown`
+de `/content` y los campos ricos de metadata (size/modified/owners/parents).

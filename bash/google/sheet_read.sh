@@ -1,80 +1,54 @@
 #!/usr/bin/env bash
-# sheet_read.sh <id|url> [--tab NAME] [--range A1:D50] [--limit N] [--raw] [--json]
+# sheet_read.sh <id|url> [--limit N] [--raw] [--json]
 #
-# Read-only. Values of one Google Sheet tab (first tab by default), rendered
-# as an aligned table treating row 1 as the header. --limit caps data rows
-# (default 50; 0 = no cap). --json emits an array of objects keyed by the
-# header row; --raw emits the API's values matrix untouched.
+# Read-only. Values of one Google Sheet via the mkt API — el backend exporta
+# la PRIMERA pestaña como CSV (GET /drive/files/:id/content). Rendered as an
+# aligned table treating row 1 as the header. --limit caps data rows (default
+# 50; 0 = no cap). --json emits an array of objects keyed by the header row;
+# --raw emits the CSV untouched.
 #
-# Fallback: if the Sheets API is disabled in the OAuth project, the FIRST tab
-# is pulled as CSV via the Drive export API (--tab/--range unavailable there).
+# --tab/--range: no disponibles vía el backend (exporta la primera pestaña).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "$HERE/lib/common.sh"
 
-ref=""; tab=""; range=""; limit=50; raw=0
+ref=""; limit=50; raw=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --tab) tab="$2"; shift 2;;
-    --range) range="$2"; shift 2;;
+    --tab|--range)
+      { echo "sheet_read: --tab/--range no están disponibles vía el backend (exporta la"
+        echo "primera pestaña como CSV). Pídelo a Meetico si lo necesitas."; } >&2
+      exit 1;;
     --limit) limit="$2"; shift 2;;
     --raw) raw=1; shift;;
     --json) FORMAT=json; shift;;
-    -h|--help) sed -n '2,11p' "$0"; exit 0;;
+    -h|--help) sed -n '2,10p' "$0"; exit 0;;
     *) ref="$1"; shift;;
   esac
 done
-[[ -z "$ref" ]] && { echo "usage: sheet_read.sh <id|url> [--tab NAME] [--range A1] [--limit N] [--json]" >&2; exit 1; }
+[[ -z "$ref" ]] && { echo "usage: sheet_read.sh <id|url> [--limit N] [--raw] [--json]" >&2; exit 1; }
 id="$(gid "$ref")"
 
-errf="$(mktemp)"; tmpf="$(mktemp)"
-trap 'rm -f "$errf" "$tmpf"' EXIT
-
-sheets_api_disabled() { grep -q 'SERVICE_DISABLED\|has not been used' "$errf"; }
-
-kind="api"
-if [[ -z "$tab" ]]; then
-  if meta="$(gapi GET "$SHEETS_API/spreadsheets/$id?fields=sheets(properties(title,index))" 2>"$errf")"; then
-    tab="$(printf '%s' "$meta" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sheets"][0]["properties"]["title"])')"
-  elif sheets_api_disabled; then
-    kind="csv"
-  else
-    cat "$errf" >&2; exit 1
-  fi
-fi
-
-if [[ "$kind" == "api" ]]; then
-  a1="'${tab//\'/\'\'}'${range:+!$range}"
-  enc="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$a1")"
-  if ! gapi GET "$SHEETS_API/spreadsheets/$id/values/$enc?valueRenderOption=FORMATTED_VALUE" >"$tmpf" 2>"$errf"; then
-    sheets_api_disabled && kind="csv" || { cat "$errf" >&2; exit 1; }
-  fi
-fi
-
-if [[ "$kind" == "csv" ]]; then
-  if [[ -n "$tab" || -n "$range" ]]; then
-    { echo "sheet_read: el API de Sheets está deshabilitado en el proyecto OAuth, y el fallback"
-      echo "CSV (Drive export) solo alcanza la PRIMERA pestaña, sin --tab/--range."
-      echo "Habilita sheets.googleapis.com en el proyecto de Google Cloud para el modo completo."; } >&2
-    exit 1
-  fi
-  echo "sheet_read: Sheets API deshabilitado — usando Drive export CSV (primera pestaña)" >&2
-  gapi GET "$DRIVE_API/files/$id/export" --get --data-urlencode "mimeType=text/csv" >"$tmpf"
-fi
+tmpf="$(mktemp)"; trap 'rm -f "$tmpf"' EXIT
+mapi GET "/drive/files/$id/content" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+if not d.get("exists", True):
+    sys.stderr.write("sheet_read: el archivo no existe o no es accesible\n"); sys.exit(1)
+if d.get("content_text") is None:
+    sys.stderr.write("sheet_read: sin contenido extraible (mime: %s)\n" % d.get("mime", "?")); sys.exit(1)
+sys.stdout.write(d["content_text"])' > "$tmpf"
 
 if (( raw )); then
-  if [[ "$kind" == "api" ]]; then python3 -m json.tool "$tmpf"; else cat "$tmpf"; fi
+  cat "$tmpf"
   exit 0
 fi
 
-python3 - "$FORMAT" "$limit" "$tmpf" "$kind" <<'PY'
+python3 - "$FORMAT" "$limit" "$tmpf" <<'PY'
 import csv, json, sys
-fmt, limit, path, kind = sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4]
-if kind == "api":
-    values = json.load(open(path)).get("values", [])
-else:
-    values = [list(r) for r in csv.reader(open(path, newline=""))]
+fmt, limit, path = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+values = [list(r) for r in csv.reader(open(path, newline=""))]
 if not values:
     print("[]" if fmt == "json" else "(hoja vacía)")
     sys.exit()

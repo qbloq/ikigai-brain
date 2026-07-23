@@ -1,38 +1,40 @@
 #!/usr/bin/env bash
-# doc_read.sh <id|url> [--out FILE] [--txt] [--raw] [--json]
+# doc_read.sh <id|url> [--out FILE] [--txt] [--json]
 #
-# Read-only. Distill a Google Doc to Markdown (Drive export). Prints to
-# stdout, or writes to --out. Modes:
-#   (default)  markdown export (via Drive — always available)
-#   --txt      plain-text export (via Drive)
-#   --raw      Docs API document JSON — requires docs.googleapis.com enabled
-#              in the OAuth project (disabled today; md/txt cover reading)
-#   --json     wrap the export as {"id","markdown"} (the viz `gdoc` source)
+# Read-only. Read a Google Doc via the mkt API (GET /drive/files/:id/content).
+# Prints to stdout, or writes to --out. Modes:
+#   (default)  markdown  (?format=markdown — export Drive del backend)
+#   --txt      plain text (?format=text)
+#   --json     wrap as {"id","markdown"} (the viz `gdoc` source)
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "$HERE/lib/common.sh"
 
-mode="md"; out=""; ref=""; json=0
+mode="markdown"; out=""; ref=""; json=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --out) out="$2"; shift 2;;
-    --txt) mode="txt"; shift;;
-    --raw) mode="raw"; shift;;
+    --txt) mode="text"; shift;;
+    --raw) echo "doc_read: --raw (Docs API JSON) no existe vía el backend; usa el markdown" >&2; exit 1;;
     --json) json=1; shift;;
-    -h|--help) sed -n '2,11p' "$0"; exit 0;;
+    -h|--help) sed -n '2,9p' "$0"; exit 0;;
     *) ref="$1"; shift;;
   esac
 done
-[[ -z "$ref" ]] && { echo "usage: doc_read.sh <id|url> [--out FILE] [--txt|--raw]" >&2; exit 1; }
+[[ -z "$ref" ]] && { echo "usage: doc_read.sh <id|url> [--out FILE] [--txt] [--json]" >&2; exit 1; }
 id="$(gid "$ref")"
 
+# El content llega como DriveArtifactContent {exists, content_text, …}
 fetch() {
-  case "$mode" in
-    md)  gapi GET "$DRIVE_API/files/$id/export" --get --data-urlencode "mimeType=text/markdown";;
-    txt) gapi GET "$DRIVE_API/files/$id/export" --get --data-urlencode "mimeType=text/plain";;
-    raw) gapi GET "$DOCS_API/documents/$id";;
-  esac
+  mapi GET "/drive/files/$id/content?format=$mode" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+if not d.get("exists", True):
+    sys.stderr.write("doc_read: el archivo no existe o no es accesible\n"); sys.exit(1)
+if d.get("content_text") is None:
+    sys.stderr.write("doc_read: sin texto extraible (mime: %s)\n" % d.get("mime", "?")); sys.exit(1)
+sys.stdout.write(d["content_text"])'
 }
 
 if (( json )); then
