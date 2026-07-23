@@ -1,0 +1,10 @@
+{
+  "id": "comisiones-pendientes",
+  "name": "Comisiones · cola de aprobación",
+  "component": "table",
+  "source": "comisiones",
+  "params": { "status": "pending", "limit": "0" },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-07-14T00:00:00.000Z"
+}

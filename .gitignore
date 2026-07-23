@@ -1,0 +1,41 @@
+# Secrets / environment
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Backups
+backups/
+
+# Notion raw exports (bulk data dumps); distilled .md docs are kept
+docs/notion/_corpus/
+docs/notion/*/tasks.json
+docs/notion/*/tasks.csv
+
+# Generated UIs (viz store) — re-seeded on first run
+viz/store/
+
+# Local SQLite databases (the personal data layer) — never committed
+data/sqlite/
+
+# Copilot fork clones (each is its own git repo; the pilot lives here)
+data/forks/
+
+# Personal scratch (raíz) — notas de trabajo, nunca versionadas
+/x
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+viz/viz.log
+empresa-agentica-docs-v1.zip
+data/telemetria/
+bin/

@@ -1,0 +1,7 @@
+{
+  "org": "ikigai",
+  "client_id": "cliente-0",
+  "vertical": "agencia",
+  "modules": ["calls", "notion", "metrics"],
+  "genome_version": "12b236d"
+}

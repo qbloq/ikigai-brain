@@ -1,0 +1,10 @@
+{
+  "id": "cobranza-vencidas",
+  "name": "Cobranza · cuotas vencidas",
+  "component": "table",
+  "source": "cobranza",
+  "params": { "overdue": "1", "limit": "0" },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-07-14T00:00:00.000Z"
+}

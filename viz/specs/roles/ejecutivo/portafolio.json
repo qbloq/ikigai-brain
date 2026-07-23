@@ -1,0 +1,10 @@
+{
+  "id": "portafolio",
+  "name": "Portafolio · mes en curso",
+  "component": "table",
+  "source": "portfolio",
+  "params": {},
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-07-14T00:00:00.000Z"
+}

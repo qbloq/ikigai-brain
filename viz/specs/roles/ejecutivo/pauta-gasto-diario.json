@@ -1,0 +1,10 @@
+{
+  "id": "pauta-gasto-diario",
+  "name": "Pauta DG · gasto diario (mes)",
+  "component": "chart",
+  "source": "ad_stats",
+  "params": { "kind": "line", "by": "day", "project": "David Guerrero", "x": "day", "y": "spend", "limit": "0" },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-07-14T00:00:00.000Z"
+}

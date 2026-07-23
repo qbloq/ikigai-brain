@@ -1,0 +1,10 @@
+{
+  "id": "cashflow-mensual",
+  "name": "Cashflow · por mes",
+  "component": "table",
+  "source": "cashflow",
+  "params": {},
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-07-14T00:00:00.000Z"
+}
