@@ -30,8 +30,8 @@ done
 esc="${io//\'/\'\'}"
 query="$(psql_ro -t -A -c "
   SELECT coalesce(
-    (SELECT artifact_reference->>'query'    FROM ikigaigm.task_inputs  WHERE id::text LIKE '${esc}%' LIMIT 1),
-    (SELECT deliverable_reference->>'query' FROM ikigaigm.task_outputs WHERE id::text LIKE '${esc}%' LIMIT 1)
+    (SELECT artifact_reference->>'query'    FROM task_inputs  WHERE id::text LIKE '${esc}%' LIMIT 1),
+    (SELECT deliverable_reference->>'query' FROM task_outputs WHERE id::text LIKE '${esc}%' LIMIT 1)
   );")"
 if [[ -z "$query" ]]; then
   echo "El IO '$io' no existe o no tiene un query SQL vinculado (reference.query)" >&2

@@ -13,7 +13,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { fetchTasks, today, REPO_ROOT } = require("./lib/db");
+const { fetchTasks, today, REPO_ROOT, SCHEMA } = require("./lib/db");
 const { slug, isOpen, byPriorityThenTitle, STATUS_ORDER, buildDoc } = require("./lib/render");
 
 const UNASSIGNED = "Unassigned";
@@ -66,7 +66,7 @@ function main() {
   }
 
   const gen =
-    `Generated ${td} from live DB (ikigaigm schema)` +
+    `Generated ${td} from live DB (${SCHEMA} schema)` +
     (projectLabel ? ` — project: ${projectLabel}` : "");
 
   const baseDir = path.join(REPO_ROOT, "backups", "tasks-by-role");

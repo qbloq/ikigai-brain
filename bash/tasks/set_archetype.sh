@@ -27,13 +27,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Resolve the task (exactly one).
-tid="$(psql_ro -t -A -c "SELECT id FROM ikigaigm.tasks WHERE id::text LIKE '${tref//\'/\'\'}%'")"
+tid="$(psql_ro -t -A -c "SELECT id FROM tasks WHERE id::text LIKE '${tref//\'/\'\'}%'")"
 n="$(printf '%s\n' "$tid" | grep -c . || true)"
 if [[ "$n" -ne 1 ]]; then echo "Task ref '$tref' resolved to $n tasks (need 1)." >&2; exit 1; fi
 
 # Validate archetype unless clearing.
 if [[ -z "$clear" ]]; then
-  ok="$(psql_ro -t -A -c "SELECT count(*) FROM ikigaigm.activity_archetypes WHERE id='${aref//\'/\'\'}'")"
+  ok="$(psql_ro -t -A -c "SELECT count(*) FROM activity_archetypes WHERE id='${aref//\'/\'\'}'")"
   [[ "$ok" == "1" ]] || { echo "Unknown archetype '$aref' (not in catalog)." >&2; exit 1; }
 fi
 
@@ -45,18 +45,18 @@ psql_rw -v tid="$tid" <<SQL
 BEGIN;
 \echo '==== BEFORE ===='
 SELECT t.id, left(t.title,48) AS title, t.archetype_id, a.sop_code, s.macro_process_code AS macro
-FROM ikigaigm.tasks t
-LEFT JOIN ikigaigm.activity_archetypes a ON a.id=t.archetype_id
-LEFT JOIN ikigaigm.sops s ON s.code=a.sop_code
+FROM tasks t
+LEFT JOIN activity_archetypes a ON a.id=t.archetype_id
+LEFT JOIN sops s ON s.code=a.sop_code
 WHERE t.id = :'tid'::uuid;
 
-UPDATE ikigaigm.tasks SET $set_sql WHERE id = :'tid'::uuid;
+UPDATE tasks SET $set_sql WHERE id = :'tid'::uuid;
 
 \echo '==== AFTER ===='
 SELECT t.id, left(t.title,48) AS title, t.archetype_id, a.sop_code, s.macro_process_code AS macro, t.archetype_match_method AS method
-FROM ikigaigm.tasks t
-LEFT JOIN ikigaigm.activity_archetypes a ON a.id=t.archetype_id
-LEFT JOIN ikigaigm.sops s ON s.code=a.sop_code
+FROM tasks t
+LEFT JOIN activity_archetypes a ON a.id=t.archetype_id
+LEFT JOIN sops s ON s.code=a.sop_code
 WHERE t.id = :'tid'::uuid;
 $end;
 SQL

@@ -17,11 +17,11 @@ done
 [[ -z "$idarg" ]] && { echo "Usage: meeting_show.sh <id|prefix>" >&2; exit 2; }
 idarg="${idarg//\'/}"
 
-mid="$(psql_ro -t -A -c "SELECT id FROM ikigaigm.meetings WHERE id::text LIKE '${idarg}%' LIMIT 2;" | head -1)"
+mid="$(psql_ro -t -A -c "SELECT id FROM meetings WHERE id::text LIKE '${idarg}%' LIMIT 2;" | head -1)"
 [[ -z "$mid" ]] && { echo "No meeting matches: $idarg" >&2; exit 1; }
 
 if [[ "$FORMAT" == "json" ]]; then
-  psql_ro -t -A -c "SELECT coalesce(report::text,'null') FROM ikigaigm.meeting_reports WHERE meeting_id='$mid' LIMIT 1;"
+  psql_ro -t -A -c "SELECT coalesce(report::text,'null') FROM meeting_reports WHERE meeting_id='$mid' LIMIT 1;"
   exit 0
 fi
 
@@ -31,29 +31,29 @@ SELECT left(m.id::text,8) AS id, m.name, m.meeting_type AS type, m.status,
   to_char(m.scheduled_start_time,'YYYY-MM-DD HH24:MI') AS scheduled,
   to_char(m.actual_start_time,'YYYY-MM-DD HH24:MI') AS started,
   coalesce(pr.name,'—') AS project,
-  EXISTS (SELECT 1 FROM ikigaigm.meeting_transcripts x WHERE x.meeting_id=m.id) AS has_transcript,
-  (SELECT count(*) FROM ikigaigm.meeting_participants p WHERE p.meeting_id=m.id) AS participants,
+  EXISTS (SELECT 1 FROM meeting_transcripts x WHERE x.meeting_id=m.id) AS has_transcript,
+  (SELECT count(*) FROM meeting_participants p WHERE p.meeting_id=m.id) AS participants,
   m.meet_url, m.recording_url
-FROM ikigaigm.meetings m LEFT JOIN ikigaigm.projects pr ON pr.id=m.project_id
+FROM meetings m LEFT JOIN projects pr ON pr.id=m.project_id
 WHERE m.id='$mid';"
 
-parts="$(psql_ro -t -A -c "SELECT count(*) FROM ikigaigm.meeting_participants WHERE meeting_id='$mid';")"
+parts="$(psql_ro -t -A -c "SELECT count(*) FROM meeting_participants WHERE meeting_id='$mid';")"
 if [[ "$parts" != "0" ]]; then
   echo "== PARTICIPANTS =="
   psql_ro -c "SELECT name, email, participant_role AS role, duration_minutes AS mins
-    FROM ikigaigm.meeting_participants WHERE meeting_id='$mid' ORDER BY duration_minutes DESC NULLS LAST;"
+    FROM meeting_participants WHERE meeting_id='$mid' ORDER BY duration_minutes DESC NULLS LAST;"
 fi
 
-has_report="$(psql_ro -t -A -c "SELECT 1 FROM ikigaigm.meeting_reports WHERE meeting_id='$mid' LIMIT 1;")"
+has_report="$(psql_ro -t -A -c "SELECT 1 FROM meeting_reports WHERE meeting_id='$mid' LIMIT 1;")"
 [[ -z "$has_report" ]] && { echo; echo "(no report for this meeting)"; exit 0; }
 
-R="(SELECT report FROM ikigaigm.meeting_reports WHERE meeting_id='$mid' LIMIT 1)"
+R="(SELECT report FROM meeting_reports WHERE meeting_id='$mid' LIMIT 1)"
 
 echo "== REPORT =="
 psql_ro -x -c "SELECT r.report->>'reportTitle' AS title,
   r.report->>'reportSubtitle' AS subtitle,
   r.report->>'executiveSummary' AS executive_summary
-FROM ikigaigm.meeting_reports r WHERE r.meeting_id='$mid';"
+FROM meeting_reports r WHERE r.meeting_id='$mid';"
 
 echo "-- Objectives --"
 psql_ro -x -c "SELECT $R->'meetingObjectives'->>'stated' AS stated,

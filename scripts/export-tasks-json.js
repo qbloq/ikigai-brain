@@ -7,7 +7,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { fetchTasks, REPO_ROOT } = require("./lib/db");
+const { fetchTasks, REPO_ROOT, SCHEMA } = require("./lib/db");
 
 function main() {
   const outFile =
@@ -30,7 +30,7 @@ function main() {
 
   const doc = {
     generated_at: new Date().toISOString(),
-    source: "live DB (ikigaigm schema)",
+    source: `live DB (${SCHEMA} schema)`,
     stats: { tasks: shaped.length, outputs, criteria },
     tasks: shaped,
   };

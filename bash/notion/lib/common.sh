@@ -12,9 +12,12 @@ NOTION_DIR="$(cd "$NOTION_LIB_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$NOTION_DIR/../.." && pwd)"
 
 # --- Credential: proxy mode or direct mode ----------------------------------
-# proxy  — CEREBRO_API + CEREBRO_TOKEN en .env: la llamada va por el API del cerebro;
-#          el token de la org vive en el SERVIDOR (así corren los copilotos).
-# direct — NOTION=ntn_... en .env (el cerebro/operador). El proxy gana.
+# Two modes:
+#   proxy  — CEREBRO_API + CEREBRO_TOKEN in .env: calls go through the
+#            brain's API; the org's Notion token lives on the SERVER, never
+#            on this machine. This is how copilots run.
+#   direct — NOTION=ntn_... in .env: the brain/operator with its own token.
+# Proxy mode wins when both are configured.
 if [[ -f "$REPO_ROOT/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
@@ -33,7 +36,9 @@ else
 fi
 
 # notion_api <METHOD> <path> [curl-args...] : raw API call, returns JSON on stdout.
-# path is relative to NOTION_API (e.g. /pages/<id>, /blocks/<id>/children).
+# path is relative to the Notion v1 API (e.g. /pages/<id>, /blocks/<id>/children)
+# and works identically in both modes — the proxy injects Notion-Version and
+# the org token server-side (the extra header here is harmless passthrough).
 notion_api() {
   local method="$1" path="$2"; shift 2
   curl -sS -X "$method" "${NOTION_API}${path}" \

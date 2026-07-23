@@ -22,7 +22,7 @@ const CARD_GROUPS = [
     { key: "num_ventas", label: "# Ventas", fmt: "int", color: "violet" },
     { key: "ticket_promedio", label: "Ticket prom.", fmt: "money", color: "violet" },
     { key: "ingreso_neto", label: "Ingreso neto", fmt: "money", color: "emerald" },
-    { key: "neto_ikigai", label: "Neto Ikigai", fmt: "money", color: "blue" },
+    { key: "neto_org", label: "Neto Ikigai", fmt: "money", color: "blue" },
     { key: "neto_owner", label: "Neto", fmt: "money", color: "blue", labelFromOwner: true },
   ],
   [

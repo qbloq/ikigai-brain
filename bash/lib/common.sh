@@ -27,11 +27,17 @@ if [[ -z "${DATABASE_URL:-}" && -f "$REPO_ROOT/.env" ]]; then
   set +a
 fi
 : "${DATABASE_URL:?DATABASE_URL not set (expected in $REPO_ROOT/.env)}"
+# The org's Postgres schema. The genome presupposes NONE — each brain declares
+# its own (see cerebro.json / docs: "el cerebro nace conectado, no poblado").
+: "${DB_SCHEMA:?DB_SCHEMA not set - the Postgres schema of this org, expected in $REPO_ROOT/.env}"
 
 # --- Connection policy -----------------------------------------------------
-# Every connection is read-only, scoped to the ikigaigm schema, in Bogota time.
-TZ_DEFAULT="${IKIGAIGM_TZ:-America/Bogota}"
-export PGOPTIONS="-c default_transaction_read_only=on -c search_path=ikigaigm,public -c timezone=$TZ_DEFAULT"
+# Every connection is read-only, scoped to the org's schema, in the org's tz.
+# search_path is the SINGLE point where the schema is bound: SQL in the scripts
+# is written unqualified (FROM tasks, not FROM <schema>.tasks) so nothing below
+# this line needs to know the org.
+TZ_DEFAULT="${BRAIN_TZ:-America/Bogota}"
+export PGOPTIONS="-c default_transaction_read_only=on -c search_path=$DB_SCHEMA,public -c timezone=$TZ_DEFAULT"
 
 # --- Output format ---------------------------------------------------------
 # Set FORMAT=json (or pass --json, handled by scripts) for machine output.
@@ -42,11 +48,11 @@ psql_ro() {
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --pset pager=off "$@"
 }
 
-# psql_rw [args...] : run psql with a WRITABLE connection (still scoped to
-# ikigaigm + Bogota tz). Write scripts must opt into this explicitly; reads
+# psql_rw [args...] : run psql with a WRITABLE connection (still scoped to the
+# org's schema + tz). Write scripts must opt into this explicitly; reads
 # stay read-only by default. Wrap mutations in BEGIN/COMMIT.
 psql_rw() {
-  PGOPTIONS="-c search_path=ikigaigm,public -c timezone=$TZ_DEFAULT" \
+  PGOPTIONS="-c search_path=$DB_SCHEMA,public -c timezone=$TZ_DEFAULT" \
     psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --pset pager=off "$@"
 }
 
@@ -60,11 +66,11 @@ resolve_member() {
            trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')) AS member,
            coalesce(tr.name,'?') AS role,
            coalesce(te.name,'?') AS team
-    FROM ikigaigm.team_members tm
-    LEFT JOIN ikigaigm.team_roles tr ON tr.id=tm.role_id
-    LEFT JOIN ikigaigm.teams te ON te.id=tm.team_id
-    LEFT JOIN ikigaigm.users u ON u.id=tm.user_id
-    LEFT JOIN ikigaigm.persons p ON p.person_id=u.person_id
+    FROM team_members tm
+    LEFT JOIN team_roles tr ON tr.id=tm.role_id
+    LEFT JOIN teams te ON te.id=tm.team_id
+    LEFT JOIN users u ON u.id=tm.user_id
+    LEFT JOIN persons p ON p.person_id=u.person_id
     WHERE tm.id::text LIKE '${esc}%'
        OR (coalesce(p.name,'')||' '||coalesce(p.lastname,'')) ILIKE '%${esc}%'
     ORDER BY member")"
@@ -94,16 +100,16 @@ emit() {
 # References the outer table aliased as `t`.
 ASSIGNEES_SQL="(SELECT string_agg(nullif(trim(coalesce(p.name,'') || ' ' || coalesce(p.lastname,'')), ''), ', ')
   FROM unnest(t.assignee) AS aid
-  JOIN ikigaigm.team_members tm ON tm.id = aid
-  LEFT JOIN ikigaigm.users u ON u.id = tm.user_id
-  LEFT JOIN ikigaigm.persons p ON p.person_id = u.person_id)"
+  JOIN team_members tm ON tm.id = aid
+  LEFT JOIN users u ON u.id = tm.user_id
+  LEFT JOIN persons p ON p.person_id = u.person_id)"
 
 # Reusable SQL scalar subquery: resolves tasks.assignee (uuid[]) -> role names.
 # References the outer table aliased as `t`.
 ROLES_SQL="(SELECT string_agg(DISTINCT tr.name, ', ')
   FROM unnest(t.assignee) AS aid
-  JOIN ikigaigm.team_members tm ON tm.id = aid
-  LEFT JOIN ikigaigm.team_roles tr ON tr.id = tm.role_id)"
+  JOIN team_members tm ON tm.id = aid
+  LEFT JOIN team_roles tr ON tr.id = tm.role_id)"
 
 # Standard task listing. Args: <where> [order] [limit]
 tasks_select() {
@@ -121,8 +127,8 @@ SELECT left(t.id::text, 8)               AS id,
        pr.name                           AS project,
        $ASSIGNEES_SQL                    AS assignees,
        t.source_type                     AS source_type
-FROM ikigaigm.tasks t
-LEFT JOIN ikigaigm.projects pr ON pr.id = t.project_id
+FROM tasks t
+LEFT JOIN projects pr ON pr.id = t.project_id
 WHERE $where
 ORDER BY $order
 $lim
@@ -135,5 +141,5 @@ OPEN_PRED="t.status NOT IN ('completed','cancelled') AND coalesce(t.is_completed
 # Resolve a project name fragment to an id (echoes id or empty).
 resolve_project() {
   local frag="$1"
-  psql_ro -t -A -c "SELECT id FROM ikigaigm.projects WHERE name ILIKE '%${frag//\'/\'\'}%' LIMIT 1;"
+  psql_ro -t -A -c "SELECT id FROM projects WHERE name ILIKE '%${frag//\'/\'\'}%' LIMIT 1;"
 }

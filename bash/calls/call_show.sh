@@ -36,18 +36,18 @@ SELECT jsonb_build_object(
   'payment_date', r.report->'generalInformation'->>'paymentDate',
   'prob', r.report->'leadProfile'->'predictionsAndRecommendations'->'closingProbability'->>'percentage',
   'score', r.report->'performanceInsights'->'finalCloserEvaluation'->>'overallScore',
-  'has_transcript', EXISTS (SELECT 1 FROM ikigaigm.meeting_transcripts x WHERE x.meeting_id=m.id),
+  'has_transcript', EXISTS (SELECT 1 FROM meeting_transcripts x WHERE x.meeting_id=m.id),
   'report', r.report
 )
-FROM ikigaigm.meetings m
-LEFT JOIN ikigaigm.projects pr ON pr.id=m.project_id
-LEFT JOIN ikigaigm.meeting_reports r ON r.meeting_id=m.id
+FROM meetings m
+LEFT JOIN projects pr ON pr.id=m.project_id
+LEFT JOIN meeting_reports r ON r.meeting_id=m.id
 LEFT JOIN LATERAL (
   SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer
-  FROM ikigaigm.crm_contacts c
-  JOIN ikigaigm.crm_opportunities o ON o.contact_id=c.id
-  JOIN ikigaigm.users u ON u.id=o.user_id
-  JOIN ikigaigm.persons p ON p.person_id=u.person_id
+  FROM crm_contacts c
+  JOIN crm_opportunities o ON o.contact_id=c.id
+  JOIN users u ON u.id=o.user_id
+  JOIN persons p ON p.person_id=u.person_id
   WHERE c.ghl_contact_id = m.event->'booking'->>'contact_id'
   ORDER BY (o.project_id = m.project_id) DESC, o.created_date DESC NULLS LAST
   LIMIT 1

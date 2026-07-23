@@ -37,36 +37,36 @@ fi
 
 psql_rw <<SQL
 \echo '==== BEFORE ===='
-SELECT 'tasks' t, count(*) n FROM ikigaigm.tasks
-UNION ALL SELECT 'task_inputs', count(*) FROM ikigaigm.task_inputs
-UNION ALL SELECT 'task_outputs', count(*) FROM ikigaigm.task_outputs
-UNION ALL SELECT 'task_acceptance_criteria', count(*) FROM ikigaigm.task_acceptance_criteria
-UNION ALL SELECT 'task_attestations', count(*) FROM ikigaigm.task_attestations
-UNION ALL SELECT 'task_todos', count(*) FROM ikigaigm.task_todos
-UNION ALL SELECT 'task_comments', count(*) FROM ikigaigm.task_comments
+SELECT 'tasks' t, count(*) n FROM tasks
+UNION ALL SELECT 'task_inputs', count(*) FROM task_inputs
+UNION ALL SELECT 'task_outputs', count(*) FROM task_outputs
+UNION ALL SELECT 'task_acceptance_criteria', count(*) FROM task_acceptance_criteria
+UNION ALL SELECT 'task_attestations', count(*) FROM task_attestations
+UNION ALL SELECT 'task_todos', count(*) FROM task_todos
+UNION ALL SELECT 'task_comments', count(*) FROM task_comments
 ORDER BY 1;
 
 BEGIN;
-DELETE FROM ikigaigm.task_attestations;
-DELETE FROM ikigaigm.task_acceptance_criteria;
-DELETE FROM ikigaigm.task_inputs;
-DELETE FROM ikigaigm.task_outputs;
-DELETE FROM ikigaigm.task_todos;
-DELETE FROM ikigaigm.task_comments;
-DELETE FROM ikigaigm.tasks;
+DELETE FROM task_attestations;
+DELETE FROM task_acceptance_criteria;
+DELETE FROM task_inputs;
+DELETE FROM task_outputs;
+DELETE FROM task_todos;
+DELETE FROM task_comments;
+DELETE FROM tasks;
 
 \echo '==== AFTER (within tx) ===='
-SELECT 'tasks' t, count(*) n FROM ikigaigm.tasks
-UNION ALL SELECT 'task_inputs', count(*) FROM ikigaigm.task_inputs
-UNION ALL SELECT 'task_outputs', count(*) FROM ikigaigm.task_outputs
-UNION ALL SELECT 'task_acceptance_criteria', count(*) FROM ikigaigm.task_acceptance_criteria
-UNION ALL SELECT 'task_attestations', count(*) FROM ikigaigm.task_attestations
-UNION ALL SELECT 'task_todos', count(*) FROM ikigaigm.task_todos
-UNION ALL SELECT 'task_comments', count(*) FROM ikigaigm.task_comments
+SELECT 'tasks' t, count(*) n FROM tasks
+UNION ALL SELECT 'task_inputs', count(*) FROM task_inputs
+UNION ALL SELECT 'task_outputs', count(*) FROM task_outputs
+UNION ALL SELECT 'task_acceptance_criteria', count(*) FROM task_acceptance_criteria
+UNION ALL SELECT 'task_attestations', count(*) FROM task_attestations
+UNION ALL SELECT 'task_todos', count(*) FROM task_todos
+UNION ALL SELECT 'task_comments', count(*) FROM task_comments
 ORDER BY 1;
 $end;
 \echo '==== task_columns (preserved) ===='
-SELECT count(*) AS task_columns_kept FROM ikigaigm.task_columns;
+SELECT count(*) AS task_columns_kept FROM task_columns;
 SQL
 
 if [[ -z "$commit" ]]; then

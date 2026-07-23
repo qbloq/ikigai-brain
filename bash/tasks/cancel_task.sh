@@ -25,7 +25,7 @@ done
 
 resolve_task() { # echoes the single full id for a prefix, errors otherwise
   local ref="$1" ids n
-  ids="$(psql_ro -t -A -c "SELECT id FROM ikigaigm.tasks WHERE id::text LIKE '${ref//\'/\'\'}%'")"
+  ids="$(psql_ro -t -A -c "SELECT id FROM tasks WHERE id::text LIKE '${ref//\'/\'\'}%'")"
   n="$(printf '%s\n' "$ids" | grep -c . || true)"
   [[ "$n" -eq 1 ]] || { echo "Task ref '$ref' resolved to $n tasks (need 1)." >&2; return 1; }
   printf '%s' "$ids"
@@ -38,27 +38,27 @@ end="COMMIT"; [[ -n "$dry" ]] && end="ROLLBACK"
 psql_rw -v tid="$tid" -v iid="$iid" -v reason="$reason" <<SQL
 BEGIN;
 \echo '==== BEFORE ===='
-SELECT left(id::text,8) AS id, status, left(title,52) AS title FROM ikigaigm.tasks WHERE id = :'tid'::uuid;
+SELECT left(id::text,8) AS id, status, left(title,52) AS title FROM tasks WHERE id = :'tid'::uuid;
 
-UPDATE ikigaigm.tasks SET status='cancelled'::ikigaigm.task_status WHERE id = :'tid'::uuid;
+UPDATE tasks SET status='cancelled'::task_status WHERE id = :'tid'::uuid;
 
 -- comment trail on the cancelled task
-INSERT INTO ikigaigm.task_comments (task_id, author_name, text)
+INSERT INTO task_comments (task_id, author_name, text)
 SELECT :'tid'::uuid, 'cancel_task',
        'Cancelada'
        || CASE WHEN nullif(:'iid','') IS NOT NULL
-               THEN ' — fusionada en '||left(:'iid',8)||' ('||coalesce((SELECT title FROM ikigaigm.tasks WHERE id=:'iid'::uuid),'?')||')'
+               THEN ' — fusionada en '||left(:'iid',8)||' ('||coalesce((SELECT title FROM tasks WHERE id=:'iid'::uuid),'?')||')'
                ELSE '' END
        || CASE WHEN nullif(:'reason','') IS NOT NULL THEN '. '||:'reason' ELSE '' END;
 
 -- comment trail on the survivor (if any)
-INSERT INTO ikigaigm.task_comments (task_id, author_name, text)
+INSERT INTO task_comments (task_id, author_name, text)
 SELECT :'iid'::uuid, 'cancel_task',
-       'Absorbe la tarea '||left(:'tid',8)||' ('||coalesce((SELECT title FROM ikigaigm.tasks WHERE id=:'tid'::uuid),'?')||') por fusión.'
+       'Absorbe la tarea '||left(:'tid',8)||' ('||coalesce((SELECT title FROM tasks WHERE id=:'tid'::uuid),'?')||') por fusión.'
 WHERE nullif(:'iid','') IS NOT NULL;
 
 \echo '==== AFTER ===='
-SELECT left(id::text,8) AS id, status, left(title,52) AS title FROM ikigaigm.tasks WHERE id = :'tid'::uuid;
+SELECT left(id::text,8) AS id, status, left(title,52) AS title FROM tasks WHERE id = :'tid'::uuid;
 $end;
 SQL
 

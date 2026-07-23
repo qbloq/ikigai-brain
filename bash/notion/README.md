@@ -20,7 +20,7 @@ Motores en [`lib/`](lib/): `common.sh` (token, `notion_api()`, `to_uuid()`),
 ## Modelo de datos relevante (descubierto)
 
 - El bot solo ve lo **explícitamente compartido** con la integración (menú `•••`
-  → Connections). Hoy: las 3 páginas de David Guerrero + la data source **"BD
+  → Connections). Hoy: las 3 páginas de <proyecto> + la data source **"BD
   Avances"** + **"BD contabilidad T4trade"**.
 - El workspace usa el **modelo nuevo de data sources** (API `2025-09-03`): una
   *database* puede tener 1+ *data sources*; las **vistas enlazadas** (linked views,
@@ -32,7 +32,7 @@ Motores en [`lib/`](lib/): `common.sh` (token, `notion_api()`, `to_uuid()`),
   la relación **`Proyectos brief`** → página del proyecto. Ese es el discriminante
   que usa `project_tasks.sh` (la API de Notion **no** expone el filtro de la vista
   inline, así que se replica por relación).
-- Páginas de proyecto David Guerrero: Premium Mastermind
+- Páginas de proyecto <proyecto>: Premium Mastermind
   `27ad5db4-6a6c-80f5-90b4-f8223647360f` · Premium Academy
   `27ad5db4-6a6c-80a0-8749-cb05a9bbdd7c` · Origen del amor
   `2efd5db4-6a6c-801d-90ba-c4df80b4632a`.

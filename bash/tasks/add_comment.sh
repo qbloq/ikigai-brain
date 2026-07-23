@@ -30,7 +30,7 @@ done
 
 resolve_task() { # echoes the single full id for a prefix, errors otherwise
   local ref="$1" ids n
-  ids="$(psql_ro -t -A -c "SELECT id FROM ikigaigm.tasks WHERE id::text LIKE '${ref//\'/\'\'}%'")"
+  ids="$(psql_ro -t -A -c "SELECT id FROM tasks WHERE id::text LIKE '${ref//\'/\'\'}%'")"
   n="$(printf '%s\n' "$ids" | grep -c . || true)"
   [[ "$n" -eq 1 ]] || { echo "Task ref '$ref' resolved to $n tasks (need 1)." >&2; return 1; }
   printf '%s' "$ids"
@@ -42,7 +42,7 @@ end="COMMIT"; [[ -n "$dry" ]] && end="ROLLBACK"
 if [[ -n "$json" ]]; then
   psql_rw -t -A -v tid="$tid" -v author="$author" -v text="$text" <<SQL
 BEGIN;
-INSERT INTO ikigaigm.task_comments (task_id, author_name, text)
+INSERT INTO task_comments (task_id, author_name, text)
 VALUES (:'tid'::uuid, :'author', :'text')
 RETURNING json_build_object('task_id', left(task_id::text,8), 'comment_id', id,
                             'author', author_name, 'text', text);
@@ -55,16 +55,16 @@ fi
 psql_rw -v tid="$tid" -v author="$author" -v text="$text" <<SQL
 BEGIN;
 \echo '==== TASK ===='
-SELECT left(id::text,8) AS id, status, left(title,56) AS title FROM ikigaigm.tasks WHERE id = :'tid'::uuid;
+SELECT left(id::text,8) AS id, status, left(title,56) AS title FROM tasks WHERE id = :'tid'::uuid;
 \echo '==== BEFORE (comment count) ===='
-SELECT count(*) AS comments FROM ikigaigm.task_comments WHERE task_id = :'tid'::uuid;
+SELECT count(*) AS comments FROM task_comments WHERE task_id = :'tid'::uuid;
 
-INSERT INTO ikigaigm.task_comments (task_id, author_name, text)
+INSERT INTO task_comments (task_id, author_name, text)
 VALUES (:'tid'::uuid, :'author', :'text');
 
 \echo '==== ADDED ===='
 SELECT author_name, left(text,80) AS text, created_at
-  FROM ikigaigm.task_comments
+  FROM task_comments
  WHERE task_id = :'tid'::uuid ORDER BY created_at DESC LIMIT 1;
 $end;
 SQL

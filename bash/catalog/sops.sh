@@ -40,10 +40,10 @@ SELECT mp.code                                  AS macro,
        a.name                                   AS activity,
        coalesce(a.is_gate, false)               AS gate,
        count(t.id)                              AS tasks
-FROM ikigaigm.sops s
-JOIN ikigaigm.macro_processes mp ON mp.code = s.macro_process_code
-LEFT JOIN ikigaigm.activity_archetypes a ON a.sop_code = s.code
-LEFT JOIN ikigaigm.tasks t ON t.archetype_id = a.id
+FROM sops s
+JOIN macro_processes mp ON mp.code = s.macro_process_code
+LEFT JOIN activity_archetypes a ON a.sop_code = s.code
+LEFT JOIN tasks t ON t.archetype_id = a.id
 WHERE $where
 GROUP BY mp.code, mp.name, mp.value_chain_order, s.code, s.name, s.owner_roles,
          a.id, a.verb, a.name, a.is_gate

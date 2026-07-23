@@ -1,7 +1,7 @@
 // Shared read-only DB access for the export scripts.
 //
 // Mirrors the connection policy of bash/lib/common.sh: every query runs
-// read-only, scoped to the ikigaigm schema, in America/Bogota time.
+// read-only, scoped to the schema of this org, in the configured timezone.
 // No external dependencies — we shell out to the `psql` client.
 
 const { execFileSync } = require("node:child_process");
@@ -10,26 +10,35 @@ const path = require("node:path");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
-// --- Load DATABASE_URL from .env (only if not already in the environment) ---
-function loadDatabaseUrl() {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+// --- Read a key from the environment, falling back to .env ------------------
+function loadEnv(key) {
+  if (process.env[key]) return process.env[key];
   const envPath = path.join(REPO_ROOT, ".env");
   if (fs.existsSync(envPath)) {
+    const re = new RegExp(`^\\s*${key}\\s*=\\s*(.*)\\s*$`);
     for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
-      const m = line.match(/^\s*DATABASE_URL\s*=\s*(.*)\s*$/);
+      const m = line.match(re);
       if (m) return m[1].replace(/^["']|["']$/g, "");
     }
   }
-  throw new Error(`DATABASE_URL not set (expected in ${envPath})`);
+  return null;
 }
 
-const DATABASE_URL = loadDatabaseUrl();
-const TZ = process.env.IKIGAIGM_TZ || "America/Bogota";
+function requireEnv(key, what) {
+  const v = loadEnv(key);
+  if (!v) throw new Error(`${key} not set (${what}; expected in ${path.join(REPO_ROOT, ".env")})`);
+  return v;
+}
 
-// Read-only, schema-scoped, Bogota-time connection — same policy as common.sh.
+const DATABASE_URL = requireEnv("DATABASE_URL", "the org database connection string");
+// The genome presupposes NO schema — each brain declares its own.
+const SCHEMA = requireEnv("DB_SCHEMA", "the Postgres schema of this org");
+const TZ = loadEnv("BRAIN_TZ") || "America/Bogota";
+
+// Read-only, schema-scoped connection — same policy as common.sh.
 const PGOPTIONS = [
   "-c default_transaction_read_only=on",
-  "-c search_path=ikigaigm,public",
+  `-c search_path=${SCHEMA},public`,
   `-c timezone=${TZ}`,
 ].join(" ");
 
@@ -67,8 +76,8 @@ WITH base AS (
          t.priority::text AS priority,
          to_char(t.due_date,'YYYY-MM-DD') AS due,
          pr.name AS project_name
-  FROM ikigaigm.tasks t
-  LEFT JOIN ikigaigm.projects pr ON pr.id = t.project_id
+  FROM tasks t
+  LEFT JOIN projects pr ON pr.id = t.project_id
   WHERE t.status NOT IN ('completed','cancelled')
     AND coalesce(t.is_completed,false) = false
 ),
@@ -78,17 +87,17 @@ roles AS (
            json_agg(DISTINCT tr.name ORDER BY tr.name)
              FILTER (WHERE tr.name IS NOT NULL),
            '[]'::json) AS roles
-  FROM ikigaigm.tasks t
+  FROM tasks t
   LEFT JOIN LATERAL unnest(t.assignee) aid ON true
-  LEFT JOIN ikigaigm.team_members tm ON tm.id = aid
-  LEFT JOIN ikigaigm.team_roles   tr ON tr.id = tm.role_id
+  LEFT JOIN team_members tm ON tm.id = aid
+  LEFT JOIN team_roles   tr ON tr.id = tm.role_id
   GROUP BY t.id
 ),
 todos AS (
   SELECT task_id,
          json_agg(json_build_object('text', text, 'completed', completed)
                   ORDER BY position) AS todos
-  FROM ikigaigm.task_todos
+  FROM task_todos
   GROUP BY task_id
 ),
 outs AS (
@@ -98,8 +107,8 @@ outs AS (
            'output_type',  it.name,
            'criteria',     COALESCE(c.criteria, '[]'::json)
          ) ORDER BY o.position) AS outputs
-  FROM ikigaigm.task_outputs o
-  LEFT JOIN ikigaigm.io_types it ON it.id = o.io_type_id
+  FROM task_outputs o
+  LEFT JOIN io_types it ON it.id = o.io_type_id
   LEFT JOIN LATERAL (
     SELECT json_agg(json_build_object(
              'criterion',           ac.criterion,
@@ -109,7 +118,7 @@ outs AS (
              'is_required',         ac.is_required,
              'pass_threshold',      ac.pass_threshold
            ) ORDER BY ac.position) AS criteria
-    FROM ikigaigm.task_acceptance_criteria ac
+    FROM task_acceptance_criteria ac
     WHERE ac.output_id = o.id
   ) c ON true
   GROUP BY o.task_id
@@ -132,4 +141,4 @@ LEFT JOIN outs  ou ON ou.task_id = b.id;`;
   return queryJson(sql);
 }
 
-module.exports = { fetchTasks, today, REPO_ROOT };
+module.exports = { fetchTasks, today, REPO_ROOT, SCHEMA };

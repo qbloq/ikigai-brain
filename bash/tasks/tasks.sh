@@ -7,7 +7,7 @@
 #
 #   --status S      pending | in_progress | completed | blocked | cancelled
 #   --priority P    Low | Medium | High
-#   --project NAME  project name fragment (e.g. Ikigai)
+#   --project NAME  project name fragment
 #   --assignee NAME person name fragment (e.g. David)
 #   --due W         due window: today|tomorrow|yesterday|this-week|next-week|overdue
 #   --open          only tasks not completed/cancelled
@@ -56,9 +56,9 @@ if [[ -n "$project" ]]; then
 fi
 if [[ -n "$assignee" ]]; then
   where="$where AND EXISTS (SELECT 1 FROM unnest(t.assignee) aid
-    JOIN ikigaigm.team_members tm ON tm.id=aid
-    LEFT JOIN ikigaigm.users u ON u.id=tm.user_id
-    LEFT JOIN ikigaigm.persons p ON p.person_id=u.person_id
+    JOIN team_members tm ON tm.id=aid
+    LEFT JOIN users u ON u.id=tm.user_id
+    LEFT JOIN persons p ON p.person_id=u.person_id
     WHERE (coalesce(p.name,'')||' '||coalesce(p.lastname,'')) ILIKE '%$(esc "$assignee")%')"
 fi
 

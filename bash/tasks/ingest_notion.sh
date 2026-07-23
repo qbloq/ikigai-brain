@@ -2,7 +2,7 @@
 # ingest_notion.sh <classified.json> [--project NAME] [--limit N] [--only-open] [--yes]  **[WRITE]**
 #
 # Ingest Notion tasks (from a classified.json produced by the ontology pilot) into
-# ikigaigm.tasks, as ONE transaction. Each row is born with:
+# tasks, as ONE transaction. Each row is born with:
 #   - provenance: source_type='notion', source_url (Notion page), source_external_id
 #     (Notion page id) — see migration 002 / task-provenance.
 #   - archetype tag: archetype_id + archetype_match_method='llm' + confidence.
@@ -15,14 +15,14 @@
 # SAFE BY DEFAULT: previews + ROLLBACK unless --yes is passed.
 #
 #   classified.json : array of {id(notion), url, tarea, estado, fecha, archetype_id, confidence}
-#   --project NAME  : project to attach (default "David Guerrero")
+#   --project NAME  : project to attach (OBLIGATORIO — el núcleo no presupone ninguno)
 #   --limit N       : only the first N rows (for testing)
 #   --only-open     : skip Notion tasks whose estado is Done/Archivo
 #   --yes           : actually COMMIT (otherwise dry-run rollback)
 set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 
-CLASSIFIED=""; PROJECT="David Guerrero"; LIMIT=""; ONLY_OPEN=""; COMMIT=""
+CLASSIFIED=""; PROJECT=""; LIMIT=""; ONLY_OPEN=""; COMMIT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project) PROJECT="$2"; shift 2;;
@@ -68,41 +68,42 @@ print(json.dumps(out, ensure_ascii=False))
 PY
 )"
 n_payload="$(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(0,"utf8")).length))' <<<"$payload")"
+[[ -n "$PROJECT" ]] || { echo "Falta --project NAME (el núcleo no presupone ninguno)" >&2; exit 2; }
 echo "payload: $n_payload tareas candidatas (proyecto: $PROJECT)" >&2
 
 end="COMMIT"; [[ -z "$COMMIT" ]] && end="ROLLBACK"
 psql_rw -v payload="$payload" -v proj="$PROJECT" <<SQL
 BEGIN;
 WITH pl AS (SELECT :'payload'::jsonb AS arr),
-proj AS (SELECT id FROM ikigaigm.projects
+proj AS (SELECT id FROM projects
           WHERE name ILIKE '%'||:'proj'||'%' OR id::text LIKE :'proj'||'%' LIMIT 1),
 rows AS (
   SELECT e FROM pl, jsonb_array_elements((SELECT arr FROM pl)) e
 ),
 ins AS (
-  INSERT INTO ikigaigm.tasks
+  INSERT INTO tasks
     (title, project_id, priority, due_date, status,
      archetype_id, archetype_match_method, archetype_confidence,
      source_type, source_url, source_external_id)
   SELECT r.e->>'title',
          (SELECT id FROM proj),
-         (r.e->>'priority')::ikigaigm.task_priority,
+         (r.e->>'priority')::task_priority,
          nullif(r.e->>'due_date','')::timestamptz,
-         (r.e->>'status')::ikigaigm.task_status,
+         (r.e->>'status')::task_status,
          nullif(r.e->>'archetype',''),
          CASE WHEN nullif(r.e->>'archetype','') IS NOT NULL THEN 'llm' END,
          nullif(r.e->>'confidence',''),
          'notion', nullif(r.e->>'url',''), r.e->>'external_id'
   FROM rows r
   WHERE NOT EXISTS (
-    SELECT 1 FROM ikigaigm.tasks t WHERE t.source_external_id = r.e->>'external_id')
+    SELECT 1 FROM tasks t WHERE t.source_external_id = r.e->>'external_id')
   RETURNING id
 )
 SELECT (SELECT count(*) FROM rows)                          AS candidatas,
        (SELECT count(*) FROM ins)                           AS insertadas,
        (SELECT count(*) FROM rows) - (SELECT count(*) FROM ins) AS ya_existian_skip;
 -- distribución de lo que quedaría por estado/archetype (post-insert, dentro del txn)
-SELECT status, count(*) FROM ikigaigm.tasks
+SELECT status, count(*) FROM tasks
   WHERE source_type='notion' GROUP BY status ORDER BY 2 DESC;
 $end;
 SQL

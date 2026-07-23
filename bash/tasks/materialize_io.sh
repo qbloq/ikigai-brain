@@ -42,48 +42,48 @@ $f$ LANGUAGE sql IMMUTABLE;
 -- tasks in scope: given source, archetype has a template, and no IO yet.
 CREATE TEMP TABLE _targets ON COMMIT DROP AS
 SELECT t.id, t.archetype_id
-FROM ikigaigm.tasks t
+FROM tasks t
 WHERE t.source_type = :'src'
   AND t.archetype_id IS NOT NULL
-  AND EXISTS (SELECT 1 FROM ikigaigm.archetype_outputs ao WHERE ao.archetype_id = t.archetype_id)
-  AND NOT EXISTS (SELECT 1 FROM ikigaigm.task_inputs  x WHERE x.task_id = t.id)
-  AND NOT EXISTS (SELECT 1 FROM ikigaigm.task_outputs x WHERE x.task_id = t.id);
+  AND EXISTS (SELECT 1 FROM archetype_outputs ao WHERE ao.archetype_id = t.archetype_id)
+  AND NOT EXISTS (SELECT 1 FROM task_inputs  x WHERE x.task_id = t.id)
+  AND NOT EXISTS (SELECT 1 FROM task_outputs x WHERE x.task_id = t.id);
 
 -- inputs
-INSERT INTO ikigaigm.task_inputs (task_id, title, description, io_type_id, artifact_type_id, is_required, position)
+INSERT INTO task_inputs (task_id, title, description, io_type_id, artifact_type_id, is_required, position)
 SELECT g.id, ai.title, pg_temp.slotclean(ai.description, :'label'),
        ai.io_type_id, it.default_artifact_type_id, ai.is_required, ai.position
 FROM _targets g
-JOIN ikigaigm.archetype_inputs ai ON ai.archetype_id = g.archetype_id
-LEFT JOIN ikigaigm.io_types it ON it.id = ai.io_type_id;
+JOIN archetype_inputs ai ON ai.archetype_id = g.archetype_id
+LEFT JOIN io_types it ON it.id = ai.io_type_id;
 
 -- outputs (capture new ids ↔ task+position for the criteria step)
 CREATE TEMP TABLE _newout ON COMMIT DROP AS
 WITH ins AS (
-  INSERT INTO ikigaigm.task_outputs (task_id, title, description, io_type_id, artifact_type_id, is_required, position)
+  INSERT INTO task_outputs (task_id, title, description, io_type_id, artifact_type_id, is_required, position)
   SELECT g.id, ao.title, pg_temp.slotclean(ao.description, :'label'),
          ao.io_type_id, it.default_artifact_type_id, ao.is_required, ao.position
   FROM _targets g
-  JOIN ikigaigm.archetype_outputs ao ON ao.archetype_id = g.archetype_id
-  LEFT JOIN ikigaigm.io_types it ON it.id = ao.io_type_id
+  JOIN archetype_outputs ao ON ao.archetype_id = g.archetype_id
+  LEFT JOIN io_types it ON it.id = ao.io_type_id
   RETURNING id, task_id, position
 )
 SELECT * FROM ins;
 
 -- acceptance criteria: link new outputs → archetype criteria via (archetype, position)
-INSERT INTO ikigaigm.task_acceptance_criteria (output_id, criterion, criterion_category, verification_method, is_required, position)
+INSERT INTO task_acceptance_criteria (output_id, criterion, criterion_category, verification_method, is_required, position)
 SELECT n.id, pg_temp.slotclean(cr.criterion, :'label'),
        cr.criterion_category, cr.verification_method, cr.is_required, cr.position
 FROM _newout n
 JOIN _targets g ON g.id = n.task_id
-JOIN ikigaigm.archetype_outputs ao ON ao.archetype_id = g.archetype_id AND ao.position = n.position
-JOIN ikigaigm.archetype_acceptance_criteria cr ON cr.output_id = ao.id;
+JOIN archetype_outputs ao ON ao.archetype_id = g.archetype_id AND ao.position = n.position
+JOIN archetype_acceptance_criteria cr ON cr.output_id = ao.id;
 
 -- report
 SELECT (SELECT count(*) FROM _targets)                            AS tareas_materializadas,
-       (SELECT count(*) FROM ikigaigm.task_inputs  i JOIN _targets g ON g.id=i.task_id)   AS inputs_creados,
+       (SELECT count(*) FROM task_inputs  i JOIN _targets g ON g.id=i.task_id)   AS inputs_creados,
        (SELECT count(*) FROM _newout)                             AS outputs_creados,
-       (SELECT count(*) FROM ikigaigm.task_acceptance_criteria c JOIN _newout n ON n.id=c.output_id) AS criterios_creados;
+       (SELECT count(*) FROM task_acceptance_criteria c JOIN _newout n ON n.id=c.output_id) AS criterios_creados;
 :end;
 SQL
 

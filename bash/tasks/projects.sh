@@ -11,7 +11,7 @@ emit "SELECT left(pr.id::text,8) AS id, pr.name,
        count(t.id) AS total_tasks,
        count(t.id) FILTER (WHERE t.status NOT IN ('completed','cancelled')
                              AND coalesce(t.is_completed,false)=false) AS open_tasks
-FROM ikigaigm.projects pr
-LEFT JOIN ikigaigm.tasks t ON t.project_id=pr.id
+FROM projects pr
+LEFT JOIN tasks t ON t.project_id=pr.id
 GROUP BY pr.id, pr.name
 ORDER BY pr.name"

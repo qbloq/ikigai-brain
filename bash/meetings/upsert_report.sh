@@ -31,7 +31,7 @@ json="$(cat "$tmp")"
 # JSON must parse (let psql be the judge via a cast in validation below), and
 # resolve the meeting id up front.
 mid="$(psql_ro -t -A -c "
-  SELECT m.id FROM ikigaigm.meetings m
+  SELECT m.id FROM meetings m
   WHERE m.meeting_type='team' AND m.id::text LIKE '${mref//\'/\'\'}%'")"
 n_mid="$(printf '%s\n' "$mid" | grep -c . || true)"
 if [[ "$n_mid" -ne 1 ]]; then
@@ -71,9 +71,9 @@ SELECT meeting_id,
        (report->>'reportTitle') AS title,
        jsonb_array_length(report->'actionItems') AS action_items,
        updated_at
-FROM ikigaigm.meeting_reports WHERE meeting_id = :'mid'::uuid;
+FROM meeting_reports WHERE meeting_id = :'mid'::uuid;
 
-INSERT INTO ikigaigm.meeting_reports (meeting_id, report)
+INSERT INTO meeting_reports (meeting_id, report)
 VALUES (:'mid'::uuid, :'report'::jsonb)
 ON CONFLICT (meeting_id) DO UPDATE
   SET report = EXCLUDED.report, updated_at = now();
@@ -83,7 +83,7 @@ SELECT meeting_id,
        (report->>'reportTitle') AS title,
        jsonb_array_length(report->'actionItems') AS action_items,
        updated_at
-FROM ikigaigm.meeting_reports WHERE meeting_id = :'mid'::uuid;
+FROM meeting_reports WHERE meeting_id = :'mid'::uuid;
 $end;
 SQL
 

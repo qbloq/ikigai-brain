@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -z "$idarg" ]] && { echo "Usage: task_detail.sh <task_id|prefix>" >&2; exit 2; }
 idarg="${idarg//\'/}"
-tid="$(psql_ro -t -A -c "SELECT id FROM ikigaigm.tasks WHERE id::text LIKE '${idarg}%' LIMIT 1;")"
+tid="$(psql_ro -t -A -c "SELECT id FROM tasks WHERE id::text LIKE '${idarg}%' LIMIT 1;")"
 [[ -z "$tid" ]] && { echo "No task matches: $idarg" >&2; exit 1; }
 
 psql_ro -t -A -c "
@@ -50,9 +50,9 @@ SELECT json_build_object(
        'artifact', at.display_name, 'artifact_type_id', i.artifact_type_id,
        'reference', i.artifact_reference,
        'is_required', i.is_required, 'is_satisfied', i.is_satisfied) ORDER BY i.position)
-     FROM ikigaigm.task_inputs i
-     LEFT JOIN ikigaigm.io_types it ON it.id=i.io_type_id
-     LEFT JOIN ikigaigm.artifact_types at ON at.id=i.artifact_type_id
+     FROM task_inputs i
+     LEFT JOIN io_types it ON it.id=i.io_type_id
+     LEFT JOIN artifact_types at ON at.id=i.artifact_type_id
      WHERE i.task_id=t.id), '[]'::json),
   'outputs', coalesce((SELECT json_agg(json_build_object(
        'id', o.id, 'title', o.title,
@@ -60,25 +60,25 @@ SELECT json_build_object(
        'artifact', at.display_name, 'artifact_type_id', o.artifact_type_id,
        'reference', o.deliverable_reference,
        'is_required', o.is_required, 'is_delivered', o.is_delivered) ORDER BY o.position)
-     FROM ikigaigm.task_outputs o
-     LEFT JOIN ikigaigm.io_types it ON it.id=o.io_type_id
-     LEFT JOIN ikigaigm.artifact_types at ON at.id=o.artifact_type_id
+     FROM task_outputs o
+     LEFT JOIN io_types it ON it.id=o.io_type_id
+     LEFT JOIN artifact_types at ON at.id=o.artifact_type_id
      WHERE o.task_id=t.id), '[]'::json),
   'criteria', coalesce((SELECT json_agg(json_build_object(
        'criterion', c.criterion, 'method', c.verification_method,
        'is_required', c.is_required, 'is_met', c.is_met,
        'output', o.title) ORDER BY c.position)
-     FROM ikigaigm.task_acceptance_criteria c
-     JOIN ikigaigm.task_outputs o ON o.id=c.output_id
+     FROM task_acceptance_criteria c
+     JOIN task_outputs o ON o.id=c.output_id
      WHERE o.task_id=t.id), '[]'::json),
   'comments', coalesce((SELECT json_agg(json_build_object(
        'date', to_char(m.created_at,'YYYY-MM-DD'),
        'author', m.author_name, 'text', m.text) ORDER BY m.created_at)
-     FROM ikigaigm.task_comments m WHERE m.task_id=t.id), '[]'::json)
-) FROM ikigaigm.tasks t
-  LEFT JOIN ikigaigm.projects pr ON pr.id=t.project_id
-  LEFT JOIN ikigaigm.activity_archetypes a ON a.id=t.archetype_id
-  LEFT JOIN ikigaigm.sops s ON s.code=a.sop_code
-  LEFT JOIN ikigaigm.macro_processes mp ON mp.code=s.macro_process_code
-  LEFT JOIN ikigaigm.meetings sm ON sm.id=t.source_meeting_id
+     FROM task_comments m WHERE m.task_id=t.id), '[]'::json)
+) FROM tasks t
+  LEFT JOIN projects pr ON pr.id=t.project_id
+  LEFT JOIN activity_archetypes a ON a.id=t.archetype_id
+  LEFT JOIN sops s ON s.code=a.sop_code
+  LEFT JOIN macro_processes mp ON mp.code=s.macro_process_code
+  LEFT JOIN meetings sm ON sm.id=t.source_meeting_id
 WHERE t.id='$tid';"

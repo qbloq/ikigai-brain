@@ -11,7 +11,7 @@
 #                   omit to list all tasks with their roles shown
 #   --status S      pending | in_progress | completed | blocked | cancelled
 #   --priority P    Low | Medium | High
-#   --project NAME  project name fragment (e.g. Ikigai)
+#   --project NAME  project name fragment
 #   --assignee NAME person name fragment (e.g. David)
 #   --open          only tasks not completed/cancelled
 #   --limit N       cap rows (default 50; use 0 for no limit)
@@ -47,15 +47,15 @@ if [[ -n "$project" ]]; then
 fi
 if [[ -n "$role" ]]; then
   where="$where AND EXISTS (SELECT 1 FROM unnest(t.assignee) aid
-    JOIN ikigaigm.team_members tm ON tm.id=aid
-    LEFT JOIN ikigaigm.team_roles tr ON tr.id=tm.role_id
+    JOIN team_members tm ON tm.id=aid
+    LEFT JOIN team_roles tr ON tr.id=tm.role_id
     WHERE tr.name ILIKE '%$(esc "$role")%')"
 fi
 if [[ -n "$assignee" ]]; then
   where="$where AND EXISTS (SELECT 1 FROM unnest(t.assignee) aid
-    JOIN ikigaigm.team_members tm ON tm.id=aid
-    LEFT JOIN ikigaigm.users u ON u.id=tm.user_id
-    LEFT JOIN ikigaigm.persons p ON p.person_id=u.person_id
+    JOIN team_members tm ON tm.id=aid
+    LEFT JOIN users u ON u.id=tm.user_id
+    LEFT JOIN persons p ON p.person_id=u.person_id
     WHERE (coalesce(p.name,'')||' '||coalesce(p.lastname,'')) ILIKE '%$(esc "$assignee")%')"
 fi
 
@@ -70,8 +70,8 @@ emit "SELECT left(t.id::text,8)               AS id,
        pr.name                           AS project,
        $ROLES_SQL                        AS roles,
        $ASSIGNEES_SQL                    AS assignees
-FROM ikigaigm.tasks t
-LEFT JOIN ikigaigm.projects pr ON pr.id = t.project_id
+FROM tasks t
+LEFT JOIN projects pr ON pr.id = t.project_id
 WHERE $where
 ORDER BY t.due_date NULLS LAST, t.priority DESC
 $lim"

@@ -52,17 +52,17 @@ emit "SELECT left(m.id::text,8) AS call,
   o.value->>'objection' AS objection,
   o.value->>'closerResponse' AS closer_response,
   o.value->>'aiSuggestion' AS ai_suggestion
-FROM ikigaigm.meetings m
-JOIN ikigaigm.meeting_reports r ON r.meeting_id=m.id
+FROM meetings m
+JOIN meeting_reports r ON r.meeting_id=m.id
 CROSS JOIN LATERAL jsonb_array_elements(
   coalesce(r.report->'objectionsAndInsights'->'objectionHandling'->'objections','[]'::jsonb)
 ) o(value)
 LEFT JOIN LATERAL (
   SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer
-  FROM ikigaigm.crm_contacts c
-  JOIN ikigaigm.crm_opportunities op ON op.contact_id=c.id
-  JOIN ikigaigm.users u ON u.id=op.user_id
-  JOIN ikigaigm.persons p ON p.person_id=u.person_id
+  FROM crm_contacts c
+  JOIN crm_opportunities op ON op.contact_id=c.id
+  JOIN users u ON u.id=op.user_id
+  JOIN persons p ON p.person_id=u.person_id
   WHERE c.ghl_contact_id = m.event->'booking'->>'contact_id'
   ORDER BY (op.project_id = m.project_id) DESC, op.created_date DESC NULLS LAST
   LIMIT 1

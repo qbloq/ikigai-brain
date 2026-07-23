@@ -72,15 +72,15 @@ emit "SELECT left(m.id::text,8) AS id,
   coalesce(r.report->'generalInformation'->>'callStatus','') AS result,
   coalesce(r.report->'leadProfile'->'predictionsAndRecommendations'->'closingProbability'->>'percentage','') AS prob,
   coalesce(r.report->'performanceInsights'->'finalCloserEvaluation'->>'overallScore','') AS score
-FROM ikigaigm.meetings m
-LEFT JOIN ikigaigm.projects pr ON pr.id=m.project_id
-LEFT JOIN ikigaigm.meeting_reports r ON r.meeting_id=m.id
+FROM meetings m
+LEFT JOIN projects pr ON pr.id=m.project_id
+LEFT JOIN meeting_reports r ON r.meeting_id=m.id
 LEFT JOIN LATERAL (
   SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer
-  FROM ikigaigm.crm_contacts c
-  JOIN ikigaigm.crm_opportunities o ON o.contact_id=c.id
-  JOIN ikigaigm.users u ON u.id=o.user_id
-  JOIN ikigaigm.persons p ON p.person_id=u.person_id
+  FROM crm_contacts c
+  JOIN crm_opportunities o ON o.contact_id=c.id
+  JOIN users u ON u.id=o.user_id
+  JOIN persons p ON p.person_id=u.person_id
   WHERE c.ghl_contact_id = m.event->'booking'->>'contact_id'
   ORDER BY (o.project_id = m.project_id) DESC, o.created_date DESC NULLS LAST
   LIMIT 1

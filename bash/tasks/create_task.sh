@@ -8,14 +8,14 @@
 # Contract shape (see also the meeting-to-tasks skill):
 # {
 #   "title": "string",                         (required)
-#   "project": "David Guerrero",               (required; name fragment or id prefix)
+#   "project": "<proyecto>",               (required; name fragment or id prefix)
 #   "priority": "High|Medium|Low",             (default Medium)
 #   "due_date": "2026-06-30",                   (REQUIRED; always estimate, never null)
 #   "status": "pending",                        (default pending)
 #   "assignee": ["David Castaño", "a193bc8b"],  (optional; names resolve within the
-#                                                Ikigai team, id-prefixes in ANY team
+#                                                org team (ORG_NAME), id-prefixes in ANY team
 #                                                — use an id for externals/other teams,
-#                                                e.g. David Guerrero "Cliente")
+#                                                e.g. <proyecto> "Cliente")
 #   "source_meeting": "32a519c9",               (optional; meeting id/prefix. Sets
 #                                                 source_type='meeting' + source_meeting_id
 #                                                 FK, AND adds the provenance comment.)
@@ -72,7 +72,7 @@ if [[ -n "$needtpl" ]]; then
 SELECT jsonb_build_object(
   'inputs', coalesce((SELECT jsonb_agg(jsonb_build_object(
               'title',i.title,'description',i.description,'io_type',it.name,'is_required',i.is_required) ORDER BY i.position)
-            FROM ikigaigm.archetype_inputs i LEFT JOIN ikigaigm.io_types it ON it.id=i.io_type_id
+            FROM archetype_inputs i LEFT JOIN io_types it ON it.id=i.io_type_id
             WHERE i.archetype_id = :'arch'), '[]'::jsonb),
   'outputs', coalesce((SELECT jsonb_agg(ob ORDER BY pos) FROM (
               SELECT o.position AS pos, jsonb_build_object(
@@ -80,9 +80,9 @@ SELECT jsonb_build_object(
                 'criteria', coalesce((SELECT jsonb_agg(jsonb_build_object(
                       'criterion',cr.criterion,'criterion_category',cr.criterion_category,
                       'verification_method',cr.verification_method,'is_required',cr.is_required) ORDER BY cr.position)
-                    FROM ikigaigm.archetype_acceptance_criteria cr WHERE cr.output_id=o.id),'[]'::jsonb)
+                    FROM archetype_acceptance_criteria cr WHERE cr.output_id=o.id),'[]'::jsonb)
               ) AS ob
-              FROM ikigaigm.archetype_outputs o LEFT JOIN ikigaigm.io_types oit ON oit.id=o.io_type_id
+              FROM archetype_outputs o LEFT JOIN io_types oit ON oit.id=o.io_type_id
               WHERE o.archetype_id = :'arch') s), '[]'::jsonb)
 )::text
 SQL
@@ -103,26 +103,26 @@ SQL
 fi
 
 # --- Pre-flight validation (read-only): unresolved refs => abort ------------
-problems="$(psql_ro -v contract="$json" -t -A -F'|' <<'SQL'
+problems="$(psql_ro -v contract="$json" -v orgname="${ORG_NAME:-}" -t -A -F'|' <<'SQL'
 WITH c AS (SELECT :'contract'::jsonb AS j),
 proj AS (
   SELECT j->>'project' AS ref,
-         (SELECT count(*) FROM ikigaigm.projects p
+         (SELECT count(*) FROM projects p
            WHERE p.name ILIKE '%'||(j->>'project')||'%' OR p.id::text LIKE (j->>'project')||'%') AS n
   FROM c
 ),
 asg AS (
   SELECT a.name AS ref,
-    (SELECT count(*) FROM ikigaigm.team_members tm
-       LEFT JOIN ikigaigm.users u ON u.id=tm.user_id
-       LEFT JOIN ikigaigm.persons p ON p.person_id=u.person_id
-       LEFT JOIN ikigaigm.teams te ON te.id=tm.team_id
-      WHERE (te.name='Ikigai' AND regexp_replace(trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')),'\s+',' ','g')=a.name)
+    (SELECT count(*) FROM team_members tm
+       LEFT JOIN users u ON u.id=tm.user_id
+       LEFT JOIN persons p ON p.person_id=u.person_id
+       LEFT JOIN teams te ON te.id=tm.team_id
+      WHERE (:'orgname' <> '' AND te.name=:'orgname' AND regexp_replace(trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')),'\s+',' ','g')=a.name)
          OR tm.id::text LIKE a.name||'%') AS n
   FROM c, jsonb_array_elements_text(coalesce((SELECT j FROM c)->'assignee','[]'::jsonb)) a(name)
 ),
 iot AS (
-  SELECT x.io AS ref, (SELECT count(*) FROM ikigaigm.io_types it WHERE it.name=x.io) AS n
+  SELECT x.io AS ref, (SELECT count(*) FROM io_types it WHERE it.name=x.io) AS n
   FROM (
     SELECT (e->>'io_type') AS io FROM c, jsonb_array_elements(coalesce((SELECT j FROM c)->'inputs','[]'::jsonb)) e
     UNION ALL
@@ -136,7 +136,7 @@ UNION ALL SELECT 'assignee', ref, n FROM asg  WHERE n <> 1
 UNION ALL SELECT 'io_type' , coalesce(ref,'(null)'), n FROM iot WHERE n <> 1
 UNION ALL SELECT 'archetype', a.ref, a.n FROM (
   SELECT (SELECT j->>'archetype' FROM c) AS ref,
-         (SELECT count(*) FROM ikigaigm.activity_archetypes aa
+         (SELECT count(*) FROM activity_archetypes aa
            WHERE aa.id = (SELECT j->>'archetype' FROM c)) AS n
 ) a WHERE nullif(a.ref,'') IS NOT NULL AND a.n <> 1
 SQL
@@ -149,29 +149,29 @@ fi
 
 # --- Insert (writable, transactional) --------------------------------------
 end="COMMIT"; [[ -n "$dry" ]] && end="ROLLBACK"
-psql_rw -v contract="$json" <<SQL
+psql_rw -v contract="$json" -v orgname="${ORG_NAME:-}" <<SQL
 BEGIN;
 WITH c AS (SELECT :'contract'::jsonb AS j),
 new_task AS (
-  INSERT INTO ikigaigm.tasks (title, project_id, priority, due_date, status,
+  INSERT INTO tasks (title, project_id, priority, due_date, status,
                               archetype_id, archetype_confidence, archetype_match_method, assignee,
                               source_type, source_meeting_id, source_url, source_external_id)
   SELECT j->>'title',
-         (SELECT id FROM ikigaigm.projects p
+         (SELECT id FROM projects p
             WHERE p.name ILIKE '%'||(j->>'project')||'%' OR p.id::text LIKE (j->>'project')||'%' LIMIT 1),
-         coalesce(nullif(j->>'priority',''),'Medium')::ikigaigm.task_priority,
+         coalesce(nullif(j->>'priority',''),'Medium')::task_priority,
          nullif(j->>'due_date','')::timestamptz,
-         coalesce(nullif(j->>'status',''),'pending')::ikigaigm.task_status,
+         coalesce(nullif(j->>'status',''),'pending')::task_status,
          nullif(j->>'archetype',''),
          nullif(j->>'archetype_confidence',''),
          CASE WHEN nullif(j->>'archetype','') IS NOT NULL
               THEN coalesce(nullif(j->>'archetype_match_method',''),'human') END,
          (SELECT array_agg(mid) FROM (
-            SELECT (SELECT tm.id FROM ikigaigm.team_members tm
-                      LEFT JOIN ikigaigm.users u ON u.id=tm.user_id
-                      LEFT JOIN ikigaigm.persons p ON p.person_id=u.person_id
-                      LEFT JOIN ikigaigm.teams te ON te.id=tm.team_id
-                     WHERE (te.name='Ikigai' AND regexp_replace(trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')),'\s+',' ','g')=a.name)
+            SELECT (SELECT tm.id FROM team_members tm
+                      LEFT JOIN users u ON u.id=tm.user_id
+                      LEFT JOIN persons p ON p.person_id=u.person_id
+                      LEFT JOIN teams te ON te.id=tm.team_id
+                     WHERE (:'orgname' <> '' AND te.name=:'orgname' AND regexp_replace(trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')),'\s+',' ','g')=a.name)
                         OR tm.id::text LIKE a.name||'%'
                      LIMIT 1) AS mid
             FROM jsonb_array_elements_text(coalesce(j->'assignee','[]'::jsonb)) a(name)
@@ -182,7 +182,7 @@ new_task AS (
                        WHEN nullif(j->>'source_url','') IS NOT NULL
                          OR nullif(j->>'source_external_id','') IS NOT NULL THEN 'notion' END),
          -- resolve source_meeting (id or prefix) → meetings.id FK; null when absent
-         (SELECT m.id FROM ikigaigm.meetings m
+         (SELECT m.id FROM meetings m
             WHERE nullif(j->>'source_meeting','') IS NOT NULL
               AND m.id::text LIKE (j->>'source_meeting')||'%' LIMIT 1),
          nullif(j->>'source_url',''),
@@ -191,23 +191,23 @@ new_task AS (
   RETURNING id
 ),
 ins_inputs AS (
-  INSERT INTO ikigaigm.task_inputs (task_id, title, description, io_type_id, artifact_type_id, is_required, position)
+  INSERT INTO task_inputs (task_id, title, description, io_type_id, artifact_type_id, is_required, position)
   SELECT t.id, e.i->>'title', e.i->>'description', it.id, it.default_artifact_type_id,
          coalesce((e.i->>'is_required')::bool, true), e.ord-1
   FROM new_task t, c, jsonb_array_elements(coalesce(c.j->'inputs','[]'::jsonb)) WITH ORDINALITY e(i,ord)
-  LEFT JOIN ikigaigm.io_types it ON it.name = e.i->>'io_type'
+  LEFT JOIN io_types it ON it.name = e.i->>'io_type'
   RETURNING id
 ),
 ins_outputs AS (
-  INSERT INTO ikigaigm.task_outputs (task_id, title, description, io_type_id, artifact_type_id, is_required, position)
+  INSERT INTO task_outputs (task_id, title, description, io_type_id, artifact_type_id, is_required, position)
   SELECT t.id, e.o->>'title', e.o->>'description', it.id, it.default_artifact_type_id,
          coalesce((e.o->>'is_required')::bool, true), e.ord-1
   FROM new_task t, c, jsonb_array_elements(coalesce(c.j->'outputs','[]'::jsonb)) WITH ORDINALITY e(o,ord)
-  LEFT JOIN ikigaigm.io_types it ON it.name = e.o->>'io_type'
+  LEFT JOIN io_types it ON it.name = e.o->>'io_type'
   RETURNING id, position
 ),
 ins_criteria AS (
-  INSERT INTO ikigaigm.task_acceptance_criteria
+  INSERT INTO task_acceptance_criteria
     (output_id, criterion, criterion_category, verification_method, is_required, position)
   SELECT oi.id, cc.cr->>'criterion', cc.cr->>'criterion_category',
          coalesce(nullif(cc.cr->>'verification_method',''),'manual'),
@@ -218,7 +218,7 @@ ins_criteria AS (
   RETURNING id
 ),
 ins_comment AS (
-  INSERT INTO ikigaigm.task_comments (task_id, author_name, text)
+  INSERT INTO task_comments (task_id, author_name, text)
   SELECT t.id, 'meeting-to-tasks',
          'Created from meeting '||(c.j->>'source_meeting')||' by the meeting-to-tasks skill.'
   FROM new_task t, c
@@ -226,7 +226,7 @@ ins_comment AS (
   RETURNING id
 ),
 ins_user_comments AS (
-  INSERT INTO ikigaigm.task_comments (task_id, author_name, text)
+  INSERT INTO task_comments (task_id, author_name, text)
   SELECT t.id,
          coalesce(nullif(e->>'author_name',''),'meeting-to-tasks'),
          e->>'text'

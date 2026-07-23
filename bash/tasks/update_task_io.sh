@@ -62,16 +62,16 @@ json_str() { node -e 'process.stdout.write(JSON.stringify(process.argv[1]))' -- 
 # id. Echoes the id, or empty if no match. Caller decides if empty is an error.
 resolve_type() { # <table> <ref>
   local tbl="$1" ref="${2//\'/\'\'}"
-  psql_ro -t -A -c "SELECT id FROM ikigaigm.$tbl WHERE id::text='$ref' OR name='$ref' OR display_name='$ref' LIMIT 1;"
+  psql_ro -t -A -c "SELECT id FROM $tbl WHERE id::text='$ref' OR name='$ref' OR display_name='$ref' LIMIT 1;"
 }
 
 # Which table does an io_id live in? Echoes 'input'|'output' (empty if neither).
 io_kind() { # <io_id>
   local id="${1//\'/\'\'}"
   psql_ro -t -A -c "
-    SELECT 'input'  WHERE EXISTS (SELECT 1 FROM ikigaigm.task_inputs  WHERE id='$id')
+    SELECT 'input'  WHERE EXISTS (SELECT 1 FROM task_inputs  WHERE id='$id')
     UNION ALL
-    SELECT 'output' WHERE EXISTS (SELECT 1 FROM ikigaigm.task_outputs WHERE id='$id')
+    SELECT 'output' WHERE EXISTS (SELECT 1 FROM task_outputs WHERE id='$id')
     LIMIT 1;"
 }
 
@@ -81,15 +81,15 @@ end="COMMIT"; [[ -n "$dry" ]] && end="ROLLBACK"
 if [[ -n "$add" ]]; then
   [[ "$add" == "input" || "$add" == "output" ]] || fail "--add must be 'input' or 'output'"
   [[ -n "$task" ]] || fail "--add requires --task <task_id|prefix>"
-  tid="$(psql_ro -t -A -c "SELECT id FROM ikigaigm.tasks WHERE id::text LIKE '${task//\'/}%' LIMIT 1;")"
+  tid="$(psql_ro -t -A -c "SELECT id FROM tasks WHERE id::text LIKE '${task//\'/}%' LIMIT 1;")"
   [[ -n "$tid" ]] || fail "No task matches: $task"
   tbl="task_${add}s"
   [[ -n "$title" ]] || title="Nuevo ${add}"
   out="$(psql_rw -t -A -v tid="$tid" -v title="$title" <<SQL
 BEGIN;
-INSERT INTO ikigaigm.$tbl (task_id, title, is_required, position)
+INSERT INTO $tbl (task_id, title, is_required, position)
 SELECT :'tid', :'title', true,
-       coalesce((SELECT max(position)+1 FROM ikigaigm.$tbl WHERE task_id=:'tid'), 0)
+       coalesce((SELECT max(position)+1 FROM $tbl WHERE task_id=:'tid'), 0)
 RETURNING id;
 $end;
 SQL
@@ -110,19 +110,19 @@ fi
 kind="$(io_kind "$io")"
 [[ -n "$kind" ]] || fail "No IO row matches: $io"
 tbl="task_${kind}s"
-tid="$(psql_ro -t -A -c "SELECT task_id FROM ikigaigm.$tbl WHERE id='${io//\'/\'\'}';")"
+tid="$(psql_ro -t -A -c "SELECT task_id FROM $tbl WHERE id='${io//\'/\'\'}';")"
 
 # ── DELETE ───────────────────────────────────────────────────────────────────
 if [[ -n "$del" ]]; then
   if [[ "$kind" == "output" && -z "$cascade" ]]; then
-    nc="$(psql_ro -t -A -c "SELECT count(*) FROM ikigaigm.task_acceptance_criteria WHERE output_id='${io//\'/\'\'}';")"
+    nc="$(psql_ro -t -A -c "SELECT count(*) FROM task_acceptance_criteria WHERE output_id='${io//\'/\'\'}';")"
     [[ "${nc:-0}" -gt 0 ]] && fail "Output has $nc acceptance criterion(s); pass --cascade to delete them too."
   fi
   rw -v io="$io" <<SQL
 BEGIN;
 \echo '--- before ---'
-SELECT id, title FROM ikigaigm.$tbl WHERE id=:'io';
-DELETE FROM ikigaigm.$tbl WHERE id=:'io';
+SELECT id, title FROM $tbl WHERE id=:'io';
+DELETE FROM $tbl WHERE id=:'io';
 $end;
 SQL
   if is_json; then
@@ -180,16 +180,16 @@ fi
 
 setclause="$(IFS=,; echo "${sets[*]}")"
 detail="SELECT i.id, i.title, it.display_name AS io_type, at.display_name AS artifact, i.is_required
-  FROM ikigaigm.$tbl i
-  LEFT JOIN ikigaigm.io_types it ON it.id=i.io_type_id
-  LEFT JOIN ikigaigm.artifact_types at ON at.id=i.artifact_type_id
+  FROM $tbl i
+  LEFT JOIN io_types it ON it.id=i.io_type_id
+  LEFT JOIN artifact_types at ON at.id=i.artifact_type_id
   WHERE i.id=:'io'"
 
 rw "${vargs[@]}" -v io="$io" <<SQL
 BEGIN;
 \echo '--- before ---'
 $detail;
-UPDATE ikigaigm.$tbl SET $setclause, updated_at = now() WHERE id=:'io';
+UPDATE $tbl SET $setclause, updated_at = now() WHERE id=:'io';
 \echo '--- after ---'
 $detail;
 $end;

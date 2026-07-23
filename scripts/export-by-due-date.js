@@ -13,14 +13,14 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { fetchTasks, today, REPO_ROOT } = require("./lib/db");
+const { fetchTasks, today, REPO_ROOT, SCHEMA } = require("./lib/db");
 const { dayDiff, relLabel, isOpen, byPriorityThenTitle, buildDoc } = require("./lib/render");
 
 function main() {
   const outDir =
     process.argv[2] || path.join(REPO_ROOT, "backups", "tasks-by-due-date");
   const td = today();
-  const gen = `Generated for ${td} from live DB (ikigaigm schema)`;
+  const gen = `Generated for ${td} from live DB (${SCHEMA} schema)`;
   const taskOpts = { showDue: false, showRoles: true };
 
   // Only dated tasks land in these views.

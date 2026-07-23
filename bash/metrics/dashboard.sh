@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Financial KPI dashboard for one project over a date range (cash-collected
 # model). Emits the full set of KPIs the cards view renders. Read-only,
-# scoped to ikigaigm, dates evaluated in America/Bogota.
+# scoped to the org schema (search_path), dates evaluated in the org tz.
 #
-# Usage:  dashboard.sh [--project NAME] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--json]
-#   defaults: --project "David Guerrero", current calendar month.
+# Usage:  dashboard.sh --project NAME [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--json]
+#   --project es OBLIGATORIO (el núcleo no presupone ningún proyecto);
+#   defaults de fechas: el mes calendario en curso.
 #
 # KPIs (see docs): ingresos brutos = cuotas pagadas en el período (1ª + ≥2);
 # venta_programas = valor de contrato de planes iniciados; pauta = ad spend;
@@ -12,7 +13,7 @@
 set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 
-project="David Guerrero"
+project=""
 from="$(TZ="$TZ_DEFAULT" date +%Y-%m-01)"
 # último día del mes sin `date -d` (GNU-only; los copilotos corren en cualquier OS)
 _y="$(TZ="$TZ_DEFAULT" date +%Y)" _m="$(TZ="$TZ_DEFAULT" date +%m)"
@@ -34,6 +35,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+[[ -n "$project" ]] || { echo "Falta --project NAME (el núcleo no presupone ningún proyecto)" >&2; exit 2; }
 pid="$(resolve_project "$project")"
 [[ -n "$pid" ]] || { echo "No project matched: $project" >&2; exit 1; }
 
@@ -45,8 +47,8 @@ WITH params AS (
 ),
 inst AS (   -- installments collected (cash) in the period, for this project
   SELECT i.installment_number AS n, i.paid_amount AS amt
-  FROM ikigaigm.installments i
-  JOIN ikigaigm.payment_plans pp ON pp.plan_id = i.plan_id
+  FROM installments i
+  JOIN payment_plans pp ON pp.plan_id = i.plan_id
   JOIN params ON pp.project_id = params.pid
   WHERE i.payment_date IS NOT NULL
     AND i.payment_date::date BETWEEN params.d1 AND params.d2
@@ -61,43 +63,43 @@ agg_inst AS (
 ),
 ventaprog AS (   -- bookings: contract value of plans started in the period
   SELECT coalesce(sum(pp.original_amount), 0) AS venta_programas
-  FROM ikigaigm.payment_plans pp JOIN params ON pp.project_id = params.pid
+  FROM payment_plans pp JOIN params ON pp.project_id = params.pid
   WHERE pp.start_date BETWEEN params.d1 AND params.d2
 ),
 pauta AS (   -- ad spend + Meta-reported purchase value (via ad-account mapping)
   SELECT coalesce(sum(a.spend), 0)          AS pauta,
          coalesce(sum(a.purchase_value), 0) AS purchase_value
-  FROM ikigaigm.ad_insights_daily a
-  JOIN ikigaigm.project_ad_account_mappings map ON map.ad_account_id = a.ad_account_id
+  FROM ad_insights_daily a
+  JOIN project_ad_account_mappings map ON map.ad_account_id = a.ad_account_id
   JOIN params ON map.project_id = params.pid
   WHERE a.date_start BETWEEN params.d1 AND params.d2
 ),
 comis AS (   -- closing commissions tied to installments collected in the period
   SELECT coalesce(sum(cp.payout_amount_base), 0) AS comisiones
-  FROM ikigaigm.commission_payouts cp
-  JOIN ikigaigm.installments i ON i.installment_id = cp.installment_id
+  FROM commission_payouts cp
+  JOIN installments i ON i.installment_id = cp.installment_id
   JOIN params ON cp.project_id = params.pid
   WHERE i.payment_date::date BETWEEN params.d1 AND params.d2
 ),
 gastos AS (
   SELECT coalesce(sum(e.amount_base), 0) AS gastos
-  FROM ikigaigm.expenses e JOIN params ON e.project_id = params.pid
+  FROM expenses e JOIN params ON e.project_id = params.pid
   WHERE e.expense_date BETWEEN params.d1 AND params.d2
 ),
 leads AS (
   SELECT count(*) AS leads
-  FROM ikigaigm.crm_opportunities o JOIN params ON o.project_id = params.pid
+  FROM crm_opportunities o JOIN params ON o.project_id = params.pid
   WHERE o.created_date::date BETWEEN params.d1 AND params.d2
 ),
-shares AS (   -- revenue-share split active in the period (Ikigai vs project owner)
+shares AS (   -- revenue-share split active in the period (la org vs project owner)
   SELECT
-    coalesce(max(rsr.share_pct) FILTER (WHERE p.name ILIKE '%ikigai%'), 0)     AS ikigai_share,
-    coalesce(max(rsr.share_pct) FILTER (WHERE p.name NOT ILIKE '%ikigai%'), 0) AS owner_share,
+    coalesce(max(rsr.share_pct) FILTER (WHERE :'orgname' <> '' AND p.name ILIKE '%'||:'orgname'||'%'), 0) AS org_share,
+    coalesce(max(rsr.share_pct) FILTER (WHERE NOT (:'orgname' <> '' AND p.name ILIKE '%'||:'orgname'||'%')), 0) AS owner_share,
     coalesce(max(trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')))
-             FILTER (WHERE p.name NOT ILIKE '%ikigai%'), 'Socio')              AS owner_name
-  FROM ikigaigm.revenue_share_rules rsr
-  LEFT JOIN ikigaigm.users u ON u.id = rsr.user_id
-  LEFT JOIN ikigaigm.persons p ON p.person_id = u.person_id
+             FILTER (WHERE NOT (:'orgname' <> '' AND p.name ILIKE '%'||:'orgname'||'%')), 'Socio') AS owner_name
+  FROM revenue_share_rules rsr
+  LEFT JOIN users u ON u.id = rsr.user_id
+  LEFT JOIN persons p ON p.person_id = u.person_id
   JOIN params ON rsr.project_id = params.pid
   WHERE rsr.effective_from <= params.d2
     AND (rsr.effective_to IS NULL OR rsr.effective_to >= params.d1)
@@ -129,7 +131,7 @@ m AS (
           / nullif(nuevas_amt + cuotas_amt, 0), 4)                              AS margen,
     -- reparto
     owner_name,
-    round((((nuevas_amt + cuotas_amt) - (comisiones + gastos) - pauta) * ikigai_share), 2) AS neto_ikigai,
+    round((((nuevas_amt + cuotas_amt) - (comisiones + gastos) - pauta) * org_share), 2) AS neto_org,
     round((((nuevas_amt + cuotas_amt) - (comisiones + gastos) - pauta) * owner_share), 2)  AS neto_owner,
     -- eficiencia de pauta
     round((nuevas_amt + cuotas_amt) / nullif(pauta, 0), 2)  AS roas,
@@ -143,8 +145,8 @@ SQL
 # NOTE: psql interpolates :'vars' only from a file/stdin, not from -c. Feed via stdin.
 if [[ "$FORMAT" == "json" ]]; then
   printf '%s\nSELECT row_to_json(m) FROM m;\n' "$BODY" \
-    | psql_ro -t -A -v proj="$pid" -v projname="$project" -v d1="$from" -v d2="$to"
+    | psql_ro -t -A -v proj="$pid" -v projname="$project" -v orgname="${ORG_NAME:-}" -v d1="$from" -v d2="$to"
 else
   printf '%s\nSELECT * FROM m;\n' "$BODY" \
-    | psql_ro -x -v proj="$pid" -v projname="$project" -v d1="$from" -v d2="$to"
+    | psql_ro -x -v proj="$pid" -v projname="$project" -v orgname="${ORG_NAME:-}" -v d1="$from" -v d2="$to"
 fi

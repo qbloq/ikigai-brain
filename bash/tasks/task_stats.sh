@@ -19,16 +19,16 @@ done
 filter="true"; [[ -n "$open" ]] && filter="$OPEN_PRED"
 
 case "$by" in
-  status)   emit "SELECT t.status::text AS status, count(*) AS tasks FROM ikigaigm.tasks t WHERE $filter GROUP BY 1 ORDER BY 2 DESC" ;;
-  priority) emit "SELECT t.priority::text AS priority, count(*) AS tasks FROM ikigaigm.tasks t WHERE $filter GROUP BY 1 ORDER BY 2 DESC" ;;
+  status)   emit "SELECT t.status::text AS status, count(*) AS tasks FROM tasks t WHERE $filter GROUP BY 1 ORDER BY 2 DESC" ;;
+  priority) emit "SELECT t.priority::text AS priority, count(*) AS tasks FROM tasks t WHERE $filter GROUP BY 1 ORDER BY 2 DESC" ;;
   project)  emit "SELECT coalesce(pr.name,'(none)') AS project, count(*) AS tasks
-              FROM ikigaigm.tasks t LEFT JOIN ikigaigm.projects pr ON pr.id=t.project_id
+              FROM tasks t LEFT JOIN projects pr ON pr.id=t.project_id
               WHERE $filter GROUP BY 1 ORDER BY 2 DESC" ;;
   assignee) emit "SELECT trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')) AS assignee, count(*) AS tasks
-              FROM ikigaigm.tasks t, unnest(t.assignee) aid
-              JOIN ikigaigm.team_members tm ON tm.id=aid
-              LEFT JOIN ikigaigm.users u ON u.id=tm.user_id
-              LEFT JOIN ikigaigm.persons p ON p.person_id=u.person_id
+              FROM tasks t, unnest(t.assignee) aid
+              JOIN team_members tm ON tm.id=aid
+              LEFT JOIN users u ON u.id=tm.user_id
+              LEFT JOIN persons p ON p.person_id=u.person_id
               WHERE $filter GROUP BY 1 ORDER BY 2 DESC" ;;
   *) echo "Unknown --by: $by (use status|priority|project|assignee)" >&2; exit 2 ;;
 esac

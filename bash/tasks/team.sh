@@ -22,10 +22,10 @@ emit "SELECT left(tm.id::text,8) AS member_id,
        trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')) AS name,
        tr.name AS role, tm_team.name AS team,
        coalesce(u.email, p.email) AS email, tm.whatsapp
-FROM ikigaigm.team_members tm
-LEFT JOIN ikigaigm.teams tm_team ON tm_team.id=tm.team_id
-LEFT JOIN ikigaigm.team_roles tr ON tr.id=tm.role_id
-LEFT JOIN ikigaigm.users u ON u.id=tm.user_id
-LEFT JOIN ikigaigm.persons p ON p.person_id=u.person_id
+FROM team_members tm
+LEFT JOIN teams tm_team ON tm_team.id=tm.team_id
+LEFT JOIN team_roles tr ON tr.id=tm.role_id
+LEFT JOIN users u ON u.id=tm.user_id
+LEFT JOIN persons p ON p.person_id=u.person_id
 WHERE $where
 ORDER BY team, name"

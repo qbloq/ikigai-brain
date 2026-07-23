@@ -36,8 +36,8 @@ where="m.meeting_type='team'"
 [[ -n "$status" ]] && where="$where AND m.status = '$(esc "$status")'"
 [[ -n "$from" ]]   && where="$where AND m.scheduled_start_time::date >= '${from//\'/}'"
 [[ -n "$to" ]]     && where="$where AND m.scheduled_start_time::date <= '${to//\'/}'"
-[[ -n "$hasrep" ]] && where="$where AND EXISTS (SELECT 1 FROM ikigaigm.meeting_reports r WHERE r.meeting_id=m.id)"
-[[ -n "$hastr" ]]  && where="$where AND EXISTS (SELECT 1 FROM ikigaigm.meeting_transcripts x WHERE x.meeting_id=m.id)"
+[[ -n "$hasrep" ]] && where="$where AND EXISTS (SELECT 1 FROM meeting_reports r WHERE r.meeting_id=m.id)"
+[[ -n "$hastr" ]]  && where="$where AND EXISTS (SELECT 1 FROM meeting_transcripts x WHERE x.meeting_id=m.id)"
 if [[ -n "$project" ]]; then
   pid="$(resolve_project "$project")"
   [[ -z "$pid" ]] && { echo "No project matches: $project" >&2; exit 1; }
@@ -51,11 +51,11 @@ emit "SELECT left(m.id::text,8) AS id,
   to_char(m.scheduled_start_time,'YYYY-MM-DD HH24:MI') AS start,
   m.status,
   coalesce(pr.name,'—') AS project,
-  CASE WHEN EXISTS (SELECT 1 FROM ikigaigm.meeting_reports r WHERE r.meeting_id=m.id) THEN 'Y' ELSE '' END AS rep,
-  CASE WHEN EXISTS (SELECT 1 FROM ikigaigm.meeting_transcripts x WHERE x.meeting_id=m.id) THEN 'Y' ELSE '' END AS tr,
+  CASE WHEN EXISTS (SELECT 1 FROM meeting_reports r WHERE r.meeting_id=m.id) THEN 'Y' ELSE '' END AS rep,
+  CASE WHEN EXISTS (SELECT 1 FROM meeting_transcripts x WHERE x.meeting_id=m.id) THEN 'Y' ELSE '' END AS tr,
   m.name
-FROM ikigaigm.meetings m
-LEFT JOIN ikigaigm.projects pr ON pr.id=m.project_id
+FROM meetings m
+LEFT JOIN projects pr ON pr.id=m.project_id
 WHERE $where
 ORDER BY m.scheduled_start_time DESC NULLS LAST
 $lim"

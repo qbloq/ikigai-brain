@@ -33,7 +33,7 @@ done
 
 # Resolve task
 task_arg="${task_arg//\'/}"
-tid="$(psql_ro -t -A -c "SELECT id FROM ikigaigm.tasks WHERE id::text LIKE '${task_arg}%' LIMIT 2;")"
+tid="$(psql_ro -t -A -c "SELECT id FROM tasks WHERE id::text LIKE '${task_arg}%' LIMIT 2;")"
 [[ -z "$tid" ]] && { echo "No task matches: $task_arg" >&2; exit 1; }
 [[ "$(printf '%s\n' "$tid" | grep -c .)" -gt 1 ]] && { echo "Task prefix '$task_arg' is ambiguous." >&2; exit 1; }
 
@@ -67,7 +67,7 @@ esac
 
 # Resolved-names view of a task's assignees, for before/after.
 show_sql="SELECT $ASSIGNEES_SQL AS assignees, $ROLES_SQL AS roles
-          FROM ikigaigm.tasks t WHERE t.id='$tid'"
+          FROM tasks t WHERE t.id='$tid'"
 
 end="COMMIT"; [[ -n "$dry" ]] && end="ROLLBACK"
 
@@ -75,7 +75,7 @@ psql_rw <<SQL
 BEGIN;
 \echo '--- BEFORE ---'
 $show_sql;
-UPDATE ikigaigm.tasks SET assignee = $expr, updated_at = now() WHERE id = '$tid';
+UPDATE tasks SET assignee = $expr, updated_at = now() WHERE id = '$tid';
 \echo '--- AFTER ---'
 $show_sql;
 $end;

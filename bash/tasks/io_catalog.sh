@@ -16,10 +16,10 @@ SELECT json_build_object(
        'id', it.id, 'name', it.name, 'display_name', it.display_name,
        'category', it.category, 'default_artifact_type_id', it.default_artifact_type_id)
        ORDER BY it.category, it.display_name)
-     FROM ikigaigm.io_types it), '[]'::json),
+     FROM io_types it), '[]'::json),
   'artifact_types', coalesce((SELECT json_agg(json_build_object(
        'id', at.id, 'name', at.name, 'display_name', at.display_name,
        'category', at.category)
        ORDER BY at.category, at.display_name)
-     FROM ikigaigm.artifact_types at), '[]'::json)
+     FROM artifact_types at), '[]'::json)
 );"

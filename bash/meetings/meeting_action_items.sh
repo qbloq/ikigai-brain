@@ -41,8 +41,8 @@ emit "SELECT to_char(m.scheduled_start_time,'YYYY-MM-DD') AS date,
   (SELECT string_agg(x,', ') FROM jsonb_array_elements_text(ai->'assignedTo') x) AS assigned_to,
   ai->>'dueDate' AS due,
   ai->>'task' AS task
-FROM ikigaigm.meetings m
-JOIN ikigaigm.meeting_reports mr ON mr.meeting_id=m.id
+FROM meetings m
+JOIN meeting_reports mr ON mr.meeting_id=m.id
 CROSS JOIN LATERAL jsonb_array_elements(mr.report->'actionItems') ai
 WHERE $where
 ORDER BY m.scheduled_start_time DESC

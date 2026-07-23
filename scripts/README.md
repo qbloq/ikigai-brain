@@ -1,9 +1,7 @@
 # Export scripts
 
-## Snapshot exports
-
 Regenerate the snapshots under [`backups/`](../backups/) from the live database.
-Each script reads `DATABASE_URL` from `.env` and queries the `ikigaigm` schema
+Each script reads `DATABASE_URL` from `.env` and queries the schema set in `DB_SCHEMA`
 **read-only**, in `America/Bogota` time — the same connection policy as the
 `bash/` toolkit. The universe is every *open* task (not completed/cancelled).
 
@@ -22,8 +20,8 @@ single project. Output goes to a per-project subdir
 `backups/tasks-by-role/<project-slug>/`, leaving the global export untouched:
 
 ```
-node scripts/export-by-role.js --project "David Guerrero"
-# → backups/tasks-by-role/david-guerrero/
+node scripts/export-by-role.js --project "<proyecto>"
+# → backups/tasks-by-role/<proyecto-slug>/
 ```
 
 `backups/` is git-ignored — these are regenerable snapshots, not source.
