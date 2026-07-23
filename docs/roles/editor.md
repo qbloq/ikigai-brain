@@ -1,7 +1,7 @@
 # Rol: Editor
 
 **Quiénes:** Tony Vidal (copiloto `tony-vidal`)
-**Capa de rol (viz):** `viz/specs/roles/editor/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/editor/` — aún no creada
 **Tareas históricas:** 37 asignadas · 37 etiquetadas con arquetipo · 13 abiertas hoy
 
 **Misión.** Convierte material crudo en assets publicables: edición de audio/video de anuncios (3 hooks → ~30 variaciones, S2.2) y edición de testimonios y refresh de VSL (S5/S1).

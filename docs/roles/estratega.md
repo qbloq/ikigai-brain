@@ -1,7 +1,7 @@
 # Rol: Estratega
 
 **Quiénes:** David Castaño (copiloto `david-castano`)
-**Capa de rol (viz):** `viz/specs/roles/estratega/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/estratega/` — aún no creada
 **Tareas históricas:** 19 asignadas · 19 etiquetadas con arquetipo · 11 abiertas hoy
 
 **Misión.** Estructura las campañas: produce creativos por lotes (~14 reels/ciclo, S2), estructura y optimiza paid media (S3) e investiga audiencias e ingeniería inversa de conversiones (S8).

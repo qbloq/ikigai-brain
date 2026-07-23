@@ -1,7 +1,7 @@
 # Rol: Project Manager
 
 **Quiénes:** Marisol Ochoa (copiloto `marisol-ochoa`)
-**Capa de rol (viz):** `viz/specs/roles/project-manager/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/project-manager/` — aún no creada
 **Tareas históricas:** 98 asignadas · 96 etiquetadas con arquetipo · 26 abiertas hoy
 
 **Misión.** El hub de coordinación de la agencia: gobernanza de tareas (S10 — actas → tableros → seguimiento) y el pastoreo de las líneas de producción (creativos, testimonios, lanzamientos).

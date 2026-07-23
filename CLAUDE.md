@@ -164,7 +164,7 @@ value IS real. Closer resolves via `o.user_id`→users→persons.
 | `pipeline.sh [--by stage\|status\|month\|closer] [--list] [--project N] [--status S] [--stage FRAG] [--from D] [--to D] [--limit N]` | Default `--by stage`: the pipeline board in order with open/won/lost/abandoned counts + won value per stage. `--by month` = cohorts (created, won, win %, won value). `--by closer` = per-closer effectiveness by opp (complements `call_stats.sh`, which is per-call). `--list` = raw opportunity rows (lead, stage, status, value, assigned). |
 
 Viz source: `crm_pipeline`. The **Ejecutivo role layer**
-([viz/specs/roles/ejecutivo/](viz/specs/roles/ejecutivo/), 9 UIs) covers all
+([.viz/specs/roles/ejecutivo/](.viz/specs/roles/ejecutivo/), 9 UIs) covers all
 three domains: portafolio, pauta (campañas + line chart de gasto diario),
 cobranza (vencidas + aging), comisiones (cola de aprobación), cashflow y
 pipeline CRM (tablero + donut por estado).
@@ -359,7 +359,7 @@ CLAUDE.md stays byte-identical across brain and forks — it composes identity
 via `@identidad.md`, never by assembling a per-fork copy. The viz store loads
 ONLY that role's spec layer and stamps `owner`/`role` on everything created.
 The brain (no copilot.json) sees org + all roles.
-Everything a copilot writes lands in `viz/specs/local/` and auto-commits —
+Everything a copilot writes lands in `.viz/specs/local/` and auto-commits —
 git IS the telemetry; structure is observed, content never. Structural
 changes propose themselves by push; governance reviews and, when approved,
 promotes a spec into `org/` or `roles/<rol>/` with `promoted_from` lineage.
@@ -372,7 +372,7 @@ Regenerate the `backups/` snapshots from the live DB (read-only, open tasks).
 `npm run export` runs all three; or `export:json` / `export:by-role` /
 `export:by-due-date` individually. See [scripts/README.md](scripts/README.md).
 
-## On-demand UIs — viz server ([viz/](viz/))
+## On-demand UIs — viz server ([.viz/](.viz/))
 
 When the user asks to **"crear una UI"** (a table/dashboard/visualization), this
 is the system to use — **do not** hand-write a one-off HTML file. A "UI" is a
@@ -382,30 +382,30 @@ TailwindCSS (Play CDN) + **Datastar 1.0** (vendored) over **SSE**.
 
 ```bash
 npm run viz                 # http://localhost:4317   (PORT=… overrides)
-npm run viz:restart         # REQUIRED after editing viz/ (Node caches modules)
+npm run viz:restart         # REQUIRED after editing .viz/ (Node caches modules)
 ```
 
 - **Data only flows through `bash/ --json`** — same read-only policy as
   everything else. The whitelist of sources + their CLI flags is `SOURCES` in
-  [viz/lib/datasources.js](viz/lib/datasources.js); each domain section above
+  [.viz/lib/datasources.js](.viz/lib/datasources.js); each domain section above
   names its viz sources. **Never** add SQL to the viz — the one write path (the
   IO editor) also shells out to a whitelisted bash script.
-- **The spec store is LAYERED** ([viz/lib/store.js](viz/lib/store.js)):
-  `viz/specs/org/` (shared genome, in git — seeds live here) →
+- **The spec store is LAYERED** ([.viz/lib/store.js](.viz/lib/store.js)):
+  `.viz/specs/org/` (shared genome, in git — seeds live here) →
   `roles/<rol>/` → `local/` (the ONLY writable layer). Editing/archiving an
   org/role spec forks it into local with `derived_from` lineage; every local
   write auto-commits (`Delta-Type`/`Delta-Scope` trailers) — git is the delta
   event log. Programmatically: `store.create({name, component, source, params})`.
 - Render code is layered as the **composition tower**
   ([docs/deltas-architecture.md](docs/deltas-architecture.md)): kernel
-  [viz/lib/kit.js](viz/lib/kit.js) → blocks → patterns (`master-detail`) →
+  [.viz/lib/kit.js](.viz/lib/kit.js) → blocks → patterns (`master-detail`) →
   pages (one per `ui.component`); a saved spec can also be v2 pattern-addressed.
   Components: `table`, `dashboard`, `chart` (bar/donut), `sop-tree`, `localdb`,
   `notion-tasks`, `tasks`, `meetings`, `task-editor` (the IO editor — the viz's
   only write path).
 
 **Operating rules** (Datastar colon syntax, caching policy, manifest contracts,
-required loaders, store details) live in [viz/CLAUDE.md](viz/CLAUDE.md) —
-auto-loaded when working under `viz/`. Architecture narrative + component
-catalog: [viz/README.md](viz/README.md).
+required loaders, store details) live in [.viz/CLAUDE.md](.viz/CLAUDE.md) —
+auto-loaded when working under `.viz/`. Architecture narrative + component
+catalog: [.viz/README.md](.viz/README.md).
 

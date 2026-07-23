@@ -9,8 +9,8 @@
     "export:json": "node scripts/export-tasks-json.js",
     "export:by-role": "node scripts/export-by-role.js",
     "export:by-due-date": "node scripts/export-by-due-date.js",
-    "viz": "node viz/server.js",
-    "viz:restart": "bash viz/restart.sh",
+    "viz": "node .viz/server.js",
+    "viz:restart": "bash .viz/restart.sh",
     "viz:stop": "fuser -k ${PORT:-4317}/tcp 2>/dev/null || true"
   },
   "author": "",

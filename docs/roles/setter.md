@@ -1,7 +1,7 @@
 # Rol: Setter
 
 **Quiénes:** Mateo Restrepo (copiloto `mateo-restrepo`)
-**Capa de rol (viz):** `viz/specs/roles/setter/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/setter/` — aún no creada
 **Tareas históricas:** 0 asignadas · 0 etiquetadas con arquetipo · 0 abiertas hoy
 
 **Misión.** Agendamiento diario desde orgánico (≥1 llamada/día) y operación del chat (ManyChat) — la boca del embudo de calificación (S6).

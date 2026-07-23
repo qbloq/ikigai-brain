@@ -9,7 +9,7 @@
 > Corte de datos: 2026-07-12 — 329 tareas, 323 etiquetadas (98%), 21 sin asignar.
 
 Cada rol es también la identidad de una **capa de copiloto**
-(`copilot.json.role` → `viz/specs/roles/<slug>/`): este doc es el insumo
+(`copilot.json.role` → `.viz/specs/roles/<slug>/`): este doc es el insumo
 para craftear qué ve y qué opera cada copiloto.
 
 ## Los 12 roles (19 copilotos)

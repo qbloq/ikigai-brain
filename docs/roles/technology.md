@@ -1,7 +1,7 @@
 # Rol: Technology
 
 **Quiénes:** Angelica Ospina (copiloto `angelica-ospina`) · Juan Sebastián Martínez (copiloto `juan-sebastian-martinez`) · Pablo Gaviria (copiloto `pablo-gaviria`)
-**Capa de rol (viz):** `viz/specs/roles/technology/` — aún no creada
+**Capa de rol (viz):** `.viz/specs/roles/technology/` — aún no creada
 **Tareas históricas:** 20 asignadas · 19 etiquetadas con arquetipo · 2 abiertas hoy
 
 **Misión.** La fuente de verdad técnica: consolidación de métricas y alineación de fuentes (Paralelo, S8), plataforma VSL (Biturbo↔GHL, S7), tracking de origen de ventas, pagos y comisiones (Stripe), y herramientas de IA/reporting.

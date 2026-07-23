@@ -1,6 +1,6 @@
 # viz — operating rules
 
-Rules Claude must follow when editing anything under `viz/`. The architecture
+Rules Claude must follow when editing anything under `.viz/`. The architecture
 narrative (file map, routes, composition tower, component catalog) lives in
 [README.md](README.md); the root CLAUDE.md has the one-paragraph overview.
 
@@ -23,7 +23,7 @@ narrative (file map, routes, composition tower, component catalog) lives in
 
 ## Gotchas
 
-- **Restart after editing `viz/`** — Node caches required modules:
+- **Restart after editing `.viz/`** — Node caches required modules:
   `npm run viz:restart` (or `viz:stop`) after any change (new source, component,
   cache TTL). The registry ([lib/components.js](lib/components.js)) scans
   `pages/` + `blocks/` + `patterns/` at startup into one flat namespace
