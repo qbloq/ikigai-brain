@@ -183,7 +183,7 @@ function degradeCard(ui, errors) {
       <p class="text-sm font-semibold text-amber-800 mb-1">Esta UI requiere actualizar el núcleo</p>
       <p class="text-xs text-amber-700 mb-3">«${escape(ui.name)}» no se puede renderizar con los componentes de este fork:</p>
       <ul class="list-disc list-inside text-xs text-amber-700 space-y-0.5">${errors.map((e) => `<li>${escape(e)}</li>`).join("")}</ul>
-      <p class="text-[11px] text-amber-600 mt-3 font-mono">git pull upstream — o corrige la spec (component: «${escape(ui.component || "")}»).</p>
+      <p class="text-[11px] text-amber-600 mt-3 font-mono">git pull — o corrige la spec (component: «${escape(ui.component || "")}»).</p>
     </div>
   </section>`;
 }
