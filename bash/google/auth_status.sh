@@ -22,7 +22,8 @@ done
 alcanza=false probe="" n=""
 if out="$(mapi GET "/drive/index/stats" 2>/dev/null)"; then
   alcanza=true probe="index/stats"
-  n="$(printf '%s' "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("total", len(d) if isinstance(d, list) else "")) ' 2>/dev/null || true)"
+  # stats = [{type, count, total_size}…] → total de archivos indexados
+  n="$(printf '%s' "$out" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(sum(t.get("count",0) for t in d) if isinstance(d, list) else d.get("total",""))' 2>/dev/null || true)"
 elif out="$(mapi GET "/drive/contents" 2>/dev/null)"; then
   alcanza=true probe="contents (raíz live)"
   n="$(printf '%s' "$out" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' 2>/dev/null || true)"
