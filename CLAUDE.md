@@ -44,6 +44,7 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 | `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. **Provenance:** `source_meeting` (id/prefix→FK), `source_url`/`source_external_id` (Notion), `source_type` (auto-inferred) populate the tasks provenance columns. See `-h`. |
 | `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. |
 | `cancel_task.sh <id> [--into <id>] [--reason "…"]` **[WRITE]** | Cancel a task (`status='cancelled'`), optionally recording a merge into another (`--into`) with an auditable comment trail on both. Nothing is deleted. `--dry-run` to preview. Use for dedup/merges (e.g. cross-project duplicates the per-project dedup misses). |
+| `complete_task.sh <id> [<id>…] [--at YYYY-MM-DD] [--note "…"] [--author N]` **[WRITE]** | Mark tasks DONE (`status='completed'` + `is_completed`), with a comment trail. The twin of `cancel_task.sh` — **do not confuse them**: `completed` = the work happened, `cancelled` = it never will; mixing them corrupts every compliance metric. **`--at` is what makes it honest**: without it the migration-003 trigger seals `completed_at` with `now()`, which lies for anything executed weeks ago (an explicit value survives the trigger). Already-completed tasks are skipped, not rewritten — re-running never moves a date or duplicates a comment. `--dry-run` to preview. |
 
 **Skill — IO review session:**
 - `revisar-tarea-io` ([.claude/skills/revisar-tarea-io/](.claude/skills/revisar-tarea-io/SKILL.md)):
@@ -55,6 +56,14 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 ### Tasks data model (schema `ikigaigm`)
 
 - **tasks** — core. `status` enum (`pending`,`in_progress`,`completed`,`blocked`,`cancelled`), `priority` enum (`Low`,`Medium`,`High`), `due_date`, `assignee` is `uuid[]`, `project_id`, `column_id`, `is_completed`.
+- **completion instant** (migration 003): `tasks.completed_at`, sealed by trigger
+  on the *transition* into completed and cleared if the task is reopened; an
+  explicitly supplied value is never overwritten. It exists because neither
+  `created_at` (294 tasks share the Notion-import date) nor `updated_at` (two
+  bulk-sync stamps) can measure rhythm. **Deliberately not backfilled** — every
+  rhythm metric is defined over `completed_at IS NOT NULL` only, so the series
+  starts 2026-07-27 instead of inventing a past. Written by `complete_task.sh`.
+  Schema: `catalog/migrations/003_task_completed_at.sql`.
 - **task provenance** (migration 002): `source_type` (`meeting`|`notion`|`manual`|`other`), `source_meeting_id` (FK→meetings), `source_url` (external URL, e.g. Notion page — preferred), `source_external_id` (external stable id, e.g. Notion page id — for dedup/sync). Populated by `create_task.sh` (structured twin of the human provenance comment). Schema: `catalog/migrations/002_task_provenance.sql`.
 - **assignee resolution**: `tasks.assignee[]` → `team_members.id` → `users.user_id` → `persons` (name); role via `team_roles`, team via `teams`. (Note: assignee UUIDs are team_members.id, **not** users.id.)
 - **task_inputs** / **task_outputs** — requirements and deliverables; typed by `io_types` / `artifact_types`.
