@@ -26,6 +26,28 @@ node scripts/export-by-role.js --project "<proyecto>"
 
 `backups/` is git-ignored — these are regenerable snapshots, not source.
 
+## Backfill del CRM **[WRITE]**
+
+`backfill-ghl.js` es la excepción a todo lo anterior: **escribe** en la base, y
+no exporta nada. Rellena las oportunidades y los contactos que existen en GHL y
+el ingestor externo nunca trajo (pagina de a 100 por corrida y se dispara a
+mano, así que cada silencio largo deja un hueco).
+
+```bash
+node scripts/backfill-ghl.js --dry-run      # ver qué entraría, con ROLLBACK
+node scripts/backfill-ghl.js                # ventana por defecto: últimos 4 meses
+```
+
+Garantías, las mismas de los scripts WRITE de `bash/`: una sola transacción,
+antes/después impreso, `ON CONFLICT DO NOTHING` (correrlo dos veces no
+duplica), nunca UPDATE ni DELETE. Se niega a correr dentro de un fork copiloto:
+lee los tokens de GHL de `project_crm_configs`, que son del cerebro.
+
+Por defecto solo toca los pipelines ya espejados en `crm_pipelines` y los
+contactos ligados a las oportunidades que inserta; `--pipelines all` y
+`--contacts all` amplían el alcance. Diagnóstico previo con
+[`bash/ghl/gap.sh`](../bash/ghl/README.md).
+
 ## Layout
 
 - `lib/db.js` — loads `.env`, runs read-only `psql`, and `fetchTasks()` returns
