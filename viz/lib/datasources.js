@@ -29,6 +29,46 @@ const SOURCES = {
       due: "--due",
       limit: "--limit",
       open: { flag: "--open", bool: true },
+      // Filtros de drill-down: los emite la torre de control del PM como enlace
+      // (una tarjeta de KPI aterriza exactamente en las filas que contó).
+      stale: "--stale",
+      macro: "--macro",
+      closed: "--closed",
+      no_due: { flag: "--no-due", bool: true },
+      sin_arquetipo: { flag: "--sin-arquetipo", bool: true },
+      sin_outputs: { flag: "--sin-outputs", bool: true },
+    },
+  },
+  task_health: {
+    label: "Salud de tareas (torre PM)",
+    script: "bash/tasks/task_health.sh",
+    emits: "object",
+    args: { project: "--project", stale: "--stale" },
+  },
+  action_items_gap: {
+    label: "Gap actas→tareas (S10)",
+    script: "bash/meetings/action_items_gap.sh",
+    emits: "rows",
+    args: {
+      days: "--days",
+      since: "--since",
+      project: "--project",
+      limit: "--limit",
+      pendientes: { flag: "--pendientes", bool: true },
+    },
+  },
+  tasks_by_role: {
+    label: "Tareas por rol",
+    script: "bash/tasks/tasks_by_role.sh",
+    emits: "rows",
+    args: {
+      role: "--role",
+      status: "--status",
+      priority: "--priority",
+      project: "--project",
+      due: "--due",
+      limit: "--limit",
+      open: { flag: "--open", bool: true },
     },
   },
   tasks_due: {
@@ -259,6 +299,33 @@ const SOURCES = {
       to: "--to",
       limit: "--limit",
     },
+  },
+  // Oportunidades que nadie tomó: user_id NULL porque GHL no trae `assigned_to`
+  // (verificado contra la fuente — no es un fallo de mapeo). Trae el contacto
+  // pegado, que es lo que permite repartirlas o rastrear por dónde entraron.
+  crm_sin_dueno: {
+    label: "Leads sin dueño",
+    script: "bash/crm/sin_dueno.sh",
+    emits: "rows",
+    args: {
+      project: "--project",
+      status: "--status",
+      stage: "--stage",
+      from: "--from",
+      to: "--to",
+      limit: "--limit",
+      con_contacto: { flag: "--con-contacto", bool: true },
+      sin_contacto: { flag: "--sin-contacto", bool: true },
+    },
+  },
+  // Una oportunidad + su contacto como un objeto: incluye los custom_fields de
+  // GHL ya resueltos contra crm_custom_fields (el survey de calificación que
+  // respondió el lead + las utm_* de atribución).
+  crm_opp_detail: {
+    label: "Detalle de oportunidad",
+    script: "bash/crm/opp_detail.sh",
+    emits: "object",
+    args: { id: { positional: true } },
   },
   // --- Google Drive / Docs / Sheets (bash/google/ — read-only) --------------
   // Auth is DB-borne (OAuth token in ikigaigm.identities, file-cached ~1h by
