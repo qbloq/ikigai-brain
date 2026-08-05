@@ -25,13 +25,15 @@ Uso: sin_dueno.sh [--project N] [--status S] [--stage FRAG] [--from D] [--to D]
   --status S       open | won | lost | abandoned
   --stage FRAG     fragmento del nombre de la etapa
   --from / --to    ventana sobre created_date (la fecha real de GHL)
+  --pagado         solo las que traen utm_* (llegaron por pauta)
+  --organico       solo las que NO traen utm_*
   --con-contacto   solo las que tienen contacto espejado
   --sin-contacto   solo las que NO lo tienen (el contacto nunca se ingirió)
   --limit N        default 200; 0 = sin tope
 EOF
 }
 
-PROJECT="" STATUS="" STAGE="" FROM="" TO="" LIMIT=200 CONTACT=""
+PROJECT="" STATUS="" STAGE="" FROM="" TO="" LIMIT=200 CONTACT="" PAGADO=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project) PROJECT="${2:?}"; shift 2 ;;
@@ -41,6 +43,8 @@ while [[ $# -gt 0 ]]; do
     --to) TO="${2:?}"; shift 2 ;;
     --con-contacto) CONTACT="si"; shift ;;
     --sin-contacto) CONTACT="no"; shift ;;
+    --pagado) PAGADO="si"; shift ;;
+    --organico) PAGADO="no"; shift ;;
     --limit) LIMIT="${2:?}"; shift 2 ;;
     --json) FORMAT=json; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -57,6 +61,8 @@ where="o.user_id IS NULL"
 [[ "$CONTACT" == "si" ]] && where="$where AND c.id IS NOT NULL"
 [[ "$CONTACT" == "no" ]] && where="$where AND c.id IS NULL"
 [[ -n "$STAGE"   ]] && where="$where AND st.name ILIKE '%$(esc "$STAGE")%'"
+[[ "$PAGADO" == "si" ]] && where="$where AND utm.src IS NOT NULL"
+[[ "$PAGADO" == "no" ]] && where="$where AND utm.src IS NULL"
 
 lim=""; [[ "$LIMIT" != "0" ]] && lim="LIMIT $((LIMIT))"
 
@@ -71,6 +77,11 @@ SELECT left(o.id::text,8)                                   AS id,
        coalesce(c.email,'—')                                AS email,
        coalesce(c.phone,'—')                                AS telefono,
        coalesce(array_to_string(c.tags,', '),'—')           AS tags,
+       -- Atribución: un lead con utm_* llegó por pauta, o sea que lo PAGAMOS.
+       -- Es la diferencia entre un lead sin dueño y plata quemada, así que
+       -- viaja como dato (origen + campaña), no como bandera.
+       coalesce(utm.src,'—')                                AS origen,
+       coalesce(utm.camp,'—')                               AS campana,
        pr.name                                              AS proyecto
 FROM crm_opportunities o
 JOIN projects pr        ON pr.id = o.project_id
@@ -79,6 +90,13 @@ LEFT JOIN crm_pipelines pl ON pl.id = o.pipeline_id
 LEFT JOIN LATERAL (
   SELECT s->>'name' AS name FROM jsonb_array_elements(pl.stages) s
   WHERE s->>'id' = o.ghl_stage_id LIMIT 1) st ON true
+LEFT JOIN LATERAL (
+  SELECT max(CASE WHEN cf.name = 'utm_source'   THEN nullif(x->>'value','') END) AS src,
+         max(CASE WHEN cf.name = 'utm_campaign' THEN nullif(x->>'value','') END) AS camp
+  FROM jsonb_array_elements(coalesce(c.custom_fields,'[]'::jsonb)) x
+  JOIN crm_custom_fields cf
+    ON cf.ghl_field_id = x->>'id' AND cf.project_id = o.project_id
+  WHERE cf.name IN ('utm_source','utm_campaign')) utm ON true
 WHERE $where
 ORDER BY o.created_date DESC NULLS LAST
 $lim"

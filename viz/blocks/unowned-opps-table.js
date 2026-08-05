@@ -2,10 +2,15 @@
 // que entraron al CRM y NADIE tomó (`crm_opportunities.user_id` NULL porque
 // GHL no trae `assigned_to`).
 //
-// La columna que importa es `dias`: un lead sin dueño no es un dato, es una
-// cuenta regresiva. Por eso la tabla ordena por antigüedad y la tiñe — a los
-// 7 días la conversación ya se enfrió, y esa señal tiene que ser visible sin
-// leer la fecha.
+// La vista existe para responder DE DÓNDE VIENEN. Un lead suelto se explica
+// por su procedencia, no por su ficha: si llegó por pauta lo pagamos, y un
+// lead pagado que nadie tomó es plata quemada — eso es lo que hay que ver
+// primero. Por eso la barra de origen encabeza la tabla y `origen`/`campaña`
+// van antes que cualquier dato del contacto.
+//
+// `dias` es el segundo eje: un lead sin dueño no es un dato, es una cuenta
+// regresiva. Ordena por antigüedad y la tiñe — a los 7 días la conversación ya
+// se enfrió, y esa señal tiene que verse sin leer la fecha.
 //
 // Contrato master, igual que calls-table: signals / regetQS / controls /
 // table(rows, wire) / counter.
@@ -15,25 +20,22 @@ const { escape, cell, selectCtl } = require("../lib/kit");
 
 const INDICATOR = "loadingsindueno";
 
-const STATUS_OPTS = [
-  ["", "Estado: todos"],
-  ["open", "Abierta"],
-  ["won", "Ganada"],
-  ["lost", "Perdida"],
-  ["abandoned", "Abandonada"],
-];
-
-// Email y teléfono NO están aquí a propósito: viven en el panel de detalle.
-// La lista es para barrer y decidir a quién mirar (qué tan viejo, quién, por
-// dónde entró); los datos de contacto solo hacen falta cuando ya elegiste uno,
-// y en la lista solo servían para desbordarse sobre la columna vecina.
+// La vista responde a UNA pregunta: de dónde vienen los leads que nadie tomó.
+// Por eso el eje son las tres señales de procedencia —origen pagado, campaña y
+// el formulario de entrada (tags)— y todo lo demás cede el sitio.
+//
+// Fuera quedaron, a propósito:
+//   · email y teléfono → están en el panel; aquí solo se desbordaban
+//   · estado           → es 'open' en las 237, no distingue nada
+//   · creada           → «días» dice lo mismo y se barre mejor; la fecha exacta
+//                        vive en el panel
 const COLS = [
   { k: "dias", l: "Días", w: "w-16", align: "text-center" },
-  { k: "creada", l: "Creada", w: "w-24", cls: "whitespace-nowrap" },
-  { k: "lead", l: "Lead", w: "w-[26%]" },
-  { k: "etapa", l: "Etapa", w: "w-44" },
-  { k: "estado", l: "Estado", w: "w-24" },
-  { k: "tags", l: "Canal (tags)" },
+  { k: "lead", l: "Lead", w: "w-[20%]" },
+  { k: "origen", l: "Origen", w: "w-28" },
+  { k: "campana", l: "Campaña", w: "w-[24%]" },
+  { k: "tags", l: "Formulario (tags)" },
+  { k: "etapa", l: "Etapa", w: "w-40" },
 ];
 
 // La antigüedad se lee como semáforo: fresco todavía se puede rescatar, viejo
@@ -46,10 +48,21 @@ function diasCell(d) {
   return `<span class="badge ${cls}" title="${n} días sin dueño">${n}d</span>`;
 }
 
-function estadoCell(v) {
-  const cls =
-    v === "won" ? "badge-pos" : v === "open" ? "bg-blue-100 text-blue-700" : v === "lost" ? "badge-neg" : "badge-neutral";
-  return `<span class="badge ${cls}">${escape(v || "—")}</span>`;
+// Un lead con utm_source llegó por pauta: lo pagamos y nadie lo tomó. Eso pesa
+// distinto que un orgánico sin dueño, así que se distingue de un vistazo —
+// violeta (familia de marca) para lo pagado, neutro apagado para lo orgánico.
+function origenCell(v, r) {
+  if (!v || v === "—")
+    return '<span class="badge badge-neutral opacity-60" title="Sin utm_* — no llegó por pauta">orgánico</span>';
+  const t = r && r.campana && r.campana !== "—" ? `Meta Ads · ${r.campana}` : "Meta Ads";
+  return `<span class="badge bg-violet-100 text-violet-700" title="${escape(t)}">${escape(v)}</span>`;
+}
+
+// El nombre de campaña es un slug largo (006_DC_TRAFICO_FRIO_OVERLAY) sin
+// espacios: trunca con el valor completo en el title, igual que hacía el email.
+function campanaCell(v) {
+  if (!v || v === "—") return '<span class="text-slate-300">—</span>';
+  return `<span class="block truncate text-xs font-mono text-slate-600" title="${escape(v)}">${escape(v)}</span>`;
 }
 
 // Los tags de GHL son la única huella del formulario por el que entró el lead
@@ -68,7 +81,8 @@ function tagsCell(v) {
 
 function bodyCell(col, r) {
   if (col === "dias") return diasCell(r[col]);
-  if (col === "estado") return estadoCell(r[col]);
+  if (col === "origen") return origenCell(r[col], r);
+  if (col === "campana") return campanaCell(r[col]);
   if (col === "tags") return tagsCell(r[col]);
   // El nombre del lead suele tener espacios, pero a veces llega un correo o un
   // handle pegado sin ninguno; break-words lo dobla en vez de derramarlo sobre
@@ -77,17 +91,23 @@ function bodyCell(col, r) {
   return cell(r[col]);
 }
 
+const ORIGEN_OPTS = [
+  ["", "Origen: todos"],
+  ["pagado", "Pagados (con utm)"],
+  ["organico", "Orgánicos (sin utm)"],
+];
+
 function signals(p) {
   return {
     sdProject: p.project || "",
-    sdStatus: p.status || "",
+    sdOrigen: p.origen || "",
     sdFrom: p.from || "",
     sdTo: p.to || "",
   };
 }
 
 const regetQS =
-  `'limit=0&project='+encodeURIComponent($sdProject)+'&status='+encodeURIComponent($sdStatus)` +
+  `'limit=0&project='+encodeURIComponent($sdProject)+'&origen='+encodeURIComponent($sdOrigen)` +
   `+'&from='+encodeURIComponent($sdFrom)+'&to='+encodeURIComponent($sdTo)`;
 
 function controls(p, reget) {
@@ -105,10 +125,51 @@ function controls(p, reget) {
     </label>`;
   return [
     selectCtl("sdProject", p.project || "", projectOpts, reget, INDICATOR),
-    selectCtl("sdStatus", p.status || "", STATUS_OPTS, reget, INDICATOR),
+    selectCtl("sdOrigen", p.origen || "", ORIGEN_OPTS, reget, INDICATOR),
     dateCtl("sdFrom", "desde"),
     dateCtl("sdTo", "hasta"),
   ].join("");
+}
+
+// El desglose de procedencia va ARRIBA de la tabla, no en un gráfico aparte:
+// es la respuesta a la pregunta de la vista, y tenerla que reconstruir contando
+// filas la haría inútil. Se calcula sobre las filas ya traídas, así que respeta
+// los filtros activos.
+function originBar(rows) {
+  if (!rows.length) return "";
+  const pagados = rows.filter((r) => r.origen && r.origen !== "—");
+  const porFuente = new Map();
+  for (const r of pagados) porFuente.set(r.origen, (porFuente.get(r.origen) || 0) + 1);
+  const porCampana = new Map();
+  for (const r of pagados) {
+    if (r.campana && r.campana !== "—") porCampana.set(r.campana, (porCampana.get(r.campana) || 0) + 1);
+  }
+  const top = [...porCampana.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const pct = Math.round((pagados.length / rows.length) * 100);
+
+  const fuentes = [...porFuente.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => `<span class="badge bg-violet-100 text-violet-700 mr-1">${escape(k)} ${n}</span>`)
+    .join("");
+
+  return `<div class="card mb-3 p-3 text-xs">
+    <p class="text-slate-600 mb-2">
+      <b class="text-slate-800">${pagados.length}</b> de ${rows.length} (${pct}%) llegaron por <b>pauta</b> y nadie los tomó
+      · <b class="text-slate-800">${rows.length - pagados.length}</b> orgánicos
+    </p>
+    <div class="mb-1">${fuentes}${
+      rows.length - pagados.length
+        ? `<span class="badge badge-neutral opacity-60">orgánico ${rows.length - pagados.length}</span>`
+        : ""
+    }</div>
+    ${
+      top.length
+        ? `<p class="text-slate-500">Campañas con más leads sueltos: ${top
+            .map(([c, n]) => `<span class="font-mono">${escape(c)}</span> (${n})`)
+            .join(" · ")}</p>`
+        : ""
+    }
+  </div>`;
 }
 
 function table(rows, wire) {
@@ -123,10 +184,10 @@ function table(rows, wire) {
         ).join("")}</tr>`
     )
     .join("");
-  // Con seis columnas y sin los datos de contacto, 44rem alcanza: la tabla cabe
-  // sin scroll horizontal incluso con el panel de detalle abierto, que era el
-  // punto de quitarlas.
-  return `<div class="table-wrap"><div class="table-scroll overflow-y-auto max-h-[calc(100vh-12rem)]"><table class="tbl w-full min-w-[44rem] table-fixed">
+  // 52rem: el slug de campaña necesita aire, pero sin los datos de contacto la
+  // tabla sigue cabiendo con el panel de detalle abierto. La altura cede 2rem
+  // más porque ahora la barra de origen va encima.
+  return `${originBar(rows)}<div class="table-wrap"><div class="table-scroll overflow-y-auto max-h-[calc(100vh-14rem)]"><table class="tbl w-full min-w-[52rem] table-fixed">
     <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div></div>`;
 }
 
@@ -136,7 +197,7 @@ module.exports = {
     slot: "master",
     consumes: "rows",
     indicator: INDICATOR,
-    overridable: ["project", "status", "stage", "from", "to", "limit", "con_contacto", "sin_contacto"],
+    overridable: ["project", "status", "stage", "from", "to", "limit", "origen", "con_contacto", "sin_contacto"],
   },
   signals,
   regetQS,

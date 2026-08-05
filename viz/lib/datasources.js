@@ -314,6 +314,9 @@ const SOURCES = {
       from: "--from",
       to: "--to",
       limit: "--limit",
+      // Procedencia: un lead con utm_* llegó por pauta. Un solo param del
+      // browser mapea a los dos flags excluyentes del script.
+      origen: { map: { pagado: "--pagado", organico: "--organico" } },
       con_contacto: { flag: "--con-contacto", bool: true },
       sin_contacto: { flag: "--sin-contacto", bool: true },
     },
