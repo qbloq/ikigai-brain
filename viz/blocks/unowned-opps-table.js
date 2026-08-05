@@ -23,14 +23,16 @@ const STATUS_OPTS = [
   ["abandoned", "Abandonada"],
 ];
 
+// Email y teléfono NO están aquí a propósito: viven en el panel de detalle.
+// La lista es para barrer y decidir a quién mirar (qué tan viejo, quién, por
+// dónde entró); los datos de contacto solo hacen falta cuando ya elegiste uno,
+// y en la lista solo servían para desbordarse sobre la columna vecina.
 const COLS = [
   { k: "dias", l: "Días", w: "w-16", align: "text-center" },
   { k: "creada", l: "Creada", w: "w-24", cls: "whitespace-nowrap" },
-  { k: "lead", l: "Lead", w: "w-[16%]" },
-  { k: "etapa", l: "Etapa", w: "w-40" },
+  { k: "lead", l: "Lead", w: "w-[26%]" },
+  { k: "etapa", l: "Etapa", w: "w-44" },
   { k: "estado", l: "Estado", w: "w-24" },
-  { k: "email", l: "Email", w: "w-[20%]" },
-  { k: "telefono", l: "Teléfono", w: "w-36", cls: "whitespace-nowrap" },
   { k: "tags", l: "Canal (tags)" },
 ];
 
@@ -64,20 +66,13 @@ function tagsCell(v) {
     .join("");
 }
 
-// Un email no tiene espacios, así que en `table-fixed` no hay dónde partir la
-// línea y el texto se derrama sobre la columna vecina. Truncar con elipsis (y
-// el valor completo en el title) es lo único que respeta el ancho fijo sin
-// romper el email a la mitad, que lo volvería ilegible.
 function bodyCell(col, r) {
   if (col === "dias") return diasCell(r[col]);
   if (col === "estado") return estadoCell(r[col]);
   if (col === "tags") return tagsCell(r[col]);
-  if (col === "email") {
-    const v = r[col] || "—";
-    return `<span class="block truncate text-xs font-mono text-slate-600" title="${escape(v)}">${escape(v)}</span>`;
-  }
-  // El nombre del lead sí tiene espacios, pero puede traer un token largo
-  // (un correo pegado, un handle); break-words lo dobla en vez de derramarlo.
+  // El nombre del lead suele tener espacios, pero a veces llega un correo o un
+  // handle pegado sin ninguno; break-words lo dobla en vez de derramarlo sobre
+  // la columna vecina (en table-fixed el ancho no cede).
   if (col === "lead") return `<span class="block break-words">${escape(r[col] || "—")}</span>`;
   return cell(r[col]);
 }
@@ -128,10 +123,10 @@ function table(rows, wire) {
         ).join("")}</tr>`
     )
     .join("");
-  // 60rem y no más: ahora que el email trunca, la tabla no necesita ancho extra
-  // para no romperse, y con el panel de detalle abierto cada rem de más es
-  // scroll horizontal que el usuario tiene que pagar.
-  return `<div class="table-wrap"><div class="table-scroll overflow-y-auto max-h-[calc(100vh-12rem)]"><table class="tbl w-full min-w-[60rem] table-fixed">
+  // Con seis columnas y sin los datos de contacto, 44rem alcanza: la tabla cabe
+  // sin scroll horizontal incluso con el panel de detalle abierto, que era el
+  // punto de quitarlas.
+  return `<div class="table-wrap"><div class="table-scroll overflow-y-auto max-h-[calc(100vh-12rem)]"><table class="tbl w-full min-w-[44rem] table-fixed">
     <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div></div>`;
 }
 
