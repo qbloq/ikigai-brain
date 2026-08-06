@@ -3533,6 +3533,62 @@
           ]
         }
       ]
+    },
+    {
+      "id": "A12.8",
+      "sop": "S12.2",
+      "verb": "Definir",
+      "name": "Instrumentar la medición de retención e impago (curva de deserción por cuota)",
+      "slots": [],
+      "inputs": [
+        {
+          "title": "Cuotas vencidas con su cohorte y su madurez",
+          "description": "Cuotas de {proyecto} cuyo vencimiento ya pasó, con la cohorte del plan (mes de inicio) Y el número de cuota. Los dos ejes son necesarios: la cohorte sola confunde deterioro con madurez, porque un plan reciente sólo ha llegado a las primeras cuotas, que son las que casi todos pagan.",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Corte que separa el arrastre histórico del deterioro nuevo",
+          "description": "Decisión humana sobre qué clientes de {proyecto} cuentan como arrastre histórico (entrega deficiente previa) y desde cuándo empieza el deterioro nuevo. No está en la base y no se deduce del dato: sin este corte la medición no se puede cerrar.",
+          "io_type": "decision",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Medición de impago y deserción de cuotas",
+          "description": "Instrumento que mide la deserción de pago de {proyecto} y se puede volver a correr: tasa de cobro ajustada por madurez, curva de deserción por número de cuota, y el arrastre histórico separado del deterioro nuevo.",
+          "io_type": "analytics_report",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La tasa de cobro se calcula sólo sobre cuotas YA VENCIDAS, y queda mostrado por qué la versión sin ajustar por madurez invierte la conclusión.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Reporta la curva de deserción por número de cuota con su n en cada punto, no un agregado único: la deserción se concentra en dónde va la cuota, y un promedio la esconde.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El corte que separa arrastre histórico de deterioro nuevo está declarado y justificado — no elegido porque deja mejor el número.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Declara qué población excluye del cálculo y por qué (planes sin proyecto asignado, cuotas fuera de ventana).",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El cálculo es reproducible por corrida —un script o una vista viva, no una hoja congelada—. Es lo que hace que la medición sirva hacia adelante y no una sola vez.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
