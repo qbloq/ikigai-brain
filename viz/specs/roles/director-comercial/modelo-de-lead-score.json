@@ -1,0 +1,10 @@
+{
+  "id": "modelo-de-lead-score",
+  "name": "Modelo de score de leads",
+  "component": "lead-score",
+  "source": "lead_score",
+  "params": {},
+  "scope": "role",
+  "role": "director-comercial",
+  "created_at": "2026-08-05T20:15:00.000Z"
+}

@@ -205,6 +205,17 @@ const SOURCES = {
     emits: "rows",
     args: { by: "--by", project: "--project", from: "--from", to: "--to" },
   },
+  // El MODELO de score de leads como un solo objeto: los dos scores (encuesta
+  // pre-llamada y BANT post-llamada), los subgrupos y la cola accionable.
+  // Entregable de la tarea 767605d8 — la contraparte consultable de
+  // docs/lead-score.md. NO se cachea: es la evidencia de un contrato, y una
+  // evidencia servida vieja no es evidencia.
+  lead_score: {
+    label: "Modelo de score de leads",
+    script: "bash/calls/lead_score_model.sh",
+    emits: "object",
+    args: { project: "--project" },
+  },
   // Objections flattened across call reports — the narrative feedback loop.
   call_objections: {
     label: "Objeciones (llamadas)",
