@@ -1,0 +1,21 @@
+{
+  "nombre": "Ikigai Growth Marketing",
+  "modo": "light",
+  "fuente": {
+    "ui": "Sora",
+    "mono": "JetBrains Mono"
+  },
+  "paleta": {
+    "pink": "#F18AEB",
+    "violet": "#740CE8",
+    "indigo": "#06033A",
+    "navy": "#10112B",
+    "lilac": "#F3CFFF",
+    "cream": "#FFFBE9",
+    "lavender": "#DFD2FE",
+    "positive": "#16C79A",
+    "negative": "#FF3D57",
+    "caution": "#FFC53D"
+  },
+  "_nota": "El tema visual de esta org. Diez hex y una tipografía: todo lo demás (claro, oscuro, gráficas, estados, bordes, sombras) se deriva con color-mix() en viz/public/tokens.css. Restricciones al reemplazar: violet saturado y OSCURO (≥4.5:1 sobre blanco, o el texto del botón deja de leerse), indigo MUY oscuro, lilac MUY claro, navy un paso más claro que indigo. Guía completa: docs/ui-theming/ikigai-design-system.html §18."
+}

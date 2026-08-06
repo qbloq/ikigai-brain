@@ -66,7 +66,7 @@ function render(ui, slots) {
   };
 
   const body = err
-    ? `<div class="rounded-lg border border-red-200 bg-red-50 text-red-700 p-4 text-sm">${escape(err)}</div>`
+    ? `<div class="alert alert-neg">${escape(err)}</div>`
     : `<div class="relative">
         <div id="master-loading" data-class:on="$${indicator}" class="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-16 bg-white/50">
           <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
@@ -83,14 +83,19 @@ function render(ui, slots) {
   const emptyPanel = db.frags[frag]({ params: new URLSearchParams() });
 
   return `<section id="pane" class="flex-1 overflow-hidden flex" data-signals="${escape(JSON.stringify({ detailOpen: false, [sel]: "" }))}">
+    <!-- CSS crudo: no pasa por Tailwind, así que aquí los colores se toman de
+         los tokens a mano. La fila seleccionada usa la convención del DS
+         (relleno brand-soft + barra inset brand-solid), la misma que
+         table.tbl tbody tr[aria-selected="true"]. -->
     <style>
       #detail-wrap{width:0;opacity:0;overflow:hidden;transition:width .3s ease-in-out,opacity .3s ease-in-out;}
-      #detail-wrap.is-open{width:${width};opacity:1;border-left:1px solid rgb(226 232 240);}
+      #detail-wrap.is-open{width:${width};opacity:1;border-left:1px solid var(--border-1);}
       #detail-loading,#master-loading{opacity:0;transition:opacity .2s ease;}
       #detail-loading.on,#master-loading.on{opacity:1;}
-      tr.row-sel{background:rgb(238 242 255)!important;box-shadow:inset 3px 0 0 rgb(79 70 229);}
+      tr.row-sel{background:var(--brand-soft-hov)!important;box-shadow:inset 3px 0 0 var(--brand-solid);}
     </style>
-    <div class="flex-1 p-6 overflow-auto bg-slate-50">${head}${controls}${body}</div>
+    <!-- min-w-0: la tabla ancha scrollea DENTRO del master; jamás empuja al panel -->
+    <div class="flex-1 min-w-0 p-6 overflow-auto bg-slate-50">${head}${controls}${body}</div>
     <aside id="detail-wrap" data-class:is-open="$detailOpen" class="relative shrink-0 bg-white">
       <div id="detail-loading" data-class:on="$loading" class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/50">
         <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>

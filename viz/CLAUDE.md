@@ -1,6 +1,6 @@
 # viz — operating rules
 
-Rules Claude must follow when editing anything under `.viz/`. The architecture
+Rules Claude must follow when editing anything under `viz/`. The architecture
 narrative (file map, routes, composition tower, component catalog) lives in
 [README.md](README.md); the root CLAUDE.md has the one-paragraph overview.
 
@@ -23,7 +23,7 @@ narrative (file map, routes, composition tower, component catalog) lives in
 
 ## Gotchas
 
-- **Restart after editing `.viz/`** — Node caches required modules:
+- **Restart after editing `viz/`** — Node caches required modules:
   `npm run viz:restart` (or `viz:stop`) after any change (new source, component,
   cache TTL). The registry ([lib/components.js](lib/components.js)) scans
   `pages/` + `blocks/` + `patterns/` at startup into one flat namespace
@@ -35,8 +35,34 @@ narrative (file map, routes, composition tower, component catalog) lives in
 - Bound controls (`data-bind`) must seed their signals via `data-signals`
   (current values) or Datastar blanks them.
 - Assets are **vendored** in `public/` and served locally (never CDN — avoids
-  CDN/CORS): `datastar.js`, `chart.umd.js` (Chart.js v4), `charts-init.js` —
-  whitelisted in `PUBLIC_FILES` in server.js.
+  CDN/CORS): `datastar.js`, `chart.umd.js` (Chart.js v4), `charts-init.js`,
+  `tokens.css`, `tw-bridge.js` and `fonts/` (Sora + JetBrains Mono, variables)
+  — whitelisted in `PUBLIC_FILES` in server.js. Tailwind is the one exception,
+  still on the Play CDN; `tw-bridge.js` depends on being able to set
+  `tailwind.config` at runtime.
+
+## Tema
+
+Ver `../docs/ui-theming/README.md`. Lo que cambia
+al escribir componentes:
+
+- **Nunca escribas un hex ni `rgb()`.** El color sale de las clases del design
+  system (`.btn`, `.card`, `.kpi`, `.tbl`, `.badge`, `.check`, `.alert`…) o, en
+  CSS crudo (`<style>` embebido, que no pasa por Tailwind), de un token
+  semántico: `var(--surface-2)`, `var(--text-1)`, `var(--brand-solid)`,
+  `var(--border-1)`. **Jamás `--pal-*`** — esos son el SWAP BLOCK del cliente y
+  exponerlos rompe el swap.
+- Las utilidades de color de Tailwind siguen funcionando: `tw-bridge.js` las
+  reapunta a las rampas. Pero son el piso — si el DS tiene una clase para lo que
+  estás haciendo, úsala.
+- El markup NO lleva variantes claro/oscuro. Las rampas invierten sus polos bajo
+  `[data-theme="dark"]`; una clase condicional por tema es señal de que algo se
+  escapó del sistema.
+- Un control de formulario nuevo va por `kit.selectCtl`/`kit.checkCtl`: el
+  `.check` del DS esconde el input nativo y dibuja su caja, que es lo que le
+  permite tomar color del tema.
+- Después de tocar `tokens.css` o `tw-bridge.js`, revisa **los dos modos** —
+  `tema.json` `"modo"` se lee por request, no hace falta reiniciar.
 
 ## Caching
 

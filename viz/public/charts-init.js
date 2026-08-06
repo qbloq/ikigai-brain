@@ -6,34 +6,82 @@
 // server owns the DATA (a compact spec: kind/labels/series), this file owns
 // the DRAWING (palette, mark specs, tooltips) — each decision lives in one place.
 //
-// Palette: the dataviz reference categorical set, validated with the skill's
-// six-checks script (worst adjacent CVD ΔE 24.2; aqua/yellow/magenta are
-// sub-3:1 on white → the chart page ships a table view as relief). The slot
-// ORDER is the CVD-safety mechanism — never reorder, never cycle past 8.
+// Palette: every color is READ FROM CSS at draw time (tokens.css), so a chart
+// follows the client's theme and the light/dark toggle like the rest of the UI.
+// The hex below are only the fallbacks for a page served without tokens.css.
+//
+// Two different kinds of color live here, and they are governed differently:
+//
+//   · CHROME (grid, axis, ink, surface, tooltip) is THEMED. It has to be — a
+//     #ffffff card surface and a near-white gridline are simply wrong on a
+//     dark background, which is the bug this replaces.
+//   · The CATEGORICAL SLOTS are NOT branded by default. They stay the dataviz
+//     reference set, validated with the skill's six-checks script (worst
+//     adjacent CVD ΔE 24.2; aqua/yellow/magenta are sub-3:1 on white → the
+//     chart page ships a table view as relief). The slot ORDER is the
+//     CVD-safety mechanism — never reorder, never cycle past 8. A theme *can*
+//     override --chart-1..8, but that is a deliberate accessibility decision:
+//     the DS's brand ramp (--c-1..--c-6) is not CVD-validated, so it is not
+//     wired in by default.
 
-const SLOTS = ["#2a78d6", "#1baf7a", "#eda100", "#008300", "#4a3aa7", "#e34948", "#e87ba4", "#eb6834"];
-const OTHER = "#898781"; // the «Otros» fold — neutral, deliberately not an identity hue
-const MUTED = "#898781"; // axis/tick ink
-const INK2 = "#52514e"; // legend ink
-const GRID = "#e1e0d9"; // hairline gridlines (solid, never dashed)
-const AXIS = "#c3c2b7"; // baseline/axis rule
-const SURFACE = "#ffffff"; // card surface — the 2px gap/ring color
+const FALLBACK = {
+  slots: ["#2a78d6", "#1baf7a", "#eda100", "#008300", "#4a3aa7", "#e34948", "#e87ba4", "#eb6834"],
+  other: "#898781", // the «Otros» fold — neutral, deliberately not an identity hue
+  muted: "#898781", // axis/tick ink
+  ink2: "#52514e", // legend ink
+  grid: "#e1e0d9", // hairline gridlines (solid, never dashed)
+  axis: "#c3c2b7", // baseline/axis rule
+  surface: "#ffffff", // card surface — the 2px gap/ring color
+  tipBg: "rgba(11,11,11,0.92)",
+  tipTitle: "#c3c2b7",
+  tipBody: "#ffffff",
+};
+
+// Resolved palette. Repopulated at boot and whenever the theme flips; the
+// getters below always read through it, never a captured constant.
+let C = { ...FALLBACK };
+
+function cssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+function readPalette() {
+  C = {
+    slots: FALLBACK.slots.map((hex, i) => cssVar(`--chart-${i + 1}`, hex)),
+    other: cssVar("--chart-other", FALLBACK.other),
+    muted: cssVar("--axis-text", FALLBACK.muted),
+    ink2: cssVar("--text-2", FALLBACK.ink2),
+    grid: cssVar("--grid-line", FALLBACK.grid),
+    axis: cssVar("--border-2", FALLBACK.axis),
+    surface: cssVar("--surface-2", FALLBACK.surface),
+    tipBg: cssVar("--tip-bg", FALLBACK.tipBg),
+    tipTitle: cssVar("--tip-title", FALLBACK.tipTitle),
+    tipBody: cssVar("--tip-body", FALLBACK.tipBody),
+  };
+}
+
+// Alfa sobre un color de la paleta. Los slots son hex (concatenar "d9" basta),
+// pero un tema podría declarar rgb()/color-mix() — de ahí el color-mix de rescate.
+function alpha(c, hexSuffix, pct) {
+  return /^#[0-9a-fA-F]{6}$/.test(c) ? c + hexSuffix : `color-mix(in srgb, ${c} ${pct}%, transparent)`;
+}
 
 function fmt(n) {
   return Number(n).toLocaleString("en-US");
 }
 
 function legend(display, position = "bottom") {
-  return { display, position, labels: { color: INK2, usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14 } };
+  return { display, position, labels: { color: C.ink2, usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14 } };
 }
 
 // Canvas-drawn tooltip (no DOM/HTML → labels can't inject markup).
 function tooltip(extra) {
   return Object.assign(
     {
-      backgroundColor: "rgba(11,11,11,0.92)",
-      titleColor: "#c3c2b7",
-      bodyColor: "#ffffff",
+      backgroundColor: C.tipBg,
+      titleColor: C.tipTitle,
+      bodyColor: C.tipBody,
       padding: 10,
       cornerRadius: 8,
       boxPadding: 4,
@@ -51,11 +99,11 @@ function tooltip(extra) {
 
 const valueScale = () => ({
   beginAtZero: true,
-  grid: { color: GRID },
-  border: { color: AXIS },
-  ticks: { color: MUTED, precision: 0, callback: (v) => fmt(v) },
+  grid: { color: C.grid },
+  border: { color: C.axis },
+  ticks: { color: C.muted, precision: 0, callback: (v) => fmt(v) },
 });
-const catScale = () => ({ grid: { display: false }, border: { color: AXIS }, ticks: { color: MUTED, autoSkip: false } });
+const catScale = () => ({ grid: { display: false }, border: { color: C.axis }, ticks: { color: C.muted, autoSkip: false } });
 
 // Bars: single series → ONE color for every bar (identity is on the axis; a
 // hue per bar is the value-ramp/rainbow anti-pattern). ≤24px thick, 4px
@@ -65,12 +113,12 @@ function barConfig(spec) {
   const single = (spec.series || []).length <= 1;
   const horizontal = spec.horizontal !== false;
   const datasets = (spec.series || []).map((s, i) => {
-    const c = single ? SLOTS[0] : SLOTS[i % SLOTS.length];
+    const c = single ? C.slots[0] : C.slots[i % C.slots.length];
     return {
       label: s.label || "",
       data: s.data,
       backgroundColor: c,
-      hoverBackgroundColor: c + "d9",
+      hoverBackgroundColor: alpha(c, "d9", 85),
       maxBarThickness: 24,
       borderRadius: 4,
       borderSkipped: "start",
@@ -95,7 +143,7 @@ function barConfig(spec) {
 // border IS the surface gap between slices. Legend = the identity channel.
 function donutConfig(spec) {
   const s0 = (spec.series || [])[0] || { data: [] };
-  const colors = spec.labels.map((_, i) => (i === spec.otherIndex ? OTHER : SLOTS[i % SLOTS.length]));
+  const colors = spec.labels.map((_, i) => (i === spec.otherIndex ? C.other : C.slots[i % C.slots.length]));
   return {
     type: "doughnut",
     data: {
@@ -105,8 +153,8 @@ function donutConfig(spec) {
           label: s0.label || "",
           data: s0.data,
           backgroundColor: colors,
-          hoverBackgroundColor: colors.map((c) => c + "d9"),
-          borderColor: SURFACE,
+          hoverBackgroundColor: colors.map((c) => alpha(c, "d9", 85)),
+          borderColor: C.surface,
           borderWidth: 2,
           hoverOffset: 4,
         },
@@ -138,7 +186,7 @@ function donutConfig(spec) {
 function lineConfig(spec) {
   const multi = (spec.series || []).length > 1;
   const datasets = (spec.series || []).map((s, i) => {
-    const c = SLOTS[i % SLOTS.length];
+    const c = C.slots[i % C.slots.length];
     return {
       label: s.label || "",
       data: s.data,
@@ -148,9 +196,9 @@ function lineConfig(spec) {
       pointRadius: 4,
       pointHoverRadius: 6,
       pointBackgroundColor: c,
-      pointBorderColor: SURFACE,
+      pointBorderColor: C.surface,
       pointBorderWidth: 2,
-      backgroundColor: c + "1a",
+      backgroundColor: alpha(c, "1a", 10),
       fill: !multi && spec.fill === true,
     };
   });
@@ -237,16 +285,34 @@ function onMutations(muts) {
   }
 }
 
+// Chart.js keeps colors as strings, not live CSS — so flipping the theme has
+// to re-read the palette and rebuild. Clearing __chartJson defeats initChart's
+// same-spec guard; the data never leaves the DOM, so nothing is re-fetched.
+function repaint() {
+  readPalette();
+  Chart.defaults.color = C.muted;
+  Chart.defaults.font.family = cssVar("--font-ui", 'system-ui, -apple-system, "Segoe UI", sans-serif');
+  document.querySelectorAll("[data-chart]").forEach((el) => {
+    el.__chartJson = null;
+    initChart(el);
+  });
+}
+
 function boot() {
-  Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+  readPalette();
+  Chart.defaults.font.family = cssVar("--font-ui", 'system-ui, -apple-system, "Segoe UI", sans-serif');
   Chart.defaults.font.size = 12;
-  Chart.defaults.color = MUTED;
+  Chart.defaults.color = C.muted;
   document.querySelectorAll("[data-chart]").forEach(initChart);
   new MutationObserver(onMutations).observe(document.body, {
     subtree: true,
     childList: true,
     attributes: true,
     attributeFilter: ["data-chart", "width"],
+  });
+  new MutationObserver(repaint).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
   });
 }
 

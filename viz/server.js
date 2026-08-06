@@ -24,11 +24,12 @@ const { shell, listPanel } = require("./lib/html");
 const { renderPane, getComponent, overridableFor, dispatch, validateSpec, escape } = require("./lib/components");
 const { makeRunner } = require("./lib/actions");
 const { startSSE, patchElements } = require("./lib/sse");
+const { loadTheme, themeHead } = require("./lib/theme");
 
 const PORT = Number(process.env.PORT) || 4317;
 
 // The whitelist of vendored assets under viz/public/ that /:name serves.
-const PUBLIC_FILES = new Set(["/datastar.js", "/chart.umd.js", "/charts-init.js"]);
+const PUBLIC_FILES = new Set(["/datastar.js", "/chart.umd.js", "/charts-init.js", "/tw-bridge.js", "/tokens.css"]);
 
 function send(res, status, body, type = "text/html; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type });
@@ -114,10 +115,11 @@ function withParamOverrides(ui, searchParams) {
 
 function standalone(ui) {
   const pane = renderPane(ui);
-  return `<!doctype html><html lang="es" class="h-full"><head>
+  const theme = loadTheme();
+  return `<!doctype html><html lang="es" class="h-full" data-theme="${theme.modo}"><head>
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${ui ? ui.name : "UI no encontrada"} · Hermético</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>${ui ? ui.name : "UI no encontrada"} · ${escape(theme.nombre)}</title>
+    ${themeHead(theme)}
     <script type="module" src="/datastar.js"></script>
     <script defer src="/chart.umd.js"></script>
     <script type="module" src="/charts-init.js"></script>
@@ -133,11 +135,19 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/health") return send(res, 200, "ok", "text/plain");
 
     // --- vendored static assets (Datastar + Chart.js + glue, served locally to avoid CDN/CORS) ---
-    if (PUBLIC_FILES.has(pathname) && req.method === "GET") {
+    // The fonts are a whole directory rather than a fixed list (a client may
+    // vendor its own), so they're matched by shape — one flat level, one of
+    // three extensions, no traversal — instead of being enumerated.
+    const isFont = /^\/fonts\/[a-z0-9._-]+\.(woff2|css)$/.test(pathname);
+    if ((PUBLIC_FILES.has(pathname) || isFont) && req.method === "GET") {
       const file = path.join(__dirname, "public", pathname.slice(1));
       const body = fs.readFileSync(file);
       res.writeHead(200, {
-        "Content-Type": "text/javascript; charset=utf-8",
+        "Content-Type": pathname.endsWith(".css")
+          ? "text/css; charset=utf-8"
+          : pathname.endsWith(".woff2")
+            ? "font/woff2"
+            : "text/javascript; charset=utf-8",
         "Cache-Control": "public, max-age=86400",
       });
       return res.end(body);

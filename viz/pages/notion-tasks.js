@@ -6,7 +6,7 @@
 // overdue tasks are highlighted.
 
 const { fetchSource } = require("../lib/datasources");
-const { escape, cell, dueFmt, jsStr, jsArr, distinct } = require("../lib/kit");
+const { escape, cell, dueFmt, jsStr, jsArr, distinct, checkCtl } = require("../lib/kit");
 
 const NOTION_ESTADO_BADGE = {
   Done: "bg-emerald-100 text-emerald-700",
@@ -84,9 +84,7 @@ function renderNotionTasks(ui) {
     ${notionSelect("nfLanz", "Lanzamiento: todos", lanz)}
     ${notionSelect("nfFase", "Fase: todas", fases)}
     ${notionSelect("nfAsig", "Responsable: todos", asig)}
-    <label class="flex items-center gap-2 text-sm text-slate-600 px-2">
-      <input type="checkbox" data-bind="nfOverdue" class="rounded border-slate-300" /> Solo vencidas
-    </label>
+    ${checkCtl("nfOverdue", "Solo vencidas", null, { indicator: "" })}
     <button data-on:click="$nfEstado='';$nfLanz='';$nfFase='';$nfAsig='';$nfOverdue=false"
       class="text-xs text-slate-500 hover:text-indigo-600 underline px-1">limpiar</button>
   </div>`;
@@ -104,7 +102,7 @@ function renderNotionTasks(ui) {
     .join("");
   const body = rows.length
     ? `<div class="overflow-auto rounded-lg border border-slate-200 max-h-[calc(100vh-12rem)]">
-        <table class="w-full text-sm border-collapse"><thead><tr>${thead}</tr></thead>
+        <table class="w-full min-w-[52rem] text-sm border-collapse"><thead><tr>${thead}</tr></thead>
         <tbody>${rows.map((r) => notionTaskRow(r, today)).join("")}</tbody></table></div>`
     : '<p class="text-slate-500 italic">Sin resultados.</p>';
 

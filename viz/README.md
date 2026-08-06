@@ -66,7 +66,7 @@ sin recargar la página.
 ## Piezas
 
 El render está organizado como la **torre de composición**
-([docs/deltas-architecture.md](../docs/deltas-architecture.md)):
+(`docs/deltas-architecture.md`):
 kernel → bloques → patrones → páginas.
 
 | Archivo | Rol |
