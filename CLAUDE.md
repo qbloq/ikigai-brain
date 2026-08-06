@@ -115,6 +115,29 @@ Resolves ~83% of reported calls; the rest is the S8.2 data-hygiene queue.
 | `call_show.sh <id\|prefix>` | Full detail of one call: header + all 6 report sections rendered (métricas, estructura por fases, evaluación del closer + coaching, objeciones con respuestas, momentos críticos, perfil del lead, marketing insights, conclusión). `--json` = one object incl. raw report. |
 | `call_stats.sh [--by closer\|result\|program\|project\|week] [--project N] [--from D] [--to D]` | Effectiveness aggregates over analyzed calls: calls, won, win %, avg closing probability, avg closer score. Default `--by closer` — the Director Comercial's KPI. |
 | `call_objections.sh [--project N] [--closer N] [--status S] [--from D] [--to D] [--limit N]` | One row per objection across reports (status, objection, closer response, AI suggestion) — the feedback loop into narrative/copy (S1) and the objection protocol (S12.2). |
+| `lead_profile.sh [--by base\|arquetipo\|tramo\|prioridad\|closer\|resultado] [--project N] [--closer N] [--arquetipo F] [--from D] [--to D] [--incluir-sin-analizar] [--limit N]` | The **lead profile** already inside each report (`leadProfile.bantAnalysis` + `intelligentSegmentation`), extracted and normalized. Without `--by`: one row per call with BANT in 0-100 **and** in the 1-5 scale per item. Carries three declared normalizations, all of which change the numbers — see below. |
+
+⚠️ **Three normalizations that `lead_profile.sh` declares and the rest of the
+calls domain does not** — they are not cosmetic, each moves the numbers:
+
+1. **Sin analizar ≠ mal calificado.** 66 of 230 reports carry all four BANT
+   scores at literal zero — calls with no usable transcript, not bad leads.
+   Excluded by default (`--incluir-sin-analizar` brings them back). Any average
+   that includes them understates everything.
+2. **Archetype is free text**: 43 canonical labels for what are really **four
+   traits** (Novato · Emocional · Inexperto · Experimentado) plus qualifiers.
+   `--by base` collapses to the traits and their combinations; `--by arquetipo`
+   keeps the qualifier.
+3. **`callStatus` is free text too**: 131 distinct values for 230 calls.
+   `call_stats.sh` counts wins with `ILIKE 'closed won%'` and therefore **misses**
+   `Closed/Won`, `Closed - Payment Initiated`, `Cerrado Pendiente Pago` — its win
+   rate is undercounted. `lead_profile.sh` classifies into 7 buckets, strongest
+   signal first, and counts `ganada`+`compromiso` as conversion (the real close
+   is sealed by the first installment, days after the call). Still a heuristic:
+   **the truth about money lives in `installments`**, not in `callStatus`.
+
+Result of all three: BANT **does** discriminate — the 81-100 band converts
+**38.9%** against **3.2%** for 61-80.
 
 Viz sources: `calls`, `call_detail` (object), `call_stats`, `call_objections`.
 
