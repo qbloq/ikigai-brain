@@ -34,46 +34,42 @@ function cell(v) {
 }
 
 // Generic table with inferred columns (union of keys, first-seen order).
+// Wears the design system's `.table-wrap > .table-scroll > table.tbl` (see
+// public/tokens.css): sticky uppercase micro headers, hairline rules, hover on
+// --brand-soft. The DS owns the look; what stays in utilities is LAYOUT, which
+// no theme has an opinion about — in particular the width floor, which lives on
+// the CELLS (`min-w-*` + nowrap headers) because the column count is arbitrary
+// here: their minimums add up to the table's min-content width, so a narrow
+// container makes the wrapper scroll horizontally instead of compressing every
+// column. Cell text still wraps — nothing is hidden.
 function table(rows) {
   if (!rows.length) {
     return '<p class="text-slate-500 italic">Sin resultados.</p>';
   }
   const cols = inferColumns(rows);
-  const thead = cols
-    .map(
-      (c) =>
-        `<th class="text-left font-semibold px-3 py-2 border-b border-slate-200 sticky top-0 bg-slate-50">${escape(c)}</th>`
-    )
-    .join("");
+  const thead = cols.map((c) => `<th>${escape(c)}</th>`).join("");
   const tbody = rows
-    .map(
-      (r) =>
-        `<tr class="even:bg-slate-50/60 hover:bg-indigo-50">${cols
-          .map((c) => `<td class="px-3 py-2 border-b border-slate-100 align-top">${cell(r[c])}</td>`)
-          .join("")}</tr>`
-    )
+    .map((r) => `<tr>${cols.map((c) => `<td class="align-top min-w-[7rem]">${cell(r[c])}</td>`).join("")}</tr>`)
     .join("");
-  return `<div class="overflow-auto rounded-lg border border-slate-200 max-h-[calc(100vh-9rem)]"><table class="w-full text-sm border-collapse">
-    <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
+  return `<div class="table-wrap"><div class="table-scroll overflow-y-auto max-h-[calc(100vh-9rem)]"><table class="tbl">
+    <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div></div>`;
 }
 
-// Compact table for in-panel previews: tiny type, nowrap cells (the wrapper
-// scrolls both axes), truncated long values.
+// Compact table for in-panel previews: the DS's `.dense` modifier, nowrap cells
+// (the wrapper scrolls both axes), truncated long values.
 function miniTable(rows) {
-  if (!rows.length) return '<p class="text-[11px] text-slate-400 italic p-2">Sin resultados.</p>';
+  if (!rows.length) return '<p class="text-xs text-slate-400 italic p-2">Sin resultados.</p>';
   const cols = inferColumns(rows);
-  const thead = cols
-    .map((c) => `<th class="text-left font-semibold px-2 py-1 border-b border-slate-200 sticky top-0 bg-slate-50 whitespace-nowrap">${escape(c)}</th>`)
-    .join("");
+  const thead = cols.map((c) => `<th>${escape(c)}</th>`).join("");
   const tbody = rows
     .map(
       (r) =>
-        `<tr class="even:bg-slate-50/60">${cols
-          .map((c) => `<td class="px-2 py-1 border-b border-slate-100 whitespace-nowrap max-w-[16rem] overflow-hidden text-ellipsis">${cell(r[c])}</td>`)
+        `<tr>${cols
+          .map((c) => `<td class="whitespace-nowrap max-w-[16rem] overflow-hidden text-ellipsis">${cell(r[c])}</td>`)
           .join("")}</tr>`
     )
     .join("");
-  return `<table class="text-[11px] border-collapse"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
+  return `<table class="tbl dense"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
 }
 
 // Ordered group-by: keys keep first-seen order.
@@ -113,18 +109,49 @@ function jsArr(arr) {
 
 // A filter <select> bound to a Datastar signal that re-fetches on change.
 // `indicator` is the loading-overlay signal the fetch drives.
+// The DS's `.select` (chevron, focus ring, themed surface). It is width:100% by
+// design — a filter bar wants intrinsic width, and `w-auto` overrides it because
+// Tailwind's utilities land after tokens.css in the cascade.
 function selectCtl(signal, current, options, reget, indicator = "loadingtasks") {
   const opts = options
     .map(([v, l]) => `<option value="${escape(v)}"${String(v) === String(current) ? " selected" : ""}>${escape(l)}</option>`)
     .join("");
   return `<select data-bind="${signal}" data-on:change="${reget}" data-indicator:${indicator}
-    class="text-sm px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">${opts}</select>`;
+    class="select w-auto">${opts}</select>`;
+}
+
+// El gemelo de selectCtl para un checkbox. Existe porque el `.check` del DS no
+// es un input pelado: esconde el nativo y dibuja su propia caja (`.box` + el
+// SVG del palomito), que es lo que le permite tomar color del tema. Un
+// `<input type=checkbox>` nativo se queda con el look del sistema operativo y
+// en tema oscuro aparece como un cuadro claro que no pertenece a nada.
+//
+// Seis bloques repetían el mismo markup, así que vive en el kernel — pero
+// crecer kit.js es decisión de gobernanza (viz/CLAUDE.md), no conveniencia:
+// queda anotado como el segundo control de formulario del kit, hermano de
+// selectCtl y con la misma firma.
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+// `value` convierte al control en parte de un MULTISELECT: varios checkboxes
+// con la misma señal, predefinida como array, acumulan en ella sus values
+// (Datastar 1.0, data-bind > predefined signal types). Sin `value` sigue siendo
+// el booleano de siempre.
+function checkCtl(signal, label, on, { indicator = "loadingtasks", checked = false, id = "", cls = "", value = null } = {}) {
+  return `<label class="check px-2 ${cls}">
+      <input type="checkbox"${id ? ` id="${escape(id)}"` : ""} data-bind="${signal}"${
+        value !== null ? ` value="${escape(value)}"` : ""
+      }${checked ? " checked" : ""}${on ? ` data-on:change="${on}"` : ""}${
+        indicator ? ` data-indicator:${indicator}` : ""
+      } />
+      <span class="box">${CHECK_SVG}</span>
+      ${escape(label)}
+    </label>`;
 }
 
 // Titled section for detail panels (uppercase label + optional count).
 function section(title, count, inner) {
   return `<div class="mb-5">
-    <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">${escape(title)}${count != null ? ` · ${count}` : ""}</h3>
+    <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2" style="letter-spacing:var(--tr-micro)">${escape(title)}${count != null ? ` · ${count}` : ""}</h3>
     ${inner}
   </div>`;
 }
@@ -163,6 +190,7 @@ module.exports = {
   jsStr,
   jsArr,
   selectCtl,
+  checkCtl,
   section,
   PRIORITY_DOT,
   priorityDot,

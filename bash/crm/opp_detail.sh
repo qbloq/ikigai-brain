@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # opp_detail.sh — todo lo que sabemos de UNA oportunidad y su contacto, como un
-# solo objeto JSON. Es el gemelo de detalle de sin_dueno.sh / pipeline.sh --list,
+# solo objeto JSON. Es el gemelo de detalle de leads.sh / pipeline.sh --list,
 # pensado para el panel derecho del viz (fuente `crm_opp_detail`).
 #
 # Incluye los custom_fields del contacto tal cual vienen de GHL: ahí es donde

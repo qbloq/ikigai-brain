@@ -1,12 +1,12 @@
 {
   "spec_version": 2,
-  "id": "leads-sin-dueno",
-  "name": "Leads sin dueño",
+  "id": "leads",
+  "name": "Leads",
   "pattern": "master-detail",
   "master": {
-    "block": "unowned-opps-table",
-    "source": "crm_sin_dueno",
-    "params": { "limit": "0", "project": "David Guerrero", "from": "2026-07-01" }
+    "block": "leads-table",
+    "source": "crm_leads",
+    "params": { "limit": "0", "project": "David Guerrero", "dueno": "sin-dueno", "from": "2026-06-01" }
   },
   "detail": { "block": "opp-detail" },
   "scope": "role",

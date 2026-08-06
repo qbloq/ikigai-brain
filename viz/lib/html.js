@@ -5,6 +5,7 @@
 
 const { escape } = require("./kit");
 const { listSources } = require("./datasources");
+const { loadTheme, themeHead, MODE_TOGGLE } = require("./theme");
 
 // Temporarily hide the "Nueva UI" form in the left panel (feature paused).
 // Flip back to true to restore it.
@@ -15,6 +16,12 @@ function listPanel(uis, activeId) {
 
   // One row per UI: the whole row opens it; the hover icon archives/restores.
   // Archived rows still open on click — archiving is a soft-hide, never a delete.
+  // Wears the DS's `.side-link`, which owns hover and — via aria-current — the
+  // selected state (brand-soft fill, brand ink, inset brand bar). That replaces
+  // the old solid-indigo row: a filled block competes with the content pane for
+  // attention, and the DS reserves solid brand for actions. The utilities left
+  // here are layout only: .side-link is a 36px single-line flex row, and this
+  // list is two lines.
   const row = (u, archived) => {
     const active = u.id === activeId;
     const action = archived
@@ -22,18 +29,15 @@ function listPanel(uis, activeId) {
       : { url: `/ui/${escape(u.id)}/archive${act}`, title: "Archivar", icon: "⤓" };
     return `<li class="group relative">
       <button data-on:click="window.history.replaceState(null,'','?ui=${escape(u.id)}'); @get('/ui/${escape(u.id)}')" data-indicator:navloading
-        class="w-full text-left px-3 py-2 pr-8 rounded-md text-sm transition ${
-          active ? "bg-indigo-600 text-white" : archived ? "text-slate-400 hover:bg-slate-200" : "text-slate-700 hover:bg-slate-200"
-        }">
+        ${active ? 'aria-current="page"' : ""}
+        class="side-link block w-full h-auto text-left py-2 pr-8${archived ? " opacity-55" : ""}">
         <span class="block truncate">${escape(u.name)}</span>
-        <span class="block text-xs ${active ? "text-indigo-100" : "text-slate-400"}">${escape(u.source || u.pattern || "")}${
+        <span class="block text-xs truncate" style="color:var(--text-3)">${escape(u.source || u.pattern || "")}${
           u.derived_from ? ` <span title="fork de ${escape(u.derived_from)}">⑂</span>` : ""
         }</span>
       </button>
       <button title="${action.title}" data-on:click="@post('${action.url}')"
-        class="absolute right-1.5 top-1/2 -translate-y-1/2 hidden group-hover:block leading-none ${
-          active ? "text-indigo-200 hover:text-white" : "text-slate-400 hover:text-indigo-600"
-        }">${action.icon}</button>
+        class="absolute right-1.5 top-1/2 -translate-y-1/2 hidden group-hover:block leading-none text-slate-400 hover:text-indigo-600">${action.icon}</button>
     </li>`;
   };
 
@@ -71,10 +75,18 @@ function listPanel(uis, activeId) {
         class="w-full text-sm font-medium px-2 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700">+ Crear</button>
     </form>`;
 
+  // Claro/oscuro es preferencia del usuario (localStorage), no del tema del
+  // cliente: no toca el servidor ni las specs, solo el data-theme del <html>.
+  const modeToggle = `<button title="Claro / oscuro" onclick="${MODE_TOGGLE}"
+      class="shrink-0 w-7 h-7 rounded-lg border border-slate-300 text-slate-500 hover:text-indigo-600 hover:border-indigo-400 leading-none transition">◐</button>`;
+
   return `<aside id="ui-list" class="w-72 shrink-0 border-r border-slate-200 bg-slate-100 flex flex-col h-screen">
-    <div class="px-4 py-3 border-b border-slate-200">
-      <h2 class="font-semibold text-slate-800">UIs generadas</h2>
-      <p class="text-xs text-slate-500">${live.length} guardada(s)</p>
+    <div class="px-4 py-3 border-b border-slate-200 flex items-start justify-between gap-2">
+      <div>
+        <h2 class="font-semibold text-slate-800">UIs generadas</h2>
+        <p class="text-xs text-slate-500">${live.length} guardada(s)</p>
+      </div>
+      ${modeToggle}
     </div>
     <ul class="flex-1 overflow-auto p-2 space-y-1">${items}</ul>
     ${archivedSection}
@@ -83,13 +95,14 @@ function listPanel(uis, activeId) {
 }
 
 function shell({ uis, activeId, paneHtml }) {
+  const theme = loadTheme();
   return `<!doctype html>
-<html lang="es" class="h-full">
+<html lang="es" class="h-full" data-theme="${theme.modo}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UI on-demand · Hermético</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>UI on-demand · ${escape(theme.nombre)}</title>
+  ${themeHead(theme)}
   <script type="module" src="/datastar.js"></script>
   <script defer src="/chart.umd.js"></script>
   <script type="module" src="/charts-init.js"></script>

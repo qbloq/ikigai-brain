@@ -8,7 +8,7 @@
 
 const { fetchSource } = require("../lib/datasources");
 const { chipData, sqlTitle } = require("../lib/artifacts");
-const { escape, cell, miniTable } = require("../lib/kit");
+const { escape, cell, miniTable, checkCtl } = require("../lib/kit");
 const { activityBlock, sourceBlock } = require("./task-detail");
 const store = require("../lib/store");
 const meetico = require("../lib/meetico");
@@ -73,9 +73,7 @@ function ioEditRow(row, kind, tid, cat) {
       <div><label class="block text-[11px] text-slate-400 mb-0.5">Tipo (IO)</label>${editSelect(`iot_${sid}`, row.io_type_id, ioTypeOpts(cat), iotPost)}</div>
       <div><label class="block text-[11px] text-slate-400 mb-0.5">Artifact</label>${editSelect(`art_${sid}`, row.artifact_type_id, artifactOpts(cat), artPost)}</div>
     </div>
-    <label class="flex items-center gap-2 text-xs text-slate-600 mt-2">
-      <input id="ioq-${sid}" type="checkbox" data-bind="req_${sid}"${row.is_required ? " checked" : ""} data-on:change="${reqPost}" data-indicator:loading class="rounded border-slate-300" /> Requerido
-    </label>
+    ${checkCtl(`req_${sid}`, "Requerido", `${reqPost}`, { indicator: "loading", checked: row.is_required, id: `ioq-${sid}`, cls: "text-xs mt-2" })}
     <div class="mt-2 pt-2 border-t border-slate-100">
       <label class="block text-[11px] text-slate-400 mb-0.5">Vínculo (instancia del artifact)</label>
       ${bindingChip(row, base, cat)}

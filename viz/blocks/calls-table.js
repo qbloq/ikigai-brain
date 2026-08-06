@@ -5,13 +5,13 @@
 // signals / regetQS / controls / table(rows, wire) / counter.
 
 const { fetchSource } = require("../lib/datasources");
-const { escape, cell, selectCtl } = require("../lib/kit");
+const { escape, cell, selectCtl, checkCtl } = require("../lib/kit");
 
 const RESULT_BADGE = [
-  [/^closed won/i, "bg-emerald-100 text-emerald-700"],
+  [/^closed won/i, "badge-pos"],
   [/^follow-up/i, "bg-blue-100 text-blue-700"],
-  [/^rescheduled/i, "bg-amber-100 text-amber-700"],
-  [/unsuccessful|unqualified/i, "bg-red-100 text-red-700"],
+  [/^rescheduled/i, "badge-cau"],
+  [/unsuccessful|unqualified/i, "badge-neg"],
 ];
 const RESULT_OPTS = [
   ["", "Resultado: todos"],
@@ -35,8 +35,8 @@ const CALL_COLS = [
 
 function resultBadge(v) {
   if (!v) return '<span class="text-slate-300">—</span>';
-  const cls = (RESULT_BADGE.find(([re]) => re.test(v)) || [null, "bg-slate-100 text-slate-600"])[1];
-  return `<span class="text-[11px] font-medium px-2 py-0.5 rounded-full ${cls}" title="${escape(v)}">${escape(v.length > 22 ? v.slice(0, 21) + "…" : v)}</span>`;
+  const cls = (RESULT_BADGE.find(([re]) => re.test(v)) || [null, "badge-neutral"])[1];
+  return `<span class="badge ${cls}" title="${escape(v)}">${escape(v.length > 22 ? v.slice(0, 21) + "…" : v)}</span>`;
 }
 
 function callCell(col, r) {
@@ -82,27 +82,25 @@ function controls(p, reget) {
   return `${selectCtl("cResult", p.result || "", RESULT_OPTS, reget, INDICATOR)}
     ${selectCtl("cProject", p.project || "", projectOpts, reget, INDICATOR)}
     ${selectCtl("cCloser", p.closer || "", closerOpts, reget, INDICATOR)}
-    <label class="flex items-center gap-2 text-sm text-slate-600 px-2">
-      <input type="checkbox" data-bind="cReported" data-on:change="${reget}" data-indicator:${INDICATOR} class="rounded border-slate-300" /> Solo analizadas
-    </label>`;
+    ${checkCtl("cReported", "Solo analizadas", `${reget}`, { indicator: `${INDICATOR}` })}`;
 }
 
 function table(rows, wire) {
   if (!rows.length) return '<p class="text-slate-500 italic">Sin resultados.</p>';
   const thead = CALL_COLS.map(
-    (c) => `<th class="${c.align || "text-left"} ${c.w || ""} font-semibold px-3 py-2 border-b border-slate-200 sticky top-0 bg-slate-50">${escape(c.l)}</th>`
+    (c) => `<th class="${c.align || "text-left"} ${c.w || ""}">${escape(c.l)}</th>`
   ).join("");
   const tbody = rows
     .map(
       (r) =>
-        `<tr ${wire.rowAttrs(r)} class="cursor-pointer even:bg-slate-50/60 hover:bg-indigo-50">${CALL_COLS.map(
+        `<tr ${wire.rowAttrs(r)} class="cursor-pointer">${CALL_COLS.map(
           (c) =>
-            `<td class="px-3 py-2 border-b border-slate-100 align-top ${c.align || ""} ${c.cls || ""}">${callCell(c.k, r)}</td>`
+            `<td class="align-top ${c.align || ""} ${c.cls || ""}">${callCell(c.k, r)}</td>`
         ).join("")}</tr>`
     )
     .join("");
-  return `<div class="overflow-auto rounded-lg border border-slate-200 max-h-[calc(100vh-12rem)]"><table class="w-full table-fixed text-sm border-collapse">
-    <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
+  return `<div class="table-wrap"><div class="table-scroll overflow-y-auto max-h-[calc(100vh-12rem)]"><table class="tbl w-full min-w-[60rem] table-fixed">
+    <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div></div>`;
 }
 
 module.exports = {

@@ -186,6 +186,9 @@ artifact.
 | Script | Use it to… |
 |--------|-----------|
 | `pipeline.sh [--by stage\|status\|month\|closer] [--list] [--project N] [--status S] [--stage FRAG] [--from D] [--to D] [--limit N]` | Default `--by stage`: the pipeline board in order with open/won/lost/abandoned counts + won value per stage. `--by month` = cohorts (created, won, win %, won value). `--by closer` = per-closer effectiveness by opp (complements `call_stats.sh`, which is per-call). `--list` = raw opportunity rows (lead, stage, status, value, assigned). |
+| `leads.sh [--dueno LISTA] [--sin-dueno] [--project N] [--stage FRAG] [--from D] [--to D] [--dias-min N] [--pagado\|--organico] [--limit N]` | The leads as ROWS, with owner **and attribution**: resolves `utm_source`/`utm_campaign` from the contact's `custom_fields` against `crm_custom_fields`, so each row says whether the lead came from paid media (and which campaign) or an organic form. `--dueno` takes a comma list of name fragments plus the token `sin-dueno` for the orphans. Supersedes `pipeline.sh --list`. |
+| `opp_detail.sh <id\|prefix>` | One opportunity + its contact as a single JSON object, with the GHL custom fields resolved to their question — the qualification survey the lead answered plus the `utm_*`. Feeds the viz detail panel. |
+| `facets.sh [--project N] [--from D]` | The universe of owners and stages with counts (`{tipo,valor,n}`) — reference data that populates the leads filters. Kept separate on purpose: derived from already-filtered rows, a filter's options would close in on themselves. |
 
 ## GHL domain — el CRM en la fuente ([bash/ghl/](bash/ghl/))
 
@@ -210,7 +213,13 @@ behind the backend (the `bash/google/` pattern) is the right end state.
 `crm_contacts.created_at` shows runs of exactly 100 (04-ago, 23-jul, 14-jul,
 29-jun, 29-may). Findings and the credentials policy: [bash/ghl/README.md](bash/ghl/README.md).
 
-Viz source: `crm_pipeline`. The **Ejecutivo role layer**
+Viz sources: `crm_pipeline`, `crm_leads`, `crm_opp_detail` (object), `crm_facets`
+(cached 60s). The **Leads** UI (Director Comercial layer) is master-detail over
+them, and is built on a UX rule worth keeping: *a table with filters can express
+any query, and precisely for that reason it proposes nothing* — so it opens with
+**named views** («Sin dueño», «Pagados sin dueño», «Sin dueño y fríos»,
+«Estancados en NUEVO LEAD», «Todos»), and the filters stay for what those don't
+anticipate. The **Ejecutivo role layer**
 ([viz/specs/roles/ejecutivo/](viz/specs/roles/ejecutivo/), 9 UIs) covers all
 three domains: portafolio, pauta (campañas + line chart de gasto diario),
 cobranza (vencidas + aging), comisiones (cola de aprobación), cashflow y
@@ -243,6 +252,7 @@ a clear «el backend aún no expone …» message. See [bash/google/README.md](b
 |--------|-----------|
 | `auth_status.sh` | Mode, base and a live probe against the backend. |
 | `drive_ls.sh [--folder ID\|url\|name] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf] [--limit N]` | List a folder live (`/drive/contents`) or search the whole drive (index). |
+| `drive_recent.sh [--days N] [--from D] [--to D] [--modified] [--docs] [--type T] [--folder FRAG] [--owner FRAG] [--exclude FRAG] [--with-folders] [--by day\|type\|owner\|folder] [--limit N]` | What **entered or changed** lately, newest first — the index has no other way to be asked "what's new". Always prints the index's freshness to stderr and shouts past 48h, because the index is a hand-refreshed cache and a stale one answers "what came in this week?" with silence. Needs the 2026-08-04 backend change (date filters + `sort` + `/drive/index/status`); refuses to run without it. |
 | `drive_file.sh <id\|url>` | Metadata of one file. |
 | `doc_read.sh <id\|url> [--out F] [--txt]` | A Google Doc as **Markdown** (`?format=markdown`). `--out` writes a file. |
 | `sheet_show.sh <id\|url>` | Sheet metadata (tabs not exposed by the backend yet). |

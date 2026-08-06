@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
-# sin_dueno.sh — oportunidades del CRM que NADIE tomó, con su contacto al lado.
+# leads.sh — los leads del CRM como FILAS, con su dueño, su procedencia y su
+# contacto al lado. `pipeline.sh` da el tablero agregado; esto da la lista.
 #
-# `crm_opportunities.user_id` sale de `assigned_to` (el id del usuario en GHL).
-# Cuando GHL no trae dueño, la oportunidad queda huérfana: existe, tiene lead y
-# etapa, y no hay closer responsable. En julio de 2026 eso fue el 43% del mes
-# (237 de 552), verificado contra la fuente — no es un fallo de mapeo nuestro:
-# de esas 237, CERO traían `assigned_to` en GHL (`bash/ghl/`).
+# Lo que lo hace distinto de `pipeline.sh --list` es la ATRIBUCIÓN: resuelve
+# utm_source/utm_campaign desde los custom_fields del contacto contra
+# `crm_custom_fields`, así que cada fila dice si el lead llegó por pauta (y de
+# qué campaña) o por un formulario orgánico.
 #
-# Este script las lista con el contacto pegado (nombre, email, teléfono, tags),
-# que es lo que hace falta para poder repartirlas o rastrear por dónde entraron.
+# `--dueno sin-dueno` es el caso que le dio origen: `crm_opportunities.user_id`
+# sale de `assigned_to` de GHL, y cuando GHL no trae dueño la oportunidad queda
+# huérfana — existe, tiene lead y etapa, y ningún closer responsable. En julio
+# de 2026 eso fue el 43% del mes (237 de 552), verificado contra la fuente: de
+# esas 237, CERO traían `assigned_to` en GHL (`bash/ghl/`).
 #
 # Read-only. Ver también: pipeline.sh (el tablero), bash/ghl/gap.sh (la fuente).
 set -euo pipefail
@@ -18,22 +21,29 @@ usage() {
   sed -n '2,14p' "$0"
   cat <<'EOF'
 
-Uso: sin_dueno.sh [--project N] [--status S] [--stage FRAG] [--from D] [--to D]
-                  [--con-contacto] [--sin-contacto] [--limit N] [--json]
+Uso: leads.sh [--dueno LISTA] [--project N] [--status S] [--stage FRAG]
+              [--from D] [--to D] [--pagado|--organico] [--limit N] [--json]
 
+  --dueno LISTA    dueños separados por coma; cada uno es un fragmento del
+                   nombre. El token especial `sin-dueno` trae los huérfanos.
+                   Ej: --dueno sin-dueno          (los que nadie tomó)
+                       --dueno "Carlos,sin-dueno" (los de Carlos + huérfanos)
+  --sin-dueno      atajo de --dueno sin-dueno
   --project N      proyecto (fragmento del nombre)
   --status S       open | won | lost | abandoned
   --stage FRAG     fragmento del nombre de la etapa
   --from / --to    ventana sobre created_date (la fecha real de GHL)
-  --pagado         solo las que traen utm_* (llegaron por pauta)
-  --organico       solo las que NO traen utm_*
-  --con-contacto   solo las que tienen contacto espejado
-  --sin-contacto   solo las que NO lo tienen (el contacto nunca se ingirió)
+  --dias-min N     solo los que llevan N días o más desde que se crearon
+                   (los que ya se enfriaron)
+  --pagado         solo los que traen utm_* (llegaron por pauta)
+  --organico       solo los que NO traen utm_*
+  --con-contacto   solo los que tienen contacto espejado
+  --sin-contacto   solo los que NO lo tienen (el contacto nunca se ingirió)
   --limit N        default 200; 0 = sin tope
 EOF
 }
 
-PROJECT="" STATUS="" STAGE="" FROM="" TO="" LIMIT=200 CONTACT="" PAGADO=""
+PROJECT="" STATUS="" STAGE="" FROM="" TO="" LIMIT=200 CONTACT="" PAGADO="" DUENO="" DIASMIN=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project) PROJECT="${2:?}"; shift 2 ;;
@@ -41,6 +51,9 @@ while [[ $# -gt 0 ]]; do
     --stage) STAGE="${2:?}"; shift 2 ;;
     --from) FROM="${2:?}"; shift 2 ;;
     --to) TO="${2:?}"; shift 2 ;;
+    --dueno) DUENO="${2:?}"; shift 2 ;;
+    --dias-min) DIASMIN="${2:?}"; shift 2 ;;
+    --sin-dueno) DUENO="sin-dueno"; shift ;;
     --con-contacto) CONTACT="si"; shift ;;
     --sin-contacto) CONTACT="no"; shift ;;
     --pagado) PAGADO="si"; shift ;;
@@ -53,7 +66,26 @@ while [[ $# -gt 0 ]]; do
 done
 
 esc() { printf '%s' "${1//\'/\'\'}"; }
-where="o.user_id IS NULL"
+where="true"
+
+# --dueno: una lista OR de fragmentos de nombre, donde `sin-dueno` no es un
+# nombre sino la ausencia de uno. Se arma como un solo paréntesis para que
+# convivan «los de Carlos» y «los que nadie tomó» en la misma consulta.
+if [[ -n "$DUENO" ]]; then
+  ors=""
+  IFS=',' read -ra parts <<< "$DUENO"
+  for raw in "${parts[@]}"; do
+    tok="$(printf '%s' "$raw" | sed 's/^ *//; s/ *$//')"
+    [[ -z "$tok" ]] && continue
+    if [[ "$tok" == "sin-dueno" || "$tok" == "sin dueño" ]]; then
+      cond="o.user_id IS NULL"
+    else
+      cond="trim(coalesce(pe.name,'')||' '||coalesce(pe.lastname,'')) ILIKE '%$(esc "$tok")%'"
+    fi
+    ors="${ors:+$ors OR }$cond"
+  done
+  [[ -n "$ors" ]] && where="$where AND ($ors)"
+fi
 [[ -n "$PROJECT" ]] && where="$where AND pr.name ILIKE '%$(esc "$PROJECT")%'"
 [[ -n "$STATUS"  ]] && where="$where AND o.status = '$(esc "$STATUS")'"
 [[ -n "$FROM"    ]] && where="$where AND o.created_date >= '$(esc "$FROM")'"
@@ -61,6 +93,7 @@ where="o.user_id IS NULL"
 [[ "$CONTACT" == "si" ]] && where="$where AND c.id IS NOT NULL"
 [[ "$CONTACT" == "no" ]] && where="$where AND c.id IS NULL"
 [[ -n "$STAGE"   ]] && where="$where AND st.name ILIKE '%$(esc "$STAGE")%'"
+[[ -n "$DIASMIN" ]] && where="$where AND (CURRENT_DATE - o.created_date::date) >= $((DIASMIN))"
 [[ "$PAGADO" == "si" ]] && where="$where AND utm.src IS NOT NULL"
 [[ "$PAGADO" == "no" ]] && where="$where AND utm.src IS NULL"
 
@@ -73,6 +106,7 @@ SELECT left(o.id::text,8)                                   AS id,
        o.status                                             AS estado,
        to_char(o.created_date,'YYYY-MM-DD')                 AS creada,
        (CURRENT_DATE - o.created_date::date)                AS dias,
+       coalesce(nullif(trim(coalesce(pe.name,'')||' '||coalesce(pe.lastname,'')),''),'—') AS dueno,
        coalesce(nullif(trim(coalesce(c.first_name,'')||' '||coalesce(c.last_name,'')),''),'—') AS contacto,
        coalesce(c.email,'—')                                AS email,
        coalesce(c.phone,'—')                                AS telefono,
@@ -87,6 +121,8 @@ FROM crm_opportunities o
 JOIN projects pr        ON pr.id = o.project_id
 LEFT JOIN crm_contacts c ON c.id = o.contact_id
 LEFT JOIN crm_pipelines pl ON pl.id = o.pipeline_id
+LEFT JOIN users u        ON u.id = o.user_id
+LEFT JOIN persons pe     ON pe.person_id = u.person_id
 LEFT JOIN LATERAL (
   SELECT s->>'name' AS name FROM jsonb_array_elements(pl.stages) s
   WHERE s->>'id' = o.ghl_stage_id LIMIT 1) st ON true

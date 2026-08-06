@@ -300,19 +300,22 @@ const SOURCES = {
       limit: "--limit",
     },
   },
-  // Oportunidades que nadie tomó: user_id NULL porque GHL no trae `assigned_to`
-  // (verificado contra la fuente — no es un fallo de mapeo). Trae el contacto
-  // pegado, que es lo que permite repartirlas o rastrear por dónde entraron.
-  crm_sin_dueno: {
-    label: "Leads sin dueño",
-    script: "bash/crm/sin_dueno.sh",
+  // Los leads del CRM como filas, con dueño y ATRIBUCIÓN (utm_source/campaign
+  // resueltos contra crm_custom_fields). `--dueno` acepta una lista separada
+  // por coma, con el token `sin-dueno` para los huérfanos — así el multiselect
+  // del browser viaja como un solo param.
+  crm_leads: {
+    label: "Leads (CRM)",
+    script: "bash/crm/leads.sh",
     emits: "rows",
     args: {
+      dueno: "--dueno",
       project: "--project",
       status: "--status",
       stage: "--stage",
       from: "--from",
       to: "--to",
+      dias_min: "--dias-min",
       limit: "--limit",
       // Procedencia: un lead con utm_* llegó por pauta. Un solo param del
       // browser mapea a los dos flags excluyentes del script.
@@ -320,6 +323,17 @@ const SOURCES = {
       con_contacto: { flag: "--con-contacto", bool: true },
       sin_contacto: { flag: "--sin-contacto", bool: true },
     },
+  },
+  // El universo de dueños y etapas que puebla los filtros de `crm_leads`. Es
+  // data de referencia (cambia con el equipo o el tablero, no por consulta), y
+  // NO puede derivarse de las filas ya filtradas sin que los selects se cierren
+  // sobre sí mismos — de ahí que sea su propia fuente, cacheada.
+  crm_facets: {
+    label: "Filtros del CRM",
+    script: "bash/crm/facets.sh",
+    emits: "rows",
+    args: { project: "--project", from: "--from" },
+    cache: 60_000,
   },
   // Una oportunidad + su contacto como un objeto: incluye los custom_fields de
   // GHL ya resueltos contra crm_custom_fields (el survey de calificación que

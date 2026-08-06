@@ -7,14 +7,14 @@
 // table(rows, wire) / counter.
 
 const { fetchSource } = require("../lib/datasources");
-const { escape, cell, selectCtl } = require("../lib/kit");
+const { escape, cell, selectCtl, checkCtl } = require("../lib/kit");
 
 const MEETING_STATUS_BADGE = {
-  completed: "bg-emerald-100 text-emerald-700",
-  ended: "bg-emerald-100 text-emerald-700",
+  completed: "badge-pos",
+  ended: "badge-pos",
   processing: "bg-blue-100 text-blue-700",
-  scheduled: "bg-amber-100 text-amber-700",
-  cancelled: "bg-slate-200 text-slate-600",
+  scheduled: "badge-cau",
+  cancelled: "badge-neutral",
 };
 const MEETING_STATUS_ES = {
   completed: "Completada",
@@ -41,8 +41,8 @@ const MEETING_COLS = [
 ];
 
 function meetingStatusBadge(v) {
-  const cls = MEETING_STATUS_BADGE[v] || "bg-slate-100 text-slate-600";
-  return `<span class="text-[11px] font-medium px-2 py-0.5 rounded-full ${cls}">${escape(MEETING_STATUS_ES[v] || v)}</span>`;
+  const cls = MEETING_STATUS_BADGE[v] || "badge-neutral";
+  return `<span class="badge ${cls}">${escape(MEETING_STATUS_ES[v] || v)}</span>`;
 }
 
 function repDot(v) {
@@ -78,27 +78,25 @@ function controls(p, reget) {
   }
   return `${selectCtl("mStatus", p.status || "", MEETING_STATUS_OPTS, reget, INDICATOR)}
     ${selectCtl("mProject", p.project || "", projectOpts, reget, INDICATOR)}
-    <label class="flex items-center gap-2 text-sm text-slate-600 px-2">
-      <input type="checkbox" data-bind="mRep" data-on:change="${reget}" data-indicator:${INDICATOR} class="rounded border-slate-300" /> Solo con reporte
-    </label>`;
+    ${checkCtl("mRep", "Solo con reporte", `${reget}`, { indicator: `${INDICATOR}` })}`;
 }
 
 function table(rows, wire) {
   if (!rows.length) return '<p class="text-slate-500 italic">Sin resultados.</p>';
   const thead = MEETING_COLS.map(
-    (c) => `<th class="${c.align || "text-left"} ${c.w || ""} font-semibold px-3 py-2 border-b border-slate-200 sticky top-0 bg-slate-50">${escape(c.l)}</th>`
+    (c) => `<th class="${c.align || "text-left"} ${c.w || ""}">${escape(c.l)}</th>`
   ).join("");
   const tbody = rows
     .map(
       (r) =>
-        `<tr ${wire.rowAttrs(r)} class="cursor-pointer even:bg-slate-50/60 hover:bg-indigo-50">${MEETING_COLS.map(
+        `<tr ${wire.rowAttrs(r)} class="cursor-pointer">${MEETING_COLS.map(
           (c) =>
-            `<td class="px-3 py-2 border-b border-slate-100 align-top ${c.align || ""} ${c.cls || ""}">${meetingCell(c.k, r)}</td>`
+            `<td class="align-top ${c.align || ""} ${c.cls || ""}">${meetingCell(c.k, r)}</td>`
         ).join("")}</tr>`
     )
     .join("");
-  return `<div class="overflow-auto rounded-lg border border-slate-200 max-h-[calc(100vh-12rem)]"><table class="w-full table-fixed text-sm border-collapse">
-    <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`;
+  return `<div class="table-wrap"><div class="table-scroll overflow-y-auto max-h-[calc(100vh-12rem)]"><table class="tbl w-full min-w-[48rem] table-fixed">
+    <thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div></div>`;
 }
 
 module.exports = {
