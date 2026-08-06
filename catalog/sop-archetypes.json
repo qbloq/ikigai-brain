@@ -2196,7 +2196,7 @@
           "is_required": true,
           "criteria": [
             {
-              "criterion": "Los subgrupos son mutuamente excluyentes y cubren todo el universo de leads de {proyecto} (ningún lead queda sin clasificar).",
+              "criterion": "Los subgrupos son mutuamente excluyentes y cubren todo el universo de leads ANALIZADOS de {proyecto} (ningún lead queda sin clasificar; un bucket residual solo es admisible para registros donde la fuente no trae el dato, y debe quedar declarado).",
               "criterion_category": "completeness",
               "verification_method": "manual"
             },
