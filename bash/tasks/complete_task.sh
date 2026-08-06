@@ -75,8 +75,11 @@ WITH upd AS (
   UPDATE tasks
      SET status = 'completed'::task_status,
          is_completed = true,
-         completed_at = CASE WHEN nullif(:'at','') IS NOT NULL
-                             THEN (:'at')::timestamptz ELSE completed_at END
+         -- coalesce y no CASE: Postgres pliega el literal ''::timestamptz al
+         -- analizar, así que un CASE reventaba siempre que --at venía vacío,
+         -- aunque esa rama no corriera. Cerrar sin fecha explícita (el caso
+         -- normal: se completó hoy) era imposible.
+         completed_at = coalesce(nullif(:'at','')::timestamptz, completed_at)
    WHERE id IN ($list)
      AND status <> 'completed' AND coalesce(is_completed,false) = false
   RETURNING id
