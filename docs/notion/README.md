@@ -8,12 +8,19 @@ Son **congelados** (para análisis); la UI del viz lee Notion en vivo.
 
 | Ruta | Qué es | Filas |
 |------|--------|------:|
-| [`_corpus/bd-avances-all.json`](_corpus/bd-avances-all.json) | **Todo** BD Avances, org-wide (todos los clientes). Cada fila trae `proyecto_ids`. | 3300 |
+| [`_corpus/bd-avances-all.json`](_corpus/bd-avances-all.json) | **Todo** BD Avances, org-wide (todos los clientes). Cada fila trae `proyecto_ids`. | 3326 |
 | [`david-guerrero-premium-mastermind/`](david-guerrero-premium-mastermind/) | Proyecto DG Mastermind (+ [ANALISIS.md](david-guerrero-premium-mastermind/ANALISIS.md)) | 294 |
 | [`origen-del-amor/`](origen-del-amor/) | Proyecto DG/AT Origen del amor | 75 |
 | [`david-guerrero-premium-academy/`](david-guerrero-premium-academy/) | Proyecto DG Academy | 3 |
 
 ## Hallazgos de estructura (importantes para el análisis)
+
+- **Las propiedades `files` traen el locator, no un conteo** (desde 2026-07-26):
+  `drive_crudo` / `drive_editado` son listas de `{name, url, hosted}`. Son
+  carpetas de Google Drive **externas** (permanentes; `hosted:true` sería una URL
+  de Notion que caduca en ~1 h y NO debe persistirse). 293 de 3326 filas las
+  traen, y son la fuente de los bindings de artefacto —
+  ver [docs/io-bindings-drive.md](../io-bindings-drive.md).
 
 - **La relación `Proyectos brief` está poco poblada**: de 3300 filas, solo **372**
   (11 %) apuntan a una página de proyecto — los 3 programas DG. Las otras **2928

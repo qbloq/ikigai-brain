@@ -1,0 +1,275 @@
+[
+ {
+  "id": "383d5db4-6a6c-806c-b346-e6abfd3a41ab",
+  "url": "https://app.notion.com/p/AT-Iniciar-campa-a-de-generaci-n-de-audiencias-383d5db46a6c806cb346e6abfd3a41ab",
+  "tarea": "AT-Iniciar campaña de generación de audiencias",
+  "estado": "On Time",
+  "fecha": "2026-06-18",
+  "prioridad": "Importante",
+  "archetype_id": "A3.3",
+  "confidence": 0.7,
+  "_asignado": [
+   "David Cast"
+  ]
+ },
+ {
+  "id": "383d5db4-6a6c-800e-902a-cbfc9e1e0e36",
+  "url": "https://app.notion.com/p/AT-Contactar-1-1-a-los-estudiantes-de-la-ciencia-de-la-abundancia-y-enviar-encuesta-383d5db46a6c800e902acbfc9e1e0e36",
+  "tarea": "AT-Contactar 1:1  a los estudiantes de la ciencia de la abundancia y enviar encuesta",
+  "estado": "On Time",
+  "fecha": "2026-06-22",
+  "prioridad": "Importante",
+  "archetype_id": "A6.7",
+  "confidence": 0.6,
+  "_asignado": [
+   "luis david florez cardona"
+  ]
+ },
+ {
+  "id": "383d5db4-6a6c-8002-8341-f12a79ae278f",
+  "url": "https://app.notion.com/p/AT-Crear-copy-para-env-o-de-mensajes-con-encuesta-383d5db46a6c80028341f12a79ae278f",
+  "tarea": "AT-Crear copy para envío de mensajes con encuesta",
+  "estado": "On Time",
+  "fecha": "2026-06-19",
+  "prioridad": "Importante",
+  "archetype_id": "A9.4",
+  "confidence": 0.8,
+  "_asignado": [
+   "Lorenzo Cadavid"
+  ]
+ },
+ {
+  "id": "383d5db4-6a6c-8059-81e5-d41f782827c8",
+  "url": "https://app.notion.com/p/AT-Crear-encuesta-y-regalo-de-encuesta-para-las-personas-que-respondan-383d5db46a6c805981e5d41f782827c8",
+  "tarea": "AT-Crear encuesta y regalo de encuesta para las personas que respondan",
+  "estado": "On Time",
+  "fecha": "2026-06-19",
+  "prioridad": "Importante",
+  "archetype_id": "A7.7",
+  "confidence": 0.65,
+  "_asignado": [
+   "Lorenzo Cadavid"
+  ]
+ },
+ {
+  "id": "383d5db4-6a6c-8051-8eb2-c26df03f421e",
+  "url": "https://app.notion.com/p/AT-Descargar-base-de-datos-de-compradores-de-la-Ciencia-de-Abundancia-383d5db46a6c80518eb2c26df03f421e",
+  "tarea": "AT-Descargar base de datos de compradores de la Ciencia de Abundancia",
+  "estado": "On Time",
+  "fecha": "2026-06-18",
+  "prioridad": "Importante",
+  "archetype_id": "A8.5",
+  "confidence": 0.55,
+  "_asignado": [
+   "Roberto Maestre"
+  ]
+ },
+ {
+  "id": "383d5db4-6a6c-8027-9258-ff0028eb1e1e",
+  "url": "https://app.notion.com/p/AT-Hacer-estudio-de-mercado-383d5db46a6c80279258ff0028eb1e1e",
+  "tarea": "AT-Hacer estudio de mercado",
+  "estado": "On Time",
+  "fecha": "2026-06-26",
+  "prioridad": "Importante",
+  "archetype_id": "A6.7",
+  "confidence": 0.7,
+  "_asignado": [
+   "Lorenzo Cadavid"
+  ]
+ },
+ {
+  "id": "376d5db4-6a6c-8035-a733-d58d82fba1cf",
+  "url": "https://app.notion.com/p/AT-Generar-investigaci-n-del-avatar-de-Andrea-a-trav-s-de-canales-org-nicos-encuestas-a-la-comunida-376d5db46a6c8035a733d58d82fba1cf",
+  "tarea": "AT-Generar investigación del avatar de Andrea a través de canales orgánicos (encuestas a la comunidad).",
+  "estado": "On Time",
+  "fecha": "2026-06-09",
+  "prioridad": "Importante",
+  "archetype_id": "A6.7",
+  "confidence": 0.9,
+  "_asignado": [
+   "Sofi",
+   "Marisol Ochoa"
+  ]
+ },
+ {
+  "id": "376d5db4-6a6c-80dd-89a9-d60bd0f901b0",
+  "url": "https://app.notion.com/p/AT-Enviar-los-contenidos-reels-de-Andrea-m-s-alineados-con-la-nueva-narrativa-para-crear-campa-as--376d5db46a6c80dd89a9d60bd0f901b0",
+  "tarea": "AT-Enviar los contenidos (reels) de Andrea más alineados con la nueva narrativa para crear campañas de generación de audiencia.",
+  "estado": "On Time",
+  "fecha": "2026-06-09",
+  "prioridad": "Importante",
+  "archetype_id": null,
+  "confidence": 0.0,
+  "_asignado": [
+   "Sofi",
+   "Marisol Ochoa"
+  ]
+ },
+ {
+  "id": "376d5db4-6a6c-8050-a573-d7694f36c64e",
+  "url": "https://app.notion.com/p/AT-Obtener-acceso-al-WhatsApp-de-Andrea-intentar-reconfigurar-WhatsApp-Business-si-es-necesario-376d5db46a6c8050a573d7694f36c64e",
+  "tarea": "AT-Obtener acceso al WhatsApp de Andrea (intentar reconfigurar WhatsApp Business si es necesario).",
+  "estado": "On Time",
+  "fecha": "2026-06-09",
+  "prioridad": "Importante",
+  "archetype_id": "A9.7",
+  "confidence": 0.7,
+  "_asignado": [
+   "luis david florez cardona"
+  ]
+ },
+ {
+  "id": "376d5db4-6a6c-801b-98ad-ff31ac202909",
+  "url": "https://app.notion.com/p/AT-Encuesta-con-los-leads-cu-nto-tiempo-siguen-a-Andrea-por-qu-qu-esperan-lograr-y-sus-dolores-376d5db46a6c801b98adff31ac202909",
+  "tarea": "AT-Encuesta con los leads: cuánto tiempo siguen a Andrea, por qué, qué esperan lograr, y sus dolores más grandes (ej. heridas de infancia). Pensar cómo integrar esto en el proceso de CTO.",
+  "estado": "On Time",
+  "fecha": "2026-06-09",
+  "prioridad": "Importante",
+  "archetype_id": "A6.7",
+  "confidence": 0.8,
+  "_asignado": [
+   "Sofi",
+   "Lorenzo Cadavid",
+   "Marisol Ochoa"
+  ]
+ },
+ {
+  "id": "376d5db4-6a6c-8071-9618-caa6d48f0c6d",
+  "url": "https://app.notion.com/p/AT-Alinear-la-estrategia-con-Lucho-y-el-equipo-comercial-para-la-nueva-direcci-n-376d5db46a6c80719618caa6d48f0c6d",
+  "tarea": "AT-Alinear la estrategia con Lucho y el equipo comercial para la nueva dirección",
+  "estado": "On Time",
+  "fecha": "2026-06-09",
+  "prioridad": "Importante",
+  "archetype_id": "A12.2",
+  "confidence": 0.75,
+  "_asignado": [
+   "luis david florez cardona",
+   "Marisol Ochoa"
+  ]
+ },
+ {
+  "id": "376d5db4-6a6c-80e3-b613-ef12f4135986",
+  "url": "https://app.notion.com/p/AT-Alinear-la-estrategia-de-contenido-org-nico-con-Sofi-para-la-nueva-narrativa-y-ngulos-376d5db46a6c80e3b613ef12f4135986",
+  "tarea": "AT-Alinear la estrategia de contenido orgánico con Sofi para la nueva narrativa y ángulos.",
+  "estado": "On Time",
+  "fecha": null,
+  "prioridad": "Importante",
+  "archetype_id": "A4.4",
+  "confidence": 0.7,
+  "_asignado": [
+   "Sofi",
+   "Marisol Ochoa",
+   "Lorenzo Cadavid"
+  ]
+ },
+ {
+  "id": "376d5db4-6a6c-806f-a4c0-c432436aa287",
+  "url": "https://app.notion.com/p/AT-Escribir-el-nuevo-VSL-de-La-Ciencia-de-la-Abundancia-y-los-nuevos-anuncios-para-que-Andrea-los-376d5db46a6c806fa4c0c432436aa287",
+  "tarea": "AT-Escribir el nuevo VSL  de 'La Ciencia de la Abundancia' y los nuevos anuncios para que Andrea los grabe.",
+  "estado": "On Time",
+  "fecha": "2026-06-10",
+  "prioridad": "Importante",
+  "archetype_id": "A1.2",
+  "confidence": 0.85,
+  "_asignado": [
+   "Lorenzo Cadavid"
+  ]
+ },
+ {
+  "id": "376d5db4-6a6c-8048-bcc6-c3a7a7cfcd66",
+  "url": "https://app.notion.com/p/AT-Revisar-respuestas-del-formulario-de-registro-para-detectar-patrones-de-intenci-n-y-objeciones-376d5db46a6c8048bcc6c3a7a7cfcd66",
+  "tarea": "AT-Revisar respuestas del formulario de registro para detectar patrones de intención y objeciones",
+  "estado": "On Time",
+  "fecha": "2026-06-09",
+  "prioridad": "Importante",
+  "archetype_id": "A6.7",
+  "confidence": 0.7,
+  "_asignado": [
+   "Lorenzo Cadavid",
+   "Marisol Ochoa"
+  ]
+ },
+ {
+  "id": "36fd5db4-6a6c-8059-bcfe-f9b6f4f0f48b",
+  "url": "https://app.notion.com/p/AT-Capacitar-a-los-setters-Luis-Mateo-Franco-sobre-el-uso-de-ManyChat-y-el-tagging-manual-de-lea-36fd5db46a6c8059bcfef9b6f4f0f48b",
+  "tarea": "AT-Capacitar a los setters (Luis, Mateo, Franco) sobre el uso de ManyChat y el tagging manual de leads por etapas.",
+  "estado": "On Time",
+  "fecha": "2026-06-01",
+  "prioridad": "Importante",
+  "archetype_id": "A6.4",
+  "confidence": 0.9,
+  "_asignado": [
+   "luis david florez cardona",
+   "Marisol Ochoa"
+  ]
+ },
+ {
+  "id": "36fd5db4-6a6c-8083-a604-db4fcbcdfd4a",
+  "url": "https://app.notion.com/p/AT-Definir-y-configurar-tags-en-ManyChat-GoHighLevel-para-las-etapas-de-conciencia-del-lead-problem-36fd5db46a6c8083a604db4fcbcdfd4a",
+  "tarea": "AT-Definir y configurar tags en ManyChat/GoHighLevel para las etapas de conciencia del lead (problema, solución, 10x solución, agendamiento).",
+  "estado": "On Time",
+  "fecha": "2026-05-29",
+  "prioridad": "Importante",
+  "archetype_id": "A6.2",
+  "confidence": 0.95,
+  "_asignado": [
+   "Roberto Maestre",
+   "Juan Camilo Correa W. "
+  ]
+ },
+ {
+  "id": "36fd5db4-6a6c-8080-8236-fda22f3e7d2d",
+  "url": "https://app.notion.com/p/AT-Implementar-ManyChat-para-la-comunicaci-n-de-setters-para-centralizar-chats-y-resolver-problemas--36fd5db46a6c80808236fda22f3e7d2d",
+  "tarea": "AT-Implementar ManyChat para la comunicación de setters para centralizar chats y resolver problemas técnicos",
+  "estado": "On Time",
+  "fecha": "2026-05-29",
+  "prioridad": "Importante",
+  "archetype_id": "A6.1",
+  "confidence": 0.9,
+  "_asignado": [
+   "Juan Camilo Correa W. ",
+   "luis david florez cardona"
+  ]
+ },
+ {
+  "id": "36fd5db4-6a6c-80b5-883f-e7708f34e7be",
+  "url": "https://app.notion.com/p/AT-Investigar-y-solucionar-urgentemente-la-inconsistencia-de-chats-que-aparecen-a-los-setters-36fd5db46a6c80b5883fe7708f34e7be",
+  "tarea": "AT- Investigar y solucionar urgentemente la inconsistencia de chats que aparecen a los setters.",
+  "estado": "On Time",
+  "fecha": "2026-05-29",
+  "prioridad": "Importante",
+  "archetype_id": "A6.6",
+  "confidence": 0.9,
+  "_asignado": [
+   "luis david florez cardona"
+  ]
+ },
+ {
+  "id": "36ad5db4-6a6c-8049-ad41-ceeff72a6d8d",
+  "url": "https://app.notion.com/p/AT-Adquirir-o-recuperar-un-n-mero-de-WhatsApp-para-usar-como-WhatsApp-Business-corporativo-36ad5db46a6c8049ad41ceeff72a6d8d",
+  "tarea": "AT-Adquirir o recuperar un número de WhatsApp para usar como WhatsApp Business corporativo.",
+  "estado": "On Time",
+  "fecha": "2026-05-25",
+  "prioridad": "Importante",
+  "archetype_id": "A9.7",
+  "confidence": 0.75,
+  "_asignado": [
+   "Roberto Maestre",
+   "Juan Camilo Correa W. "
+  ]
+ },
+ {
+  "id": "329d5db4-6a6c-80f6-9dc3-c2bc3cb52bd9",
+  "url": "https://app.notion.com/p/AT-Crea-video-para-el-primer-video-del-funnel-gamificado-329d5db46a6c80f69dc3c2bc3cb52bd9",
+  "tarea": "AT-Crea video para el primer video del funnel  gamificado",
+  "estado": "On Time",
+  "fecha": "2026-03-23",
+  "prioridad": "Importante",
+  "archetype_id": "A7.8",
+  "confidence": 0.6,
+  "_asignado": [
+   "Roberto Maestre",
+   "Juan Camilo Correa W. "
+  ]
+ }
+]
