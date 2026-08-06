@@ -97,8 +97,11 @@ into the sidecar (resolved form, §4).
 
 ### 4. Write the discovery sidecar (the seam to Stage 2–3)
 Keep the DB report canonical/clean; emit the resolution metadata to a sidecar at
-`backups/meeting-reports/<meeting-id>.discovery.md`, one row per action item
-(aligned by index to `actionItems`):
+`backups/meeting-reports/<meeting-id>.discovery.md`. Open it with a **header**
+(meeting + date + project + the resolved due-date anchors) and a **speaker map**
+(`A = Juanca → Juan Camilo Correa`, plus who was only *mentioned* and is therefore
+never an owner) — diarization is the main source of owner errors, so resolve it
+once, up front. Then one row per action item (aligned by index to `actionItems`):
 
 | # | task | **project** | assignedTo (spoken) | **owner (canonical)** | **dueDateISO** | priority | **SOP/archetype** | **evidence** |
 
@@ -111,11 +114,18 @@ Keep the DB report canonical/clean; emit the resolution metadata to a sidecar at
   `⚠️ UNRESOLVED` — **never silently drop**.
 - **dueDateISO** ← apply the due-date estimation policy below (always a date).
 - **SOP/archetype** ← classify the item against the canonical catalog
-  `catalog/sop-archetypes.json` (the source of truth — S1–S12 + the 55 `A_.__`
-  archetypes). Put the **archetype id** (e.g. `A2.4`) and its SOP. If nothing
-  fits, mark it `gap → S11/S12 candidate` (never force a bad match — the tail
-  grows the catalog). This gives Stage 2–3 a strong prior and is persisted on the
-  task (`tasks.archetype_id`).
+  `catalog/sop-archetypes.json` (the source of truth — 12 macro-processes S1–S12,
+  36 SOPs, 77 `A_.__` archetypes; browse it with `bash/catalog/sops.sh`). Put the
+  **archetype id** (e.g. `A2.4`) and its SOP. If nothing fits, mark it
+  `gap → nuevo archetype candidato` naming the closest one (never force a bad
+  match — the tail grows the catalog). This gives Stage 2–3 a strong prior and is
+  persisted on the task (`tasks.archetype_id`).
+  > **The mapping now decides the task's I/O.** 59 of the 77 archetypes carry a
+  > **template contract** (`archetype_inputs`/`outputs`/`acceptance_criteria`), and
+  > Stage 2 instantiates it verbatim via `create_task.sh --archetype + slots`. A
+  > sloppy archetype id no longer just mislabels the task — it gives it the wrong
+  > deliverables. When a template exists, also note in the sidecar which **slots**
+  > it declares (the `slots[]` of the archetype) so Stage 2 can fill them.
 - **evidence** ← the verbatim quote anchoring the item.
 
 `meeting-to-tasks` consumes this sidecar (preferring it over the raw report
@@ -124,8 +134,8 @@ actionItems) so it never has to re-guess owners or dates.
 ### 5. Upsert into the DB (replace without looking back)
 Always **dry-run first**, then commit:
 ```
-bash/meetings/upsert_report.sh <id> <report.json> --dry-run   # shows BEFORE/AFTER, rolls back
-bash/meetings/upsert_report.sh <id> <report.json>             # INSERT … ON CONFLICT(meeting_id) DO UPDATE
+bash/ops/upsert_report.sh <id> <report.json> --dry-run   # shows BEFORE/AFTER, rolls back
+bash/ops/upsert_report.sh <id> <report.json>             # INSERT … ON CONFLICT(meeting_id) DO UPDATE
 ```
 The script pre-validates the meeting (exactly one team meeting) and that all 14
 canonical keys are present, then upserts in one transaction. An existing report
@@ -151,22 +161,44 @@ Estimate must be **on or after** the meeting date. Flag estimates as `(est.)`.
 
 ### SOP / archetype ontology (for mapping)
 **Authoritative catalog: `catalog/sop-archetypes.json`** (also live in the DB:
-`ikigaigm.sops` + `ikigaigm.activity_archetypes`). Use its exact codes/ids — do
-not re-derive from prose. The spine: **S1** Narrativa & Oferta · **S2** Creativos ·
-**S3** Pauta · **S4** Orgánico · **S5** Testimonios · **S6** Leads/Setter · **S7**
-Funnel · **S8** Métricas · **S9** Lanzamiento · **S10** Gobernanza · **S11**
-Producto *(gap)* · **S12** Cierre/Retención *(gap)*. Background prose:
-role-sops-discovery.md, activity-archetypes.md.
+`ikigaigm.sops` + `ikigaigm.activity_archetypes`; browse with
+`bash/catalog/sops.sh [--macro Sx]`). Use its exact codes/ids — do not re-derive
+from prose, and do not trust the counts quoted in prose docs: read the JSON.
+The spine: **S1** Narrativa & Oferta · **S2** Creativos · **S3** Pauta · **S4**
+Orgánico · **S5** Testimonios · **S6** Leads/Setter · **S7** Funnel · **S8**
+Métricas · **S9** Lanzamiento · **S10** Gobernanza · **S11** Producto · **S12**
+Cierre/Retención. S11 and S12 were originally gaps; the Mastermind ontology pilot
+**filled them** (A11.1–A11.4, A12.1–A12.7), so they are ordinary macros now —
+map to them normally. Background prose: role-sops-discovery.md,
+activity-archetypes.md (older than the JSON — the JSON wins).
 
 ### Nickname → canonical team member  (memory `nickname-to-team-member-map`)
-Bala→David Castaño · Jota/Jona→Jhonatan Rengifo · Franco→Francisco Otalvaro ·
-Sophie→Sofia · Santi→Santiago Ruiz · Juanca→Juan Camilo Correa · Mari→Marisol
-Ochoa · Andrés→Andrés Alzate · Mateo→Mateo Restrepo · Pablo→Pablo Gaviria ·
+Bala→David Castaño · Jota/Jona→Jhonatan Rengifo · Sophie→Sofia ·
+Santi→Santiago Ruiz · Juanca→Juan Camilo Correa · Mari→Marisol Ochoa ·
+Andrés→Andrés Alzate · Mateo→Mateo Restrepo · Pablo→Pablo Gaviria ·
 Toño/Tony→Tony Vidal · Lucho→Luis David Flórez · Loro/Lorenzo→Lorenzo Cadavid
-(Ejecutivo, escribe VSLs) · Cisco→Francisco Otalvaro · Robert/Roberto→Roberto
-Maestre (Operaciones). The client "David" who records
-content = David Guerrero (Cliente). If a nickname is unknown, mark it
-`⚠️ UNRESOLVED` and ask the user — don't guess.
+(Ejecutivo, escribe VSLs) · Robert/Roberto→Roberto Maestre (Operaciones).
+
+⚠️ **Franco ≠ Francisco** (user-verified 2026-07-02). In the David Guerrero
+meetings **Franco** is an underperforming *closer* (his own person, not in the
+roster), while **Francisco / Cisco** is **Francisco Otalvaro**, *Líder de
+servicio* (cuotas/retención). Never resolve closer-review items to Francisco
+Otalvaro, nor service-delivery/cuotas items to the closer Franco.
+
+⚠️ **Paralelo** (the app/dashboard vendor) — "Santiago Gaviria" is Paralelo, not
+Ikigai; its point of contact for Ikigai is **Pablo Gaviria** (Technology), so
+"equipo de Paralelo" work routes to Pablo. Note this is *not* Santi (→ Santiago
+Ruiz, Contenido).
+
+⚠️ **Ambiguous roster names — pin the id.** Three names resolve to two
+`team_members` rows each, and `resolve_member` errors out on them: **Mateo
+Restrepo** (`637277b5` / `dd4621c1`, both Setter/Ikigai), **Luis David Flórez**
+(`ece00919` Director Comercial/Ikigai vs `81d4bc8e` Closer/Closers) and **David
+Guerrero** (`89ce896e` Closer/Ikigai vs `a193bc8b` Cliente/Externos). Write the
+id prefix next to the name in the sidecar so Stage 2 doesn't have to re-decide.
+The client "David" who records content = David Guerrero **Cliente** (`a193bc8b`).
+
+If a nickname is unknown, mark it `⚠️ UNRESOLVED` and ask the user — don't guess.
 
 ## Principles
 - **Faithful schema.** Exactly the 14 canonical keys; Spanish; corpus voice.
