@@ -194,8 +194,13 @@ function controls(p, reget) {
   );
 
   // Multiselect de dueños: un checkbox por dueño sobre la MISMA señal array.
+  // El `.check` del DS no trae margen propio (es inline-flex y su gap es
+  // interno), así que el ritmo lo pone el contenedor: gap-x generoso para que
+  // cada casilla se lea como un item y no como una lista corrida, gap-y para
+  // cuando la fila se envuelve, y mt para despegarla de los selects.
   const duenoChecks = duenos.length
-    ? `<div class="flex flex-wrap items-center gap-1">
+    ? `<div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-3">
+        <span class="text-xs text-slate-400">Dueño:</span>
         ${duenos
           .map((d) =>
             checkCtl("lDueno", d.valor === SIN_DUENO ? `sin dueño (${d.n})` : `${d.valor} (${d.n})`, reget, {
@@ -213,11 +218,14 @@ function controls(p, reget) {
       <input type="date" class="input text-xs" data-bind="${sig}" data-on:change="${reget}" data-indicator:${INDICATOR}>
     </label>`;
 
+  // Tres bandas con el mismo ritmo vertical (mt-3): vistas propuestas arriba,
+  // luego los selects, y abajo el multiselect de dueños. Sin esa separación las
+  // tres se leen como una sola masa de controles.
   return `<div class="w-full">
-    <div class="flex flex-wrap items-center gap-1 mb-2">
+    <div class="flex flex-wrap items-center gap-2">
       <span class="text-xs text-slate-400 mr-1">Vistas:</span>${vistaButtons(reget)}
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2 mt-3">
       ${selectCtl("lProject", p.project || "", projectOpts, reget, INDICATOR)}
       ${selectCtl("lStage", p.stage || "", stageOpts, reget, INDICATOR)}
       ${selectCtl("lOrigen", p.origen || "", ORIGEN_OPTS, reget, INDICATOR)}
