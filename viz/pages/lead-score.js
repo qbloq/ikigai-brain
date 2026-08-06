@@ -131,7 +131,13 @@ function renderLeadScore(ui) {
       { empty: "La cola está vacía." }
     );
 
-    return `<section class="p-6 max-w-6xl mx-auto">
+    // OJO: `id="pane"` NO es decorativo. El servidor parchea por SSE en modo
+    // `outer` sin selector, así que Datastar busca el destino por id: una raíz
+    // sin él no encuentra target (PatchElementsNoTargetsFound), el parche se
+    // descarta en silencio y el visor se queda en la UI anterior mostrando el
+    // overlay de carga. Toda página raiza en <section id="pane">.
+    return `<section id="pane" class="flex-1 p-6 overflow-auto">
+    <div class="max-w-6xl mx-auto">
       <div class="flex items-baseline gap-3 flex-wrap">
         <h1 class="text-xl font-bold" style="color:var(--text-1)">Modelo de score de leads</h1>
         <span class="badge badge-neutral">corte ${escape(d.corte || "—")}</span>
@@ -170,6 +176,7 @@ function renderLeadScore(ui) {
         Fuente: <code>bash/calls/lead_score_model.sh</code>. Normalizaciones y fuente de verdad:
         <code>bash/calls/lead_profile.sh</code>.
       </p>
+    </div>
     </section>`;
 }
 

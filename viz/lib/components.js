@@ -188,6 +188,29 @@ function degradeCard(ui, errors) {
   </section>`;
 }
 
+// El contrato del pane, y por qué se verifica en runtime.
+//
+// El parche SSE viaja en modo `outer` SIN selector, así que Datastar localiza
+// el destino POR ID. Una página que no raíza en `id="pane"` no rompe nada
+// visible en `/u/:id` —ahí la envuelve el shell— pero sí rompe la NAVEGACIÓN:
+// el parche no encuentra target, Datastar lo descarta con
+// PatchElementsNoTargetsFound y el visor se queda en la UI anterior con el
+// overlay de carga encendido. Se ve como un cuelgue, no como un error.
+//
+// Nada lo impedía: el contrato estaba escrito en un comentario y se descubrió
+// porque un usuario lo reportó. Se cierra aquí, el único punto por el que pasa
+// todo render — envolviendo para que la navegación jamás se quede pegada, y
+// gritando en el log para que el autor lo arregle en su componente.
+function ensurePane(html, who) {
+  const s = String(html);
+  if (/\sid="pane"/.test(s)) return s;
+  console.warn(
+    `[pane] «${who}» no raíza en <section id="pane"> — se envolvió. ` +
+      `Sin ese id el parche SSE no encuentra destino y la navegación se queda pegada.`
+  );
+  return `<section id="pane" class="flex-1 overflow-auto">${s}</section>`;
+}
+
 // Render a saved UI spec into the pane HTML (a #pane element, id-matched by SSE).
 // A spec with `pattern` is v2: validate, resolve its slot block names to
 // modules, and hand them to the pattern. Otherwise v1: empty component falls
@@ -208,13 +231,13 @@ function renderPane(ui) {
     for (const name of Object.keys((pat.manifest && pat.manifest.slots) || {})) {
       slots[name] = { ...ui[name], block: COMPONENTS.get(ui[name].block) };
     }
-    return pat.render(ui, slots);
+    return ensurePane(pat.render(ui, slots), `patrón ${ui.pattern}`);
   }
   if (ui.component && !PAGES.has(ui.component)) {
     return degradeCard(ui, validateSpec(ui).errors);
   }
   const page = PAGES.get(ui.component || "table");
-  return page.render(ui);
+  return ensurePane(page.render(ui), `página ${ui.component || "table"}`);
 }
 
 module.exports = { renderPane, listPages, getComponent, getManifest, overridableFor, dispatch, validateSpec, escape };
