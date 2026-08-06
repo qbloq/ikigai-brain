@@ -27,5 +27,5 @@ including the gap macros S11 (Producto: A11.x) and S12 (Cierre/Retención: A12.x
 - `meeting-to-tasks` / `create_task.sh` — persists `tasks.archetype_id`.
 - future matcher / snapshot exports — rollups across projects.
 
-Edit this file, then run `bash/catalog/sync_catalog.sh` to sync the DB tables.
+Edit this file, then run `bash/ops/sync_catalog.sh` to sync the DB tables.
 **Status:** `candidate`. Unmatched tasks become candidate new archetypes.

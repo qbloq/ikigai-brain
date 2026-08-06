@@ -15,7 +15,7 @@
 --
 -- Hierarchy / rollup:  task → activity_archetypes → sops → macro_processes.
 -- Data is seeded separately from catalog/sop-archetypes.json by
--- bash/catalog/sync_catalog.sh (this file is DDL only — the schema record).
+-- bash/ops/sync_catalog.sh (this file is DDL only — the schema record).
 --
 -- NOTE: a *different*, pre-existing public.sops exists (an app table with
 -- id/user_id). It is unrelated and untouched — everything here is schema-qualified
@@ -24,7 +24,7 @@
 --
 -- NOTE: the task-domain wipe done earlier (tasks + task_inputs/outputs/criteria/
 -- attestations/todos/comments) was DATA only — no schema change — so it is not
--- part of this migration. See bash/tasks/wipe_tasks.sh.
+-- part of this migration. See bash/ops/wipe_tasks.sh.
 --
 -- Idempotent (IF NOT EXISTS). Safe to re-run.
 
