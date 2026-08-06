@@ -216,6 +216,18 @@ const SOURCES = {
     emits: "object",
     args: { project: "--project" },
   },
+  // EL DASHBOARD de un closer como un solo objeto: llamadas con resultado
+  // canónico + tramos BANT, la cola de seguimiento (BANT ≥ 81 sin cerrar),
+  // coaching por llamada, objeciones y el cash real (planes/cobros/comisiones
+  // vía payment_plans.user_id = el closer). La capa de operación de
+  // docs/lead-score.md §5 — la ve el Director Comercial, no el closer. Sin
+  // cache: es una vista operativa, y la cola vieja es dinero enfriándose.
+  closer_dashboard: {
+    label: "Dashboard por closer",
+    script: "bash/calls/closer_dashboard.sh",
+    emits: "object",
+    args: { closer: "--closer", project: "--project", from: "--from", to: "--to" },
+  },
   // Objections flattened across call reports — the narrative feedback loop.
   call_objections: {
     label: "Objeciones (llamadas)",
@@ -279,6 +291,18 @@ const SOURCES = {
       summary: { flag: "--summary", bool: true },
       limit: "--limit",
     },
+  },
+  // LA MEDICIÓN de impago y deserción como un solo objeto: la curva por número
+  // de cuota (el hallazgo), las cohortes ajustadas por madurez, y las dos
+  // lecturas del dinero vencido — por vencimiento y por cohorte de venta, que
+  // dan respuestas opuestas. Entregable de la tarea fb7a1c26 (arquetipo A12.8):
+  // su output está tipado web_url y bindeado a esta UI, así que lo que se ve
+  // ES la evidencia del contrato. NO se cachea, por lo mismo que lead_score.
+  desercion: {
+    label: "Impago y deserción de cuotas",
+    script: "bash/finance/desercion.sh",
+    emits: "object",
+    args: { project: "--project", desde: "--desde", corte: "--corte" },
   },
   // Commission payouts with review state — the approval queue (pending first).
   comisiones: {

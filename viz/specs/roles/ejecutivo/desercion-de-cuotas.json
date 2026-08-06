@@ -1,0 +1,10 @@
+{
+  "id": "desercion-de-cuotas",
+  "name": "Impago y deserción de cuotas",
+  "component": "desercion",
+  "source": "desercion",
+  "params": { "project": "David Guerrero" },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-08-06T18:20:00.000Z"
+}
