@@ -80,7 +80,9 @@ p AS (
            CASE WHEN arq ~* 'emotional'           THEN 'Emocional' END,
            CASE WHEN arq ~* 'novice'              THEN 'Novato' END,
            CASE WHEN arq ~* 'inexperienced'       THEN 'Inexperto' END,
-           CASE WHEN arq ~* '(^|[^n])experienced' THEN 'Experimentado' END), ''), '(sin determinar)') AS rasgo
+           -- 'professional|scaling': ver la nota en lead_profile.sh, que es la
+           -- fuente de verdad de esta normalización.
+           CASE WHEN arq ~* '(^|[^n])experienced|professional|scaling' THEN 'Experimentado' END), ''), '(sin determinar)') AS rasgo
   FROM b
 ),
 v AS (SELECT * FROM p WHERE score > 0),   -- el universo válido: BANT distinto de cero

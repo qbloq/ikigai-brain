@@ -151,12 +151,17 @@ lp AS (
   -- matiz que el closer usa en la llamada.
   -- Ojo con 'inexperienced': contiene 'experienced', así que el rasgo
   -- Experimentado exige que no venga precedido de 'n'.
+  -- 'professional|scaling' entra por una sola etiqueta en todo el corpus
+  -- (Scaling Professional Trader, BANT 91): el sustantivo es siempre «trader»,
+  -- así que el rasgo vive en el calificativo, y ese caía al residual por
+  -- vocabulario, no por falta de dato. Un trader profesional escalando es
+  -- experimentado por cualquier lectura.
   SELECT q.*,
          coalesce(nullif(concat_ws(' + ',
            CASE WHEN arquetipo ~* 'emotional'          THEN 'Emocional' END,
            CASE WHEN arquetipo ~* 'novice'             THEN 'Novato' END,
            CASE WHEN arquetipo ~* 'inexperienced'      THEN 'Inexperto' END,
-           CASE WHEN arquetipo ~* '(^|[^n])experienced' THEN 'Experimentado' END
+           CASE WHEN arquetipo ~* '(^|[^n])experienced|professional|scaling' THEN 'Experimentado' END
          ), ''), '(sin determinar)') AS base
   FROM q
 )
