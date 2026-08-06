@@ -494,7 +494,7 @@
                     "Drive Index"
                 ],
                 "summary": "Browse the cached Drive index",
-                "description": "Reads from the `drive_index` table rather than calling Google. Modes are mutually exclusive and applied in priority order:\n\n1. `search` — case-insensitive name match across the whole drive.\n2. `parentId` — direct children of that folder.\n3. default — top-level (root) items.\n\nThe `type` and `isFolder` filters can further narrow any mode.",
+                "description": "Reads from the `drive_index` table rather than calling Google. Scope is mutually exclusive and applied in priority order:\n\n1. `search` — case-insensitive name match across the whole drive.\n2. `parentId` — direct children of that folder.\n3. any date filter (`createdAfter`/`createdBefore`/`modifiedAfter`/`modifiedBefore`) — the **whole drive**. A \"what changed lately\" question is never about one folder, so a date filter widens the scope instead of answering with the root alone.\n4. default — top-level (root) items.\n\nThe `type` and `isFolder` filters further narrow any scope. `sort` is orthogonal — it changes ordering only, never what matches. Without it the listing is folders-first, then alphabetical.\n\n⚠️ The index is a **cache** refreshed by hand (`indexDrive.js`); ask `/drive/index/status` how old it is before reporting on recency.",
                 "operationId": "getDriveIndex",
                 "security": [
                     {
@@ -544,6 +544,56 @@
                             "type": "boolean"
                         },
                         "example": false
+                    },
+                    {
+                        "name": "createdAfter",
+                        "in": "query",
+                        "required": false,
+                        "description": "Only items whose `created_time` is >= this instant. ISO 8601 date or date-time; an invalid value is a 400.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2026-07-21"
+                    },
+                    {
+                        "name": "createdBefore",
+                        "in": "query",
+                        "required": false,
+                        "description": "Only items whose `created_time` is < this instant. ISO 8601 date or date-time; an invalid value is a 400.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2026-08-01"
+                    },
+                    {
+                        "name": "modifiedAfter",
+                        "in": "query",
+                        "required": false,
+                        "description": "Only items whose `modified_time` is >= this instant. ISO 8601 date or date-time; an invalid value is a 400.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2026-07-21"
+                    },
+                    {
+                        "name": "modifiedBefore",
+                        "in": "query",
+                        "required": false,
+                        "description": "Only items whose `modified_time` is < this instant. ISO 8601 date or date-time; an invalid value is a 400.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2026-08-01"
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "description": "Ordering, as `<field>[:asc|desc]` (default `asc`). Allowed fields: `name`, `created_time`, `modified_time`, `size`, `type` — anything else is a 400. Omit for the default folders-first/alphabetical order.",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "created_time:desc"
                     },
                     {
                         "name": "limit",
@@ -623,6 +673,16 @@
                                 }
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Invalid `sort` field/direction or unparseable date filter.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -681,6 +741,38 @@
                     },
                     "500": {
                         "description": "Failed to fetch Drive index stats.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/drive/index/status": {
+            "get": {
+                "tags": [
+                    "Drive Index"
+                ],
+                "summary": "The index's freshness (item count + last sync)",
+                "description": "The index is a cache refreshed by hand, so a stale one answers \"what came in this week?\" with silence — and silence is indistinguishable from \"nothing came in\". Any client that reports on recency should surface `synced_at` next to its answer.",
+                "operationId": "getDriveIndexStatus",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DriveIndexStatus"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to read the index status.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1037,6 +1129,34 @@
                 },
                 "required": [
                     "error"
+                ]
+            },
+            "DriveIndexStatus": {
+                "type": "object",
+                "description": "Freshness of the cached Drive index.",
+                "properties": {
+                    "items": {
+                        "type": "integer",
+                        "description": "Rows currently in `drive_index`.",
+                        "example": 17762
+                    },
+                    "synced_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the last `indexDrive.js` run stamped the catalog. Null if the index is empty."
+                    },
+                    "age_hours": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "Hours since that run — how stale any recency answer is.",
+                        "example": 2
+                    }
+                },
+                "required": [
+                    "items",
+                    "synced_at",
+                    "age_hours"
                 ]
             }
         }

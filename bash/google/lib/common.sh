@@ -10,7 +10,7 @@
 #   copiloto : CEREBRO_API + CEREBRO_TOKEN  → forja-proxy ($CEREBRO_API/v1/mkt)
 #              — el proxy inyecta el JWT de servicio de la org y audita la llamada
 #   cerebro  : MEETICO_BASE + MEETICO_JWT_TOKEN → directo al backend
-#              (el mismo par que usa el viz para el bind — .viz/lib/meetico.js)
+#              (el mismo par que usa el viz para el bind — viz/lib/meetico.js)
 #
 # Read-only: these scripts only ever GET. The one write in the API contract
 # (PATCH rename) is deliberately not wrapped.
@@ -20,12 +20,20 @@ GOOGLE_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$GOOGLE_LIB_DIR/../../.." && pwd)"
 
 # --- Load .env (CEREBRO_* / MEETICO_* live there) ---------------------------
+# Lo que ya venga en el entorno gana sobre .env — igual que DATABASE_URL en
+# bash/lib/common.sh. Es lo que permite apuntar a un backend local
+# (MEETICO_BASE=http://127.0.0.1:5000 …) para probar un cambio del contrato
+# sin editar el .env de la org.
+_env_base="${MEETICO_BASE:-}"; _env_api="${CEREBRO_API:-}"
 if [[ -f "$REPO_ROOT/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
   source "$REPO_ROOT/.env"
   set +a
 fi
+[[ -n "$_env_base" ]] && MEETICO_BASE="$_env_base"
+[[ -n "$_env_api" ]] && CEREBRO_API="$_env_api"
+unset _env_base _env_api
 
 FORMAT="${FORMAT:-table}"
 
