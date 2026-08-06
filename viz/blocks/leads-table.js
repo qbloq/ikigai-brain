@@ -31,8 +31,11 @@ const COLS = [
   { k: "etapa", l: "Etapa", w: "w-40" },
 ];
 
-// VISTAS PROPUESTAS — el corazón del bloque. Cada una es una pregunta real que
-// alguien se hace, no una combinación cualquiera de filtros.
+// VISTAS PROPUESTAS — apagadas por ahora, a la espera de que el multiselect de
+// dueños quede sólido. Se conservan porque el concepto es el que ordena este
+// bloque: una tabla con filtros expresa cualquier consulta y justamente por eso
+// no propone nada. Cada entrada es una pregunta real que alguien se hace.
+// Para volver a encenderlas: pintar vistaButtons(reget) en controls().
 const VISTAS = [
   {
     id: "sin-dueno",
@@ -208,22 +211,30 @@ function controls(p, reget) {
       .map((s) => s.trim())
       .filter(Boolean)
   );
+
+  // LAS CASILLAS NO PIDEN NADA AL SERVIDOR. Un multiselect no puede re-fetchear
+  // por click: cada respuesta reemplaza el panel entero —incluidas las propias
+  // casillas—, así que al marcar la segunda antes de que vuelva la primera, el
+  // DOM se reemplaza bajo los pies y el click se pierde. Marcar solo acumula en
+  // la señal; «Aplicar» es lo único que dispara la consulta. Se marca varios
+  // dueños y se pide una vez.
+  const sinCambios = "$lDueno.join(',') === " + JSON.stringify([...seleccionados].join(","));
   const duenoChecks = duenos.length
     ? `<div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-3">
         <span class="text-xs text-slate-400">Dueño:</span>
         ${duenos
           .map((d) =>
-            checkCtl("lDueno", d.valor === SIN_DUENO ? `sin dueño (${d.n})` : `${d.valor} (${d.n})`, reget, {
-              indicator: INDICATOR,
+            checkCtl("lDueno", d.valor === SIN_DUENO ? `sin dueño (${d.n})` : `${d.valor} (${d.n})`, "", {
+              indicator: "",
               value: d.valor,
               checked: seleccionados.has(d.valor),
               cls: "text-xs",
-              // El reget LEE $lDueno, que es la señal que este mismo click
-              // acaba de cambiar: diferirlo garantiza que el binding ya escribió.
-              mods: "__debounce.50ms",
             })
           )
           .join("")}
+        <button class="btn btn-sm" data-on:click="${escape(reget)}" data-indicator:${INDICATOR}
+          data-attr:disabled="${escape(sinCambios)}"
+          title="Consulta con los dueños marcados">Aplicar</button>
       </div>`
     : "";
 
@@ -232,14 +243,10 @@ function controls(p, reget) {
       <input type="date" class="input text-xs" data-bind="${sig}" data-on:change="${reget}" data-indicator:${INDICATOR}>
     </label>`;
 
-  // Tres bandas con el mismo ritmo vertical (mt-3): vistas propuestas arriba,
-  // luego los selects, y abajo el multiselect de dueños. Sin esa separación las
-  // tres se leen como una sola masa de controles.
+  // Las VISTAS están apagadas por ahora (ver VISTAS arriba): el concepto se
+  // queda, la barra no se pinta hasta que el multiselect esté sólido.
   return `<div class="w-full">
     <div class="flex flex-wrap items-center gap-2">
-      <span class="text-xs text-slate-400 mr-1">Vistas:</span>${vistaButtons(reget)}
-    </div>
-    <div class="flex flex-wrap items-center gap-2 mt-3">
       ${selectCtl("lProject", p.project || "", projectOpts, reget, INDICATOR)}
       ${selectCtl("lStage", p.stage || "", stageOpts, reget, INDICATOR)}
       ${selectCtl("lOrigen", p.origen || "", ORIGEN_OPTS, reget, INDICATOR)}
