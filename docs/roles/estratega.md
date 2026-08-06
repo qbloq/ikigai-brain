@@ -1,7 +1,7 @@
 # Rol: Estratega
 
 **Quiénes:** David Castaño (copiloto `david-castano`)
-**Capa de rol (viz):** `.viz/specs/roles/estratega/` — aún no creada
+**Capa de rol (viz):** `viz/specs/roles/estratega/` — aún no creada
 **Tareas históricas:** 19 asignadas · 19 etiquetadas con arquetipo · 11 abiertas hoy
 
 **Misión.** Estructura las campañas: produce creativos por lotes (~14 reels/ciclo, S2), estructura y optimiza paid media (S3) e investiga audiencias e ingeniería inversa de conversiones (S8).
@@ -63,4 +63,4 @@
 - Comparte con Ejecutivo la absorción del rol faltante de Media Buyer (S3 sin dueño formal).
 
 ---
-*Generado 2026-07-12 de la ontología ([catalog/sop-archetypes.json](../../catalog/sop-archetypes.json)) × las tareas reales (`tasks.archetype_id`, 19/19 etiquetadas). Cualitativo del [discovery original](../role-sops-discovery.md). Regenerable con la consulta del [README](README.md).*
+*Generado 2026-07-12 de la ontología (`catalog/sop-archetypes.json`) × las tareas reales (`tasks.archetype_id`, 19/19 etiquetadas). Cualitativo del `discovery original`. Regenerable con la consulta del [README](README.md).*

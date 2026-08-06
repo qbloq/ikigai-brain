@@ -1,7 +1,7 @@
 # Rol: Director Comercial
 
 **Quiénes:** Luis David Flórez (copiloto `luis-david`)
-**Capa de rol (viz):** `.viz/specs/roles/director-comercial/` — **ya existe** (el piloto)
+**Capa de rol (viz):** `viz/specs/roles/director-comercial/` — **ya existe** (el piloto)
 **Tareas históricas:** 22 asignadas · 22 etiquetadas con arquetipo · 13 abiertas hoy
 
 **Misión.** Dueño del dato comercial: integridad y reporting de ventas (S8), inteligencia de leads y avatar (S6), gestión de closers y cuotas, y el pipeline de objeciones que retroalimenta la narrativa (S12).
@@ -86,8 +86,8 @@
 
 ## Notas y brechas
 
-- **Es el copiloto piloto**: único rol con capa viz propia (`.viz/specs/roles/director-comercial/`) y dominio de datos dedicado (`bash/calls/` — llamadas, stats por closer, objeciones). El macro S12 Cierre-Retención se agregó al catálogo por este rol.
+- **Es el copiloto piloto**: único rol con capa viz propia (`viz/specs/roles/director-comercial/`) y dominio de datos dedicado (`bash/calls/` — llamadas, stats por closer, objeciones). El macro S12 Cierre-Retención se agregó al catálogo por este rol.
 - Luis David también figura como Closer en el roster (fila duplicada histórica) — el rol operativo es Director Comercial.
 
 ---
-*Generado 2026-07-12 de la ontología ([catalog/sop-archetypes.json](../../catalog/sop-archetypes.json)) × las tareas reales (`tasks.archetype_id`, 22/22 etiquetadas). Cualitativo del [discovery original](../role-sops-discovery.md). Regenerable con la consulta del [README](README.md).*
+*Generado 2026-07-12 de la ontología (`catalog/sop-archetypes.json`) × las tareas reales (`tasks.archetype_id`, 22/22 etiquetadas). Cualitativo del `discovery original`. Regenerable con la consulta del [README](README.md).*

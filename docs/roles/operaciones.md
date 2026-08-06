@@ -1,7 +1,7 @@
 # Rol: Operaciones
 
 **Quiénes:** Roberto Maestre (copiloto `roberto-maestre`)
-**Capa de rol (viz):** `.viz/specs/roles/operaciones/` — aún no creada
+**Capa de rol (viz):** `viz/specs/roles/operaciones/` — aún no creada
 **Tareas históricas:** 33 asignadas · 33 etiquetadas con arquetipo · 3 abiertas hoy
 
 **Misión.** Construye la infraestructura del funnel: landings y páginas (S7), checkout y pagos (Hotmart + webhook GHL), A/B de VSL en Biturbo, y la automatización de calificación de leads (S6).
@@ -47,4 +47,4 @@
 - Gestión de la página de testimonios *(S5)*
 
 ---
-*Generado 2026-07-12 de la ontología ([catalog/sop-archetypes.json](../../catalog/sop-archetypes.json)) × las tareas reales (`tasks.archetype_id`, 33/33 etiquetadas). Cualitativo del [discovery original](../role-sops-discovery.md). Regenerable con la consulta del [README](README.md).*
+*Generado 2026-07-12 de la ontología (`catalog/sop-archetypes.json`) × las tareas reales (`tasks.archetype_id`, 33/33 etiquetadas). Cualitativo del `discovery original`. Regenerable con la consulta del [README](README.md).*

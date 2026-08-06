@@ -2,14 +2,14 @@
 
 > Un documento por rol, derivado de la ontología de procesos
 > (`cadena de valor → macro (S1…S12) → SOP → arquetipo → tarea`,
-> [catalog/sop-archetypes.json](../../catalog/sop-archetypes.json)) cruzada con las **tareas reales**
+> `catalog/sop-archetypes.json`) cruzada con las **tareas reales**
 > etiquetadas (`tasks.archetype_id` → asignados → `team_roles`). Lo
 > cuantitativo viene de la DB; lo cualitativo (misión, candidatos,
-> brechas) del [discovery original](../role-sops-discovery.md).
+> brechas) del `discovery original`.
 > Corte de datos: 2026-07-12 — 329 tareas, 323 etiquetadas (98%), 21 sin asignar.
 
 Cada rol es también la identidad de una **capa de copiloto**
-(`copilot.json.role` → `.viz/specs/roles/<slug>/`): este doc es el insumo
+(`copilot.json.role` → `viz/specs/roles/<slug>/`): este doc es el insumo
 para craftear qué ve y qué opera cada copiloto.
 
 ## Los 12 roles (19 copilotos)
