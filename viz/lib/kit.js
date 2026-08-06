@@ -136,11 +136,21 @@ const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 // con la misma señal, predefinida como array, acumulan en ella sus values
 // (Datastar 1.0, data-bind > predefined signal types). Sin `value` sigue siendo
 // el booleano de siempre.
-function checkCtl(signal, label, on, { indicator = "loadingtasks", checked = false, id = "", cls = "", value = null } = {}) {
+// `mods` son modificadores de Datastar para el evento (p.ej. "__debounce.50ms").
+// Importa cuando el handler dispara una petición que LEE la señal que este mismo
+// control acaba de cambiar: sin diferir, `change` puede correr antes de que
+// `data-bind` haya escrito, y la petición viaja con el valor viejo — la fila se
+// re-renderiza con el estado anterior y la casilla «rebota».
+function checkCtl(
+  signal,
+  label,
+  on,
+  { indicator = "loadingtasks", checked = false, id = "", cls = "", value = null, mods = "" } = {}
+) {
   return `<label class="check px-2 ${cls}">
       <input type="checkbox"${id ? ` id="${escape(id)}"` : ""} data-bind="${signal}"${
         value !== null ? ` value="${escape(value)}"` : ""
-      }${checked ? " checked" : ""}${on ? ` data-on:change="${on}"` : ""}${
+      }${checked ? " checked" : ""}${on ? ` data-on:change${mods}="${on}"` : ""}${
         indicator ? ` data-indicator:${indicator}` : ""
       } />
       <span class="box">${CHECK_SVG}</span>

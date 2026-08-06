@@ -198,6 +198,16 @@ function controls(p, reget) {
   // interno), así que el ritmo lo pone el contenedor: gap-x generoso para que
   // cada casilla se lea como un item y no como una lista corrida, gap-y para
   // cuando la fila se envuelve, y mt para despegarla de los selects.
+  // `checked` se emite desde el servidor y NO se delega a Datastar: si el DOM
+  // llega todo desmarcado y la señal dice otra cosa, cada re-render deja a los
+  // dos en desacuerdo y la selección parpadea. Renderizados iguales, da lo mismo
+  // cuál de los dos gane al inicializar.
+  const seleccionados = new Set(
+    String(p.dueno || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
   const duenoChecks = duenos.length
     ? `<div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-3">
         <span class="text-xs text-slate-400">Dueño:</span>
@@ -206,7 +216,11 @@ function controls(p, reget) {
             checkCtl("lDueno", d.valor === SIN_DUENO ? `sin dueño (${d.n})` : `${d.valor} (${d.n})`, reget, {
               indicator: INDICATOR,
               value: d.valor,
+              checked: seleccionados.has(d.valor),
               cls: "text-xs",
+              // El reget LEE $lDueno, que es la señal que este mismo click
+              // acaba de cambiar: diferirlo garantiza que el binding ya escribió.
+              mods: "__debounce.50ms",
             })
           )
           .join("")}
