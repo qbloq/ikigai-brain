@@ -26,7 +26,6 @@ no le quita trabajo: le devuelve el suyo.
 |---|---|---|---|
 | `fb7a1c26` | Medición de impago y deserción de cuotas | 08-05 | **222 cuotas vencidas >30d = $145.369** solo en David Guerrero (`finance/cobranza.sh`) |
 | `a869c57a` | Mapear perfiles de lead, estandarizar subgrupos | 07-22 | 230 llamadas ya traen `leadProfile.intelligentSegmentation.archetype` |
-| `d98fef30` | Criterios BANT (1-5 por ítem, promedio) | 07-22 | `leadProfile.bantAnalysis` existe a escala 0-100 en 164 llamadas |
 | `767605d8` | Lead score interno 0-100 | 07-24 | el promedio BANT **ya es** ese score, y ya predice |
 | `59cf4594` | KPI de CAC y cierre del canal pagado | 07-29 | pauta ✕ ventas ya se cruzan en `finance/portfolio.sh` |
 | `4078e778` | Objetivos de % de cierre por closer | 07-29 | `calls/call_stats.sh --by closer` da la línea base |
@@ -83,7 +82,14 @@ Nosotros producimos el insumo o la medición; él decide y ejecuta.
 
 `6585ba4d` · `0bb1a192` · `f1f1f41b` · `04942756` · `428b18d6` · `3a4fd7ba` ·
 `e49cd027` · `39ccf177` · `0ce8be47` · `fccace79` · `242f1fa9` · `6dc75474` ·
-`44955dd1` · `1e7fe7e2` · `4b811524` · `611fe607`
+`44955dd1` · `1e7fe7e2` · `4b811524` · `611fe607` · **`d98fef30`**
+
+`d98fef30` llegó aquí desde el balde A, y por leer el título en vez del
+contrato. Dice *«estandarizar y documentar los criterios BANT»*, pero su
+arquetipo es A12.2 (Capacitar closers) y su criterio principal es
+**atestiguado**: cada closer confirma haber recibido la capacitación. Nosotros
+producimos el **insumo** —la evidencia de que el BANT discrimina—, no el
+entregable. Nadie automatiza dictar una capacitación.
 
 Acceso a cuentas ajenas, capacitación de personas, alineación de closers,
 definición de oferta, negociación con clientes. Nada de esto se automatiza y
@@ -93,16 +99,44 @@ nada de esto debería intentarse.
 
 ## Orden de ataque
 
-1. **El clúster de perfil de lead** — `a869c57a` + `d98fef30` + `767605d8`.
-   Tres tareas, **un solo script** (`bash/calls/lead_profile.sh`): extraer el
-   BANT normalizado, el arquetipo canonizado y el score, excluyendo los ceros.
-   Además desbloquea `7fd54080`.
+1. ~~**El clúster de perfil de lead**~~ — **HECHO 2026-08-05**. `a869c57a` +
+   `767605d8`, un solo script: `bash/calls/lead_profile.sh`. Ver abajo.
 2. **`fb7a1c26`** — vence hoy, es el número más grande de la lista y el menos
    mirado. `cobranza.sh` ya da el impago; falta la **deserción** (planes que se
    cortan a mitad), que es medición nueva. Nace sin contrato: el arquetipo
    A12.4 no tiene plantilla todavía.
 3. **El clúster del tablero** — el bloque grande, cuatro tareas.
 4. **`59cf4594` + `4078e778`** — la medición es nuestra, la meta es de él.
+
+## Lo hecho: `a869c57a` + `767605d8` (2026-08-05)
+
+`bash/calls/lead_profile.sh` extrae y normaliza lo que el analizador ya escribía.
+Los subgrupos quedaron en **cuatro rasgos** (Novato · Emocional · Inexperto ·
+Experimentado) y el score BANT quedó validado (81-100 convierte 38.9% contra
+3.2% del 61-80).
+
+**Y hubo que arreglar la ontología antes.** Las dos tareas estaban etiquetadas
+como **A6.7 · Investigar avatar / inteligencia de leads**, cuyo contrato pide
+*dolores, deseos, objeciones y lenguaje del avatar*: investigación cualitativa,
+preguntarle a humanos. Sus otras siete tareas son encuestas, estudios de mercado
+y contactos 1:1 — la plantilla estaba **bien, para otra cosa**. Estas dos son
+segmentación cuantitativa sobre data ya registrada, así que ningún trabajo podía
+satisfacer esos criterios.
+
+Se creó **A6.8 · Segmentar y puntuar leads (subgrupos + modelo de score)** bajo
+el mismo SOP S6.3, con criterios verificables — el que le da dientes es *«el
+score está validado contra el resultado real: se reporta la tasa de conversión
+por tramo y los tramos discriminan entre sí»*.
+
+Esto destapó un hueco del write-path: **re-etiquetar no reescribe el contrato**.
+`set_archetype.sh` mueve el puntero y las filas IO se quedan como las dejó la
+plantilla vieja. Se cerró extendiendo `materialize_io.sh` con `--task` y
+`--replace`, y haciendo que `{proyecto}` se resuelva por tarea (las dos son de
+proyectos distintos, y una sola etiqueta global le escribía a una el contrato de
+la otra).
+
+Queda pendiente y es **humano**: declarar oficial la taxonomía de cuatro rasgos,
+y decidir qué se le entrega al closer y qué no.
 
 ## Riesgos que este triage no resuelve
 

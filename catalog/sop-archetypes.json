@@ -125,7 +125,7 @@
         "Director Comercial",
         "PM"
       ],
-      "note": "converge on Paralelo"
+      "note": "converge on Parallelo"
     },
     {
       "code": "S9",
@@ -150,7 +150,7 @@
     },
     {
       "code": "S11",
-      "name": "Producto / Plataforma (Paralelo)",
+      "name": "Producto / Plataforma (Parallelo)",
       "value_chain_order": null,
       "cadence": "roadmap",
       "owner_roles": [
@@ -311,7 +311,7 @@
     {
       "code": "S6.1",
       "macro_process": "S6",
-      "name": "Automatización ManyChat & tagging (audios CTO)",
+      "name": "Automatización ManyChat & tagging (audios de seteo)",
       "owner_roles": [
         "Operaciones",
         "Contenido",
@@ -359,7 +359,7 @@
     {
       "code": "S7.3",
       "macro_process": "S7",
-      "name": "VSL A/B & plataforma (Biturbo ↔ GHL)",
+      "name": "VSL A/B & plataforma (Vturb ↔ GHL)",
       "owner_roles": [
         "Technology",
         "Operaciones"
@@ -379,7 +379,7 @@
     {
       "code": "S8.1",
       "macro_process": "S8",
-      "name": "Alineación de data & fuente de verdad (Paralelo)",
+      "name": "Alineación de data & fuente de verdad (Parallelo)",
       "owner_roles": [
         "Technology",
         "Ejecutivo"
@@ -461,7 +461,7 @@
     {
       "code": "S11.1",
       "macro_process": "S11",
-      "name": "Desarrollo de features de Paralelo",
+      "name": "Desarrollo de features de Parallelo",
       "owner_roles": [
         "Technology"
       ],
@@ -1665,6 +1665,59 @@
       ]
     },
     {
+      "id": "A4.7",
+      "sop": "S4.1",
+      "verb": "Editar",
+      "name": "Editar audio/video de contenido orgánico",
+      "slots": [
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Material crudo a editar",
+          "description": "Video/audio en bruto (Drive Crudo) de la pieza de contenido orgánico de {proyecto}.",
+          "io_type": "video_asset",
+          "is_required": true
+        },
+        {
+          "title": "Guion o referencia de edición",
+          "description": "Guion, copy o referencia aprobada que orienta la edición de la pieza orgánica de {proyecto}.",
+          "io_type": "content_draft",
+          "is_required": false
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Contenido orgánico editado",
+          "description": "Pieza de contenido orgánico editada y lista para publicación (Drive Editado) para {proyecto}.",
+          "io_type": "video_asset",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "La carpeta de Drive Editado contiene la pieza entregada.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "La edición corresponde al guion o la referencia aprobada.",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Cumple el formato de publicación (vertical 9:16, subtítulos, duración).",
+              "criterion_category": "format",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Aprobación interna registrada antes de publicar.",
+              "criterion_category": "quality",
+              "verification_method": "attested"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "A5.1",
       "sop": "S5.1",
       "verb": "Coordinar/Seguir",
@@ -1906,33 +1959,33 @@
       "id": "A6.3",
       "sop": "S6.1",
       "verb": "Configurar",
-      "name": "Implementar sistema de audios CTO",
+      "name": "Implementar sistema de audios de seteo",
       "slots": [
         "etapas"
       ],
       "inputs": [
         {
-          "title": "Audios CTO por etapa",
+          "title": "Audios de seteo por etapa",
           "description": "Audios (call-to-order) grabados y aprobados para cada una de las {etapas} del flujo de {proyecto}.",
           "io_type": "audio_asset",
           "is_required": true
         },
         {
           "title": "Mapa del flujo y {etapas}",
-          "description": "Definición de las {etapas} del flujo y en qué momento se dispara cada audio CTO.",
+          "description": "Definición de las {etapas} del flujo y en qué momento se dispara cada audio de seteo.",
           "io_type": "strategy_document",
           "is_required": true
         }
       ],
       "outputs": [
         {
-          "title": "Sistema de audios CTO configurado",
+          "title": "Sistema de audios de seteo configurado",
           "description": "Automatización que reproduce el audio correcto en cada una de las {etapas} del flujo de {proyecto}.",
           "io_type": "system_configuration",
           "is_required": true,
           "criteria": [
             {
-              "criterion": "Cada una de las {etapas} tiene su audio CTO asignado y disparándose en el punto correcto.",
+              "criterion": "Cada una de las {etapas} tiene su audio de seteo asignado y disparándose en el punto correcto.",
               "criterion_category": "completeness",
               "verification_method": "manual"
             },
@@ -2107,6 +2160,59 @@
             {
               "criterion": "Incluye recomendaciones accionables para el mensaje/oferta de {proyecto}.",
               "criterion_category": "quality",
+              "verification_method": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A6.8",
+      "sop": "S6.3",
+      "verb": "Medir/Analizar",
+      "name": "Segmentar y puntuar leads (subgrupos + modelo de score)",
+      "slots": [
+        "proyecto"
+      ],
+      "inputs": [
+        {
+          "title": "Data de llamadas analizadas",
+          "description": "Reportes de llamada de {proyecto} con calificación y perfil del lead ya registrados — la materia prima que se cuenta, no se levanta preguntando.",
+          "io_type": "analytics_report",
+          "is_required": true
+        },
+        {
+          "title": "Resultado real por lead",
+          "description": "El desenlace de cada lead (cierre, compromiso, seguimiento) contra el cual se valida que el score discrimine. Sin esto el modelo no se puede verificar, solo creer.",
+          "io_type": "analytics_report",
+          "is_required": true
+        }
+      ],
+      "outputs": [
+        {
+          "title": "Modelo de segmentación y score de leads",
+          "description": "Los subgrupos canónicos de lead de {proyecto} y el modelo de puntuación que los prioriza, con su validación contra el resultado real.",
+          "io_type": "strategy_document",
+          "is_required": true,
+          "criteria": [
+            {
+              "criterion": "Los subgrupos son mutuamente excluyentes y cubren todo el universo de leads de {proyecto} (ningún lead queda sin clasificar).",
+              "criterion_category": "completeness",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "El score está validado contra el resultado real: se reporta la tasa de conversión por tramo y los tramos discriminan entre sí.",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Declara explícitamente qué población excluye del cálculo y por qué (registros sin analizar, sin data o fuera de ventana).",
+              "criterion_category": "quality",
+              "verification_method": "manual"
+            },
+            {
+              "criterion": "Está documentado cómo se usa el score internamente y qué se le entrega —y qué no— a quien atiende al lead.",
+              "criterion_category": "completeness",
               "verification_method": "manual"
             }
           ]
@@ -2374,7 +2480,7 @@
       "id": "A7.3",
       "sop": "S7.3",
       "verb": "Configurar",
-      "name": "Configurar VSL A/B (Biturbo)",
+      "name": "Configurar VSL A/B (Vturb)",
       "slots": [
         "variantes"
       ],
@@ -2387,21 +2493,21 @@
         },
         {
           "title": "Assets de las variantes",
-          "description": "Videos/VSL finales correspondientes a cada una de las {variantes} listos para cargar en Biturbo.",
+          "description": "Videos/VSL finales correspondientes a cada una de las {variantes} listos para cargar en Vturb.",
           "io_type": "video_asset",
           "is_required": true
         },
         {
-          "title": "Acceso a Biturbo",
-          "description": "Credenciales/acceso a la plataforma Biturbo para configurar el test A/B.",
+          "title": "Acceso a Vturb",
+          "description": "Credenciales/acceso a la plataforma Vturb para configurar el test A/B.",
           "io_type": "credentials_access",
           "is_required": false
         }
       ],
       "outputs": [
         {
-          "title": "Test A/B de VSL configurado en Biturbo",
-          "description": "Test A/B activo en Biturbo con las {variantes} distribuyendo tráfico para {proyecto}.",
+          "title": "Test A/B de VSL configurado en Vturb",
+          "description": "Test A/B activo en Vturb con las {variantes} distribuyendo tráfico para {proyecto}.",
           "io_type": "system_configuration",
           "is_required": true,
           "criteria": [
@@ -3066,14 +3172,14 @@
       "id": "A11.1",
       "sop": "S11.1",
       "verb": "Producir/Crear",
-      "name": "Desarrollar feature de Paralelo (vistas por estado/miembro/cliente, taskboards, uploads de Drive)",
+      "name": "Desarrollar feature de Parallelo (vistas por estado/miembro/cliente, taskboards, uploads de Drive)",
       "slots": [
         "feature"
       ],
       "inputs": [
         {
           "title": "Especificación del feature",
-          "description": "Definición funcional de {feature} para Paralelo: comportamiento esperado, vistas/estados involucrados y criterios de uso para {proyecto}.",
+          "description": "Definición funcional de {feature} para Parallelo: comportamiento esperado, vistas/estados involucrados y criterios de uso para {proyecto}.",
           "io_type": "strategy_document",
           "is_required": true
         },
@@ -3086,8 +3192,8 @@
       ],
       "outputs": [
         {
-          "title": "Feature de Paralelo desplegado",
-          "description": "{feature} implementado y desplegado en Paralelo, funcionando en el entorno de uso del equipo.",
+          "title": "Feature de Parallelo desplegado",
+          "description": "{feature} implementado y desplegado en Parallelo, funcionando en el entorno de uso del equipo.",
           "io_type": "system_configuration",
           "is_required": true,
           "criteria": [
@@ -3114,28 +3220,28 @@
       "id": "A11.2",
       "sop": "S11.2",
       "verb": "Integrar",
-      "name": "Integrar sistema externo con Paralelo (Stripe/Biturbo/Cloud/Notion/Drive)",
+      "name": "Integrar sistema externo con Parallelo (Stripe/Vturb/Cloud/Notion/Drive)",
       "slots": [
         "sistema"
       ],
       "inputs": [
         {
           "title": "Credenciales/acceso al sistema externo",
-          "description": "Accesos, API keys o tokens necesarios para conectar {sistema} con Paralelo.",
+          "description": "Accesos, API keys o tokens necesarios para conectar {sistema} con Parallelo.",
           "io_type": "credentials_access",
           "is_required": true
         },
         {
           "title": "Especificación de la integración",
-          "description": "Datos a sincronizar y flujo esperado entre {sistema} y Paralelo (eventos, campos, dirección) para {proyecto}.",
+          "description": "Datos a sincronizar y flujo esperado entre {sistema} y Parallelo (eventos, campos, dirección) para {proyecto}.",
           "io_type": "strategy_document",
           "is_required": true
         }
       ],
       "outputs": [
         {
-          "title": "Integración {sistema}↔Paralelo funcionando",
-          "description": "Conexión operativa entre {sistema} y Paralelo, sincronizando los datos definidos.",
+          "title": "Integración {sistema}↔Parallelo funcionando",
+          "description": "Conexión operativa entre {sistema} y Parallelo, sincronizando los datos definidos.",
           "io_type": "system_configuration",
           "is_required": true,
           "criteria": [

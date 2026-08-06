@@ -42,7 +42,7 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 | `update_task_io.sh --io <id> [--title T] [--io-type NAME] [--artifact NAME] [--required true\|false]` / `--add input\|output --task <id>` / `--delete --io <id> [--cascade]` **[WRITE]** | Edit one IO row of a task: retype its `io_type`/`artifact_type` (accepts id, name, or display_name), rename, toggle required, or add/remove rows. One op per call, one transaction, before/after, `--dry-run`, `--json` (emits `task_id` for re-render). Deleting an output with acceptance criteria is blocked unless `--cascade`. Powers the viz IO editor. Also `--ref-merge '<json>'` / `--ref-clear`: shallow-merge into / wipe the row's binding jsonb (`artifact_reference`/`deliverable_reference`) — how a **SQL Results** artifact stores its `{query, params}` and how bind caches `_resolved`. |
 | `run_io_query.sh <io_id\|prefix> [--limit N] [--json]` | Execute the SQL persisted in one IO row's binding (`reference.query`) and print the result — the concrete data of a `sql_query` artifact (its sql resolver). Read-only + `statement_timeout=10s` + row cap (default 500). Only runs SQL with provenance (already persisted in the DB row); accepts nothing inline. Feeds the viz `io_query` source. |
 | `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. **Provenance:** `source_meeting` (id/prefix→FK), `source_url`/`source_external_id` (Notion), `source_type` (auto-inferred) populate the tasks provenance columns. See `-h`. |
-| `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. |
+| `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. ⚠️ **Re-tagging moves the pointer, it does NOT rewrite the task's IO contract** — the inputs/outputs/criteria stay exactly as the OLD template left them, so a re-tagged task keeps criteria describing a different activity until its contract is re-instantiated. |
 | `cancel_task.sh <id> [--into <id>] [--reason "…"]` **[WRITE]** | Cancel a task (`status='cancelled'`), optionally recording a merge into another (`--into`) with an auditable comment trail on both. Nothing is deleted. `--dry-run` to preview. Use for dedup/merges (e.g. cross-project duplicates the per-project dedup misses). |
 | `complete_task.sh <id> [<id>…] [--at YYYY-MM-DD] [--note "…"] [--author N]` **[WRITE]** | Mark tasks DONE (`status='completed'` + `is_completed`), with a comment trail. The twin of `cancel_task.sh` — **do not confuse them**: `completed` = the work happened, `cancelled` = it never will; mixing them corrupts every compliance metric. **`--at` is what makes it honest**: without it the migration-003 trigger seals `completed_at` with `now()`, which lies for anything executed weeks ago (an explicit value survives the trigger). Already-completed tasks are skipped, not rewritten — re-running never moves a date or duplicates a comment. `--dry-run` to preview. |
 
@@ -321,13 +321,13 @@ a task instantiates an archetype. A task rolls up archetype → sop → macro.
 
 - **`catalog/sop-archetypes.json`** — canonical source
   of truth: 12 macro-processes (S1–S10 + S11 Producto / S12 Cierre-Retención, born
-  as gaps and filled by the Mastermind pilot), 36 SOPs, 77 archetypes
+  as gaps and filled by the Mastermind pilot), 36 SOPs, 78 archetypes
   `{id, sop, verb, name, slots[]}`. Every SOP has ≥1 archetype.
 - **DB tables** (`ikigaigm`, seeded from the JSON): `macro_processes`, `sops`
   (→macro_processes), `activity_archetypes` (→sops, +`embedding extensions.vector(1536)`
   for the future matcher), `archetype_params`, and the template-contract tables
   `archetype_inputs`/`archetype_outputs`/`archetype_acceptance_criteria` (an
-  archetype = a task template with declared I/O+criteria; **59 of the 77 archetypes
+  archetype = a task template with declared I/O+criteria; **60 of the 78 archetypes
   already carry one** — S5 Testimonios was the first authored, the Mastermind pilot
   wrote the rest; the 18 without a template are listed in the meeting-to-tasks
   skill). Template contracts are declared in the catalog JSON per archetype and
