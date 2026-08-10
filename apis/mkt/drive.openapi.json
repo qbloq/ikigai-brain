@@ -685,6 +685,76 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "tags": [
+                    "Drive Index"
+                ],
+                "summary": "Trigger a refresh of the index (async)",
+                "description": "Fire-and-forget: a full `files.list` sweep over the drive takes about a minute for ~18k items, well past any sane HTTP timeout, so this returns 202 and the caller polls `/drive/index/status`.\n\nThe index is otherwise refreshed only by running `indexDrive.js` on the box by hand — which is why it once went eight days stale without anyone noticing. A run already in flight returns **409**: the trigger never starts a second concurrent sweep.\n\n⚠️ The sweep **prunes** rows for items no longer in Drive, so the index mirrors the drive rather than accumulating.",
+                "operationId": "startDriveIndex",
+                "parameters": [
+                    {
+                        "name": "allDrives",
+                        "in": "query",
+                        "required": false,
+                        "description": "Set to `true` to include Shared Drives, not just My Drive.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "trashed",
+                        "in": "query",
+                        "required": false,
+                        "description": "Set to `true` to include trashed items.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "The sweep started.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "indexing"
+                                        },
+                                        "started_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "A run is already in progress; nothing was started.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        },
+                                        "started_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "description": "When the in-flight run started."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/drive/index/stats": {
@@ -1151,6 +1221,32 @@
                         "nullable": true,
                         "description": "Hours since that run — how stale any recency answer is.",
                         "example": 2
+                    },
+                    "running": {
+                        "type": "boolean",
+                        "description": "True while a refresh triggered by POST /drive/index is in flight."
+                    },
+                    "run_started_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the current (or last) run started."
+                    },
+                    "run_finished_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "When the last run ended; null while running."
+                    },
+                    "last_error": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Why the last run failed, or null. A refresh that dies must not look like one that never ran."
+                    },
+                    "last_summary": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Summary of the last successful run: items, folders, files, byType, pruned, durationMs."
                     }
                 },
                 "required": [

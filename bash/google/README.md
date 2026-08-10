@@ -2,7 +2,9 @@
 
 Scripts para leer el Drive de la org a través del **backend Meetico**
 (contrato: `apis/mkt/drive.openapi.json`),
-con curl + python3 stdlib. **Read-only**: nunca crean, editan ni borran nada.
+con curl + python3 stdlib. **Read-only** sobre el Drive: nunca crean, editan ni
+borran contenido. La única que escribe es `drive_sync.sh`, y lo que reescribe es
+nuestro propio índice, no el Drive.
 
 ## Auth — las credenciales de Google viven en el backend
 
@@ -22,6 +24,7 @@ el backend es el dueño de la identidad Google de la org (la refresca solo).
 | `auth_status.sh [--json]` | Modo, base y probe en vivo contra el backend. |
 | `drive_ls.sh [--folder ID\|url\|nombre] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf] [--limit N] [--json]` | Listar (live por carpeta) y buscar (índice global del backend). |
 | `drive_recent.sh [--days N] [--from D] [--to D] [--modified] [--docs] [--type T] [--folder FRAG] [--owner FRAG] [--exclude FRAG] [--with-folders] [--by day\|type\|owner\|folder] [--limit N] [--json]` | Lo último que **entró o cambió**, por fecha. Imprime siempre la frescura del índice a stderr. |
+| `drive_sync.sh [--all-drives] [--trashed] [--wait] [--timeout N] [--status]` **[WRITE]** | Refrescar el índice (`POST /drive/index`). La única que escribe en toda la capa. `--status` solo consulta. |
 | `drive_file.sh <id\|url> [--json]` | Metadata de un archivo. |
 | `doc_read.sh <id\|url> [--out F] [--txt] [--json]` | Un Google Doc como **Markdown** (`?format=markdown`). |
 | `sheet_read.sh <id\|url> [--limit N] [--raw] [--json]` | Primera pestaña de un Sheet como tabla (CSV del backend; fila 1 = header). |
@@ -39,16 +42,28 @@ por carpeta sí es live). Pendiente en Meetico: campos ricos en
 `/drive/files/:id` (size/modified/owners/**parents** — sin parents el «↑» del
 explorador no navega) y pestañas de Sheets.
 
-### El índice es un caché que se refresca A MANO — y eso ya mordió
+### El índice es un caché — y refrescarlo a mano ya mordió
 
 Lo llena `src/scripts/indexDrive.js` en el backend: un barrido de `files.list`
-que hace upsert a `drive_index` y poda lo que ya no existe. **No hay cron, ni
-PM2, ni endpoint que lo dispare.** El 2026-08-04 el índice llevaba desde el
-27-jul sin correr: preguntar «¿qué entró estas dos semanas?» devolvía silencio
-para 8 días con actividad real. Un caché viejo no responde «no hubo nada» — no
-responde, y se lee igual. Por eso `drive_recent.sh` imprime SIEMPRE la frescura
-y grita pasadas 48h. La cura de raíz es un `POST /drive/index` (como el que ya
-existe para Notion) o un cron; ninguno de los dos está hecho.
+que hace upsert a `drive_index` y **poda** lo que ya no existe (el índice
+espeja el Drive, no acumula). Durante meses no hubo cron ni endpoint que lo
+disparara, y se notó: el 2026-08-04 llevaba desde el 27-jul sin correr, así que
+preguntar «¿qué entró estas dos semanas?» devolvía silencio para 8 días con
+actividad real. Un caché viejo no responde «no hubo nada» — no responde, y se
+lee igual. Por eso `drive_recent.sh` imprime SIEMPRE la frescura y grita
+pasadas 48h.
+
+Desde el 2026-08-09 hay las dos curas:
+
+- **A demanda** — `POST /drive/index` (202 + polling en `/drive/index/status`;
+  409 si ya hay una corriendo, nunca dos barridos a la vez). El cliente es
+  `drive_sync.sh`, la única excepción a la regla read-only de esta capa.
+- **Automático** — el proceso PM2 `drive-index` en `ecosystem.config.cjs`,
+  `cron_restart: '0 10 * * *'` = 10:00 UTC = **05:00 en Bogotá** (el server
+  corre en UTC, verificado). No es un servidor: barre y termina, de ahí
+  `autorestart:false` — sin eso PM2 lo relanzaría en bucle.
+
+Un barrido son ~50s sobre ~17.8k items.
 
 ### Cambio de contrato 2026-08-04 (pendiente de desplegar)
 

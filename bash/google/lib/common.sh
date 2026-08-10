@@ -12,8 +12,12 @@
 #   cerebro  : MEETICO_BASE + MEETICO_JWT_TOKEN → directo al backend
 #              (el mismo par que usa el viz para el bind — viz/lib/meetico.js)
 #
-# Read-only: these scripts only ever GET. The one write in the API contract
-# (PATCH rename) is deliberately not wrapped.
+# Read-only, with ONE declared exception: every script here only ever GETs,
+# except `drive_sync.sh`, which POSTs /drive/index to refresh the cached
+# catalog. That one mutates no Drive content — it re-reads the drive and
+# rewrites our own index — and it exists because the alternative was SSHing
+# into the box. The genuine Drive write in the contract (PATCH rename) stays
+# deliberately unwrapped.
 set -euo pipefail
 
 GOOGLE_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
