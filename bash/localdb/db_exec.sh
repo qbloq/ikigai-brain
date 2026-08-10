@@ -36,7 +36,11 @@ else
 fi
 
 q="$(read_sql "$sql_arg")"
-[[ -n "${q// /}" ]] || { echo "Falta el SQL (argumento o stdin)" >&2; exit 2; }
+# «¿hay algún carácter que no sea espacio?» — con glob, NO con "${q// /}": la
+# sustitución de patrones de bash es cuadrática sobre el largo del string y en
+# un INSERT con JSON grande domina todo el tiempo de ejecución (medido: 113 s
+# para 240 KB contra 0.017 s así, con idéntica semántica en los casos borde).
+[[ "$q" == *[!\ ]* ]] || { echo "Falta el SQL (argumento o stdin)" >&2; exit 2; }
 reject_dotcmds "$q"
 q="$(strip_trailing_semi "$q")"
 
