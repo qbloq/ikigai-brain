@@ -1,14 +1,14 @@
 {
   "id": "cruce-mari-cerebro-dg",
   "name": "Cruce Mari ↔ Cerebro (DG)",
-  "component": "table",
+  "component": "cruce",
   "source": "localdb_query",
   "params": {
     "db": "pm_platform",
-    "query": "SELECT\n  CASE veredicto WHEN 'igual' THEN '≡ igual' WHEN 'relacionada' THEN '≈ relacionada' WHEN 'otro_proyecto' THEN '⇢ otro proyecto' WHEN 'sin_par_pm' THEN '◐ solo plataforma PM' ELSE '◑ solo cerebro' END AS veredicto,\n  confianza, accion,\n  substr(coalesce(pm_id,''),1,7) AS pm, pm_estado, pm_asignado, pm_titulo,\n  substr(coalesce(ce_id,''),1,8) AS ce, ce_estado, ce_source, ce_titulo,\n  nota\nFROM cruce\nORDER BY CASE accion\n  WHEN 'completar_en_cerebro' THEN 0 WHEN 'iniciar_en_cerebro' THEN 1\n  WHEN 'vincular' THEN 2 WHEN 'revisar' THEN 3\n  WHEN 'importar_candidata' THEN 4 ELSE 5 END,\n  CASE veredicto WHEN 'igual' THEN 0 WHEN 'relacionada' THEN 1 WHEN 'otro_proyecto' THEN 2 WHEN 'sin_par_pm' THEN 3 ELSE 4 END,\n  confianza",
+    "query": "SELECT c.n, c.veredicto, c.confianza, c.accion, c.pm_id, c.pm_titulo, c.pm_estado, c.pm_asignado, (SELECT t.fecha_limite FROM tareas t WHERE t.id=c.pm_id) AS pm_fecha, (SELECT t.completada_en FROM tareas t WHERE t.id=c.pm_id) AS pm_completada, c.ce_id, c.ce_titulo, c.ce_estado, c.ce_source, (SELECT ct.vence FROM cerebro_tareas ct WHERE ct.id=c.ce_id) AS ce_fecha, c.nota, c.merge, c.resuelta, c.resolucion, c.resuelta_en FROM cruce c ORDER BY c.n",
     "limit": "300"
   },
   "scope": "personal",
   "created_at": "2026-08-06T21:40:19.035Z",
-  "updated_at": "2026-08-06T21:40:19.035Z"
+  "updated_at": "2026-08-06T00:00:00.000Z"
 }

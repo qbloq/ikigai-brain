@@ -24,6 +24,9 @@ viz/store/
 # Local SQLite databases (the personal data layer) — never committed
 data/sqlite/
 
+# Snapshots crudos de la plataforma de la PM (project360) — datos, no código
+data/pm-platform/
+
 # Copilot fork clones (each is its own git repo; the pilot lives here)
 data/forks/
 
