@@ -42,9 +42,22 @@ function editSelect(signal, current, options, post) {
     class="w-full text-sm px-2 py-1.5 rounded-md border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">${opts}</select>`;
 }
 
-function ioEditRow(row, kind, tid, cat) {
+// The collapsed one-liner: everything the row *is*, none of the controls. The
+// rule the collapse follows is "hide controls, never facts" — scanning a
+// contract ("¿está bien tipado esto?") is the common act and must not cost a
+// click; only editing does.
+function ioSummary(row, crits) {
+  const bits = [row.io_type || "sin tipo", row.artifact].filter(Boolean);
+  if (crits.length) bits.push(`${crits.length} criterio${crits.length === 1 ? "" : "s"}`);
+  if (!row.is_required) bits.push("opcional");
+  const bound = row.reference && typeof row.reference === "object" && !Array.isArray(row.reference) && Object.keys(row.reference).length;
+  return `<p class="text-[11px] text-slate-400 truncate">${bound ? "🔗 · " : ""}${escape(bits.join(" · "))}</p>`;
+}
+
+function ioEditRow(row, kind, tid, cat, crits = []) {
   const sid = idsig(row.id);
   const base = `/task/${escape(tid)}/io/${escape(row.id)}`;
+  const open = `$_open_${sid}`;
   const aname = (cat.artifact_types || []).find((a) => a.id === row.artifact_type_id)?.name;
   const titlePost = `@post('${base}/field/title?value='+encodeURIComponent($t_${sid}))`;
   const iotPost = `@post('${base}/field/io_type?value='+encodeURIComponent($iot_${sid}))`;
@@ -57,10 +70,18 @@ function ioEditRow(row, kind, tid, cat) {
   // changes size (e.g. gains the binding chip) mis-aligns siblings and one row's
   // bound values bleed into another until the next full refresh.
   return `<div id="ioerow-${sid}" class="rounded-lg border border-slate-200 p-3 mb-2 bg-white">
-    <div class="flex items-center gap-2 mb-2">
-      <input id="iot-${sid}" data-bind="t_${sid}" value="${escape(row.title || "")}" data-on:change="${titlePost}" data-indicator:loading
-        class="flex-1 text-sm font-medium px-2 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Título" />
-      <div class="shrink-0 flex items-center">
+    <div class="flex items-center gap-2">
+      <button data-on:click="${open}=!${open}" class="shrink-0 text-slate-400 hover:text-indigo-600 text-xs leading-none w-3"
+        title="Desplegar / plegar">
+        <span data-show="!${open}">▸</span><span data-show="${open}">▾</span>
+      </button>
+      <div data-show="!${open}" class="min-w-0 flex-1 cursor-pointer" data-on:click="${open}=true">
+        <p class="text-sm font-medium text-slate-700 truncate">${escape(row.title || "—")}</p>
+        ${ioSummary(row, crits)}
+      </div>
+      <input data-show="${open}" id="iot-${sid}" data-bind="t_${sid}" value="${escape(row.title || "")}" data-on:change="${titlePost}" data-indicator:loading
+        class="flex-1 min-w-0 text-sm font-medium px-2 py-1.5 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Título" />
+      <div data-show="${open}" class="shrink-0 flex items-center">
         <button data-show="!$del_${sid}" data-on:click="$del_${sid}=true" title="Eliminar" class="text-slate-400 hover:text-red-600 px-1.5 text-lg leading-none">✕</button>
         <span data-show="$del_${sid}" class="inline-flex items-center gap-1.5 text-xs whitespace-nowrap">
           <span class="text-slate-500">¿Eliminar?</span>
@@ -69,7 +90,8 @@ function ioEditRow(row, kind, tid, cat) {
         </span>
       </div>
     </div>
-    <div class="grid grid-cols-2 gap-2">
+    <div data-show="${open}">
+    <div class="grid grid-cols-2 gap-2 mt-2">
       <div><label class="block text-[11px] text-slate-400 mb-0.5">Tipo (IO)</label>${editSelect(`iot_${sid}`, row.io_type_id, ioTypeOpts(cat), iotPost)}</div>
       <div><label class="block text-[11px] text-slate-400 mb-0.5">Artifact</label>${editSelect(`art_${sid}`, row.artifact_type_id, artifactOpts(cat), artPost)}</div>
     </div>
@@ -86,6 +108,18 @@ function ioEditRow(row, kind, tid, cat) {
         <button data-on:click="${bindPost}; $ref_${sid}=''" data-indicator:loading class="shrink-0 text-xs px-2.5 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Vincular</button>
       </div>`
       }
+    </div>
+    ${
+      kind === "outputs"
+        ? `<div class="mt-2 pt-2 border-t border-slate-100">
+      <div class="flex items-baseline gap-1.5 mb-1">
+        <span class="text-[11px] text-slate-400">Criterios de validación</span>
+        <span class="text-[10px] text-slate-300">· se editan en la conversación</span>
+      </div>
+      ${critList(crits)}
+    </div>`
+        : ""
+    }
     </div>
   </div>`;
 }
@@ -141,8 +175,12 @@ function renderSqlPreview(ioId) {
 // Seed every row's bound signals with its CURRENT values. Without this, Datastar
 // initializes each `data-bind` signal to empty and writes it back to the control,
 // wiping the server-rendered selection/value (selects show blank, checkbox clears).
-// data-signals uses if-missing semantics, so re-renders after an edit don't clobber
-// the user's in-flight choices. Mirrors how the read-only filters pre-seed signals.
+//
+// `data-signals` OVERWRITES on every apply — the plugin only honours if-missing
+// with the explicit `__ifmissing` modifier — and the whole panel re-renders after
+// each write, so anything seeded here is reset by the next edit. That is right
+// for the bound controls (after a write the DB is the truth) and WRONG for view
+// state, which is why the two are split: see viewSignals below.
 function editSignals(rows) {
   const o = {};
   for (const r of rows || []) {
@@ -151,11 +189,29 @@ function editSignals(rows) {
     o[`iot_${s}`] = r.io_type_id || "";
     o[`art_${s}`] = r.artifact_type_id || "";
     o[`req_${s}`] = !!r.is_required;
-    o[`del_${s}`] = false; // inline "¿Eliminar?" confirm toggle for this row
+    o[`del_${s}`] = false; // inline "¿Eliminar?" confirm toggle — resetting it is desired
     o[`ref_${s}`] = ""; // the "pegar enlace/ID" binding input
     o[`_sqlq_${s}`] = (r.reference && typeof r.reference === "object" && typeof r.reference.query === "string" && r.reference.query) || "";
-    o[`_sqlopen_${s}`] = false; // the SQL editor's expand/collapse toggle
   }
+  return o;
+}
+
+// Pure VIEW state (what is open, what just got copied) — seeded through
+// `data-signals__ifmissing` so a re-render fills only what is missing and never
+// snaps shut the row (or the SQL editor) the user is working inside. Inputs
+// start collapsed, outputs open: the output is where the binding and the
+// acceptance criteria live, so it is what the panel is usually opened to read.
+function viewSignals(inputs, outputs, criteria) {
+  const o = { cp: false };
+  for (const r of inputs || []) {
+    o[`_open_${idsig(r.id)}`] = false;
+    o[`_sqlopen_${idsig(r.id)}`] = false;
+  }
+  for (const r of outputs || []) {
+    o[`_open_${idsig(r.id)}`] = true;
+    o[`_sqlopen_${idsig(r.id)}`] = false;
+  }
+  for (const c of criteria || []) o[`_cpc_${idsig(c.id)}`] = false;
   return o;
 }
 
@@ -182,9 +238,9 @@ function bindingChip(row, base, cat) {
   </div>`;
 }
 
-function ioEditSection(title, rows, kind, tid, cat) {
+function ioEditSection(title, rows, kind, tid, cat, byOutput = {}) {
   const list =
-    (rows || []).map((r) => ioEditRow(r, kind, tid, cat)).join("") ||
+    (rows || []).map((r) => ioEditRow(r, kind, tid, cat, byOutput[r.id] || [])).join("") ||
     '<p class="text-xs text-slate-400 italic mb-2">— ninguno —</p>';
   const addPost = `@post('/task/${escape(tid)}/io/add?kind=${kind}')`;
   const noun = kind === "inputs" ? "input" : "output";
@@ -195,25 +251,56 @@ function ioEditSection(title, rows, kind, tid, cat) {
   </div>`;
 }
 
-// Inline ID chip for the editor subtitle: shows only the short prefix, with an
-// icon button that copies the FULL uuid to the clipboard (clipboard → check on
-// success). Needs the `cp` signal seeded in the form's data-signals.
-function idCopy(uuid, shortid) {
+// Inline ID chip: shows only the short prefix, with an icon button that copies
+// the FULL uuid to the clipboard (clipboard → check on success). `sig` is the
+// per-chip signal holding the "copied ✓" flash — one chip per signal, or every
+// chip on the panel flashes at once. Must be seeded in data-signals.
+//
+// This is not decoration: viz is the VIEWER and the conversation with the brain
+// is the editor, so the id shown here is the handle the user dictates
+// (`--crit <prefix>`, `--io <prefix>`). Making it copyable IS the write path.
+function idCopy(uuid, shortid, sig = "cp") {
   const u = escape(uuid);
+  const $ = `$${sig}`;
   // navigator.clipboard only exists in secure contexts (https / localhost); when
   // the viz is opened via LAN IP or an embedded webview it's undefined, so fall
   // back to a temp <textarea> + execCommand('copy'). $cp flips only on success.
   const click =
-    `const ok = () => { $cp = true; setTimeout(() => $cp = false, 1200) };` +
+    `const ok = () => { ${$} = true; setTimeout(() => ${$} = false, 1200) };` +
     `const fb = () => { const a = document.createElement('textarea'); a.value = '${u}'; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select(); const d = document.execCommand('copy'); a.remove(); if (d) ok() };` +
     `navigator.clipboard ? navigator.clipboard.writeText('${u}').then(ok, fb) : fb()`;
   return `<span class="inline-flex items-center gap-1 align-middle">
     <span class="font-mono text-slate-500">${escape(shortid)}</span>
     <button data-on:click="${click}" title="Copiar ID completo" class="text-slate-400 hover:text-indigo-600 leading-none">
-      <svg data-show="!$cp" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-      <svg data-show="$cp" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+      <svg data-show="!${$}" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      <svg data-show="${$}" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
     </button>
   </span>`;
+}
+
+// Acceptance criteria of ONE output — READ-ONLY on purpose. The criteria are
+// half the work contract and belong inside their output (they hang off
+// output_id, not off the task), but editing them happens in the conversation
+// with the brain via bash/tasks/update_task_criteria.sh, so what the panel owes
+// the user is the criterion's id — the handle for `--crit <prefix>`.
+function critList(crits) {
+  if (!crits.length) return '<p class="text-[11px] text-slate-400 italic">— sin criterios</p>';
+  return `<ul class="space-y-1.5">${crits
+    .map((c) => {
+      const sid = idsig(c.id);
+      const mark = c.is_met
+        ? '<span class="text-emerald-600 shrink-0" title="cumplido">✓</span>'
+        : '<span class="text-slate-300 shrink-0" title="pendiente">○</span>';
+      const meta = [c.method || "—", c.category, c.is_required ? null : "opcional"].filter(Boolean).map(escape).join(" · ");
+      return `<li class="flex items-start gap-1.5">
+        ${mark}
+        <div class="min-w-0">
+          <p class="text-xs text-slate-600">${escape(c.criterion)}</p>
+          <p class="text-[10px] text-slate-400">${idCopy(c.id, String(c.id).slice(0, 8), `_cpc_${sid}`)} · ${meta}</p>
+        </div>
+      </li>`;
+    })
+    .join("")}</ul>`;
 }
 
 // notice: a string (→ error) OR { kind: 'ok'|'warn'|'err', text } for the banner.
@@ -248,15 +335,19 @@ function renderTaskEditForm(id, notice) {
   const header = `<div class="flex items-start gap-2 mb-1">${close}</div>
     <h2 class="text-base font-semibold text-slate-800 mb-1 -mt-6 pr-6">${escape(d.title)}</h2>
     <p class="text-xs text-slate-400 mb-3">${cell(d.project)} · ${idCopy(d.uuid || id, d.id || id)}</p>`;
-  const sigObj = Object.assign(editSignals([...(d.inputs || []), ...(d.outputs || [])]), { cp: false });
-  const signals = escape(JSON.stringify(sigObj));
-  const inner = `<div class="p-5" data-signals="${signals}">
+  // Criteria hang off an OUTPUT (output_id), never off the task — so they are
+  // grouped by output and rendered inside it, not as a section of their own.
+  const byOutput = {};
+  for (const c of d.criteria || []) (byOutput[c.output_id] = byOutput[c.output_id] || []).push(c);
+  const signals = escape(JSON.stringify(editSignals([...(d.inputs || []), ...(d.outputs || [])])));
+  const view = escape(JSON.stringify(viewSignals(d.inputs, d.outputs, d.criteria)));
+  const inner = `<div class="p-5" data-signals="${signals}" data-signals__ifmissing="${view}">
     ${header}
     ${sourceBlock(d.source)}
     ${activityBlock(d.archetype)}
     ${errBanner}
     ${ioEditSection("Inputs", d.inputs, "inputs", id, cat)}
-    ${ioEditSection("Outputs", d.outputs, "outputs", id, cat)}
+    ${ioEditSection("Outputs", d.outputs, "outputs", id, cat, byOutput)}
   </div>`;
   return editPanelShell(inner);
 }

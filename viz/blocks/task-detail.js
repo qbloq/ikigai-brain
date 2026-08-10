@@ -56,6 +56,9 @@ function ioList(items, doneKey, okT, noT) {
     .join("")}</ul>`;
 }
 
+// The criterion's short id is shown on purpose: viz is the viewer and the
+// conversation with the brain is the editor, so this prefix is the handle the
+// user dictates to change it (`update_task_criteria.sh --crit <prefix>`).
 function criteriaList(items) {
   if (!items || !items.length) return '<p class="text-xs text-slate-400 italic">— sin criterios</p>';
   return `<ul class="space-y-1.5">${items
@@ -64,7 +67,7 @@ function criteriaList(items) {
         ${doneMark(c.is_met, "cumplido", "pendiente")}
         <div class="min-w-0">
           <p class="text-sm text-slate-700">${escape(c.criterion)}</p>
-          <p class="text-xs text-slate-400">${escape(c.method || "—")}${c.is_required ? "" : " · opcional"} · sobre: ${escape(c.output || "—")}</p>
+          <p class="text-xs text-slate-400">${c.id ? `<span class="font-mono text-slate-400" title="${escape(c.id)}">${escape(String(c.id).slice(0, 8))}</span> · ` : ""}${escape(c.method || "—")}${c.is_required ? "" : " · opcional"} · sobre: ${escape(c.output || "—")}</p>
         </div>
       </li>`
     )
