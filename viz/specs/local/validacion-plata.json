@@ -1,0 +1,8 @@
+{
+  "id": "validacion-plata",
+  "name": "BANT — validación contra plata",
+  "component": "validacion-plata",
+  "source": "validacion_plata",
+  "params": {},
+  "scope": "personal"
+}

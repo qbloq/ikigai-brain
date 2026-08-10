@@ -198,6 +198,31 @@ const SOURCES = {
     emits: "object",
     args: { id: { positional: true } },
   },
+  // La matriz del experimento de prompt: una fila por llamada, tres celdas
+  // (producción·gemini · producción·claude · mejorado·claude), y las celdas
+  // que faltan se emiten con `existe:0` + el handle para mandarlas a correr.
+  // NO se cachea: la mitad de su valor es ver aparecer la celda recién corrida.
+  bant_comparativo: {
+    label: "Comparativo BANT (producción vs mejorado)",
+    script: "bash/calls/comparativo_bant.sh",
+    emits: "rows",
+    args: {
+      pendientes: { flag: "--pendientes", bool: true },
+      muestra: { flag: "--muestra", bool: true },
+    },
+  },
+  bant_variabilidad: {
+    label: "Variabilidad BANT (test-retest, tiradas repetidas)",
+    script: "bash/calls/variabilidad_bant.sh",
+    emits: "object",
+    args: {},
+  },
+  validacion_plata: {
+    label: "Validación del puntaje contra plata (AUC v2 vs producción)",
+    script: "bash/calls/validacion_plata.sh",
+    emits: "object",
+    args: {},
+  },
   // Per-closer/result/program/project/week effectiveness aggregates.
   call_stats: {
     label: "Desempeño comercial",
