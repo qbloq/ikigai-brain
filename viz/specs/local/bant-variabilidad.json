@@ -1,0 +1,8 @@
+{
+  "id": "bant-variabilidad",
+  "name": "BANT — variabilidad entre tiradas",
+  "component": "bant-variabilidad",
+  "source": "bant_variabilidad",
+  "params": {},
+  "scope": "personal"
+}

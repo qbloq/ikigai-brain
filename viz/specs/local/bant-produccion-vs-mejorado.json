@@ -1,0 +1,10 @@
+{
+  "id": "bant-produccion-vs-mejorado",
+  "name": "BANT — producción vs mejorado",
+  "component": "bant-comparativo",
+  "source": "bant_comparativo",
+  "params": {},
+  "scope": "personal",
+  "created_at": "2026-08-08T00:00:00.000Z",
+  "updated_at": "2026-08-08T00:00:00.000Z"
+}
