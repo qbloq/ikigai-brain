@@ -520,6 +520,18 @@ a task instantiates an archetype. A task rolls up archetype → sop → macro.
   seeded by `sync_catalog.sh`. ⚠️ `create_task.sh` leaves **unfilled `{slots}`
   literal** (unlike `materialize_io.sh`, which neutralizes them) — always pass
   `slots`, including `proyecto`.
+- ⚠️ **Los slots son un hueco de diseño abierto, no un detalle de formato.**
+  Hay **tres** sustituidores con dos comportamientos incompatibles, y los
+  **valores de los slots no se persisten en ninguna parte** — se hornean en el
+  texto al instanciar, así que toda re-instanciación (merge, re-tag, corrección
+  de plantilla) los pierde. Ya costó: el merge PM↔cerebro degradó 16 contratos
+  que estaban llenos, y el daño se concentra en los **criterios de aceptación**
+  (un criterio con `«pendiente»` es inverificable, no solo feo). El socket
+  (`archetype_params` con `type`/`enum_options`) existe y está **vacío: 120
+  params, todos `text`**. Antes de tocar plantillas, instanciación o
+  `set_archetype.sh`, leer
+  [docs/plantillas-slots-brief.md](docs/plantillas-slots-brief.md) — evidencia,
+  mecanismo y las preguntas de diseño abiertas.
 - **`tasks.archetype_id`** (FK→activity_archetypes) + `archetype_confidence` +
   `archetype_match_method` (`rule|embedding|llm|human`): instance → template link.
   The SOP/macro are reached by joining through `activity_archetypes`→`sops`.
