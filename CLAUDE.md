@@ -392,6 +392,47 @@ three domains: portafolio, pauta (campañas + line chart de gasto diario),
 cobranza (vencidas + aging), comisiones (cola de aprobación), cashflow y
 pipeline CRM (tablero + donut por estado).
 
+## PM domain — la plataforma de Mari ([bash/pm/](bash/pm/))
+
+El API de project360 (`PM360_BASE`+`PM360_TOKEN` en `.env`, Bearer; superficie:
+`GET /tasks?limite=&offset=` y `GET /tasks/{id}`) es la fuente del **lado PM del
+cruce**. El cruce PM↔cerebro se lee sobre *snapshots* en la sqlite local
+`pm_platform`, no sobre datos vivos: sin refresco, propone acciones sobre
+estados que ya cambiaron.
+
+| Script | Use it to… |
+|--------|-----------|
+| `sync_tareas.sh [--dry-run] [--limit N] [--no-cruce] [--no-snapshot] [--json]` **[WRITE local]** | Refrescar el espejo `tareas` desde el API (upsert por id, una txn) y, con él, las copias denormalizadas `pm_titulo`/`pm_estado`/`pm_asignado` de las filas **no resueltas** de `cruce`. Guarda el JSON crudo en `data/pm-platform/tareas-<fecha>.json` y registra la corrida en `pm_sync`. |
+
+Tres reglas que el script sostiene y conviene no romper:
+
+- **Nunca borra.** Una tarea que desaparece del API se *reporta* (`desaparecidas`),
+  no se elimina: hay filas de `cruce` apuntándole, y la línea es «cruzar y
+  ajustar, no borrar». Tampoco escribe jamás en Postgres — promover al cerebro
+  es trabajo de `bash/tasks/merge_from_cruce.sh`.
+- **Las filas `resuelta=1` del cruce se congelan.** Una fila resuelta documenta
+  una decisión tomada sobre el contenido que muestra; refrescarla reescribe la
+  historia. Solo se re-sincronizan las abiertas.
+- **Un fetch de 0 tareas aborta sin escribir** — eso es el API caído, no una
+  plataforma vacía.
+
+**El cruce es multi-proyecto desde 2026-08-10.** Nació mirando solo las 402
+tareas de David Guerrero, y por eso todo lo que Mari archivó bajo DG sin serlo
+cayó en `otro_proyecto`. Al entrar las 24 de Ikigai (`cerebro_tareas.proyecto`,
+`cruce.ce_proyecto` — antes el proyecto era implícito), ese balde se desplomó de
+**23 a 3** (solo Andrea, aún fuera de alcance) y aparecieron 19 pares que el
+alcance DG no podía ver. La regla que lo hace posible: **la plataforma PM archiva
+todo bajo DG, así que el único lado que sabe de qué proyecto es un par es el
+cerebro** — de ahí que el filtro de la UI lea `ce_proyecto` y que las filas «solo
+PM» no pertenezcan a ningún proyecto. Meter Andrea es la misma operación.
+
+Lo que hay que mirar en la salida: `cruce_alertas` (filas sin resolver que Mari
+pasó a `completed` — cambian la acción propuesta, típicamente a
+`completar_en_cerebro`) y `nuevas_sin_par` (tareas nuevas sin fila de cruce; el
+cruce semántico se hace aparte, el script no lo inventa). ⚠️ El **lado cerebro**
+(`cerebro_tareas`) sigue siendo un snapshot congelado del 2026-08-06 — este
+script no lo toca.
+
 ## Notion domain — read-only extraction ([bash/notion/](bash/notion/))
 
 Pull Notion content to local via the HTTP API (curl/python3 stdlib, no npm deps;
