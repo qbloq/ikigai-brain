@@ -165,7 +165,53 @@ Ordenadas de más barata a más profunda. No hay que responderlas todas.
    plantilla, no del merge, y afecta a toda instanciación futura del mismo
    arquetipo.
 
-## 7. Reparación pendiente (independiente del rediseño)
+## 7. El default de `--contrato`: medido, y no es obvio
+
+`merge_from_cruce.sh` tiene dos fuentes posibles para el contrato de la tarea
+duplicada:
+
+- **`plantilla`** (default hoy) — re-instancia desde la plantilla del arquetipo:
+  `{proyecto}` sustituido, el resto neutralizado a `«pendiente»`.
+- **`copia`** — clona el contrato vivo de la original, bindings incluidos, con la
+  verificación reseteada (`is_met` se gana por atestación, nunca se copia).
+
+La primera lectura fue que `plantilla` es simplemente peor. **Medido sobre los 29
+pares, no lo es:**
+
+| | pares |
+|---|---|
+| perdieron el contenido de los slots | **17** |
+| **ganaron criterios** que la original no tenía | **7** |
+| las dos cosas a la vez | 4 |
+| ninguna de las dos | 9 |
+
+Las 29 originales tenían contrato, y ninguna perdió inputs ni criterios *en
+cantidad*. O sea que **la plantilla del catálogo está más rica que varios
+contratos originales**: en 7 casos aportó criterios de más. Ninguna opción
+domina, y por eso la decisión no era obvia.
+
+**La asimetría que sí decide:** lo que pierde `copia` es **aditivo y visible** —
+un criterio que falta se agrega con `update_task_criteria.sh` y salta a la vista
+al revisar la tarea. Lo que pierde `plantilla` es **destructivo e invisible**: el
+texto desaparece y solo se recupera de una tarea `cancelled` que nadie va a
+pensar en abrir. Entre las dos, la que falla mejor es `copia`.
+
+**La propuesta: `auto` como default.** Usar `copia` cuando la plantilla del
+arquetipo tiene slots más allá de `{proyecto}`, y `plantilla` cuando no. Con los
+números de arriba resuelve limpio **25 de 29**: los 12 sin slots toman la
+plantilla rica (los 3 que ganaban criterios los siguen ganando) y los 17 con
+slots conservan su texto. Quedan **4 conflictivos** — los que querían las dos
+cosas — y esos son exactamente los que solo se arreglan con el fondo del asunto
+(§3): slots como dato, no como texto horneado. `plantilla` y `copia` quedan como
+opt-in explícito, y el script sigue declarando cuál usó en cada par (ya lo
+imprime y lo deja en el comentario de merge).
+
+⚠️ **Detalle de implementación:** la detección tiene que ser **por regex sobre el
+texto de la plantilla**, no leyendo el array `slots` declarado — ese array
+miente, 31 arquetipos usan `{proyecto}` sin declararlo (§5) y nada garantiza que
+no pase con otros.
+
+## 8. Reparación pendiente (independiente del rediseño)
 
 Las 16 tareas degradadas **son recuperables sin decidir nada** de lo anterior:
 el texto lleno vive en la tarea original `cancelled`. Dos formas:
@@ -176,9 +222,8 @@ el texto lleno vive en la tarea original `cancelled`. Dos formas:
 - **A mano, a medida que aparezcan**, con `/revisar-tarea-io` — que es el plan
   elegido: cada caso se mira de cerca y alimenta las preguntas de §6.
 
-Y **antes del próximo merge**: cambiar el default de `--contrato`, o mejor,
-que el script detecte si la original traía slots llenos y solo entonces prefiera
-`copia`. Con el default actual, cada merge nuevo suma otra degradación.
+Y **antes del próximo merge**, el `auto` de §7. Con el default actual cada merge
+nuevo suma otra degradación — son ~15 líneas y no depende de nada del rediseño.
 
 ---
 
