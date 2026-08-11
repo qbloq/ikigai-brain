@@ -3,8 +3,14 @@
 // come from the spec's persisted localdb_query (provenance rule: the SQL lives
 // in the spec, never in the browser) and MUST expose the cruce columns by
 // name: n, veredicto, confianza, accion, pm_id, pm_titulo, pm_estado,
-// pm_asignado, ce_id, ce_titulo, ce_estado, ce_source, nota, merge, resuelta,
-// resolucion.
+// pm_asignado, ce_id, ce_titulo, ce_estado, ce_source, ce_proyecto, nota,
+// merge, resuelta, resolucion.
+//
+// The board is MULTI-PROJECT since Ikigai joined it (2026-08-10): the PM
+// platform files everything under David Guerrero, so the cerebro side is the
+// only one that knows which project a pair really belongs to — hence the
+// project filter reads `ce_proyecto`, and rows with no cerebro side (solo PM)
+// answer to no project at all.
 //
 // Two jobs on top of the plain table:
 //   1. the «resuelta» indicator — has this pair been dealt with yet?
@@ -89,7 +95,8 @@ function fila(r, uiId) {
   const [vtxt, vcls] = VER[r.veredicto] || [r.veredicto, "bg-slate-100 text-slate-600 border-slate-200"];
   // Literal per-row data-show: filters are client-side signals over the last
   // fetched render — a filter change never re-queries (see viz/CLAUDE.md).
-  const show = `($fver=='' || $fver=='${r.veredicto}') && ($fest=='' ` +
+  const show = `($fver=='' || $fver=='${r.veredicto}') && ` +
+    `($fproy=='' || $fproy=='${(r.ce_proyecto || "").replace(/'/g, "")}') && ($fest=='' ` +
     `|| ($fest=='merge' && ${r.merge ? "true" : "false"})` +
     `|| ($fest=='resueltas' && ${r.resuelta ? "true" : "false"})` +
     `|| ($fest=='abiertas' && ${r.resuelta ? "false" : "true"}))`;
@@ -98,7 +105,7 @@ function fila(r, uiId) {
     <td class="px-2 py-1.5">${chip(vtxt, vcls)}<div class="text-[10px] text-slate-400 mt-0.5">${escape(r.confianza || "")}</div></td>
     <td class="px-2 py-1.5 text-[11px] text-slate-600 whitespace-nowrap">${escape(r.accion || "")}</td>
     <td class="px-2 py-1.5 w-72 max-w-72">${lado(r.pm_id, r.pm_estado, r.pm_fecha, r.pm_completada, r.pm_titulo, r.pm_asignado)}</td>
-    <td class="px-2 py-1.5 w-72 max-w-72">${lado(r.ce_id, r.ce_estado, r.ce_fecha, null, r.ce_titulo, r.ce_source)}</td>
+    <td class="px-2 py-1.5 w-72 max-w-72">${lado(r.ce_id, r.ce_estado, r.ce_fecha, null, r.ce_titulo, [r.ce_source, r.ce_proyecto].filter(Boolean).join(" · "))}</td>
     <td class="px-2 py-1.5 text-[11px] text-slate-500 max-w-56"><span class="line-clamp-2" title="${escape(r.nota || "")}">${escape(r.nota || "")}</span></td>
     <td class="px-2 py-1.5 text-center">${resueltaCell(r)}</td>
     <td class="px-2 py-1.5 text-center">${mergeBtn(r, uiId)}</td>
@@ -106,13 +113,17 @@ function fila(r, uiId) {
 }
 
 // The re-renderable fragment: counters + table, patched whole after each act.
-function tablaFrag(ui, err) {
-  let rows = [];
+// `pre` lets the page render reuse rows it already fetched (for the project
+// filter buttons) instead of querying twice.
+function tablaFrag(ui, err, pre) {
+  let rows = pre || [];
   let fail = err || null;
-  try {
-    rows = fetchSource(ui.source, ui.params || {}).rows;
-  } catch (e) {
-    fail = e.message;
+  if (!pre) {
+    try {
+      rows = fetchSource(ui.source, ui.params || {}).rows;
+    } catch (e) {
+      fail = e.message;
+    }
   }
   const tot = rows.length;
   const marked = rows.filter((r) => r.merge).length;
@@ -154,8 +165,18 @@ function filtro(sig, val, label) {
 }
 
 function renderCruce(ui) {
+  let rows = [];
+  let fail = null;
+  try {
+    rows = fetchSource(ui.source, ui.params || {}).rows;
+  } catch (e) {
+    fail = e.message;
+  }
+  // Projects come from the data, not a constant: adding Andrea to the cruce
+  // must grow the filter bar on its own.
+  const proyectos = [...new Set(rows.map((r) => r.ce_proyecto).filter(Boolean))].sort();
   return `<section id="pane" class="flex-1 p-6 overflow-hidden flex flex-col"
-    data-signals="{fver:'',fest:'',loading:false}">
+    data-signals="{fver:'',fest:'',fproy:'',loading:false}">
     <header class="mb-3 flex items-baseline gap-3">
       <h1 class="text-xl font-semibold text-slate-800">${escape(ui.name)}</h1>
       <a href="/u/${escape(ui.id)}" target="_blank" class="ml-auto text-xs text-indigo-600 hover:underline">abrir solo ↗</a>
@@ -168,8 +189,11 @@ function renderCruce(ui) {
       ${filtro("fest", "abiertas", "sin resolver")}
       ${filtro("fest", "merge", "marcadas merge")}
       ${filtro("fest", "resueltas", "resueltas")}
+      ${proyectos.length > 1 ? `<span class="mx-2 text-slate-300">·</span>
+      ${filtro("fproy", "", "todo proyecto")}
+      ${proyectos.map((p) => filtro("fproy", p, p)).join("")}` : ""}
     </div>
-    ${tablaFrag(ui)}
+    ${tablaFrag(ui, fail, rows)}
   </section>`;
 }
 

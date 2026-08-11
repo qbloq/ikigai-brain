@@ -15,8 +15,11 @@
 #   --json         {ok, n, merge, resuelta, resolucion, resuelta_en}
 #
 # Guardrails: merge can only be set on veredicto='igual' AND confianza='alta'
-# rows (the only ones the UI offers the button for), and a resolved row can't
-# take new merge marks.
+# rows (the only ones the UI offers the button for), a resolved row can't take
+# new merge marks, and no two rows pointing at the SAME cerebro task can be
+# marked at once — the PM platform duplicates tasks internally (the endpoints
+# spec is tripled), so several rows legitimately share a ce_id; merging two of
+# them would duplicate that cerebro task twice and cancel it twice.
 set -euo pipefail
 source "$(dirname "$0")/../lib/sqlite.sh"
 
@@ -41,13 +44,20 @@ done
 p="$(require_db "$DB")"
 esc() { printf '%s' "$1" | sed "s/'/''/g"; }
 
-row="$(sqlite_ro "$p" "SELECT veredicto||'|'||confianza||'|'||resuelta FROM cruce WHERE n=$n")"
+row="$(sqlite_ro "$p" "SELECT veredicto||'|'||confianza||'|'||resuelta||'|'||coalesce(ce_id,'') FROM cruce WHERE n=$n")"
 [[ -n "$row" ]] || { echo "No existe la fila n=$n en cruce" >&2; exit 1; }
-IFS='|' read -r ver conf res <<<"$row"
+IFS='|' read -r ver conf res ce <<<"$row"
 
 if [[ -n "$merge" && "$merge" == 1 ]]; then
   [[ "$ver" == "igual" && "$conf" == "alta" ]] || { echo "Solo las filas igual+alta se marcan para merge (n=$n es $ver+$conf)" >&2; exit 1; }
   [[ "$res" == 0 ]] || { echo "La fila n=$n ya está resuelta; no admite marca de merge" >&2; exit 1; }
+  if [[ -n "$ce" ]]; then
+    dup="$(sqlite_ro "$p" "SELECT group_concat(n,', ') FROM cruce WHERE ce_id='$(esc "$ce")' AND merge=1 AND n<>$n")"
+    [[ -z "$dup" ]] || {
+      echo "La tarea del cerebro $ce ya está marcada para merge en n=$dup — la plataforma PM la duplica." >&2
+      echo "Se mezcla UNA sola vez: desmarcá n=$dup si preferís mezclar por n=$n." >&2
+      exit 1; }
+  fi
 fi
 
 sets=()

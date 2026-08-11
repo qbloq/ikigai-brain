@@ -5,7 +5,7 @@
   "source": "localdb_query",
   "params": {
     "db": "pm_platform",
-    "query": "SELECT c.n, c.veredicto, c.confianza, c.accion, c.pm_id, c.pm_titulo, c.pm_estado, c.pm_asignado, (SELECT t.fecha_limite FROM tareas t WHERE t.id=c.pm_id) AS pm_fecha, (SELECT t.completada_en FROM tareas t WHERE t.id=c.pm_id) AS pm_completada, c.ce_id, c.ce_titulo, c.ce_estado, c.ce_source, (SELECT ct.vence FROM cerebro_tareas ct WHERE ct.id=c.ce_id) AS ce_fecha, c.nota, c.merge, c.resuelta, c.resolucion, c.resuelta_en FROM cruce c ORDER BY c.n",
+    "query": "SELECT c.n, c.veredicto, c.confianza, c.accion, c.pm_id, c.pm_titulo, c.pm_estado, c.pm_asignado, (SELECT t.fecha_limite FROM tareas t WHERE t.id=c.pm_id) AS pm_fecha, (SELECT t.completada_en FROM tareas t WHERE t.id=c.pm_id) AS pm_completada, c.ce_id, c.ce_titulo, c.ce_estado, c.ce_source, c.ce_proyecto, (SELECT ct.vence FROM cerebro_tareas ct WHERE ct.id=c.ce_id) AS ce_fecha, c.nota, c.merge, c.resuelta, c.resolucion, c.resuelta_en FROM cruce c ORDER BY c.n",
     "limit": "300"
   },
   "scope": "personal",
