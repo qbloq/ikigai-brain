@@ -420,6 +420,39 @@ const SOURCES = {
     emits: "object",
     args: { id: { positional: true } },
   },
+  // Lo último que entró o cambió. Lee el índice cacheado del backend (no el
+  // Drive vivo), así que SIEMPRE va acompañado de drive_index_status: sin la
+  // frescura al lado, un índice viejo se lee como "no hubo actividad".
+  drive_recent: {
+    label: "Drive · recientes",
+    script: "bash/google/drive_recent.sh",
+    emits: "rows",
+    args: {
+      days: "--days",
+      from: "--from",
+      to: "--to",
+      type: "--type",
+      folder: "--folder",
+      owner: "--owner",
+      exclude: "--exclude",
+      // Lista «|»-separada de carpetas raíz a excluir, por nombre exacto.
+      exclude_folder: "--exclude-folder",
+      limit: "--limit",
+      docs: { bool: true, flag: "--docs" },
+      modified: { bool: true, flag: "--modified" },
+      with_folders: { bool: true, flag: "--with-folders" },
+      by: "--by",
+    },
+  },
+  // Frescura del índice. Apunta al script de LECTURA, nunca a drive_sync.sh:
+  // buildArgs solo emite las flags declaradas, así que una llamada sin
+  // --status dispararía un barrido desde una fuente de lectura.
+  drive_index_status: {
+    label: "Drive · frescura del índice",
+    script: "bash/google/drive_status.sh",
+    emits: "object",
+    args: {}, // no recibe nada — pero buildArgs itera spec.args sin guardas
+  },
   // One Google Doc distilled to markdown: {id, markdown} (Drive export).
   gdoc: {
     label: "Google Doc (markdown)",

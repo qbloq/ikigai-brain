@@ -17,6 +17,11 @@
 #   --folder FRAG  la ruta contiene FRAG (p.ej. "Andrea Torres")
 #   --owner FRAG   el owner contiene FRAG
 #   --exclude FRAG la ruta NO contiene FRAG (p.ej. "Meet Recordings")
+#   --exclude-folder N  fuera la carpeta raíz N, por nombre EXACTO. Repetible, y
+#                  acepta varias separadas por «|». Distinto de --exclude a
+#                  propósito: por subcadena, «Ikigai» se llevaría también
+#                  «Ikigai Growth Marketing». Usa «(raíz)» para los archivos
+#                  que cuelgan directo de la raíz.
 #   --with-folders incluir carpetas (por defecto solo archivos)
 #   --by …         agregado en vez de filas: por día, tipo, owner o carpeta raíz
 #   --limit N      filas mostradas (default 50; 0 = sin tope)
@@ -36,7 +41,7 @@ source "$HERE/lib/common.sh"
 urlenc() { python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$1"; }
 
 days=14 from="" to="" modified=0 docs=0 type="" folder="" owner="" exclude=""
-with_folders=0 by="" limit=50
+with_folders=0 by="" limit=50 excl_folders=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --days)         days="$2"; shift 2 ;;
@@ -48,6 +53,8 @@ while [[ $# -gt 0 ]]; do
     --folder)       folder="$2"; shift 2 ;;
     --owner)        owner="$2"; shift 2 ;;
     --exclude)      exclude="$2"; shift 2 ;;
+    # Repetible y «|»-separable: el visor manda una sola bandera con la lista.
+    --exclude-folder) excl_folders="${excl_folders:+$excl_folders|}$2"; shift 2 ;;
     --with-folders) with_folders=1; shift ;;
     --by)           by="$2"; shift 2 ;;
     --limit)        limit="$2"; shift 2 ;;
@@ -163,16 +170,20 @@ done
 
 # --- Filtrar, agregar y renderizar ------------------------------------------
 python3 - "$FORMAT" "$tmpf" "$by" "$limit" "$docs" "${type,,}" "$folder" "$owner" \
-         "$exclude" "$with_folders" "${field}_time" "${BRAIN_TZ:-America/Bogota}" <<'PY'
+         "$exclude" "$with_folders" "${field}_time" "${BRAIN_TZ:-America/Bogota}" \
+         "$excl_folders" <<'PY'
 import json, sys
 from collections import Counter, defaultdict
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 (fmt, path, by, limit, docs, type_, folder, owner, exclude, with_folders,
- stamp, tzname) = sys.argv[1:13]
+ stamp, tzname, excl_folders) = sys.argv[1:14]
 limit, docs, with_folders = int(limit), docs == "1", with_folders == "1"
 tz = ZoneInfo(tzname)
+# Coincidencia EXACTA contra la carpeta raíz, no subcadena del path: es lo que
+# significa marcar una casilla en una lista de carpetas.
+excluded = {f for f in excl_folders.split("|") if f}
 
 rows = [json.loads(l) for l in open(path) if l.strip()]
 
@@ -188,9 +199,21 @@ def is_doc(m):
 
 FAMILY = {"video": "video/", "image": "image/", "imagen": "image/", "audio": "audio/"}
 
+def root_folder(it):
+    """La carpeta de primer nivel que contiene al item.
+
+    path = "/[external]/1. David Guerrero/…/archivo" → "1. David Guerrero".
+    Con solo dos segmentos el archivo cuelga de la raíz y no hay carpeta que
+    nombrar: devolver parts[1] ahí imprimiría el nombre del propio archivo.
+    """
+    parts = [s for s in (it.get("path") or "").split("/") if s]
+    return parts[1] if len(parts) > 2 else "(raíz)"
+
 def keep(it):
     mime, p = it.get("mime_type") or "", it.get("path") or ""
     if docs and not is_doc(mime):
+        return False
+    if excluded and root_folder(it) in excluded:
         return False
     if type_ in FAMILY and not mime.startswith(FAMILY[type_]):
         return False
@@ -210,16 +233,6 @@ def local(it):
     if not raw:
         return None
     return datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(tz)
-
-def root_folder(it):
-    """La carpeta de primer nivel que contiene al item.
-
-    path = "/[external]/1. David Guerrero/…/archivo" → "1. David Guerrero".
-    Con solo dos segmentos el archivo cuelga de la raíz y no hay carpeta que
-    nombrar: devolver parts[1] ahí imprimiría el nombre del propio archivo.
-    """
-    parts = [s for s in (it.get("path") or "").split("/") if s]
-    return parts[1] if len(parts) > 2 else "(raíz)"
 
 # --- Agregados -------------------------------------------------------------
 if by in ("day", "dia", "día"):
@@ -267,7 +280,10 @@ elif by in ("folder", "carpeta"):
             "ultimo": last[f].date().isoformat() if f in last else ""}
            for f, n in c.most_common()]
 else:
+    # `id` y `link` viajan en --json pero no en la tabla: el id es el handle
+    # (el visor lo necesita para previsualizar) y el link no cabe en pantalla.
     out = [{
+        "id": it.get("file_id") or "",
         "cuando": local(it).strftime("%m-%d %H:%M") if local(it) else "",
         "type": it.get("type") or "?",
         "nombre": it.get("name") or "",
@@ -287,8 +303,7 @@ if not out:
     print("(sin resultados en la ventana)")
     sys.exit()
 
-# El link va en --json, no en la tabla: es lo único que no cabe en pantalla.
-cols = [c for c in out[0] if c != "link"]
+cols = [c for c in out[0] if c not in ("link", "id")]
 disp = [{c: (str(r[c])[:50] + "…" if len(str(r[c])) > 51 else str(r[c])) for c in cols}
         for r in out]
 w = {c: max(len(c), *(len(d[c]) for d in disp)) for c in cols}

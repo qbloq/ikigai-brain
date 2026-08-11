@@ -64,8 +64,8 @@ PY
 }
 
 if [[ "$only_status" == 1 ]]; then
-  show_status "$(mapi GET "/drive/index/status")"
-  exit 0
+  # Un solo renderizador de estado, y vive en el script de lectura.
+  exec "$HERE/drive_status.sh" ${FORMAT:+$([[ "$FORMAT" == json ]] && echo --json)}
 fi
 
 # --- Disparar ---------------------------------------------------------------
