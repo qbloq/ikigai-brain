@@ -10,9 +10,11 @@
 # Token: $WABA_TOKEN, o WABA_TOKEN= en .env, o el access_token del config de
 # zeroclaw (~/.zeroclaw/config.toml) mientras siga inline.
 #
-# Usage: despachar.sh [--n LISTA] [--dry-run] [--json]
-#   --n 3,5      solo esas filas (default: todas las aprobadas)
-#   --dry-run    muestra qué enviaría, no envía ni escribe
+# Usage: despachar.sh [--n LISTA] [--plantilla NOMBRE] [--dry-run] [--json]
+#   --n 3,5           solo esas filas (default: todas las aprobadas)
+#   --plantilla NOM   plantilla Meta a usar (default recado_cerebro; la gemela
+#                     MARKETING es recado_cerebro_mkt — usar la que esté APPROVED)
+#   --dry-run         muestra qué enviaría, no envía ni escribe
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 source bash/lib/sqlite.sh
@@ -24,12 +26,14 @@ NLIST=""; DRY=0; FORMAT=text
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --n) NLIST="$2"; shift 2 ;;
+    --plantilla) PLANTILLA="$2"; shift 2 ;;
     --dry-run) DRY=1; shift ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
 done
+[[ "$PLANTILLA" =~ ^[a-z0-9_]+$ ]] || { echo "--plantilla inválida" >&2; exit 2; }
 [[ -z "$NLIST" || "$NLIST" =~ ^[0-9,]+$ ]] || { echo "--n debe ser lista numérica 3,5" >&2; exit 2; }
 
 DB="$LOCALDB_DIR/mesa_despacho.db"
