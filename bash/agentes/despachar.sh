@@ -67,10 +67,12 @@ filas = list(con.execute(f"SELECT * FROM despachos WHERE {where} ORDER BY n"))
 directorio = {r["nombre"].lower(): r["numero"] for r in con.execute("SELECT nombre, numero FROM directorio")}
 
 def resolver(para):
+    # Gana la coincidencia MÁS LARGA («marisol ochoa» antes que «mari») para
+    # que los alias cortos no capturen nombres completos por substring.
     p = para.lower()
-    for nombre, numero in directorio.items():
+    for nombre in sorted(directorio, key=len, reverse=True):
         if nombre in p:
-            return nombre, numero
+            return nombre, directorio[nombre]
     return None, None
 
 def limpiar(s):
