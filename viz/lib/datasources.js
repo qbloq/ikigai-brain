@@ -513,6 +513,16 @@ const SOURCES = {
     emits: "rows",
     args: { limit: "--limit" },
   },
+  // La COLA DE DESPACHO con estados (pendiente|aprobado|rechazado|ejecutado|
+  // fallido): lo que la Mesa de Despacho renderiza y sobre lo que aprueba/
+  // rechaza (write vía bash/agentes/despacho_mark.sh, declarado en el manifest
+  // de la página). Sin cache — vista operativa viva.
+  iki_despachos: {
+    label: "Cola de despacho de Iki",
+    script: "bash/agentes/despachos.sh",
+    emits: "rows",
+    args: { estado: "--estado", limit: "--limit" },
+  },
 };
 
 function listSources() {
