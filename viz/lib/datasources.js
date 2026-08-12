@@ -494,6 +494,25 @@ const SOURCES = {
     emits: "rows",
     args: { db: { positional: true }, query: { positional: true }, limit: "--limit" },
   },
+  // --- Agente WhatsApp «Iki» (bash/agentes/ — read-only) --------------------
+  // La cola de recados del dispatcher: cada fila es un recado capturado con su
+  // enrutamiento propuesto (que un humano aprobará en la fase siguiente).
+  // Sin cache: vista operativa viva — un recado servido viejo es un despacho
+  // que no ocurrió.
+  iki_recados: {
+    label: "Recados de Iki (cola de despacho)",
+    script: "bash/agentes/recados.sh",
+    emits: "rows",
+    args: { para: "--para", limit: "--limit" },
+  },
+  // Los mensajes recibidos por el agente (whatsapp/cli), crudos. Sin cache,
+  // por lo mismo que iki_recados.
+  iki_entradas: {
+    label: "Entradas a Iki (mensajes recibidos)",
+    script: "bash/agentes/entradas.sh",
+    emits: "rows",
+    args: { limit: "--limit" },
+  },
 };
 
 function listSources() {
