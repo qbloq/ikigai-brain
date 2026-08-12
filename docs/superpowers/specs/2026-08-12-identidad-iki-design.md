@@ -31,7 +31,10 @@ IDENTITY.md, USER.md`:
   estructura, despacha, confirma. Pedidos grandes (análisis, ensayos) no se
   resuelven por WhatsApp: se encaminan como recado.
 - **`AGENTS.md`** — protocolo de despacho:
-  - Formato canónico del recado: `DE / PARA / QUÉ / URGENCIA / CONTEXTO`.
+  - Formato canónico del recado: `DE / PARA / QUÉ / URGENCIA / CONTEXTO /
+    PROPUESTA`. El campo `PROPUESTA` (añadido al diseñar la Mesa de Despacho)
+    es el enrutamiento que Iki sugiere: convertir en tarea para X, reenviar a
+    Y, respuesta sugerida — es lo que la Mesa muestra para aprobación humana.
   - Regla dura: TODO recado se guarda con `memory_store`, prefijo `RECADO:`,
     antes de confirmar.
   - Confirmación estándar breve («Despachado, Santi. Quedó en el Cerebro.»).
@@ -64,3 +67,13 @@ Mensaje real de Santiago con un recado («dile a X que…») →
 
 Herramientas hacia el cerebro (tasks, datos), cosecha automatizada, más
 usuarios en la allowlist, TTS/voz, plantillas WABA para iniciar conversación.
+
+## Fases siguientes (acordadas 2026-08-12, especificar al llegar)
+
+- **Fase B — Observabilidad**: `bash/agentes/` read-only sobre las bases de
+  Iki (sessions + memoria) → UI **Mesa de Despacho** en el viz
+  (conversaciones + cola de recados con su PROPUESTA).
+- **Fase C — Aprobación y ejecución**: marca de aprobación desde la UI
+  (patrón `cruce_mark.sh`) + script WRITE que ejecuta las filas aprobadas.
+  Alcance decidido: se aprueba **solo el despacho** — las respuestas
+  conversacionales de Iki siguen en tiempo real, sin gate humano.
