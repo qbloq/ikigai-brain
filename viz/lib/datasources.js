@@ -494,6 +494,19 @@ const SOURCES = {
     emits: "rows",
     args: { db: { positional: true }, query: { positional: true }, limit: "--limit" },
   },
+  // La agenda de llamadas de un día resuelta por closer (hora, lead, meet_url)
+  // — la fuente del saludo matutino de Iki a los closers y de los escenarios
+  // WhatsApp. Sin cache: es la agenda operativa del día.
+  closer_agenda: {
+    label: "Agenda de llamadas por closer",
+    script: "bash/closers/agenda.sh",
+    emits: "rows",
+    args: {
+      fecha: "--fecha",
+      closer: "--closer",
+      todas: { flag: "--todas", bool: true },
+    },
+  },
   // --- Agente WhatsApp «Iki» (bash/agentes/ — read-only) --------------------
   // La cola de recados del dispatcher: cada fila es un recado capturado con su
   // enrutamiento propuesto (que un humano aprobará en la fase siguiente).

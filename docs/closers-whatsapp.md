@@ -59,30 +59,38 @@ apruebe: `escenario_manana.sh --plantilla agenda_dia` (y actualizar el default).
 ## Cron (hora local del server = COT)
 
 ```
-0 7 * * *      escenario_manana.sh     # saludo + agenda
+# 0 7 * * *    escenario_manana.sh     # DESACTIVADO 2026-08-13 — ver nota
 */5 4-21 * * * escenario_llamadas.sh   # recordatorios 45min + post-llamada (hay llamadas 04-05h: leads en España)
 0 20 * * *     escenario_cierre.sh     # cierre del día
 ```
 
 Log: `data/log/closers-cron.log`.
 
+**El saludo matutino es de Iki mientras Meta no apruebe** (decisión
+2026-08-13): las plantillas propias siguen PENDING, así que el día arranca al
+revés — el closer escribe «Hola», Iki (regla «Saludo matutino» de su
+AGENTS.md) consulta `closer_agenda` por la puerta `/api` y responde con la
+agenda completa (hora — lead — link de Meet) + qué esperar del día. Ese primer
+mensaje del closer abre la ventana de 24h y el resto de escenarios (tick,
+cierre) viajan como sesión — cero dependencia de plantillas. Constancia
+`SALUDO: <fecha> | <closer>` en su memoria evita el saludo doble. Cuando
+`agenda_dia` apruebe: reactivar la línea del cron con
+`--plantilla agenda_dia`.
+
+**Aprendizaje del estreno**: un mensaje de sesión fuera de ventana es
+ACEPTADO por Meta (devuelve wamid) y falla después por webhook — el fallback
+por error inmediato (131047) no lo cubre. Los recordatorios de las 06:20 del
+2026-08-13 salieron «enviados» sin ventana abierta y probablemente no
+llegaron. Mientras el saludo dependa del «Hola» del closer, los recordatorios
+previos a ese Hola corren el mismo riesgo — se mitigan solos apenas el closer
+escribe.
+
 ## Pendientes conocidos
 
-- **Router**: los números de los closers deben estar en el mappings del
-  agenticlaw-router (api.parallelo.ai, `/apps/agenticlaw/router/mappings.json`)
-  para que sus RESPUESTAS lleguen a Iki — sin eso los escenarios salen pero el
-  camino de vuelta cae al destino muerto. El write remoto lo bloqueó el
-  clasificador de permisos; el comando (los 5 closers):
-
-  ```bash
-  ssh root@api.parallelo.ai 'cd /apps/agenticlaw/router && cp mappings.json mappings.json.bak-20260813 && python3 -c "
-  import json
-  m = json.load(open(\"mappings.json\"))
-  zc = \"http://10.0.0.2:42617/whatsapp/default\"
-  for n in [\"5492364393455\",\"50684564248\",\"573147634312\",\"573117347664\"]:
-      m[\"568780566329582\"][n] = zc
-  json.dump(m, open(\"mappings.json\",\"w\"), indent=4)"'
-  ```
+- ~~Router~~ **Resuelto 2026-08-13**: los 4 closers activos están en el
+  mappings del agenticlaw-router (backup `mappings.json.bak-20260813`); el
+  router lee el archivo POR REQUEST (`readMappings()` en cada handler), así
+  que no necesitó restart. El camino de vuelta closer→Iki está completo.
 - ~~Mateo Restrepo sin número~~ **Resuelto 2026-08-12**: Santiago lo cargó en
   la DB (+573117347664); directorio re-sincronizado, allowlist y roster al día.
 - **Daniel Cardona DE BAJA (2026-08-13)**: fuera de allowlist, roster y

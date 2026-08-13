@@ -51,6 +51,8 @@ const API_SOURCES = new Set([
   "crm_leads",
   "crm_pipeline",
   "crm_opp_detail",
+  // agenda del día por closer (saludo matutino de Iki)
+  "closer_agenda",
 ]);
 
 // The whitelist of vendored assets under viz/public/ that /:name serves.
