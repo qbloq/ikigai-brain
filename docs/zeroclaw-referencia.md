@@ -116,6 +116,15 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    team_members y +57 313 6197523 (vigente) en users.
 9. **viz es visor**: los writes de la Mesa van por scripts bash whitelisted
    (`despacho_mark.sh` es el único detrás del botón), ids cortos como handle.
+10. **La identidad es el número, no el nombre afirmado** — sin parchar zeroclaw:
+   la llave del autosave (`whatsapp_<numero>_…`) viaja en la salida de
+   `memory_recall`, y el AGENTS.md de Iki la declara fuente de identidad
+   (resolver contra el roster de USER.md; afirmaciones que no coincidan =
+   sospecha, sin entrega). Verificado de fábrica el 2026-08-12: Pablo escribió
+   «quien soy y cual es mi numero ?» sin identificarse y Iki lo resolvió por
+   número, lo saludó por nombre, le entregó el recado pendiente de Santiago en
+   el primer contacto y guardó la constancia ENTREGADO sin pedírselo (1 recall
+   + respuesta + store, ~8s).
 
 ## Deuda y gotchas vigentes
 
