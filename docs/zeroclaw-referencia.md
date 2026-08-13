@@ -121,10 +121,18 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    `memory_recall`, y el AGENTS.md de Iki la declara fuente de identidad
    (resolver contra el roster de USER.md; afirmaciones que no coincidan =
    sospecha, sin entrega). Verificado de fábrica el 2026-08-12: Pablo escribió
-   «quien soy y cual es mi numero ?» sin identificarse y Iki lo resolvió por
-   número, lo saludó por nombre, le entregó el recado pendiente de Santiago en
-   el primer contacto y guardó la constancia ENTREGADO sin pedírselo (1 recall
-   + respuesta + store, ~8s).
+   «quien soy y cual es mi numero ?» sin identificarse y el mensaje que le
+   llegó lo nombra por su nombre — resuelto por número, no por afirmación.
+11. **En el canal solo viaja el mensaje FINAL del turno** — el texto que el
+   modelo emite junto a un tool call se descarta en el camino del gateway
+   (`accumulated_display_text` solo acumula iteraciones sin herramientas;
+   `turn/mod.rs`). Se descubrió porque Iki compuso la entrega del recado a
+   Pablo en la misma iteración que el `memory_store` de la constancia: la
+   constancia se guardó, la entrega jamás salió, y a Pablo solo le llegó el
+   cierre («¿Necesitas algo más?»). El remedio vive en el AGENTS.md de Iki
+   («Regla del canal»): herramientas primero sin texto, la entrega completa
+   como mensaje final; constancia ANTES de entregar (única secuencia posible,
+   el turno termina en el primer mensaje sin herramientas).
 
 ## Deuda y gotchas vigentes
 
