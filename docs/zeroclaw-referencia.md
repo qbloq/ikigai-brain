@@ -132,7 +132,12 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    cierre («¿Necesitas algo más?»). El remedio vive en el AGENTS.md de Iki
    («Regla del canal»): herramientas primero sin texto, la entrega completa
    como mensaje final; constancia ANTES de entregar (única secuencia posible,
-   el turno termina en el primer mensaje sin herramientas).
+   el turno termina en el primer mensaje sin herramientas). Verificada
+   2026-08-13: retest de Pablo → recall ×2 (buscó constancia antes de
+   entregar) → store → entrega completa en el mensaje final. Corolario del
+   mismo mecanismo: el modelo a veces razona EN el texto final («este mensaje
+   viene de…») y eso también viaja — regla adicional en el AGENTS.md: el
+   mensaje final es solo para la persona.
 
 ## Deuda y gotchas vigentes
 
