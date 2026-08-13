@@ -13,10 +13,16 @@
 # LITERAL (AT TIME ZONE 'UTC' extrae el naive tal cual) y NO se convierte —
 # convertir a America/Bogota corría todo 5 horas hacia atrás.
 #
+# ⚠️ EL TABLERO MANDA (regla 2026-08-13, de Santiago): una llamada agendada de
+# verdad es la que tiene su oportunidad en la etapa «LLAMADA CONFIRMADA» del
+# pipeline. El calendario GHL puede decir `confirmed` con el lead en NUEVO
+# LEAD o SEGUIMIENTO (casos Rene/Jefferson) — esas NO cuentan por defecto.
+#
 # Usage: agenda.sh [--fecha YYYY-MM-DD] [--closer FRAG] [--todas] [--json]
 #   --fecha    default: hoy (America/Bogota)
 #   --closer   filtra por fragmento del nombre del closer
-#   --todas    incluye canceladas (default: las excluye)
+#   --todas    muestra TODO el calendario: canceladas y cualquier etapa
+#              (default: solo no-canceladas en LLAMADA CONFIRMADA)
 set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 
@@ -36,7 +42,8 @@ done
 
 WHERE="m.meeting_type='call'
   AND (m.scheduled_start_time AT TIME ZONE 'UTC')::date = '$FECHA'::date"
-[[ "$TODAS" == "0" ]] && WHERE="$WHERE AND m.status NOT IN ('cancelled')"
+[[ "$TODAS" == "0" ]] && WHERE="$WHERE AND m.status NOT IN ('cancelled')
+  AND cl.etapa ILIKE 'llamada confirmada'"
 if [[ -n "$CLOSER" ]]; then
   C_ESC="${CLOSER//\'/''}"
   WHERE="$WHERE AND cl.closer ILIKE '%$C_ESC%'"
@@ -46,6 +53,7 @@ emit "SELECT left(m.id::text,8) AS id,
   to_char(m.scheduled_start_time AT TIME ZONE 'UTC','HH24:MI') AS hora,
   regexp_replace(m.name, ' *[-|–] *.*$', '') AS lead,
   cl.closer,
+  cl.etapa,
   m.meet_url,
   m.status,
   to_char(m.scheduled_start_time AT TIME ZONE 'UTC','YYYY-MM-DD') AS fecha,
@@ -53,11 +61,14 @@ emit "SELECT left(m.id::text,8) AS id,
           AT TIME ZONE 'UTC','HH24:MI') AS fin
 FROM meetings m
 LEFT JOIN LATERAL (
-  SELECT nullif(trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')),'') AS closer
+  SELECT nullif(trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')),'') AS closer,
+         (SELECT st->>'name' FROM jsonb_array_elements(pl.stages::jsonb) st
+          WHERE st->>'id' = o.ghl_stage_id) AS etapa
   FROM crm_contacts c
   JOIN crm_opportunities o ON o.contact_id=c.id
-  JOIN users u ON u.id=o.user_id
-  JOIN persons p ON p.person_id=u.person_id
+  LEFT JOIN crm_pipelines pl ON pl.id=o.pipeline_id
+  LEFT JOIN users u ON u.id=o.user_id
+  LEFT JOIN persons p ON p.person_id=u.person_id
   WHERE c.ghl_contact_id = m.event->'booking'->>'contact_id'
   ORDER BY (o.project_id = m.project_id) DESC NULLS LAST, o.created_date DESC
   LIMIT 1

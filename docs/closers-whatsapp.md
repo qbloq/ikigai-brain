@@ -24,7 +24,12 @@ closers.
   closer — misma traza CRM de `bash/calls/` (booking contact → crm_contacts →
   crm_opportunities → users → persons). Llamadas sin traza salen con closer
   vacío y los escenarios las reportan a stderr (la cola S8.2 también existe a
-  futuro).
+  futuro). **El tablero manda** (regla 2026-08-13): por defecto solo cuentan
+  las llamadas cuya oportunidad está en la etapa **LLAMADA CONFIRMADA** (mismo
+  nombre en ambos pipelines) — el calendario GHL puede decir `confirmed` con
+  el lead en NUEVO LEAD/SEGUIMIENTO (casos Rene/Jefferson del estreno) y esas
+  no son llamadas reales para el equipo. `--todas` muestra el calendario
+  completo con su columna `etapa`.
 - **`enviar.sh`** [WRITE→WhatsApp]: el enviador único. Sesión (texto libre,
   requiere ventana 24h) o plantilla Meta; resuelve nombres contra el
   `directorio` de `mesa_despacho.db`; **idempotente** por `(escenario, ref)` en
