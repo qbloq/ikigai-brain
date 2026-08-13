@@ -163,6 +163,17 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    CLI → web_fetch con carve-out privado en el trace → cifras byte-fieles a la
    fuente. Crecer `API_SOURCES` es una decisión de gobernanza, no un default.
 
+13. **Los closers entran como interlocutores de Iki y el acompañamiento diario
+   es un sistema aparte** (2026-08-12): los 5 escenarios WhatsApp (saludo
+   07:00 con agenda, recordatorio 45 min, resultado post-llamada, confirmación
+   de plan de pagos, cierre 20:00) viven en `bash/closers/` + cron para lo
+   programado, y en el «Protocolo post-llamada» del AGENTS.md de Iki para lo
+   conversacional (resultado → `RESULTADO:` en memoria → cola Marketico;
+   venta → `ACUERDO:` + confirmación del plan). El doc completo:
+   [closers-whatsapp.md](closers-whatsapp.md). Allowlist zeroclaw ampliada a
+   6 números (falta Mateo: sin número en la DB); el router quedó pendiente de
+   ese mismo alta (write remoto bloqueado por el clasificador).
+
 ## Línea de no-fork (y qué la pondría a prueba)
 
 **Política (2026-08-12): no se parcha zeroclaw mientras no sea irremediable.**
@@ -191,6 +202,12 @@ Registro de situaciones que podrían requerirlo:
 - **Bind race del gateway al reiniciar** (`os error 99` en 10.0.0.2, dos
   arranques viejos): hoy anecdótico; si se vuelve frecuente pediría
   retry-with-backoff en el bind.
+- **El canal WhatsApp descarta mensajes de audio/imagen** («Could be image,
+  audio, etc. — skip for now», whatsapp.rs): una nota de voz de un closer
+  jamás llega a Iki. Mitigado: el protocolo post-llamada pide el acuerdo de
+  pago en texto y explica el porqué. Se volvería prioridad si la voz se
+  vuelve el modo natural de los closers (deseo explícito de Santiago:
+  acuerdos de pago por audio).
 
 ## Deuda y gotchas vigentes
 

@@ -433,6 +433,18 @@ cruce semántico se hace aparte, el script no lo inventa). ⚠️ El **lado cere
 (`cerebro_tareas`) sigue siendo un snapshot congelado del 2026-08-06 — este
 script no lo toca.
 
+## Closers domain — acompañamiento WhatsApp ([bash/closers/](bash/closers/))
+
+Los 5 escenarios diarios de los closers por WhatsApp (saludo 07:00 con agenda
+· recordatorio 45 min con link de Meet · resultado post-llamada · confirmación
+de plan de pagos · cierre 20:00 con cuotas de mañana), mitad cron/scripts y
+mitad Iki (protocolo post-llamada de su AGENTS.md). `agenda.sh` (read-only,
+llamadas del día resueltas por closer con la traza CRM de bash/calls/),
+`enviar.sh` **[WRITE→WhatsApp]** (enviador único: sesión o plantilla Meta,
+idempotente por `(escenario,ref)` en la sqlite `closers_ops`), y los tres
+`escenario_*.sh` **[WRITE→WhatsApp]** que el cron dispara. Doc completo, con
+plantillas Meta y pendientes: [docs/closers-whatsapp.md](docs/closers-whatsapp.md).
+
 ## Notion domain — read-only extraction ([bash/notion/](bash/notion/))
 
 Pull Notion content to local via the HTTP API (curl/python3 stdlib, no npm deps;
