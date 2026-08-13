@@ -22,11 +22,36 @@ const path = require("node:path");
 const store = require("./lib/store");
 const { shell, listPanel } = require("./lib/html");
 const { renderPane, getComponent, overridableFor, dispatch, validateSpec, escape } = require("./lib/components");
+const { fetchSource, SOURCES } = require("./lib/datasources");
 const { makeRunner } = require("./lib/actions");
 const { startSSE, patchElements } = require("./lib/sse");
 const { loadTheme, themeHead } = require("./lib/theme");
 
 const PORT = Number(process.env.PORT) || 4317;
+
+// --- API JSON de solo-lectura: la puerta de los AGENTES (Iki) -------------
+// Sub-whitelist explícita de SOURCES expuesta como JSON crudo bajo
+// /api/fuente/<id>. Misma política que todo lo demás: los params pasan por
+// buildArgs (nada arbitrario llega al shell) y los scripts son read-only.
+// Crecer esta lista es una decisión de gobernanza, no un default — hoy cubre
+// las funciones de Director Comercial y Closers.
+const API_SOURCES = new Set([
+  // tareas
+  "tasks",
+  "tasks_due",
+  // llamadas de venta (closers)
+  "calls",
+  "call_detail",
+  "call_stats",
+  "call_objections",
+  "closer_dashboard",
+  // dinero por cobrar
+  "cobranza",
+  // leads / pipeline CRM
+  "crm_leads",
+  "crm_pipeline",
+  "crm_opp_detail",
+]);
 
 // The whitelist of vendored assets under viz/public/ that /:name serves.
 const PUBLIC_FILES = new Set(["/datastar.js", "/chart.umd.js", "/charts-init.js", "/tw-bridge.js", "/tokens.css"]);
@@ -151,6 +176,31 @@ const server = http.createServer(async (req, res) => {
         "Cache-Control": "public, max-age=86400",
       });
       return res.end(body);
+    }
+
+    // --- API JSON de solo-lectura (agentes) ---
+    // GET /api/fuentes            → catálogo autodescriptivo (id, label, params)
+    // GET /api/fuente/<id>?p=v    → { fuente, label, n, rows } de la whitelist
+    if (pathname === "/api/fuentes" && req.method === "GET") {
+      const cat = [...API_SOURCES].map((id) => ({
+        fuente: id,
+        label: SOURCES[id].label,
+        emits: SOURCES[id].emits,
+        params: Object.keys(SOURCES[id].args),
+      }));
+      return send(res, 200, JSON.stringify(cat), "application/json; charset=utf-8");
+    }
+    if (pathname.startsWith("/api/fuente/") && req.method === "GET") {
+      const id = pathname.slice("/api/fuente/".length);
+      const jsonType = "application/json; charset=utf-8";
+      if (!API_SOURCES.has(id))
+        return send(res, 404, JSON.stringify({ error: `Fuente no expuesta: ${id}` }), jsonType);
+      try {
+        const { rows, label } = fetchSource(id, Object.fromEntries(url.searchParams));
+        return send(res, 200, JSON.stringify({ fuente: id, label, n: rows.length, rows }), jsonType);
+      } catch (e) {
+        return send(res, 500, JSON.stringify({ error: e.message }), jsonType);
+      }
     }
 
     // --- full shell ---

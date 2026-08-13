@@ -139,6 +139,30 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    viene de…») y eso también viaja — regla adicional en el AGENTS.md: el
    mensaje final es solo para la persona.
 
+12. **Las funciones de Iki entran por una puerta HTTP de solo-lectura, no por
+   shell** (2026-08-12). Los symlinks a `bash/` en su workspace no sirven (el
+   sandbox de zeroclaw canonicaliza y bloquea el escape por symlink; y los
+   scripts se auto-ubican con `dirname $0`, invocados vía symlink pierden
+   `.env`). Darle el tool `shell` tampoco: en WhatsApp el prompt de aprobación
+   va al MISMO chat que originó el turno (`request_approval` → recipient), o
+   sea que «supervisado» = supervisado por el interlocutor — Pablo aprobaría
+   los shells de Pablo — y `cat .env` expondría credenciales. La puerta:
+   `GET /api/fuentes` + `GET /api/fuente/<id>` en el viz server (misma
+   whitelist `SOURCES`/`buildArgs` que el navegador — nada arbitrario llega al
+   shell), sub-whitelist explícita `API_SOURCES` (11 fuentes, foco Director
+   Comercial/Closers: tasks, tasks_due, calls, call_detail, call_stats,
+   call_objections, closer_dashboard, cobranza, crm_leads, crm_pipeline,
+   crm_opp_detail). Lado zeroclaw: **`web_fetch` (GET-only por diseño)
+   auto-aprobado y encadenado a `allowed_private_hosts=["127.0.0.1"]`** con
+   centinela `.invalid` en `allowed_domains` (la clave no puede ir vacía — el
+   tool aborta antes del carve-out privado); **`http_request` deshabilitado**
+   porque hace POST y el viz tiene rutas de escritura (editor IO, Mesa) — un
+   Iki inyectado podría aprobarse despachos. Catálogo + reglas de uso en su
+   AGENTS.md («pide poco y resume», «solo lectura: los writes siguen siendo
+   recado PARA: Cerebro», «no inventes cifras»). Verificado 2026-08-12: turno
+   CLI → web_fetch con carve-out privado en el trace → cifras byte-fieles a la
+   fuente. Crecer `API_SOURCES` es una decisión de gobernanza, no un default.
+
 ## Línea de no-fork (y qué la pondría a prueba)
 
 **Política (2026-08-12): no se parcha zeroclaw mientras no sea irremediable.**
