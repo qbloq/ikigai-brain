@@ -84,11 +84,42 @@ function mergeBtn(r, uiId) {
          title="Marcar para mezclar (duplicar con nombre PM + cancelar original)">Merge</button>`;
 }
 
+// El id de la tarea del cerebro que resolvió la fila, extraído del texto de
+// `resolucion` — que es donde vive, porque el cruce no tiene columna para él
+// (la resolución la escriben merge_from_cruce.sh y cruce_mark.sh como prosa).
+// Dos casos distintos y no hay que confundirlos: «merge → <id>» es la tarea que
+// ESTA fila creó; «subsumida por <id>» es la de OTRA fila que la absorbió. Una
+// resolución sin id (p.ej. «sin acción: ambas completadas») no muestra nada.
+const RE_UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+function tareaResuelta(resolucion) {
+  const m = RE_UUID.exec(resolucion || "");
+  if (!m) return null;
+  const creada = /^\s*merge\s*→/.test(resolucion || "");
+  return { id: m[0], creada };
+}
+
+// El id + copiar. Se muestran los 8 caracteres (el handle que se dicta en la
+// conversación) pero se copia el uuid COMPLETO, que es lo que piden los scripts.
+function idCopiable(t, n) {
+  const key = `r${n}`;
+  const titulo = t.creada
+    ? "Tarea creada en el cerebro por esta fila — clic para copiar el id completo"
+    : "Subsumida en esta tarea del cerebro — clic para copiar el id completo";
+  return `<div class="mt-0.5 flex items-center justify-center gap-1 whitespace-nowrap">
+    ${t.creada ? "" : `<span class="text-[10px] text-slate-400">en</span>`}
+    <button data-on:click="navigator.clipboard.writeText('${t.id}');$copiado='${key}'"
+      class="font-mono text-[10px] text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1"
+      title="${titulo}">${t.id.slice(0, 8)}<span aria-hidden="true">⧉</span></button>
+    <span data-show="$copiado=='${key}'" class="text-[10px] text-emerald-600">✓</span>
+  </div>`;
+}
+
 function resueltaCell(r) {
-  if (r.resuelta) {
-    return `<span class="text-[11px] text-emerald-600 whitespace-nowrap" title="${escape(r.resolucion || "")}">✓ resuelta</span>`;
-  }
-  return `<span class="text-[11px] text-slate-300">pendiente</span>`;
+  if (!r.resuelta) return `<span class="text-[11px] text-slate-300">pendiente</span>`;
+  const t = tareaResuelta(r.resolucion);
+  return `<span class="text-[11px] text-emerald-600 whitespace-nowrap" title="${escape(r.resolucion || "")}">✓ resuelta</span>
+    ${t ? idCopiable(t, r.n) : ""}`;
 }
 
 function fila(r, uiId) {
@@ -176,7 +207,7 @@ function renderCruce(ui) {
   // must grow the filter bar on its own.
   const proyectos = [...new Set(rows.map((r) => r.ce_proyecto).filter(Boolean))].sort();
   return `<section id="pane" class="flex-1 p-6 overflow-hidden flex flex-col"
-    data-signals="{fver:'',fest:'',fproy:'',loading:false}">
+    data-signals="{fver:'',fest:'',fproy:'',copiado:'',loading:false}">
     <header class="mb-3 flex items-baseline gap-3">
       <h1 class="text-xl font-semibold text-slate-800">${escape(ui.name)}</h1>
       <a href="/u/${escape(ui.id)}" target="_blank" class="ml-auto text-xs text-indigo-600 hover:underline">abrir solo ↗</a>
