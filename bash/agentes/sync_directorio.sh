@@ -11,6 +11,11 @@
 # Parallelo — no es team member) se preserva. El alias 'santi' se EXCLUYE
 # adrede (ambiguo: Santiago Ruiz vs Santiago Gaviria → revisión humana).
 #
+# BAJAS: la DB no tiene flag de activo (team_members no puede expresar una
+# baja), así que la lista vive AQUÍ: personas dadas de baja que el sync no
+# debe traer al directorio aunque sigan en la DB. Alta de una baja = borrar
+# su línea. Daniel Cardona: baja 2026-08-13 (decisión de Santiago).
+#
 # Usage: sync_directorio.sh [--dry-run] [--json]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -67,9 +72,11 @@ for f in filas:
         por_num.setdefault(f[2], set()).add(f[0])
 dup_users = {n for n, ps in por_num.items() if len(ps) > 1}
 
+BAJAS = {"daniel cardona"}  # baja 2026-08-13; ver cabecera
+
 rows = {}
 for nombre, tm_w, u_phone, rol, equipo in filas:
-    if not nombre:
+    if not nombre or nombre.lower() in BAJAS:
         continue
     if u_phone and u_phone not in dup_users:
         num, fuente = e164(u_phone), "users"

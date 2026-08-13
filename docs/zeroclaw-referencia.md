@@ -170,10 +170,12 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    programado, y en el «Protocolo post-llamada» del AGENTS.md de Iki para lo
    conversacional (resultado → `RESULTADO:` en memoria → cola Marketico;
    venta → `ACUERDO:` + confirmación del plan). El doc completo:
-   [closers-whatsapp.md](closers-whatsapp.md). Allowlist zeroclaw ampliada a
-   7 números (los 5 closers completos — Mateo entró cuando Santiago cargó su
-   número en la DB); el router quedó pendiente del mismo alta (write remoto
-   bloqueado por el clasificador; comando en el doc de closers).
+   [closers-whatsapp.md](closers-whatsapp.md). Allowlist zeroclaw: 6 números
+   (4 closers activos — Mateo entró cuando Santiago cargó su número;
+   **Daniel Cardona de baja 2026-08-13**, y como la DB no tiene flag de
+   activo, la lista de bajas vive en `sync_directorio.sh`); el router quedó
+   pendiente del mismo alta (write remoto bloqueado por el clasificador;
+   comando en el doc de closers).
 
 ## Línea de no-fork (y qué la pondría a prueba)
 

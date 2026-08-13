@@ -79,12 +79,18 @@ Log: `data/log/closers-cron.log`.
   import json
   m = json.load(open(\"mappings.json\"))
   zc = \"http://10.0.0.2:42617/whatsapp/default\"
-  for n in [\"5492364393455\",\"50684564248\",\"573147634312\",\"573004811373\",\"573117347664\"]:
+  for n in [\"5492364393455\",\"50684564248\",\"573147634312\",\"573117347664\"]:
       m[\"568780566329582\"][n] = zc
   json.dump(m, open(\"mappings.json\",\"w\"), indent=4)"'
   ```
 - ~~Mateo Restrepo sin número~~ **Resuelto 2026-08-12**: Santiago lo cargó en
   la DB (+573117347664); directorio re-sincronizado, allowlist y roster al día.
+- **Daniel Cardona DE BAJA (2026-08-13)**: fuera de allowlist, roster y
+  directorio (la DB no tiene flag de activo → la lista de bajas vive en
+  `sync_directorio.sh`). ⚠️ Sigue siendo dueño de **27 cuotas pendientes por
+  \$23.499** en `payment_plans` — el cierre del día lo intentará y quedará
+  `fallido` visible cada vez que le venza una: eso es el recordatorio de que
+  su cartera necesita **reasignación** (decisión de negocio pendiente).
 - **Marketico API**: el endpoint para registrar el resultado de una llamada
   existe según Santiago pero el contrato no está en `apis/mkt/` — la cola
   `resultados.registrado_api=0` está lista para cablearse en cuanto llegue.
