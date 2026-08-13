@@ -87,10 +87,20 @@ escribe.
 
 ## Pendientes conocidos
 
-- ~~Router~~ **Resuelto 2026-08-13**: los 4 closers activos están en el
+- ~~Router~~ **Resuelto 2026-08-13**: los closers activos están en el
   mappings del agenticlaw-router (backup `mappings.json.bak-20260813`); el
   router lee el archivo POR REQUEST (`readMappings()` en cada handler), así
   que no necesitó restart. El camino de vuelta closer→Iki está completo.
+- **Roster auditado contra el grupo de WhatsApp (2026-08-13)**: 6 closers
+  activos — Lucho (DC), Ayrton, Mateo, Carlos, **Cristian Buelvas** y
+  **Anthony Velásquez** (los dos últimos entraron en esta auditoría). Regla:
+  **cuenta el número que usan en el grupo** — Anthony usa +573014076387 (no
+  su personal +573052795025 de la DB), resuelto con el mecanismo `OVERRIDES`
+  de `sync_directorio.sh` (par del de BAJAS: la DB no puede expresar ni bajas
+  ni números de trabajo distintos). Mateo figura como *Setter* en la DB y
+  está DUPLICADO en `team_members` (higiene pendiente); Cristian quedó sin
+  cotejar contra el grupo (su LID oculta el número) — se valida solo cuando
+  escriba.
 - ~~Mateo Restrepo sin número~~ **Resuelto 2026-08-12**: Santiago lo cargó en
   la DB (+573117347664); directorio re-sincronizado, allowlist y roster al día.
 - **Daniel Cardona DE BAJA (2026-08-13)**: fuera de allowlist, roster y

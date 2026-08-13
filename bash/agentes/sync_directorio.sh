@@ -16,6 +16,11 @@
 # debe traer al directorio aunque sigan en la DB. Alta de una baja = borrar
 # su línea. Daniel Cardona: baja 2026-08-13 (decisión de Santiago).
 #
+# OVERRIDES: número que MANDA sobre lo que diga la DB — para quien usa en
+# WhatsApp un número distinto al registrado (regla 2026-08-13: cuenta el del
+# grupo de closers). Anthony Velásquez: la DB trae su personal (…5025), el
+# del grupo es …6387.
+#
 # Usage: sync_directorio.sh [--dry-run] [--json]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -74,6 +79,9 @@ dup_users = {n for n, ps in por_num.items() if len(ps) > 1}
 
 BAJAS = {"daniel cardona"}  # baja 2026-08-13; ver cabecera
 
+# nombre (lower, como queda en el directorio) → número E.164 que manda
+OVERRIDES = {"anthony velásquez": "+573014076387"}  # grupo WhatsApp, 2026-08-13
+
 rows = {}
 for nombre, tm_w, u_phone, rol, equipo in filas:
     if not nombre or nombre.lower() in BAJAS:
@@ -84,7 +92,10 @@ for nombre, tm_w, u_phone, rol, equipo in filas:
         num, fuente = e164(tm_w), "tm.whatsapp (users vacío o duplicado)"
     else:
         continue
-    rows[nombre.lower()] = (num, f"{rol} · {equipo} · fuente: {fuente}")
+    clave = nombre.lower()
+    if clave in OVERRIDES:
+        num, fuente = OVERRIDES[clave], "override (número del grupo WhatsApp)"
+    rows[clave] = (num, f"{rol} · {equipo} · fuente: {fuente}")
 
 ALIAS = {
     "bala": "david castaño", "jota": "jhonatan rengifo", "jona": "jhonatan rengifo",
