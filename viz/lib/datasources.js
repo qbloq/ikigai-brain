@@ -230,6 +230,18 @@ const SOURCES = {
     emits: "rows",
     args: { by: "--by", project: "--project", from: "--from", to: "--to" },
   },
+  // El CENSO del survey de calificación: cada pregunta con cobertura,
+  // distribución y conversión A PLATA por respuesta — la generalización
+  // sistemática de docs/lead-score.md §3 y el baseline del loop A/B de survey.
+  // Cache corto: es un censo (cambia con el goteo de leads, no por minuto),
+  // y su query recorre todos los contactos.
+  survey_censo: {
+    label: "Censo del survey de calificación",
+    script: "bash/crm/survey_censo.sh",
+    emits: "object",
+    cache: 60000,
+    args: { project: "--project" },
+  },
   // El MODELO de score de leads como un solo objeto: los dos scores (encuesta
   // pre-llamada y BANT post-llamada), los subgrupos y la cola accionable.
   // Entregable de la tarea 767605d8 — la contraparte consultable de
