@@ -71,10 +71,20 @@ Log: `data/log/closers-cron.log`.
 - **Router**: los números de los closers deben estar en el mappings del
   agenticlaw-router (api.parallelo.ai, `/apps/agenticlaw/router/mappings.json`)
   para que sus RESPUESTAS lleguen a Iki — sin eso los escenarios salen pero el
-  camino de vuelta cae al destino muerto. (El write remoto lo bloqueó el
-  clasificador de permisos; comando listo en la conversación del 2026-08-12.)
-- **Mateo Restrepo sin número** (ni en users ni en team_members): hoy queda
-  fuera de los envíos — sus fallas salen como `fallido` en `envios`, visibles.
+  camino de vuelta cae al destino muerto. El write remoto lo bloqueó el
+  clasificador de permisos; el comando (los 5 closers):
+
+  ```bash
+  ssh root@api.parallelo.ai 'cd /apps/agenticlaw/router && cp mappings.json mappings.json.bak-20260813 && python3 -c "
+  import json
+  m = json.load(open(\"mappings.json\"))
+  zc = \"http://10.0.0.2:42617/whatsapp/default\"
+  for n in [\"5492364393455\",\"50684564248\",\"573147634312\",\"573004811373\",\"573117347664\"]:
+      m[\"568780566329582\"][n] = zc
+  json.dump(m, open(\"mappings.json\",\"w\"), indent=4)"'
+  ```
+- ~~Mateo Restrepo sin número~~ **Resuelto 2026-08-12**: Santiago lo cargó en
+  la DB (+573117347664); directorio re-sincronizado, allowlist y roster al día.
 - **Marketico API**: el endpoint para registrar el resultado de una llamada
   existe según Santiago pero el contrato no está en `apis/mkt/` — la cola
   `resultados.registrado_api=0` está lista para cablearse en cuanto llegue.

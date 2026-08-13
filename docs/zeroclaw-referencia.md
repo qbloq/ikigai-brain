@@ -171,8 +171,9 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    conversacional (resultado → `RESULTADO:` en memoria → cola Marketico;
    venta → `ACUERDO:` + confirmación del plan). El doc completo:
    [closers-whatsapp.md](closers-whatsapp.md). Allowlist zeroclaw ampliada a
-   6 números (falta Mateo: sin número en la DB); el router quedó pendiente de
-   ese mismo alta (write remoto bloqueado por el clasificador).
+   7 números (los 5 closers completos — Mateo entró cuando Santiago cargó su
+   número en la DB); el router quedó pendiente del mismo alta (write remoto
+   bloqueado por el clasificador; comando en el doc de closers).
 
 ## Línea de no-fork (y qué la pondría a prueba)
 
