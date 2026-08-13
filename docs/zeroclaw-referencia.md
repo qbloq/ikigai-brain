@@ -139,6 +139,35 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    viene de…») y eso también viaja — regla adicional en el AGENTS.md: el
    mensaje final es solo para la persona.
 
+## Línea de no-fork (y qué la pondría a prueba)
+
+**Política (2026-08-12): no se parcha zeroclaw mientras no sea irremediable.**
+Compilamos de fuente por los features (`channel-whatsapp-cloud`), pero siempre
+upstream limpio — cero drift propio. Si algo se vuelve irremediable, el orden
+es: (1) PR upstream y recompilar cuando merge, (2) solo si upstream no lo
+acepta y nos bloquea, parche local documentado aquí. Mitigación preferida
+mientras tanto: la capa que SÍ poseemos (AGENTS.md del agente, config, router).
+
+Registro de situaciones que podrían requerirlo:
+
+- **Chunking WhatsApp**: el `send()` del canal Cloud manda un solo POST;
+  >4096 chars = Meta rechaza TODO el mensaje. Telegram/Slack/Signal sí parten.
+  Mitigado: regla de ~3500 chars en el AGENTS.md de Iki. Se volvería
+  irremediable si un agente necesitara entregar contenido largo por chat.
+- **`channel_delivery_instructions` de WhatsApp no advierte la semántica de
+  entrega** (solo viaja el mensaje final; el texto junto a tool calls se
+  descarta; el final va verbatim → el modelo no debe razonar ahí). Lark ya
+  trae la línea de no-narración; WhatsApp no — hasta el rótulo dice «Web»
+  siendo Cloud. Mitigado: «Regla del canal» en el AGENTS.md — que debe nacer
+  en TODO agente WhatsApp nuestro (plantilla de nacimiento). PR chico y de
+  beneficio general: candidato natural a primera contribución.
+- **El webhook Cloud despacha siempre al agente `default`** (decisión 4). Con
+  UN agente da igual; si algún día queremos varios agentes WhatsApp en el
+  mismo gateway con aliases distintos, esto es lo primero que revienta.
+- **Bind race del gateway al reiniciar** (`os error 99` en 10.0.0.2, dos
+  arranques viejos): hoy anecdótico; si se vuelve frecuente pediría
+  retry-with-backoff en el bind.
+
 ## Deuda y gotchas vigentes
 
 - Re-cifrar `access_token`/`verify_token` (inline en config.toml; el
