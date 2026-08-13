@@ -94,6 +94,7 @@ and a `meeting_reports` row (structured jsonb, in Spanish).
 
 ### Meetings data model
 - **meetings** — `meeting_type` is `team` (166) or `call` (1731); `status`: scheduled/completed/ended/cancelled/processing/… `scheduled_start_time`/`actual_start_time`, `project_id`→projects, `space_id`→spaces. `meeting_type` matters: `team` = coordination, `call` = sales calls.
+- ⚠️ **`scheduled_start_time` guarda hora BOGOTÁ etiquetada como UTC** (verificado 2026-08-13: histograma del reloj crudo = jornada 07-20 + calendario real). Leer el reloj LITERAL (`AT TIME ZONE 'UTC'`); convertir a America/Bogota corre todo −5h. Patrón correcto en `bash/closers/agenda.sh`.
 - **meeting_reports.report** (jsonb, ES) keys: `reportTitle`, `reportSubtitle`, `executiveSummary` (string), `meetingObjectives`/`meetingContext`/`nextStepsAndFollowUp` (objects), `actionItems` (array of `{task,dueDate,priority,assignedTo[],dependencies}`), `discussionPointsAndDecisions` (array of `{topic,summary,decision,rationale}`), `criticalIssuesAndBlockers` (array of `{issue,status,nextSteps}`), plus `risksAndConcerns`/`keySubjectAreas`/`resourceRequirements`/`futureConsiderations`/`additionalNotes`. `report_es` is unused (always null).
 - **meeting_transcripts.transcript** — plain text (Speaker A/B/… diarized). **meeting_participants** is sparse (only ~9 team meetings populated; names often blank). Note: action-item `assignedTo` uses free-text nicknames, not team_member ids.
 

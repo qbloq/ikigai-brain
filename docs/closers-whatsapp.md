@@ -60,7 +60,7 @@ apruebe: `escenario_manana.sh --plantilla agenda_dia` (y actualizar el default).
 
 ```
 # 0 7 * * *    escenario_manana.sh     # DESACTIVADO 2026-08-13 — ver nota
-*/5 4-21 * * * escenario_llamadas.sh   # recordatorios 45min + post-llamada (hay llamadas 04-05h: leads en España)
+*/5 8-21 * * * escenario_llamadas.sh   # recordatorios 45min + post-llamada (jornada real: 09:00-19:30)
 0 20 * * *     escenario_cierre.sh     # cierre del día
 ```
 
@@ -77,13 +77,24 @@ cierre) viajan como sesión — cero dependencia de plantillas. Constancia
 `agenda_dia` apruebe: reactivar la línea del cron con
 `--plantilla agenda_dia`.
 
-**Aprendizaje del estreno**: un mensaje de sesión fuera de ventana es
-ACEPTADO por Meta (devuelve wamid) y falla después por webhook — el fallback
-por error inmediato (131047) no lo cubre. Los recordatorios de las 06:20 del
-2026-08-13 salieron «enviados» sin ventana abierta y probablemente no
-llegaron. Mientras el saludo dependa del «Hola» del closer, los recordatorios
-previos a ese Hola corren el mismo riesgo — se mitigan solos apenas el closer
-escribe.
+**Aprendizajes del estreno (2026-08-13):**
+
+1. Un mensaje de sesión fuera de ventana es ACEPTADO por Meta (devuelve
+   wamid) y falla después por webhook — el fallback por error inmediato
+   (131047) no lo cubre. Mientras el saludo dependa del «Hola» del closer,
+   los envíos previos a ese Hola corren el mismo riesgo — se mitigan solos
+   apenas el closer escribe.
+2. **`meetings.scheduled_start_time` guarda hora BOGOTÁ etiquetada como UTC**
+   (histograma del reloj crudo: jornada 07-20; Santiago confirmó contra el
+   calendario real). `agenda.sh` lee el reloj literal (`AT TIME ZONE 'UTC'`)
+   y NO convierte. El primer estreno corrió con la conversión errada (todo
+   −5h): los «recordatorios» de las 06:20 y una post-llamada de las 07:00
+   salieron horas antes de sus llamadas reales — probablemente nunca
+   llegaron (punto 1); sus candados en `envios` fueron purgados para que los
+   envíos verdaderos salieran a su hora. ⚠️ El mismo espejismo vive en
+   cualquier script que convierta esa columna (p. ej. el `::date` de
+   `conversion_real.sh`/`rasgo_plata.sh` corre al día anterior las llamadas
+   de antes de las 05:00 — casos contados, pero existen).
 
 ## Pendientes conocidos
 

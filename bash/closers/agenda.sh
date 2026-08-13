@@ -7,6 +7,12 @@
 # contact_id → crm_contacts → crm_opportunities → users → persons); una llamada
 # sin traza sale con closer NULL — visible, no descartada.
 #
+# ⚠️ ZONA HORARIA (verificado 2026-08-13 contra el histograma de horas y una
+# llamada real): meetings.scheduled_start_time guarda la HORA BOGOTÁ etiquetada
+# como UTC (jornada 07-20 en el reloj crudo). Por eso aquí se lee el reloj
+# LITERAL (AT TIME ZONE 'UTC' extrae el naive tal cual) y NO se convierte —
+# convertir a America/Bogota corría todo 5 horas hacia atrás.
+#
 # Usage: agenda.sh [--fecha YYYY-MM-DD] [--closer FRAG] [--todas] [--json]
 #   --fecha    default: hoy (America/Bogota)
 #   --closer   filtra por fragmento del nombre del closer
@@ -29,7 +35,7 @@ done
 [[ "$FECHA" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "--fecha debe ser YYYY-MM-DD" >&2; exit 2; }
 
 WHERE="m.meeting_type='call'
-  AND (m.scheduled_start_time AT TIME ZONE 'America/Bogota')::date = '$FECHA'::date"
+  AND (m.scheduled_start_time AT TIME ZONE 'UTC')::date = '$FECHA'::date"
 [[ "$TODAS" == "0" ]] && WHERE="$WHERE AND m.status NOT IN ('cancelled')"
 if [[ -n "$CLOSER" ]]; then
   C_ESC="${CLOSER//\'/''}"
@@ -37,14 +43,14 @@ if [[ -n "$CLOSER" ]]; then
 fi
 
 emit "SELECT left(m.id::text,8) AS id,
-  to_char(m.scheduled_start_time AT TIME ZONE 'America/Bogota','HH24:MI') AS hora,
+  to_char(m.scheduled_start_time AT TIME ZONE 'UTC','HH24:MI') AS hora,
   regexp_replace(m.name, ' *[-|–] *.*$', '') AS lead,
   cl.closer,
   m.meet_url,
   m.status,
-  to_char(m.scheduled_start_time AT TIME ZONE 'America/Bogota','YYYY-MM-DD') AS fecha,
+  to_char(m.scheduled_start_time AT TIME ZONE 'UTC','YYYY-MM-DD') AS fecha,
   to_char(coalesce(m.scheduled_end_time, m.scheduled_start_time + interval '1 hour')
-          AT TIME ZONE 'America/Bogota','HH24:MI') AS fin
+          AT TIME ZONE 'UTC','HH24:MI') AS fin
 FROM meetings m
 LEFT JOIN LATERAL (
   SELECT nullif(trim(coalesce(p.name,'')||' '||coalesce(p.lastname,'')),'') AS closer
