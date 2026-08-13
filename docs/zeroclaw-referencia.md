@@ -105,13 +105,15 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    `recado_cerebro_mkt` (MARKETING, gemela — el WABA solo tiene historial
    MARKETING) · ids 1831771134860100 / 2195985700964604 · el token System
    User «Parallelo System User» SÍ administra plantillas vía API.
-8. **El directorio sale de la DB con users.phone_number como fuente primaria**
-   y `team_members.whatsapp` de fallback (números duplicados en users =
-   sospechosos → fallback); espejo re-ejecutable: `sync_directorio.sh`. 40
-   entradas
-   E.164-normalizados + alias del mapa de apodos. `santi` EXCLUIDO adrede
-   (ambiguo: Santiago Ruiz vs Santiago Gaviria) → cae a revisión humana.
-   El resolvedor premia la coincidencia más larga.
+8. **El directorio sale de la DB con `users.phone_number` como fuente
+   primaria** y `team_members.whatsapp` de fallback; un número de users
+   duplicado entre personas distintas es sospechoso y cae al fallback (caso
+   real: Daniel Cardona traía el de Lucho). Espejo re-ejecutable:
+   `bash/agentes/sync_directorio.sh` — 40 entradas E.164 + alias de apodos.
+   `santi` EXCLUIDO adrede (ambiguo: Santiago Ruiz vs Santiago Gaviria) →
+   revisión humana. El resolvedor premia la coincidencia más larga. La
+   corrección que motivó el cambio: Pablo tenía +61 (Australia, viejo) en
+   team_members y +57 313 6197523 (vigente) en users.
 9. **viz es visor**: los writes de la Mesa van por scripts bash whitelisted
    (`despacho_mark.sh` es el único detrás del botón), ids cortos como handle.
 
