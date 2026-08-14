@@ -53,7 +53,7 @@ emit "SELECT left(m.id::text,8) AS call,
   o.value->>'closerResponse' AS closer_response,
   o.value->>'aiSuggestion' AS ai_suggestion
 FROM meetings m
-JOIN meeting_reports r ON r.meeting_id=m.id
+JOIN call_report_vigente r ON r.meeting_id=m.id
 CROSS JOIN LATERAL jsonb_array_elements(
   coalesce(r.report->'objectionsAndInsights'->'objectionHandling'->'objections','[]'::jsonb)
 ) o(value)

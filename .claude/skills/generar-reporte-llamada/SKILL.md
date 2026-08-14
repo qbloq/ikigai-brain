@@ -116,8 +116,17 @@ el usuario dio un nombre de lead o fecha, resuélvelo primero con
 
 ## Reglas
 
-- **Nunca escribas en `meeting_reports`** (Postgres). Este pipeline persiste
-  SOLO en la db local hasta que el modelo se estabilice y migre a supabase.
+- **ESTO ES PRODUCCIÓN desde 2026-08-13** (decisión de Santiago; migración
+  `catalog/migrations/005_call_reports.sql`). El reporte se persiste en
+  Postgres: `ikigaigm.call_reports` (+ `call_report_tiradas`) como fuente de
+  verdad versionada, y se **upsertea en `meeting_reports`**, que es el
+  escaparate del que lee la plataforma — reemplazando el reporte de gemini.
+  Todo eso lo hace `reporte_guardar.sh` solo, en una transacción.
+  ⚠️ La regla anterior («nunca escribas en `meeting_reports`») queda derogada,
+  pero su motivo sigue vivo y ahora se cumple de otra forma: el reporte de
+  gemini es la celda de CONTROL del experimento y está congelado en
+  `ikigaigm.call_reports_gemini`. **Esa tabla no se toca jamás**; los scripts
+  del experimento leen de ahí, no de `meeting_reports`.
 - Los reportes de gemini existentes no se consultan antes de generar (los
   agentes ya lo tienen prohibido; tú tampoco los mires para «comparar» antes
   de que el reporte propio esté guardado).
@@ -125,7 +134,13 @@ el usuario dio un nombre de lead o fecha, resuélvelo primero con
   impar. El umbral de baja confianza (10) está calibrado con ruido de claude
   (cohorte 3); si el modelo de los agentes cambia, recalíbralo con un mini
   test-retest antes de confiar en la bandera.
-- El modelo de datos vive en el `--create` de la db (ver encabezado de
-  `bash/calls/reporte_guardar.sh -h`). Mapeo a supabase cuando se promueva:
-  `meeting_id`→uuid FK meetings, `report`/`arquetipo_votos`/`baja_confianza`→
-  jsonb, `generado_at`→timestamptz, `id`→bigserial.
+- El modelo de datos ya está promovido: `catalog/migrations/005_call_reports.sql`
+  es el esquema de record. La sqlite local sigue escribiéndose en paralelo
+  (`--destino ambos`, el default) porque es donde viven las tablas del
+  experimento (`muestra*`) que referencian estos reportes.
+- **No hace falta invocar este skill a mano para cada llamada**: el pipeline
+  automático es `bash/calls/reportes_pendientes.sh` (la cola: transcript
+  usable sin reporte del Cerebro) → `bash/calls/generar_pendientes.sh` (corre
+  este mismo skill headless, N llamadas por corrida) →
+  `bash/closers/escenario_reporte.sh` (devuelve el coaching al closer). Este
+  skill es la vía manual: una llamada puntual, o regenerar.

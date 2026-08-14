@@ -123,7 +123,10 @@ Resolves ~83% of reported calls; the rest is the S8.2 data-hygiene queue.
 | `call_stats.sh [--by closer\|result\|program\|project\|week] [--project N] [--from D] [--to D]` | Effectiveness aggregates over analyzed calls: calls, won, win %, avg closing probability, avg closer score. Default `--by closer` — the Director Comercial's KPI. |
 | `call_objections.sh [--project N] [--closer N] [--status S] [--from D] [--to D] [--limit N]` | One row per objection across reports (status, objection, closer response, AI suggestion) — the feedback loop into narrative/copy (S1) and the objection protocol (S12.2). |
 | `lead_profile.sh [--by base\|arquetipo\|tramo\|prioridad\|closer\|resultado] [--project N] [--closer N] [--arquetipo F] [--from D] [--to D] [--incluir-sin-analizar] [--limit N]` | The **lead profile** already inside each report (`leadProfile.bantAnalysis` + `intelligentSegmentation`), extracted and normalized. Without `--by`: one row per call with BANT in 0-100 **and** in the 1-5 scale per item. Carries three declared normalizations, all of which change the numbers — see below. |
-| `reporte_guardar.sh --meeting <uuid> --modelo M [--variante mejorado2] --tirada f.json ×N [--umbral 10] [--dry-run] [--json]` **[WRITE local]** | Aggregate N tiradas into THE report of a call and persist to local db `generador_reportes` (one txn): mediana por ítem, mayoría de arquetipo, narrativa de la tirada más cercana a las medianas, rango>umbral → `baja_confianza`. The deterministic half of the `generar-reporte-llamada` skill (which spawns the N clean-context agents). Regenerating never overwrites (`generacion+1`). |
+| `reporte_guardar.sh --meeting <uuid> --modelo M [--variante mejorado2] --tirada f.json ×N [--umbral 10] [--destino ambos\|pg\|local] [--sin-escaparate] [--dry-run] [--json]` **[WRITE pg + local]** | Aggregate N tiradas into THE report of a call and persist it (one txn): mediana por ítem, mayoría de arquetipo, narrativa de la tirada más cercana a las medianas, rango>umbral → `baja_confianza`. The deterministic half of the `generar-reporte-llamada` skill (which spawns the N clean-context agents). Regenerating never overwrites (`generacion+1`). **Desde 2026-08-13 escribe en Postgres**: `call_reports` + `call_report_tiradas` y upsert del agregado en `meeting_reports` (el escaparate de la plataforma) — ver «PRODUCCIÓN» abajo. |
+| `reportes_pendientes.sh [--desde N] [--min-chars N] [--con-closer] [--limit N]` | **La cola del pipeline**: llamadas con transcript usable (≥2000 chars) y sin reporte del Cerebro, con closer resuelto. Read-only. |
+| `generar_pendientes.sh [--limit N] [--desde N] [--model M] [--timeout S] [--dry-run]` **[WRITE pg + local]** | **El runner**: por cada llamada de la cola corre el skill `generar-reporte-llamada` en una sesión headless (`claude -p`) — la generación son N subagentes, no un script. Cuenta intentos en `closers_ops.reportes_intentos` y para a los 2 fallos (sin eso, un transcript roto se reintenta para siempre). La verdad de si funcionó no es el exit code: es si quedó la fila en `call_reports`. |
+| `reportes_a_pg.sh [--variante V] [--sin-escaparate] [--dry-run]` **[WRITE pg]** | Promueve a Postgres los reportes que el pipeline ya tenía en la sqlite local (los 63 de la etapa prototipo). Idempotente por meeting: lo ya promovido se salta. |
 
 ⚠️ **Three normalizations that `lead_profile.sh` declares and the rest of the
 calls domain does not** — they are not cosmetic, each moves the numbers:
@@ -228,12 +231,50 @@ tirada más cercana a las medianas, y **rango>10 → ítem en `baja_confianza`**
 (umbral calibrado con ruido de claude; recalibrar si cambia el modelo). Tablas:
 `reportes` (agregado: medianas/rangos/votos en columnas + JSON canon con bloque
 `_generacion`) y `tiradas` (los N crudos, siempre). Regenerar = `generacion+1`,
-nunca sobreescribe. Es el **prototipo del modelo que migra a supabase** cuando
-se estabilice (mapeo pg documentado en el skill); hasta entonces **jamás se
-escribe en `meeting_reports`**. La motivación con números: el primer cruce
+nunca sobreescribe. La motivación con números: el primer cruce
 contra plata (14 llamadas v2, 5 con primera cuota pagada 0-3 días post-llamada)
 dio AUC 0.93 para v2 contra 0.59 de producción — n chico, pero la dirección
 justificó el pipeline.
+
+**PRODUCCIÓN (2026-08-13) — el reporte del Cerebro reemplaza al de gemini.**
+Decisión de Santiago: las operaciones de la plataforma se van portando al
+Cerebro y el reporte de llamada es la primera. Migración
+[005_call_reports.sql](catalog/migrations/005_call_reports.sql):
+
+- **`call_reports`** (+ `call_report_tiradas`) — la fuente de verdad: una fila
+  por meeting × generación, con la procedencia EN COLUMNAS (variante, modelo,
+  N, medianas, **rangos**, `baja_confianza`, votos de arquetipo, tirada
+  narrativa). Un puntaje sin su rango no dice si es señal o ruido.
+- **`meeting_reports`** pasa a ser el **escaparate**: lo que la plataforma
+  muestra. `reporte_guardar.sh` lo upsertea con el agregado — reemplazando al
+  de gemini. (Tiene UNIQUE por meeting: no caben los dos.)
+- **`call_reports_gemini`** — los 240 reportes de gemini **congelados antes del
+  primer reemplazo**. Es la celda de CONTROL de las cohortes 1-5; sin ella el
+  experimento que justificó el cambio deja de ser reproducible. No se toca.
+- **`call_report_vigente`** (vista) — cuál manda por llamada: cerebro (última
+  generación) si existe, si no lo que haya en `meeting_reports`. Cada fila
+  declara su `fuente`.
+
+⚠️ **Regla de consumo que hay que sostener.** Los scripts **operativos**
+(`calls.sh`, `call_show.sh`, `call_stats.sh`, `call_objections.sh`,
+`lead_profile.sh`, `closer_dashboard.sh`) leen **la vista**. Los del
+**experimento** (`bant_diff`, `comparativo_bant`, `importar_produccion`,
+`validacion_plata`, `rasgo_plata`, `conversion_real`, `lead_score_model`) leen
+**`call_reports_gemini`**, nunca `meeting_reports`: desde hoy esa tabla trae
+reportes nuestros, así que seguir leyéndola como «producción» convierte el
+control en el tratamiento y pudre todos los AUC en silencio. Verificado tras el
+corte: la cohorte 4 sigue dando 0.850 vs 0.620.
+
+**El pipeline automático** (transcript → reporte → coaching al closer):
+`reportes_pendientes.sh` (cola) → `generar_pendientes.sh` (corre el skill
+headless) → `bash/closers/escenario_reporte.sh` (el mensaje de vuelta). El
+disparador es la **aparición del transcript**, no `meetings.status` (que es
+inservible: hay llamadas con transcript en `completed`, `ended` y una en
+`in_progress` al día siguiente). Dos hechos medidos que el diseño respeta:
+la fila de transcript aparece **+4 a +90 min** del inicio, pero **la mitad son
+basura de ~210-220 chars** (las de verdad pesan 23k-70k) y **solo 25-40% de las
+llamadas que ocurren dejan transcript** — así que esta cola no es el universo
+del día y el mensaje post-llamada a ciegas sigue haciendo falta.
 
 **Cohorte 4 — VALIDACIÓN CONTRA PLATA** (tabla `muestra_validacion` en
 `generador_reportes`, semilla `validacion-plata-20260809`). La pregunta que las

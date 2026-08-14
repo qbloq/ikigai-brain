@@ -53,7 +53,7 @@ emit "SELECT $dim AS $by,
   round(avg(nullif(r.report->'performanceInsights'->'finalCloserEvaluation'->>'overallScore','')::numeric), 1) AS score_avg
 FROM meetings m
 LEFT JOIN projects pr ON pr.id=m.project_id
-JOIN meeting_reports r ON r.meeting_id=m.id
+JOIN call_report_vigente r ON r.meeting_id=m.id
 LEFT JOIN LATERAL (
   SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer
   FROM crm_contacts c

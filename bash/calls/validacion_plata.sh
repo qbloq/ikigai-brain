@@ -7,7 +7,8 @@
 # cabeza sobre LAS MISMAS llamadas:
 #
 #   v2-mediana  (db local `generador_reportes`: 3 tiradas, mediana por ítem)
-#   producción  (Postgres `meeting_reports`: gemini, una tirada, sin rúbrica)
+#   producción  (Postgres `call_reports_gemini`: gemini, una tirada, sin rúbrica —
+#                la celda de control, congelada antes del reemplazo de 2026-08-13)
 #
 # La métrica es **AUC** (= U de Mann-Whitney normalizada): la probabilidad de
 # que, tomando un lead que pagó y uno que no, el puntaje ordene bien ese par.
@@ -75,7 +76,7 @@ SELECT mr.meeting_id::text AS meeting_id,
        (mr.report->'leadProfile'->'bantAnalysis'->'timeline'->>'score')::float8 AS p_timeline,
        mr.report->'leadProfile'->'intelligentSegmentation'->'archetype'->>'name' AS p_arquetipo,
        mr.report->'generalInformation'->>'leadName' AS lead
-FROM meeting_reports mr WHERE mr.meeting_id::text IN ($ids)")"
+FROM call_reports_gemini mr WHERE mr.meeting_id::text IN ($ids)")"
 
 FORMAT="$FORMAT" python3 - "$local_json" "$prod_json" <<'PY'
 import json, os, random, sys

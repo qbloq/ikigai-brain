@@ -100,7 +100,7 @@ SELECT coalesce(json_agg(json_build_object(
   'tiene_reporte_pg', (r.report IS NOT NULL))), '[]')
 FROM meetings m
 LEFT JOIN projects pr ON pr.id=m.project_id
-LEFT JOIN meeting_reports r ON r.meeting_id=m.id
+LEFT JOIN call_reports_gemini r ON r.meeting_id=m.id
 LEFT JOIN LATERAL (
   SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer
   FROM crm_contacts c

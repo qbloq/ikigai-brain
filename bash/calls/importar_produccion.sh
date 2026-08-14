@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # importar_produccion.sh — copia a la db local `reportes_llamada` el reporte que
-# PRODUCCIÓN ya generó (Postgres `meeting_reports.report`, escrito por
+# PRODUCCIÓN ya generó (Postgres `call_reports_gemini`, el snapshot congelado de
+# lo que gemini escribió en meeting_reports antes del reemplazo de 2026-08-13,
 # gemini-2.5-flash con el prompt de producción), para poder compararlo contra
 # las corridas del skill sin salir de sqlite.
 #
@@ -56,7 +57,7 @@ SELECT json_agg(json_build_object(
   'meeting_id', m.id::text,
   'fecha', to_char(m.scheduled_start_time,'YYYY-MM-DD'),
   'report', r.report))
-FROM meetings m JOIN meeting_reports r ON r.meeting_id = m.id
+FROM meetings m JOIN call_reports_gemini r ON r.meeting_id = m.id
 WHERE m.id::text IN ($ids) AND r.report IS NOT NULL;" \
 | python3 -c '
 import json, sys
@@ -70,7 +71,7 @@ for f in filas:
           + ", ".join([s(f["meeting_id"]), s(f["meeting_id"][:8] + "-produccion-gemini"),
                        s("gemini-2.5-flash"), s("produccion"), s("31e2210"), s(f["fecha"]),
                        s(payload),
-                       s("importado de Postgres meeting_reports: es el reporte REAL de produccion, no una corrida")])
+                       s("importado de Postgres call_reports_gemini: es el reporte REAL de gemini, no una corrida")])
           + ");")
 print(f"-- {len(filas)} reporte(s)", file=sys.stderr)
 ' > /tmp/.imp_prod.sql

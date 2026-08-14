@@ -99,7 +99,7 @@ WITH b AS (
          nullif(regexp_replace(coalesce(bant->'timeline'->>'score',''),'[^0-9]','','g'),'')::numeric  AS timeline,
          nullif(regexp_replace(coalesce(bant->'authority'->>'score',''),'[^0-9]','','g'),'')::numeric AS authority
   FROM meetings m
-  JOIN meeting_reports r ON r.meeting_id = m.id
+  JOIN call_report_vigente r ON r.meeting_id = m.id
   LEFT JOIN projects pr  ON pr.id = m.project_id
   LEFT JOIN LATERAL (SELECT r.report->'leadProfile'->'bantAnalysis' AS bant,
                             r.report->'leadProfile'->'intelligentSegmentation' AS seg) j ON true

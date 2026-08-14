@@ -19,16 +19,29 @@
 # Valida ANTES de escribir (claves de raíz + scores numéricos, como guardar.py);
 # una tirada rota aborta todo — no existe el reporte a medias.
 #
+# DESTINO [WRITE pg] — desde 2026-08-13 esto es PRODUCCIÓN (migración 005):
+#   --destino ambos (default)  sqlite local + Postgres
+#             pg               solo Postgres
+#             local            solo sqlite (el modo del experimento)
+#   En Postgres escribe DOS cosas en una transacción:
+#     · ikigaigm.call_reports (+ call_report_tiradas) — la fuente de verdad del
+#       Cerebro, versionada por generación y con la procedencia en columnas.
+#     · ikigaigm.meeting_reports — el ESCAPARATE del que lee la plataforma: se
+#       upsertea el agregado, REEMPLAZANDO el reporte de gemini. El de gemini ya
+#       está congelado en call_reports_gemini (celda de control del experimento);
+#       --sin-escaparate omite este paso.
+#
 # Uso:
 #   reporte_guardar.sh --meeting <uuid> --modelo <m> [--variante mejorado2]
 #                      --tirada f1.json --tirada f2.json [--tirada …]
-#                      [--umbral 10] [--db generador_reportes] [--dry-run] [--json]
+#                      [--umbral 10] [--destino ambos|pg|local] [--sin-escaparate]
+#                      [--db generador_reportes] [--dry-run] [--json]
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
 
 meeting="" modelo="" variante="mejorado2" umbral="10" db="generador_reportes"
-dry="" as_json=""
+dry="" as_json="" destino="ambos" escaparate=1
 declare -a tiradas=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,6 +50,8 @@ while [[ $# -gt 0 ]]; do
     --variante) variante="$2"; shift 2 ;;
     --tirada)   tiradas+=("$2"); shift 2 ;;
     --umbral)   umbral="$2"; shift 2 ;;
+    --destino)  destino="$2"; shift 2 ;;
+    --sin-escaparate) escaparate=0; shift ;;
     --db)       db="$2"; shift 2 ;;
     --dry-run)  dry=1; shift ;;
     --json)     as_json=1; shift ;;
@@ -44,11 +59,17 @@ while [[ $# -gt 0 ]]; do
     *) echo "flag desconocido: $1 (ver -h)" >&2; exit 2 ;;
   esac
 done
+case "$destino" in
+  ambos|pg|local) ;;
+  *) echo "--destino debe ser ambos|pg|local (ver -h)" >&2; exit 2 ;;
+esac
 [[ -n "$meeting" && -n "$modelo" && ${#tiradas[@]} -ge 2 ]] || {
   echo "faltan --meeting/--modelo o hay menos de 2 --tirada (ver -h)" >&2; exit 2; }
 
-sql="$(python3 - "$meeting" "$modelo" "$variante" "$umbral" "${tiradas[@]}" <<'PY'
-import json, pathlib, sys, statistics as st
+payload="$(mktemp)"; trap 'rm -f "$payload"' EXIT
+
+sql="$(PAYLOAD="$payload" python3 - "$meeting" "$modelo" "$variante" "$umbral" "${tiradas[@]}" <<'PY'
+import json, os, pathlib, sys, statistics as st
 from collections import Counter
 from datetime import datetime
 
@@ -142,6 +163,18 @@ for i, rep in enumerate(reps, 1):
                      sql_str(json.dumps(rep, ensure_ascii=False, separators=(",", ":")))]) + ");")
 print("\n".join(stmts))
 
+# El agregado completo, para los destinos que no son sqlite (Postgres). Se
+# escribe a un archivo aparte: stdout ya carga el SQL de sqlite.
+if os.environ.get("PAYLOAD"):
+    pathlib.Path(os.environ["PAYLOAD"]).write_text(json.dumps({
+        "meeting": meeting, "variante": variante, "modelo": modelo,
+        "n_tiradas": len(reps), "medianas": med, "rangos": rango,
+        "baja_confianza": baja, "umbral": umbral, "arquetipo": mayoria,
+        "arquetipo_votos": dict(votos), "arquetipo_unanime": len(votos) == 1,
+        "tirada_narrativa": n_narr, "generado_at": ahora,
+        "agregado": agregado, "tiradas": reps,
+    }, ensure_ascii=False))
+
 # El resumen viaja por stderr para no mezclarse con el SQL de stdout.
 det = {"medianas": med, "rangos": rango, "baja_confianza": baja,
        "arquetipo": mayoria, "arquetipo_votos": dict(votos),
@@ -150,9 +183,99 @@ print("RESUMEN\t" + json.dumps(det, ensure_ascii=False), file=sys.stderr)
 PY
 )" || exit 1
 
-exec_args=("$repo/bash/localdb/db_exec.sh" "$db" "-")
-[[ -n "$dry" ]] && exec_args+=("--dry-run")
-printf '%s\n' "$sql" | "${exec_args[@]}" >&2
+if [[ "$destino" != "pg" ]]; then
+  exec_args=("$repo/bash/localdb/db_exec.sh" "$db" "-")
+  [[ -n "$dry" ]] && exec_args+=("--dry-run")
+  printf '%s\n' "$sql" | "${exec_args[@]}" >&2
+fi
+
+# ── Postgres: la fuente de verdad (call_reports) + el escaparate ─────────────
+if [[ "$destino" != "local" ]]; then
+  pgsql="$(ESCAPARATE="$escaparate" python3 - "$payload" <<'PY'
+import json, sys, os
+from datetime import datetime
+
+p = json.load(open(sys.argv[1]))
+esc = os.environ.get("ESCAPARATE") == "1"
+
+# ⚠️ `generado_at` se calcula con datetime.now() — hora LOCAL sin offset. La
+# sqlite lo guarda como texto y da igual, pero Postgres lo interpretaría como
+# UTC y el reporte nacería 5 horas en el pasado (el mismo espejismo de
+# scheduled_start_time). Se le pega el offset local antes de escribirlo.
+_ga = datetime.fromisoformat(p["generado_at"])
+if _ga.tzinfo is None:
+    _ga = _ga.astimezone()
+p["generado_at_tz"] = _ga.isoformat()
+
+def s(v):  # literal de texto
+    return "'" + str(v).replace("'", "''") + "'"
+def j(v):  # literal jsonb
+    return s(json.dumps(v, ensure_ascii=False, separators=(",", ":"))) + "::jsonb"
+def arr(xs):  # text[]
+    return "ARRAY[" + ", ".join(s(x) for x in xs) + "]::text[]" if xs else "'{}'::text[]"
+
+m, med, rng = s(p["meeting"]), p["medianas"], p["rangos"]
+gen = f"(SELECT coalesce(max(generacion),0)+1 FROM ikigaigm.call_reports WHERE meeting_id={m})"
+cols = ("meeting_id, generacion, prompt_variante, modelo, n_tiradas, "
+        "bant_budget, bant_authority, bant_need, bant_timeline, "
+        "rango_budget, rango_authority, rango_need, rango_timeline, "
+        "baja_confianza, umbral_confianza, arquetipo, arquetipo_votos, "
+        "arquetipo_unanime, tirada_narrativa, report, generado_at")
+vals = ", ".join([
+    m, gen, s(p["variante"]), s(p["modelo"]), str(p["n_tiradas"]),
+    *(str(med[k]) for k in ("budget", "authority", "need", "timeline")),
+    *(str(rng[k]) for k in ("budget", "authority", "need", "timeline")),
+    arr(p["baja_confianza"]), str(p["umbral"]),
+    s(p["arquetipo"]) if p["arquetipo"] is not None else "NULL",
+    j(p["arquetipo_votos"]), "true" if p["arquetipo_unanime"] else "false",
+    str(p["tirada_narrativa"]), j(p["agregado"]), s(p["generado_at_tz"]) + "::timestamptz",
+])
+tiradas = ", ".join(f"({i}, {j(r)})" for i, r in enumerate(p["tiradas"], 1))
+
+# Una sola sentencia: si algo falla, no queda ni el agregado sin sus tiradas ni
+# un escaparate apuntando a un reporte que no se guardó.
+sql = f"""WITH nueva AS (
+  INSERT INTO ikigaigm.call_reports ({cols}) VALUES ({vals}) RETURNING id
+), tir AS (
+  INSERT INTO ikigaigm.call_report_tiradas (call_report_id, n, report)
+  SELECT nueva.id, v.n, v.rep FROM nueva, (VALUES {tiradas}) AS v(n, rep)
+  RETURNING 1
+)"""
+if esc:
+    sql += f"""
+INSERT INTO ikigaigm.meeting_reports (meeting_id, report)
+SELECT {m}, {j(p["agregado"])} FROM nueva
+ON CONFLICT (meeting_id) DO UPDATE SET report = EXCLUDED.report, updated_at = now();"""
+else:
+    sql += "\nSELECT count(*) FROM tir;"
+print(sql)
+PY
+)" || exit 1
+
+  if [[ -n "$dry" ]]; then
+    echo "DRY-RUN pg: no se escribió en Postgres. SQL que se habría corrido:" >&2
+    printf '%s\n' "$pgsql" >&2
+  else
+    source "$repo/bash/lib/common.sh"
+    printf '%s\n' "$pgsql" | psql_rw -v ON_ERROR_STOP=1 -q -f - >&2
+    echo "pg: call_reports + tiradas$([[ "$escaparate" == 1 ]] && echo ' + meeting_reports (escaparate)')" >&2
+  fi
+fi
+
+if [[ "$destino" == "pg" ]]; then
+  python3 - "$payload" <<'PY'
+import json, sys
+p = json.load(open(sys.argv[1]))
+print(f'meeting {p["meeting"][:8]} · {p["variante"]} · {p["modelo"]} · {p["n_tiradas"]} tiradas')
+for k in ("budget", "authority", "need", "timeline"):
+    print(f'  {k:9s} mediana {p["medianas"][k]:>5} · rango {p["rangos"][k]:>4}')
+print(f'  baja confianza: {", ".join(p["baja_confianza"]) or "—"}')
+print(f'  arquetipo: {p["arquetipo"]!r} '
+      f'{"(unánime)" if p["arquetipo_unanime"] else p["arquetipo_votos"]}')
+print(f'  narrativa: tirada {p["tirada_narrativa"]} · {p["generado_at"]}')
+PY
+  exit 0
+fi
 
 # Estado persistido (o el que habría quedado, en dry-run): última generación.
 source "$repo/bash/lib/sqlite.sh"

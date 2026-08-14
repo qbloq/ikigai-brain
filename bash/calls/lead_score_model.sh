@@ -54,7 +54,7 @@ WITH b AS (
          coalesce(nullif(regexp_replace(coalesce(r.report->'leadProfile'->'bantAnalysis'->'authority'->>'score',''),'[^0-9]','','g'),'')::numeric,0) AS authority,
          cl.closer
   FROM meetings m
-  JOIN meeting_reports r ON r.meeting_id = m.id
+  JOIN call_reports_gemini r ON r.meeting_id = m.id
   LEFT JOIN LATERAL (
     SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer
     FROM crm_contacts c

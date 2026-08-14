@@ -71,7 +71,7 @@ WITH c AS (
          mr.meeting_id IS NOT NULL AS analizada
   FROM meetings m
   LEFT JOIN meeting_transcripts mt ON mt.meeting_id = m.id
-  LEFT JOIN meeting_reports mr ON mr.meeting_id = m.id
+  LEFT JOIN call_reports_gemini mr ON mr.meeting_id = m.id
   WHERE m.meeting_type = 'call'
 ), planes AS (
   -- Cada plan se ata a UNA llamada: la más cercana que lo precede dentro de la

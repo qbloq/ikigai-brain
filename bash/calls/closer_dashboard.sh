@@ -76,7 +76,7 @@ WITH base AS (
          r.report->'objectionsAndInsights'->'objectionHandling'->'objections' AS objs,
          cl.closer
   FROM meetings m
-  JOIN meeting_reports r ON r.meeting_id = m.id
+  JOIN call_report_vigente r ON r.meeting_id = m.id
   LEFT JOIN projects pr ON pr.id = m.project_id
   LEFT JOIN LATERAL (
     SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer

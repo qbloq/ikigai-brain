@@ -62,7 +62,7 @@ WITH b AS (
          + coalesce(nullif(regexp_replace(coalesce(r.report->'leadProfile'->'bantAnalysis'->'budget'->>'score',''),'[^0-9]','','g'),'')::numeric,0)
          + coalesce(nullif(regexp_replace(coalesce(r.report->'leadProfile'->'bantAnalysis'->'timeline'->>'score',''),'[^0-9]','','g'),'')::numeric,0)
          + coalesce(nullif(regexp_replace(coalesce(r.report->'leadProfile'->'bantAnalysis'->'authority'->>'score',''),'[^0-9]','','g'),'')::numeric,0) )/4.0 AS score
-  FROM meetings m JOIN meeting_reports r ON r.meeting_id = m.id
+  FROM meetings m JOIN call_reports_gemini r ON r.meeting_id = m.id
   WHERE m.meeting_type='call' AND $w_proj
 ), planes AS (
   SELECT DISTINCT ON (p.plan_id) p.plan_id, b.id AS meeting_id

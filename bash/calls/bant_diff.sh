@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # bant_diff.sh — contrasta el BANT REGENERADO (db local sqlite `reportes_llamada`,
 # escrita por el skill replicar-reporte-llamada) contra el BANT GUARDADO en
-# Postgres (`meeting_reports.report`), llamada por llamada.
+# Postgres (`call_reports_gemini` — el reporte de gemini congelado el 2026-08-13,
+# antes de que el pipeline del Cerebro empezara a reemplazarlo en meeting_reports),
+# llamada por llamada.
 #
 # Existe para separar dos causas que a simple vista se ven iguales. El 60% de
 # los puntajes BANT no nulos de producción cae en 90-100, y el prompt de
@@ -80,7 +82,7 @@ pg_json="$(psql_ro -t -A -c "
     'arquetipo', r.report->'leadProfile'->'intelligentSegmentation'->'archetype'->>'name',
     'prob',      nullif(regexp_replace(coalesce(r.report->'leadProfile'->'predictionsAndRecommendations'->'closingProbability'->>'percentage',''),'[^0-9]','','g'),'')::numeric,
     'status',    r.report->'generalInformation'->>'callStatus')), '[]')
-  FROM meetings m LEFT JOIN meeting_reports r ON r.meeting_id = m.id
+  FROM meetings m LEFT JOIN call_reports_gemini r ON r.meeting_id = m.id
   WHERE m.id::text IN ($ids);")"
 
 RESUMEN="$resumen" ASJSON="$as_json" python3 - "$local_json" "$pg_json" <<'PY'
