@@ -17,6 +17,7 @@ closers.
 | 3 | Al terminar cada llamada (mismo tick) | «¿Cómo terminó? Venta / Seguimiento / No Califica / No Show» → la respuesta la conversa **Iki**: clasifica, guarda `RESULTADO:`, y si no fue venta lo deja en cola para Marketico | apertura: script · conversación: Iki |
 | 4 | Tras una Venta (dentro del 3) | Iki pide el acuerdo de pago EN TEXTO, guarda `ACUERDO:` y responde confirmando el Plan de Pagos reformulado | Iki |
 | 5 | 20:00 COT (cron) | Total de ventas del día + cuotas DEL CLOSER que vencen mañana con recaudo posible | `escenario_cierre.sh` — sesión, fallback plantilla |
+| 6 | Cuando el reporte de la llamada está listo (~1-2 h después) | Coaching de esa llamada: una fortaleza, una cosa a corregir y el siguiente paso con ese lead. Al Director Comercial, aparte, el número (puntaje + BANT + banderas) | `escenario_reporte.sh` — sesión |
 
 ## Las piezas
 
@@ -48,6 +49,46 @@ closers.
   <detalle>` (formato exacto en su AGENTS.md); `escenario_cierre.sh` las lee
   **solo-lectura** y las une con la cola `resultados`. Nunca se escribe en las
   DBs del daemon.
+
+## El escenario 6 — el reporte de vuelta (2026-08-13)
+
+El lazo que cierra el día: la llamada deja transcript → el Cerebro genera EL
+reporte (3 tiradas de contexto limpio + mediana) → el closer recibe lo
+accionable de su propia llamada. Cadena completa, tres piezas, cada una
+idempotente:
+
+```
+bash/calls/reportes_pendientes.sh   → la cola (transcript ≥2000 chars, sin reporte propio)
+bash/calls/generar_pendientes.sh    → corre el skill headless (claude -p), N por corrida
+bash/closers/escenario_reporte.sh   → el mensaje al closer (+ --dc al Director Comercial)
+```
+
+**Qué ve cada uno, y por qué.** El closer recibe **coaching sin puntaje**: una
+fortaleza concreta, una cosa a corregir y el siguiente paso con ese lead. Un
+6.5/10 desnudo por WhatsApp se lee como calificación, no como ayuda — y el
+reporte trae material mucho más útil que el número (`--con-puntaje` lo incluye
+si se decide lo contrario). El **Director Comercial** sí recibe el número, con
+las **banderas de baja confianza**: un ítem cuyo rango entre tiradas supera el
+umbral no es un dato, es una duda, y su tablero tiene que verlo.
+
+**Tres hechos medidos que este escenario respeta** (2026-08-13):
+
+1. **Solo 25-40% de las llamadas que ocurren dejan transcript.** El escenario 6
+   NO reemplaza al 3: la pregunta a ciegas «¿cómo terminó?» sigue siendo la
+   única cobertura para las otras tres cuartas partes.
+2. **La mitad de las filas de transcript son basura** (~210-220 caracteres; las
+   de verdad pesan 23k-70k). De ahí el piso de `--min-chars`, el mismo del
+   skill: un reporte sobre un transcript vacío es el modo de fallo «BANT en
+   cero» que ya contaminó producción.
+3. **El disparador es el transcript, no el estado.** `meetings.status` no sirve:
+   hay llamadas con transcript en `completed`, en `ended` y una que seguía
+   `in_progress` al día siguiente. La fila de transcript aparece +4 a +90 min
+   del inicio — ese sí es el evento.
+
+Nota de producción: desde esta fecha el reporte del Cerebro **reemplaza al de
+gemini** también en `meeting_reports` (lo que la plataforma muestra). El de
+gemini quedó congelado en `call_reports_gemini` como celda de control del
+experimento. Detalle en `catalog/migrations/005_call_reports.sql`.
 
 ## Plantillas Meta (WABA 690499003502578)
 
