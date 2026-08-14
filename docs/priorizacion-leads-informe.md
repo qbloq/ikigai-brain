@@ -1,6 +1,6 @@
 # Priorización de leads — el informe Pre + Post
 
-**Para el grupo directivo** · corte 2026-08-11 · fuentes al pie de cada sección.
+**Para el grupo directivo** · corte 2026-08-13 · fuentes al pie de cada sección.
 
 Este informe junta las dos mitades del trabajo de calificación de leads: el
 **score post-llamada** (BANT, validado contra dinero en
@@ -26,9 +26,9 @@ cambiar eso.
 |---|---|---|
 | fuente | survey de agendamiento (GHL) | BANT derivado del transcript |
 | existe desde | que el lead agenda | que la llamada se analiza |
-| cobertura | 2.200 contactos (82% del espejo) | 168 llamadas con BANT real |
+| cobertura | 2.200 contactos (82% del espejo) | 168 llamadas (analizador viejo) + **112 reportes v2** y creciendo a diario |
 | decide | **a quién llamar primero y quién lo llama** | **a quién perseguir en seguimiento** |
-| estado | señal confirmada; instrumento sucio (§4) | **validado contra plata** (§3) |
+| estado | señal confirmada; instrumento sucio (§4) | **validado contra plata** (§3), en producción desde 2026-08-13 |
 
 Confundirlos fue el error original: el BANT no puede priorizar la cola porque
 existe *después* de gastar al closer. La tarea `7fd54080` («asignar los leads
@@ -57,8 +57,29 @@ pagada (`installments`), p por permutación/Monte Carlo.
 - El instrumento es estable: test-retest ICC 0.88–0.95; la mediana-de-3 baja el
   mínimo distinguible a ±3–5 puntos. Contra desenlaces más exigentes el AUC
   sube (pagó ≥50% del plan → 0.945).
-- Y en tramos (BANT de producción, histórico): **81–100 convierte 38.5%; 61–80
-  convierte 3.1%**. No es una escala: es un umbral en 80.
+
+**Y desde el 2026-08-13, tasas por banda sobre FLUJO REAL** — la cohorte 6:
+70 llamadas muestreadas al azar del flujo (no caso-control), puntuadas por el
+pipeline v2 a ciegas y cruzadas con `installments` (ventana 30 días,
+atribución única; 11 llamadas recientes con ventana incompleta quedan fuera
+de las tasas):
+
+| banda v2 (promedio BANT) | conversión | pagado |
+|---|---|---|
+| 81–100 | **4/7 = 57.1%** | $12,500 |
+| 66–80 | 11/26 = 42.3% | $14,884 |
+| 51–65 | 7/18 = 38.9% | $11,299 |
+| **≤50** | **0/8 = 0.0%** | $0 |
+
+Los escalones reales están en los extremos: **≤50 no convirtió ninguna** (el
+filtro duro de seguimiento) y **81+ convierte más de la mitad**; las dos bandas
+del medio casi no se distinguen. El AUC en flujo real es **0.66 (p=0.019)** —
+más bajo que el 0.804 del caso-control *por construcción* (el caso-control
+compara extremos; el flujo está lleno de casos intermedios y la tasa base por
+llamada analizada es 31%), no porque el instrumento se haya degradado. Por
+ítem: timeline 0.682 · need 0.643 · authority 0.589 · **budget 0.523 (plano
+en flujo real** — y fue también el ítem que más cayó en bandera de baja
+confianza al generar: candidato a revisar sus anclas).
 
 **Decisión ya tomada** (2026-08-09): los reportes de llamada se generan con
 nuestro pipeline (3 tiradas en contextos limpios, mediana por ítem); la
@@ -139,6 +160,16 @@ es la triangulación la que hace sólido el hallazgo. Las tasas son por llamada
 analizada (universo sesgado hacia arriba): comparan entre sí, no viajan al
 embudo. `Experimentado` da 70% con n=10 — dirección interesante, no directriz.
 
+**Réplica en v2 (cohorte 6, 2026-08-13):** con el arquetipo etiquetado por
+nuestro propio pipeline, la dirección se sostiene — Emocional convierte
+**39.0%** (16/41) contra **20.7%** (6/29) sin el rasgo — pero con menos
+fuerza: Fisher p=0.085 (n=70 no sella), y ajustado por BANT el rasgo aporta
+ΔAUC de solo +0.02 (en v2 el rasgo y el puntaje vienen más correlacionados
+que en producción). La medición de ortogonalidad dice: **el rasgo suma algo
+encima del BANT, pero es un aporte modesto, no un segundo eje potente** — la
+pata sólida del hallazgo de narrativa sigue siendo la triangulación con el
+survey, que no depende de ningún LLM.
+
 *Reproducir: `bash/calls/rasgo_plata.sh` (rasgo × plata) y
 `bash/calls/rasgo_plata.sh --control` (el confound del BANT).*
 
@@ -153,7 +184,11 @@ embudo. `Experimentado` da 70% con n=10 — dirección interesante, no directriz
    primero; C = survey sin responder → se confirma antes de ocupar agenda de
    closer. Falta solo la firma de la política de visibilidad (el closer ve las
    respuestas textuales, **nunca** la banda ni el número).
-3. **BANT ≤ 60 no se persigue con llamada** — secuencia low ticket.
+3. **BANT v2 ≤ 50 no se persigue con llamada** — secuencia low ticket. En
+   flujo real convirtió **0 de 8**; es el filtro más barato del sistema. (El
+   umbral anterior, ≤60 sobre el score de producción, queda superado: desde el
+   corte a producción del 2026-08-13 el score que existe para cada llamada
+   nueva es el v2.)
 
 ## 7. El plan: una heurística viva
 
@@ -176,9 +211,11 @@ Próximos movimientos, en orden:
 2. **Score pre 0–100** — hoy son bandas sostenidas por 2 preguntas; con las
    5–6 que el censo confirmó se puede componer y validar contra plata con el
    mismo rito (AUC + permutación + réplica).
-3. **Muestra aleatoria** para tasas por banda — el AUC caso-control valida el
-   *orden*, no las tasas; decisiones de negocio (cuánta pauta, cuántos closers)
-   piden calibración sobre flujo real.
+3. ~~**Muestra aleatoria** para tasas por banda~~ — **HECHO 2026-08-13**
+   (cohorte 6, 70 llamadas de flujo real): las tasas por banda del §3 son esa
+   calibración. Queda re-correrla cuando la cohorte acumule más ventanas
+   completas (11 llamadas siguen censuradas) y ampliarla con el flujo nuevo
+   que el pipeline automático puntúa a diario.
 4. **Higiene**: rescatar los rótulos del formulario que guarda en campos
    genéricos `Respuesta 1–9` antes de que crezca; resolver el survey de Andrea
    (3 respuestas en el espejo).
@@ -187,7 +224,10 @@ Próximos movimientos, en orden:
 
 | # | qué es | fuente |
 |---|---|---|
-| 0.804 / 0.655 | AUC contra plata, v2 vs producción, 40 llamadas | `validacion_plata.sh --cohorte todas` |
+| 0.804 / 0.655 | AUC contra plata, v2 vs producción, 40 llamadas (caso-control) | `validacion_plata.sh --cohorte todas` |
+| 0.66 (p=0.019) | AUC v2 contra plata en FLUJO REAL, cohorte 6 (n=59 con ventana completa) | sqlite `generador_reportes` (cohorte 6) + `conversion_real.sh` |
+| 57.1% / 42.3% / 38.9% / 0% | conversión por banda v2 (81+/66-80/51-65/≤50), flujo real | ídem |
+| 39.0% vs 20.7% | Emocional vs no, arquetipo v2, cohorte 6 (p=0.085; ΔAUC +0.02) | ídem |
 | 38.5% vs 3.1% | conversión tramo BANT 81–100 vs 61–80 | `lead_profile.sh --by tramo` |
 | 58 | llamadas BANT ≥81 sin cerrar (la cola) | `lead_score_model.sh` |
 | 24 / 105 | preguntas vivas / catálogo del survey | `survey_censo.sh` |
