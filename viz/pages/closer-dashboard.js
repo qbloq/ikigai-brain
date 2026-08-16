@@ -113,9 +113,13 @@ function renderCloserDashboard(ui) {
   const closers = d.closers || [];
   const cur = d.closer || "";
 
-  // Selector + ventana. La petición lee las tres señales; data-indicator
-  // enciende el overlay estándar durante el re-fetch (viz/CLAUDE.md).
-  const reget = `@get('/ui/${escape(ui.id)}?closer='+encodeURIComponent($cdCloser)+'&from='+$cdFrom+'&to='+$cdTo)`;
+  // Selector + ventana. Si `closer` viene FORZADO por identidad (publicador:
+  // ui._locked), el dropdown no se pinta — chip fijo; y el re-fetch no emite
+  // el param (el servidor lo fuerza igual: el chip es UX, no seguridad).
+  const bloqueado = (ui._locked || []).includes("closer");
+  const reget = bloqueado
+    ? `@get('/ui/${escape(ui.id)}?from='+$cdFrom+'&to='+$cdTo)`
+    : `@get('/ui/${escape(ui.id)}?closer='+encodeURIComponent($cdCloser)+'&from='+$cdFrom+'&to='+$cdTo)`;
   const opts = closers
     .map((c) => {
       const parts = [c.llamadas != null ? `${c.llamadas} llamadas` : null, c.ventas != null ? `${c.ventas} ventas` : null]
@@ -124,9 +128,14 @@ function renderCloserDashboard(ui) {
       return `<option value="${escape(c.closer)}"${c.closer === cur ? " selected" : ""}>${escape(c.closer)}${parts ? ` — ${escape(parts)}` : ""}</option>`;
     })
     .join("");
-  const controls = `<div class="flex flex-wrap items-center gap-3 mt-4"
-      data-signals="{cdCloser:${escape(jsStr(cur))},cdFrom:${escape(jsStr(per.from || ""))},cdTo:${escape(jsStr(per.to || ""))}}">
-    <select data-bind="cdCloser" data-on:change="${reget}" data-indicator:loadingcloser class="select w-auto font-medium">${opts}</select>
+  const selector = bloqueado
+    ? `<span class="badge badge-brand text-sm">${escape(cur || "—")}</span>`
+    : `<select data-bind="cdCloser" data-on:change="${reget}" data-indicator:loadingcloser class="select w-auto font-medium">${opts}</select>`;
+  const signals = bloqueado
+    ? `{cdFrom:${escape(jsStr(per.from || ""))},cdTo:${escape(jsStr(per.to || ""))}}`
+    : `{cdCloser:${escape(jsStr(cur))},cdFrom:${escape(jsStr(per.from || ""))},cdTo:${escape(jsStr(per.to || ""))}}`;
+  const controls = `<div class="flex flex-wrap items-center gap-3 mt-4" data-signals="${signals}">
+    ${selector}
     <input type="date" data-bind="cdFrom" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
     <span style="color:var(--text-3)">~</span>
     <input type="date" data-bind="cdTo" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
