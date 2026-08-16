@@ -171,7 +171,7 @@ visor).
 | Cerebro caído cuando Marketico reporta | Marketico loguea y sigue; se pierde ese auto-reporte, el cron lo cubre |
 | Token inválido en el hook | 401, no se escribe nada |
 | GHL caído durante el cron | Corrida `estado='error'`, sin drift inventado |
-| sqlite bloqueada | Reintento corto; el hook responde 204 igual (el payload se loguea a stderr como último recurso) |
+| sqlite bloqueada | Reintento vía `busy_timeout` 5 s; si aun así falla, el hook responde 500 y el payload queda en stderr (nunca se pierde) |
 | Vars de env ausentes en Marketico | No reporta, warn una vez |
 
 ## Testing

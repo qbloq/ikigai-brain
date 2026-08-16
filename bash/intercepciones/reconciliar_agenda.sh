@@ -16,6 +16,25 @@
 # estado='error' y el detalle del stderr, SIN filas de drift, y se sigue con
 # el siguiente calendario. Un 0 inventado borraría la agenda entera del día.
 #
+# ⚠️ LA VENTANA ES UNA SOLA, y se aplica a los DOS lados con las mismas fechas
+# Bogotá (VENT_DESDE..VENT_HASTA, día completo). GHL filtra por su cuenta con
+# epoch-millis y devuelve citas FUERA de lo pedido (filtro grueso del server),
+# y el SQL usaba `now()-1d` — dos ventanas distintas fabrican drift espurio en
+# los bordes: una cita de hoy-1 a las 09:00 entraba por GHL y no por la DB.
+# Ahora el python descarta los eventos cuyo minuto Bogotá cae fuera, y el SQL
+# usa esas mismas fechas sobre el reloj literal.
+# ⚠️ El lado DB trae TODOS los status (no solo scheduled/cancelled): una
+# llamada que ya ocurrió está 'ended'/'completed' y NO es un faltante. Solo
+# 'cancelled' cuenta como «no agendada»; cualquier otro status pareado con una
+# cita viva es `coinciden`. Y solo las 'scheduled' entran al compare de minuto
+# (`horas_difieren`) y pueden salir como `sobra_en_db`: una reunión que ya pasó
+# no se puede «reagendar sin avisar».
+# ⚠️ SEGUNDA consulta por event_id (sin ventana): si una cita se reagendó, la
+# hora VIEJA de la DB puede caer fuera de la ventana y el par se clasificaría
+# `falta_en_db` con meeting_id null — quien lo repare a ciegas crearía un
+# duplicado en vez de mover la fila. Trayendo el meeting por id, ese caso sale
+# `horas_difieren` con su meeting_id real.
+#
 # uso: reconciliar_agenda.sh [--desde N] [--hasta N] [--dry-run] [--json]
 #   --desde/--hasta  días relativos a hoy (default: -1 y 30)
 #   --dry-run        imprime resumen + drift por stderr y NO escribe nada
@@ -28,7 +47,7 @@ source "$INT_DIR_SELF/lib.sh"
 source "$INT_DIR_SELF/../lib/common.sh"
 
 DESDE=-1; HASTA=30; DRY=0; FORMAT=table
-usage() { sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,41p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --desde) DESDE="$2"; shift 2 ;;
@@ -39,7 +58,8 @@ while [[ $# -gt 0 ]]; do
     *) echo "flag desconocido: $1" >&2; usage 1 ;;
   esac
 done
-# La ventana entra cruda al SQL (make_interval) — se valida que sea un entero.
+# La ventana ya no entra al SQL (ahora van las fechas Bogotá entrecomilladas),
+# pero sí a `date -d` y a la sonda GHL — se valida que sea un entero igual.
 [[ "$DESDE" =~ ^-?[0-9]+$ && "$HASTA" =~ ^-?[0-9]+$ ]] || {
   echo "--desde/--hasta deben ser enteros (días relativos a hoy)" >&2; exit 1; }
 
@@ -55,6 +75,7 @@ from datetime import datetime, timezone, timedelta
 pid, pnombre, cal, vent_desde, vent_hasta = sys.argv[1:6]
 ghl = json.loads(os.environ["GHL_JSON"])
 db = json.loads(os.environ["DB_JSON"])
+db_extra = json.loads(os.environ.get("DB_EXTRA_JSON") or "[]")
 
 BOG = timezone(timedelta(hours=-5))
 CANCELADOS = {"cancelled", "invalid", "noshow", "no-show"}
@@ -68,7 +89,25 @@ def bog_minuto(iso):
 def cancelado(e):
     return (e.get("appointmentStatus") or "").lower() in CANCELADOS
 
-ghl_por_id = {e["id"]: e for e in ghl if e.get("id")}
+def en_ventana(minuto):
+    # La MISMA ventana que el SQL: fechas Bogota, dia completo en los dos bordes.
+    return minuto is not None and vent_desde <= minuto[:10] <= vent_hasta
+
+# GHL filtra grueso: devuelve eventos fuera de la ventana pedida. Se descartan
+# aca para que los dos lados comparen el mismo conjunto de dias.
+ghl_por_id = {}
+fuera = 0
+for e in ghl:
+    if not e.get("id"):
+        continue
+    if not en_ventana(bog_minuto(e.get("startTime"))):
+        fuera += 1
+        continue
+    ghl_por_id[e["id"]] = e
+if fuera:
+    sys.stderr.write("aviso: {} eventos GHL fuera de la ventana {}..{} descartados en {}\n".format(
+        fuera, vent_desde, vent_hasta, pnombre))
+
 con_appt = [m for m in db if m.get("event_id")]
 db_por_appt = {m["event_id"]: m for m in con_appt}
 # Dos meetings con el mismo event_id se colapsan en el dict y el segundo gana
@@ -82,6 +121,11 @@ if len(con_appt) != len(db_por_appt):
         vistos.add(m["event_id"])
     sys.stderr.write("aviso: {} meetings con event_id duplicado en {} -> {}\n".format(
         len(con_appt) - len(db_por_appt), pnombre, ", ".join(sorted(set(dupes)))))
+# Los meetings traidos por event_id SIN filtro de ventana (segunda consulta):
+# rellenan los pares cuya hora vieja quedo afuera. La fila de ventana gana.
+for m in db_extra:
+    if m.get("event_id") and m["event_id"] not in db_por_appt:
+        db_por_appt[m["event_id"]] = m
 vivos = {i: e for i, e in ghl_por_id.items() if not cancelado(e)}
 
 drift = []
@@ -94,11 +138,15 @@ for i in sorted(vivos):
     ghl_min = bog_minuto(e.get("startTime"))
     det = {"titulo": e.get("title"), "ghl_inicio_bogota": ghl_min,
            "estado_ghl": e.get("appointmentStatus"), "contact_id": e.get("contactId")}
-    if m is None or m["status"] != "scheduled":
+    # Solo 'cancelled' (o la ausencia) es un faltante. Una llamada que ya
+    # ocurrio ('ended'/'completed'/...) esta agendada, no falta.
+    if m is None or m["status"] == "cancelled":
         det["estado_db"] = m["status"] if m else "ausente"
         drift.append({"tipo": "falta_en_db", "appointment_id": i,
                       "meeting_id": m["id"] if m else None, "detalle": det})
-    elif m["inicio_bogota"] != ghl_min:
+    # Solo las 'scheduled' pueden estar «reagendadas sin avisar»: en una que ya
+    # paso, las horas de GHL pueden diferir legitimamente y no es drift.
+    elif m["status"] == "scheduled" and m["inicio_bogota"] != ghl_min:
         det["db_inicio_bogota"] = m["inicio_bogota"]
         drift.append({"tipo": "horas_difieren", "appointment_id": i,
                       "meeting_id": m["id"], "detalle": det})
@@ -218,20 +266,45 @@ while IFS=$'\t' read -r CAL PID PNOMBRE <&3; do
   fi
 
   # --- lado DB (reloj literal = Bogotá; ver el ⚠️ de la cabecera) ------------
+  # Mismas fechas que el filtro del python sobre GHL, día completo en los dos
+  # bordes, y TODOS los status (el python decide qué significa cada uno).
   DB_JSON="$(psql_ro -t -A -c "
     SELECT coalesce(json_agg(row_to_json(q)), '[]'::json) FROM (
       SELECT m.id, m.event_id, m.status, m.name,
         to_char(m.scheduled_start_time AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI') AS inicio_bogota
       FROM meetings m
       WHERE m.meeting_type = 'call' AND m.project_id = '${PID//\'/\'\'}'
-        AND m.status IN ('scheduled','cancelled')
-        AND m.scheduled_start_time AT TIME ZONE 'UTC'
-            BETWEEN (now() AT TIME ZONE 'America/Bogota') + make_interval(days => $DESDE)
-                AND (now() AT TIME ZONE 'America/Bogota') + make_interval(days => $HASTA)
+        AND m.scheduled_start_time AT TIME ZONE 'UTC' >= $(sql_lit "$VENT_DESDE")::timestamp
+        AND m.scheduled_start_time AT TIME ZONE 'UTC' <  ($(sql_lit "$VENT_HASTA")::timestamp + interval '1 day')
     ) q;")"
 
+  # --- lado DB, segunda pasada: los meetings de ESAS citas, sin ventana ------
+  # Los ids de GHL son opacos; se validan contra ^[A-Za-z0-9_-]+$ en python y
+  # otra vez en bash antes de tocar el SQL (y aun así van entrecomillados).
+  IDS_SQL="$(GHL_JSON="$GHL_JSON" python3 -c '
+import json, os, re, sys
+ok = re.compile(r"^[A-Za-z0-9_-]+$")
+ids = sorted({e["id"] for e in json.loads(os.environ["GHL_JSON"])
+              if e.get("id") and ok.match(str(e["id"]))})
+sys.stdout.write(", ".join("\x27" + i.replace("\x27", "\x27\x27") + "\x27" for i in ids))')"
+  DB_EXTRA_JSON='[]'
+  if [[ -n "$IDS_SQL" ]]; then
+    if [[ "$IDS_SQL" =~ ^\'[A-Za-z0-9_-]+\'(,\ \'[A-Za-z0-9_-]+\')*$ ]]; then
+      DB_EXTRA_JSON="$(psql_ro -t -A -c "
+        SELECT coalesce(json_agg(row_to_json(q)), '[]'::json) FROM (
+          SELECT m.id, m.event_id, m.status, m.name,
+            to_char(m.scheduled_start_time AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI') AS inicio_bogota
+          FROM meetings m
+          WHERE m.meeting_type = 'call' AND m.project_id = '${PID//\'/\'\'}'
+            AND m.event_id IN ($IDS_SQL)
+        ) q;")"
+    else
+      echo "aviso: lista de appointment_id no válida, se omite la consulta por id ($PNOMBRE)" >&2
+    fi
+  fi
+
   # --- comparación -----------------------------------------------------------
-  OUT="$(GHL_JSON="$GHL_JSON" DB_JSON="$DB_JSON" \
+  OUT="$(GHL_JSON="$GHL_JSON" DB_JSON="$DB_JSON" DB_EXTRA_JSON="$DB_EXTRA_JSON" \
     python3 -c "$PY_COMPARA" "$PID" "$PNOMBRE" "$CAL" "$VENT_DESDE" "$VENT_HASTA")"
 
   # --- persistencia: corrida + drift en UNA transacción ----------------------

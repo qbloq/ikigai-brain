@@ -42,9 +42,13 @@ function tokenValido(header) {
 
 const lit = (v) => (v == null ? "NULL" : `'${String(v).replace(/'/g, "''")}'`);
 
+// -cmd '.timeout 5000': busy timeout de 5 s. El cron de reconciliación escribe
+// la MISMA sqlite; sin esto, un POST que llega mientras la otra txn tiene el
+// lock muere al instante con «database is locked» y se va por el catch (500).
+// Dot-command y no `PRAGMA busy_timeout`, que imprimiría su valor en stdout.
 function sqlite(sql) {
   fs.mkdirSync(path.dirname(DB()), { recursive: true });
-  execFileSync("sqlite3", [DB()], { input: sql, encoding: "utf8" });
+  execFileSync("sqlite3", ["-cmd", ".timeout 5000", DB()], { input: sql, encoding: "utf8" });
 }
 
 // Schema idempotente al boot — el receptor no depende de que bash pasara antes.

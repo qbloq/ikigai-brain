@@ -26,13 +26,19 @@ int_es_local() { [[ -n "${INTERCEPCIONES_DB:-}" || -f "$INT_DB_LOCAL" || "$REPO_
 # -bail: sin él el CLI de sqlite3 IMPRIME el error y SIGUE, así que una txn
 # con un statement fallido comitea a medias — y bajo concurrencia un
 # (SELECT max(id) FROM …) colgaría filas de la corrida de otro proceso.
+# -cmd '.timeout 5000': busy timeout de 5 s — el hook (viz/hooks.js) y el cron
+# escriben la MISMA db, y sin esto el segundo muere al instante con
+# «database is locked» en vez de esperar el fsync del otro. Va como dot-command
+# y NO como PRAGMA a propósito: `PRAGMA busy_timeout=5000` IMPRIME su valor
+# (con -json, un `[{"timeout":5000}]` extra que rompe a quien parsea stdout);
+# `.timeout` es silencioso.
 int_sql() {
   local flags=(); [[ "${1:-}" == "-json" ]] && flags=(-json)
   if int_es_local; then
     mkdir -p "$(dirname "$INT_DB_LOCAL")"
-    { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 -bail "${flags[@]}" "$INT_DB_LOCAL"
+    { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 -bail -cmd '.timeout 5000' "${flags[@]}" "$INT_DB_LOCAL"
   else
-    ssh "$INT_SSH" "mkdir -p '$INT_DIR/data/sqlite' && { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 -bail ${flags[*]:-} '$INT_DB_REMOTA'"
+    ssh "$INT_SSH" "mkdir -p '$INT_DIR/data/sqlite' && { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 -bail -cmd '.timeout 5000' ${flags[*]:-} '$INT_DB_REMOTA'"
   fi
 }
 
