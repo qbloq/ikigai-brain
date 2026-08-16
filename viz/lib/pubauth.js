@@ -17,6 +17,7 @@ function firmarJWT(payload, secret, { expSeg = 3600 } = {}) {
 
 function verifyJWT(token, secret) {
   if (!token || typeof token !== "string") return null;
+  if (!secret || typeof secret !== "string") return null;
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [h, p, sig] = parts;
@@ -27,8 +28,13 @@ function verifyJWT(token, secret) {
   } catch {
     return null;
   }
-  if (!header || header.alg !== "HS256") return null;
-  const expected = crypto.createHmac("sha256", secret).update(`${h}.${p}`).digest("base64url");
+  if (!header || header.alg !== "HS256" || !payload || typeof payload !== "object") return null;
+  let expected;
+  try {
+    expected = crypto.createHmac("sha256", secret).update(`${h}.${p}`).digest("base64url");
+  } catch {
+    return null;
+  }
   const a = Buffer.from(sig), b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
   if (payload.exp != null && payload.exp * 1000 <= Date.now()) return null;
@@ -52,14 +58,18 @@ const cookieBorrar = () => `${COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=
 const AUTH_URL = () => process.env.MARKETICO_AUTH_URL || "https://ikigaigm.api.parallelo.ai/api/auth/login";
 
 async function loginMarketico(email, password) {
-  const res = await fetch(AUTH_URL(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) return null;
-  const data = await res.json().catch(() => null);
-  return (data && data.success && data.data && data.data.token) || null;
+  try {
+    const res = await fetch(AUTH_URL(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    return (data && data.success && data.data && data.data.token) || null;
+  } catch {
+    return null;
+  }
 }
 
 module.exports = { COOKIE, firmarJWT, verifyJWT, parseCookies, cookieSesion, cookieBorrar, loginMarketico };
