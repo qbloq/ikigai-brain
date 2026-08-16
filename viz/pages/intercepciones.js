@@ -81,8 +81,13 @@ function renderIntercepciones(ui) {
   const drift = data.drift || [];
 
   // Freshness: si la última corrida tiene más de 2h, el cron está caído.
+  // corrida_at ya trae Z literal (strftime %Y-%m-%dT%H:%M:%fZ del schema) —
+  // parsear directo, sin concatenar otra Z (eso daba "...ZZ" → Date.parse
+  // NaN → la alerta nunca podía renderizar). Defensivo: parse no-finito = sin
+  // alerta, nunca NaN en el texto.
   const masReciente = corridas.map((c) => c.corrida_at).sort().pop();
-  const horasSin = masReciente ? (Date.now() - Date.parse(masReciente + "Z")) / 36e5 : null;
+  const parsedReciente = masReciente ? Date.parse(masReciente) : NaN;
+  const horasSin = Number.isFinite(parsedReciente) ? (Date.now() - parsedReciente) / 36e5 : null;
   const alerta = horasSin != null && horasSin > 2
     ? `<div class="alert alert-neg mb-4">La reconciliación no corre hace ${horasSin.toFixed(1)}h — revisar el cron «intercepciones-cron».</div>`
     : "";
