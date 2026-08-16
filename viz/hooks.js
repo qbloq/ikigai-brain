@@ -50,7 +50,7 @@ function sqlite(sql) {
 // Schema idempotente al boot — el receptor no depende de que bash pasara antes.
 sqlite(fs.readFileSync(SCHEMA, "utf8"));
 
-function guardar(body) {
+function guardar(body, raw) {
   const c = body.contacto || {};
   sqlite(`INSERT INTO crm_webhook
     (appointment_id, location_id, estado_cita, contacto, email, telefono,
@@ -61,7 +61,7 @@ function guardar(body) {
       ${lit(body.resultado == null ? null : JSON.stringify(body.resultado))},
       ${lit(body.error == null ? null : JSON.stringify(body.error))},
       ${Number.isFinite(body.duracion_ms) ? Math.round(body.duracion_ms) : "NULL"},
-      ${lit(JSON.stringify(body))});`);
+      ${lit(raw)});`);
 }
 
 const MAX_BODY = 512 * 1024; // el booking crudo de GHL viaja completo
@@ -92,7 +92,7 @@ const server = http.createServer(async (req, res) => {
       try { body = JSON.parse(raw); } catch { return fin(400, "JSON inválido"); }
       if (typeof body.ok !== "boolean") return fin(400, "falta ok:boolean");
       try {
-        guardar(body);
+        guardar(body, raw);
       } catch (e) {
         // Último recurso: el payload no se pierde aunque la sqlite esté trabada.
         console.error(`[hooks] sqlite falló (${e.message}); payload: ${raw.slice(0, 2000)}`);
