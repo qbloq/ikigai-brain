@@ -20,9 +20,9 @@ CORRIDAS="$(echo "WITH ultimas AS (SELECT max(id) AS id FROM corridas GROUP BY g
          coinciden, discrepancias, estado, detalle
   FROM corridas WHERE id IN (SELECT id FROM ultimas) ORDER BY proyecto;" | int_sql -json)"
 DRIFT="$(echo "WITH ultimas AS (SELECT max(id) AS id FROM corridas WHERE estado='ok' GROUP BY ghl_calendar_id)
-  SELECT d.corrida_id, c.projeto, d.tipo, d.appointment_id, d.meeting_id, d.detalle
+  SELECT d.corrida_id, c.proyecto, d.tipo, d.appointment_id, d.meeting_id, d.detalle
   FROM drift d JOIN corridas c ON c.id = d.corrida_id
-  WHERE d.corrida_id IN (SELECT id FROM ultimas) ORDER BY c.projeto, d.tipo;" | int_sql -json)"
+  WHERE d.corrida_id IN (SELECT id FROM ultimas) ORDER BY c.proyecto, d.tipo;" | int_sql -json)"
 
 python3 -c '
 import json, sys
