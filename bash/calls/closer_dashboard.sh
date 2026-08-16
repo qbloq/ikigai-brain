@@ -87,15 +87,17 @@ fi
 # Cada dominio filtra la ventana por SU fecha natural: llamadas por agenda,
 # planes por inicio, cobros por pago, comisiones por creación.
 mwhere="m.meeting_type='call' AND r.meeting_id IS NOT NULL"
-pwhere="true" cwhere="true" iwhere=""
+pwhere="true" cwhere="true" iwhere="" sinfechas="true"
 [[ -n "$from" ]] && { mwhere="$mwhere AND m.scheduled_start_time::date >= '$from'"
                       pwhere="$pwhere AND pp.start_date >= '$from'"
                       cwhere="$cwhere AND cp.created_at::date >= '$from'"
-                      iwhere="$iwhere AND i.payment_date >= '$from'"; }
+                      iwhere="$iwhere AND i.payment_date >= '$from'"
+                      sinfechas="$sinfechas AND m.scheduled_start_time::date >= '$from'"; }
 [[ -n "$to" ]]   && { mwhere="$mwhere AND m.scheduled_start_time::date <= '$to'"
                       pwhere="$pwhere AND pp.start_date <= '$to'"
                       cwhere="$cwhere AND cp.created_at::date <= '$to'"
-                      iwhere="$iwhere AND i.payment_date <= '$to'"; }
+                      iwhere="$iwhere AND i.payment_date <= '$to'"
+                      sinfechas="$sinfechas AND m.scheduled_start_time::date <= '$to'"; }
 # Cuotas del periodo: cada grupo entra por SU fecha natural — las programadas
 # por vencimiento, las pagadas por fecha de pago. Sobre TODOS los planes del
 # closer (una cuota que vence hoy puede ser de un plan viejo).
@@ -266,7 +268,33 @@ cuotas AS (
     AND ($cashpred)
     $cmpproj_p
     AND ((i.status <> 'Paid' AND $cuotapend) OR (i.status = 'Paid' AND $cuotapag))
-)
+),
+-- Llamadas SIN REPORTAR: ya empezaron (reloj literal — la advertencia de tz de
+-- CLAUDE.md) y su status no llegó ni a completed ni a confirmed. Es la cola
+-- del resultado del closer (el «¿cómo terminó?» del escenario 3).
+sinrep AS (
+  SELECT m.id, m.scheduled_start_time AS ts, m.status,
+         regexp_replace(m.name, ' *[-|–] *.*\$', '') AS lead,
+         pr7.name AS proyecto, cl.closer, cl.closer_uid
+  FROM meetings m
+  LEFT JOIN projects pr7 ON pr7.id = m.project_id
+  LEFT JOIN LATERAL (
+    SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer,
+           u.id AS closer_uid
+    FROM crm_contacts c3
+    JOIN crm_opportunities o3 ON o3.contact_id = c3.id
+    JOIN users u   ON u.id = o3.user_id
+    JOIN persons p ON p.person_id = u.person_id
+    WHERE c3.ghl_contact_id = m.event->'booking'->>'contact_id'
+    ORDER BY (o3.project_id = m.project_id) DESC, o3.created_date DESC NULLS LAST
+    LIMIT 1) cl ON true
+  WHERE m.meeting_type='call'
+    AND m.status NOT IN ('completed','confirmed')
+    AND (m.scheduled_start_time AT TIME ZONE 'UTC') <= (now() AT TIME ZONE 'America/Bogota')
+    AND $sinfechas
+    $cmpproj_m
+),
+sinrepsel AS (SELECT c.* FROM sinrep c, pick WHERE $cmppred)
 SELECT json_build_object(
   'corte',   to_char(current_date,'YYYY-MM-DD'),
   'closer',  $closer_expr,
@@ -312,6 +340,12 @@ SELECT json_build_object(
       SELECT left(id::text,8) AS id, to_char(ts,'YYYY-MM-DD') AS fecha, lead, programa, proyecto,
              round(bant)::int AS bant, st AS status
       FROM v WHERE bant >= 70 AND resultado='seguimiento') t), '[]'::json),
+  'sin_reportar', coalesce((SELECT json_agg(t) FROM (
+      SELECT left(id::text,8) AS id,
+             to_char(ts AT TIME ZONE 'UTC','YYYY-MM-DD') AS fecha,
+             to_char(ts AT TIME ZONE 'UTC','HH24:MI')    AS hora,
+             lead, proyecto, status
+      FROM sinrepsel ORDER BY ts DESC) t), '[]'::json),
   'cuotas', coalesce((SELECT json_agg(t) FROM (
       SELECT grupo,
              to_char(due_date,'YYYY-MM-DD')     AS vence,

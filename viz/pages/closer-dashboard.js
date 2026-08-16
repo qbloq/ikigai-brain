@@ -228,6 +228,29 @@ function renderCloserDashboard(ui) {
           { empty: "Sin llamadas agendadas hoy." }
         );
 
+  // Llamadas SIN REPORTAR (ni completed ni confirmed, ya empezadas): la cola
+  // del «¿cómo terminó?». El dropdown de resultado es INOCUO por ahora —
+  // placeholder del cableado al back (la cola `resultados` del escenario 3);
+  // al integrarlo, el write va por bash/ + acción declarada, no aquí.
+  const sinRep = d.sin_reportar || [];
+  const RESULTADOS = ["Venta", "Seguimiento", "No Califica", "No Show"];
+  const dropResultado = `<select class="select w-auto text-xs" title="Confirmar resultado — próximamente">
+      <option value="" selected>Confirmar…</option>
+      ${RESULTADOS.map((r) => `<option>${r}</option>`).join("")}
+    </select>`;
+  const tSinRep = tbl(
+    ["Fecha", "Hora", "Lead", "Proyecto", "Estado", "Resultado"],
+    sinRep.map((r) => [
+      `<span class="tabular-nums text-xs">${escape(r.fecha || "")}</span>`,
+      `<span class="tabular-nums text-xs">${escape(r.hora || "")}</span>`,
+      `<span class="font-medium">${escape(r.lead || "—")}</span>`,
+      `<span class="text-xs">${escape(r.proyecto || "—")}</span>`,
+      `<span class="badge badge-neutral">${escape(r.status || "—")}</span>`,
+      dropResultado,
+    ]),
+    { empty: "Nada sin reportar en el periodo." }
+  );
+
   // Cuotas del periodo, con filtro de estado OBLIGATORIO (no hay «todas»):
   // programadas (por vencimiento) o pagadas (por fecha de pago). El filtro es
   // presentación pura — ambos grupos viajan en d.cuotas y el segmentado solo
@@ -437,6 +460,9 @@ function renderCloserDashboard(ui) {
 
       ${section("Llamadas de hoy")}
       ${tHoy}
+
+      ${section("Llamadas sin reportar", `${num(sinRep.length)} llamadas que ya pasaron sin resultado confirmado`)}
+      ${tSinRep}
 
       ${cuotasHdr}
       ${tCuotas}
