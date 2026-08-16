@@ -165,6 +165,12 @@ Todos con `--json` y `-h`, mismo contrato que el resto de `bash/`.
 
 ## Fuera de alcance (YAGNI declarado)
 
+- **Fragments `/c/` — no se montan en v1.** El piloto re-renderiza por
+  `GET /ui/:id`; montar frags genéricos abriría autorización a nivel de fila
+  que el modelo v1 no gobierna. Regla operativa: solo se publican UIs
+  autosuficientes (sin blocks con frags). Problema, opciones y recomendación
+  (capability por fila firmada en el render):
+  [docs/viz-publish-fragmentos.md](../../viz-publish-fragmentos.md).
 - Auto-deploy por push (webhook) — `desplegar.sh` manual basta hoy.
 - Rate-limiting, 2FA, refresh tokens — el login de Marketico es el que es.
 - Editar/crear UIs desde producción — jamás: el taller es local.
