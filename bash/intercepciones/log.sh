@@ -12,7 +12,7 @@ while [[ $# -gt 0 ]]; do
     --solo-errores) SOLO_ERR=1; shift ;;
     --limit) LIMIT="$2"; shift 2 ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,4p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "flag desconocido: $1" >&2; exit 1 ;;
   esac
 done
@@ -20,11 +20,22 @@ done
 W="1=1"
 [[ -n "$DESDE" ]] && W="$W AND recibido_at >= $(sql_lit "$DESDE")"
 (( SOLO_ERR )) && W="$W AND ok = 0"
-LIM=""; [[ "$LIMIT" != "0" ]] && LIM="LIMIT ${LIMIT//[^0-9]/}"
+
+# Sanitizar --limit: solo dígitos, default a 50 si vacío, pero preservar 0 (sin cap)
+LIMIT_CLEAN="${LIMIT//[^0-9]/}"
+if [[ "$LIMIT" == "0" ]]; then
+  LIM=""
+elif [[ -z "$LIMIT_CLEAN" ]]; then
+  LIM="LIMIT 50"
+else
+  LIM="LIMIT $LIMIT_CLEAN"
+fi
 
 SQL="SELECT id, recibido_at, appointment_id, estado_cita, contacto, email,
        start_time, ok, resultado, error, duracion_ms
      FROM crm_webhook WHERE $W ORDER BY recibido_at DESC $LIM;"
 
-if [[ "$FORMAT" == "json" ]]; then echo "$SQL" | int_sql -json
+if [[ "$FORMAT" == "json" ]]; then
+  OUT="$(echo "$SQL" | int_sql -json)"
+  printf '%s' "${OUT:-[]}"
 else echo -e ".mode column\n.headers on\n$SQL" | int_sql; fi

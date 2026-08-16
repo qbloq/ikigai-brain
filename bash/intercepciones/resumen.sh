@@ -5,7 +5,7 @@
 # uso: resumen.sh [--json]   (--json aceptado por consistencia; siempre emite JSON)
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
-[[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+[[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 
 WEBHOOK="$(echo "SELECT
     sum(CASE WHEN recibido_at >= datetime('now','-1 day') THEN 1 ELSE 0 END) AS h24,

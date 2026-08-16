@@ -10,7 +10,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --historia) HISTORIA=1; shift ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,4p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "flag desconocido: $1" >&2; exit 1 ;;
   esac
 done
@@ -29,5 +29,7 @@ else
        ORDER BY c.proyecto, d.tipo;"
 fi
 
-if [[ "$FORMAT" == "json" ]]; then echo "$SQL" | int_sql -json
+if [[ "$FORMAT" == "json" ]]; then
+  OUT="$(echo "$SQL" | int_sql -json)"
+  printf '%s' "${OUT:-[]}"
 else echo -e ".mode column\n.headers on\n$SQL" | int_sql; fi
