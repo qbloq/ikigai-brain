@@ -465,10 +465,10 @@ con picos 10-12 y 17-19 (calca la rutina, ~10% del volumen); usa Centralize,
 publica estado por bloque horario y su ficha tiene formato propio
 (`Nombre | Correo | Numero | Closer | Hora | Presupuesto`).
 
-⚠️ **Identidad sin resolver contra el sistema** (cruce 2026-08-16 vs
-`team_members`): no existe ningún «Antonio Buelvas» en la DB — el setter
-estructural del equipo no está registrado. §2 lo tenía como «probablemente
-Cristian Buelvas» (que figura como *Closer*); son hipótesis en conflicto.
-Anthony Velásquez figura como *Closer*, no como Setter, y el rol Setter de la
-DB apunta a Mateo Restrepo — que en el grupo opera como closer. Tres higienes
-de roster pendientes antes de craftear el rol Setter/Confirmador.
+**Identidades resueltas (Santiago, 2026-08-16):** «Antonio Buelvas» ES
+**Cristian Antonio Buelvas** — la hipótesis de §2 era correcta; una sola
+persona, el setter estructural. En la DB figura como *Closer* (higiene
+pendiente: su rol operativo es Setter/Confirmador). Mateo Restrepo ya fue
+re-rolado en la DB: *Setter* → *Closer* (su rol real en el grupo). Anthony
+Velásquez sigue como *Closer* en la DB siendo el segundo setter — misma
+higiene pendiente que Cristian.
