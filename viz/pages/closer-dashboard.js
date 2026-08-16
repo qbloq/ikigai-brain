@@ -14,7 +14,7 @@
 // juntas es lo que permite verles la costura.
 
 const { fetchSource } = require("../lib/datasources");
-const { escape, jsStr } = require("../lib/kit");
+const { escape, jsStr, checkCtl } = require("../lib/kit");
 
 const TONE = { pos: "var(--pos-text)", neg: "var(--neg-text)", cau: "var(--cau-text)", brand: "var(--text-brand)", muted: "var(--text-3)" };
 
@@ -138,12 +138,16 @@ function renderCloserDashboard(ui) {
   const signals = bloqueado
     ? `{cdFrom:${escape(jsStr(per.from || ""))},cdTo:${escape(jsStr(per.to || ""))}}`
     : `{cdCloser:${escape(jsStr(cur))},cdFrom:${escape(jsStr(per.from || ""))},cdTo:${escape(jsStr(per.to || ""))}}`;
-  const controls = `<div class="flex flex-wrap items-center gap-3 mt-4" data-signals="${signals}">
+  // La página abre con los filtros (decisión 2026-08-16: sin título ni
+  // subtítulo); el corte y el «abrir solo» viven en esta misma línea.
+  const controls = `<div class="flex flex-wrap items-center gap-3" data-signals="${signals}">
     ${selector}
     <input type="date" data-bind="cdFrom" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
     <span style="color:var(--text-3)">~</span>
     <input type="date" data-bind="cdTo" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
     <span class="text-xs" style="color:var(--text-3)">sin fechas = toda la historia</span>
+    <span class="badge badge-neutral ml-auto">corte ${escape(d.corte || "—")}</span>
+    <a href="/u/${escape(ui.id)}" target="_blank" class="text-xs hover:underline" style="color:var(--text-brand)">abrir solo ↗</a>
   </div>`;
 
   const kpisLlamada = `
@@ -177,7 +181,7 @@ function renderCloserDashboard(ui) {
   const cola = d.cola || [];
   const colaBorde = cola.filter((c) => Number(c.bant) < 81).length;
   const tCola = tbl(
-    ["BANT", "Fecha", "Lead", "Programa", "Proyecto", "Estado", "Llamada"],
+    ["BANT", "Fecha", "Lead", "Programa", "Proyecto", "Estado"],
     cola.map((c) => [
       `<span class="tabular-nums font-bold" style="color:${Number(c.bant) >= 81 ? TONE.neg : TONE.cau}">${num(c.bant)}</span>`,
       `<span class="tabular-nums text-xs">${escape(c.fecha || "")}</span>`,
@@ -185,7 +189,6 @@ function renderCloserDashboard(ui) {
       `<span class="text-xs">${escape(String(c.programa || "").slice(0, 60))}</span>`,
       `<span class="text-xs">${escape(c.proyecto || "—")}</span>`,
       `<span class="badge badge-neutral">${escape(c.status || "—")}</span>`,
-      `<code class="text-xs">${escape(c.id || "")}</code>`,
     ]),
     {
       empty: "La cola está vacía — nada de BANT alto se está enfriando.",
@@ -193,9 +196,14 @@ function renderCloserDashboard(ui) {
     }
   );
 
+  // Filtro de PRESENTACIÓN «solo NOT OVERCOME»: las filas superadas/pendientes
+  // llevan data-show="!$objNot" y el checkbox solo mueve la señal — sin
+  // re-fetch, así que funciona igual en el publicador (que no monta /c/).
+  const objs = d.objeciones || [];
+  const esNot = (s) => /not[\s_-]*overcome|no\s+superad/i.test(s || "");
   const tObj = tbl(
     ["Fecha", "Lead", "Estado", "Objeción", "Respuesta del closer", "Sugerencia IA"],
-    (d.objeciones || []).map((o) => [
+    objs.map((o) => [
       `<span class="tabular-nums text-xs">${escape(o.fecha || "")}</span>`,
       `<span class="text-xs font-medium">${escape(o.lead || "—")}</span>`,
       `<span class="badge ${/overcome|superad/i.test(o.status || "") && !/not/i.test(o.status || "") ? "badge-pos" : "badge-neutral"}">${escape(o.status || "—")}</span>`,
@@ -203,11 +211,14 @@ function renderCloserDashboard(ui) {
       `<span class="text-xs" style="color:var(--text-2)">${escape(String(o.respuesta || "").slice(0, 140))}</span>`,
       `<span class="text-xs" style="color:var(--text-3)">${escape(String(o.sugerencia || "").slice(0, 140))}</span>`,
     ]),
-    { empty: "Sin objeciones registradas en la ventana." }
+    {
+      empty: "Sin objeciones registradas en la ventana.",
+      rowAttrs: objs.map((o) => (esNot(o.status) ? "" : `data-show="!$objNot"`)),
+    }
   );
 
   const tVentas = tbl(
-    ["Inicio", "Cliente", "Proyecto", "Monto", "Cobrado", "Estado", "Plan"],
+    ["Inicio", "Cliente", "Proyecto", "Monto", "Cobrado", "Estado"],
     ((vn.recientes || [])).map((p) => [
       `<span class="tabular-nums text-xs">${escape(p.inicio || "")}</span>`,
       `<span class="font-medium">${escape(p.cliente || "—")}</span>`,
@@ -215,7 +226,6 @@ function renderCloserDashboard(ui) {
       `<span class="tabular-nums">${usd(p.monto)}</span>`,
       `<span class="tabular-nums" style="color:${(p.cobrado || 0) >= (p.monto || 0) ? TONE.pos : TONE.cau}">${usd(p.cobrado)}</span>`,
       `<span class="badge badge-neutral">${escape(p.estado || "—")}</span>`,
-      `<code class="text-xs">${escape(p.id || "")}</code>`,
     ]),
     { empty: "Sin planes de pago a su nombre en la ventana." }
   );
@@ -223,8 +233,9 @@ function renderCloserDashboard(ui) {
   // «sin data» es el balde RESIDUAL del resultado (el callStatus libre no matcheó
   // ningún patrón) y viene con score 0-1: análisis sobre llamadas sin transcript
   // usable. Como coaching es ruido — evalúa una conversación que no se midió —
-  // así que no se muestra. Filtro de PRESENTACIÓN: la fuente sigue emitiéndolas
-  // y el conteo de ocultas se declara abajo (nunca truncar en silencio).
+  // así que no se muestra. Filtro de PRESENTACIÓN: la fuente sigue emitiéndolas;
+  // el conteo de ocultas solo se declara en el estado vacío (decisión
+  // 2026-08-16: la sección va sin subtítulo).
   const coachTodas = d.coaching || [];
   const coachVis = coachTodas.filter(
     (c) => String(c.resultado || "").trim().toLowerCase() !== "sin data"
@@ -244,16 +255,6 @@ function renderCloserDashboard(ui) {
       <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
     </div>
     <div class="max-w-6xl mx-auto">
-      <div class="flex items-baseline gap-3 flex-wrap">
-        <h1 class="text-xl font-bold" style="color:var(--text-1)">${escape(ui.name || "Dashboard por closer")}</h1>
-        <span class="badge badge-brand">${escape(cur || "—")}</span>
-        <span class="badge badge-neutral">corte ${escape(d.corte || "—")}</span>
-        <a href="/u/${escape(ui.id)}" target="_blank" class="ml-auto text-xs hover:underline" style="color:var(--text-brand)">abrir solo ↗</a>
-      </div>
-      <p class="mt-1 text-sm" style="color:var(--text-3)">
-        La capa de operación de <code>docs/lead-score.md</code> §5 — para el Director Comercial.
-        El closer no ve bandas ni BANT: ve su cola ordenada, las respuestas textuales y su coaching.
-      </p>
       ${controls}
 
       ${section("La llamada", "lo que el analizador midió sobre sus llamadas con reporte")}
@@ -271,21 +272,14 @@ function renderCloserDashboard(ui) {
       ${section("Ventas recientes", "sus últimos planes de pago, con lo efectivamente cobrado")}
       ${tVentas}
 
-      ${section(
-        "Coaching por llamada",
-        `la evaluación del analizador — la parte que SÍ es del closer${
-          coachOcultas ? ` · ${coachOcultas} sin data ocultas` : ""
-        }`
-      )}
+      ${section("Coaching por llamada")}
       <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(24rem,1fr))">${coaching}</div>
 
-      ${section("Objeciones recientes", "cómo respondió y qué sugirió la IA — alimenta el protocolo de objeciones (S12.2)")}
+      <div class="flex items-baseline gap-3 mt-10 mb-3 flex-wrap" data-signals="{objNot:false}">
+        <h2 class="text-sm font-bold uppercase tracking-wider" style="color:var(--text-2);letter-spacing:var(--tr-micro)">Objeciones recientes</h2>
+        ${checkCtl("objNot", "solo NOT OVERCOME", "", { indicator: "" })}
+      </div>
       ${tObj}
-
-      <p class="mt-10 text-xs" style="color:var(--text-3)">
-        Fuente: <code>bash/calls/closer_dashboard.sh</code>. Resultado canónico y normalizaciones:
-        <code>bash/calls/lead_profile.sh</code>. La política de visibilidad: <code>docs/lead-score.md</code> §5.
-      </p>
     </div>
   </section>`;
 }
