@@ -18,16 +18,18 @@ sql_lit() { printf "'%s'" "${1//\'/\'\'}"; }
 
 # int_es_local : ¿la db vive en este checkout? (el override INTERCEPCIONES_DB
 # también cuenta como local — así los tests apuntan a un archivo temporal).
-int_es_local() { [[ -n "${INTERCEPCIONES_DB:-}" || -f "$INT_DB_LOCAL" ]]; }
+# También es local si estamos parados en el checkout del servidor ($REPO_ROOT == $INT_DIR).
+int_es_local() { [[ -n "${INTERCEPCIONES_DB:-}" || -f "$INT_DB_LOCAL" || "$REPO_ROOT" == "$INT_DIR" ]]; }
 
 # int_sql [-json] : ejecuta el SQL de stdin en la db del interceptor.
+# Antepone PRAGMA foreign_keys=ON a cada conexión para enforcement de FK.
 int_sql() {
   local flags=(); [[ "${1:-}" == "-json" ]] && flags=(-json)
   if int_es_local; then
     mkdir -p "$(dirname "$INT_DB_LOCAL")"
-    sqlite3 "${flags[@]}" "$INT_DB_LOCAL"
+    { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 "${flags[@]}" "$INT_DB_LOCAL"
   else
-    ssh "$INT_SSH" "mkdir -p '$INT_DIR/data/sqlite' && sqlite3 ${flags[*]:-} '$INT_DB_REMOTA'"
+    ssh "$INT_SSH" "mkdir -p '$INT_DIR/data/sqlite' && { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 ${flags[*]:-} '$INT_DB_REMOTA'"
   fi
 }
 
