@@ -8,8 +8,8 @@
 //
 //   GET  /:slug        render standalone del despliegue (auth + permiso)
 //   GET  /s/:codigo    alias corto → 302 /:slug
-//   GET  /ui/:specId   SSE re-render (los @get de las páginas) — params forzados
-//   GET  /u/:specId    «abrir solo» de las páginas → 302 /:slug
+//   GET  /ui/:slug     SSE re-render (los @get de las páginas) — params forzados
+//   GET  /u/:slug      «abrir solo» de las páginas → 302 /:slug
 //   GET|POST /login    página + proxy de credenciales a Marketico
 //   POST|GET /logout   borra la cookie
 //   GET  /health       liveness
@@ -45,22 +45,34 @@ const PUBLIC_FILES = new Set(["/datastar.js", "/chart.umd.js", "/charts-init.js"
 const RUTAS_RESERVADAS = new Set(["login", "logout", "health", "ui", "u", "c", "s", "api", "fonts"]);
 
 function send(res, status, body, type = "text/html; charset=utf-8", extra = {}) {
-  res.writeHead(status, { "Content-Type": type, ...extra });
+  res.writeHead(status, {
+    "Content-Type": type,
+    "Cache-Control": "private, no-store",
+    "X-Content-Type-Options": "nosniff",
+    ...extra,
+  });
   res.end(body);
 }
 const redirect = (res, to, extra = {}) => { res.writeHead(303, { Location: to, ...extra }); res.end(); };
 
+const MAX_BODY = 64 * 1024;
 function readBody(req) {
   return new Promise((resolve) => {
     let data = "";
-    req.on("data", (c) => (data += c));
-    req.on("end", () => resolve(data));
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    req.on("data", (c) => {
+      data += c;
+      if (data.length > MAX_BODY) { finish(""); req.destroy(); }
+    });
+    req.on("end", () => finish(data));
+    req.on("error", () => finish(""));
   });
 }
 
 // --- login ------------------------------------------------------------------
 // `next` solo puede ser una ruta interna simple — nunca una URL absoluta.
-const nextSeguro = (v) => (/^\/[a-zA-Z0-9\-/]*$/.test(v || "") ? v : "/");
+const nextSeguro = (v) => (/^\/(?!\/)[a-zA-Z0-9\-/]*$/.test(v || "") ? v : "/");
 
 function paginaLogin({ next = "/", error = "" } = {}) {
   const theme = loadTheme();
@@ -99,33 +111,35 @@ function uiRenderizable(despliegue, overrides, forzados) {
     overridable: overridableFor(spec),
     forzados,
   });
-  return { ...spec, params, _locked: locked };
-}
-
-// Busca entre los despliegues de un spec el primero al que payload tiene
-// permiso (resuelve /ui/:specId y /u/:specId — los links que emiten las páginas).
-function despliegueDeSpec(specId, payload) {
-  for (const d of pubstore.porSpecId(specId)) {
-    const forzados = accesoA(d, payload);
-    if (forzados !== null) return { despliegue: d, forzados };
-  }
-  return null;
+  // id reescrito al slug del despliegue: las páginas emiten sus propios
+  // @get('/ui/<id>') / @get('/u/<id>') tomando esto — deben apuntar al MISMO
+  // despliegue que se resolvió aquí, nunca a un spec ambiguo.
+  return { ...spec, id: despliegue.slug, params, _locked: locked };
 }
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const { pathname } = url;
+  let pathname = "(?)";
   try {
+    // Base fija: nunca interpolamos el Host del cliente en la construcción de
+    // la URL (un Host malformado/hostil no debe poder tumbar el proceso), y
+    // no usamos la parte host de todos modos.
+    const url = new URL(req.url, "http://localhost");
+    pathname = url.pathname;
+
     if (pathname === "/health") return send(res, 200, "ok", "text/plain");
 
     // --- assets (sin auth: la página de login los necesita) ---
     const isFont = /^\/fonts\/[a-z0-9._-]+\.(woff2|css)$/.test(pathname);
     if ((PUBLIC_FILES.has(pathname) || isFont) && req.method === "GET") {
       const file = path.join(__dirname, "public", pathname.slice(1));
-      const body = fs.readFileSync(file);
-      return send(res, 200, body, pathname.endsWith(".css") ? "text/css; charset=utf-8"
-        : pathname.endsWith(".woff2") ? "font/woff2" : "text/javascript; charset=utf-8",
-        { "Cache-Control": "public, max-age=86400" });
+      let body;
+      try { body = fs.readFileSync(file); } catch { return send(res, 404, "No encontrado", "text/plain"); }
+      res.writeHead(200, {
+        "Content-Type": pathname.endsWith(".css") ? "text/css; charset=utf-8"
+          : pathname.endsWith(".woff2") ? "font/woff2" : "text/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=86400",
+      });
+      return res.end(body);
     }
 
     // --- login / logout ---
@@ -159,21 +173,34 @@ const server = http.createServer(async (req, res) => {
       return send(res, 401, "Sesión requerida", "text/plain");
     }
 
-    // --- SSE re-render: los @get('/ui/<specId>?…') que emiten las páginas ---
+    // --- SSE re-render: los @get('/ui/<slug>?…') que emiten las páginas ---
+    // Resuelve por SLUG (no por specId): el spec en sí puede tener varios
+    // despliegues, y solo el slug identifica CUÁL — resolver por specId
+    // eligiendo cualquier despliegue permitido dejaba secuestrar el refresh
+    // con los params/identidad de un despliegue equivocado.
     if ((m = /^\/ui\/([a-z0-9-]+)$/.exec(pathname)) && req.method === "GET") {
-      const hit = despliegueDeSpec(m[1], payload);
-      if (!hit) return send(res, 404, "No encontrado", "text/plain");
-      const ui = uiRenderizable(hit.despliegue, Object.fromEntries(url.searchParams), hit.forzados);
-      pubstore.visita(hit.despliegue.slug, payload, req.url);
+      const d = pubstore.vigente(m[1]);
+      if (!d) return send(res, 404, "No encontrado", "text/plain");
+      const forzados = accesoA(d, payload);
+      if (forzados === null) return send(res, 404, "No encontrado", "text/plain");
+      const ui = uiRenderizable(d, Object.fromEntries(url.searchParams), forzados);
+      // Renderizar ANTES de abrir el stream: si renderPane tira, todavía
+      // podemos responder con un 404/500 normal — una vez que startSSE ya
+      // escribió cabeceras, un error solo puede cortar la conexión, jamás
+      // reintentar send().
+      const html = renderPane(ui);
+      pubstore.visita(d.slug, payload, req.url);
       startSSE(res);
-      patchElements(res, renderPane(ui));
+      patchElements(res, html);
       return res.end();
     }
 
     // --- «abrir solo ↗» de las páginas → la URL canónica del despliegue ---
     if ((m = /^\/u\/([a-z0-9-]+)$/.exec(pathname)) && req.method === "GET") {
-      const hit = despliegueDeSpec(m[1], payload);
-      return hit ? redirect(res, `/${hit.despliegue.slug}`) : send(res, 404, "No encontrado", "text/plain");
+      const d = pubstore.vigente(m[1]);
+      if (!d) return send(res, 404, "No encontrado", "text/plain");
+      const forzados = accesoA(d, payload);
+      return forzados !== null ? redirect(res, `/${d.slug}`) : send(res, 404, "No encontrado", "text/plain");
     }
 
     // --- la ruta legible: GET /<slug> ---
@@ -190,6 +217,13 @@ const server = http.createServer(async (req, res) => {
     return send(res, 404, "No encontrado", "text/plain");
   } catch (e) {
     console.error(`[publish] ${req.method} ${pathname}: ${e.message}`);
+    // Un error DESPUÉS de startSSE ya escribió cabeceras — llamar a send()
+    // acá tiraría ERR_HTTP_HEADERS_SENT y tumbaría el proceso. Cerrar la
+    // conexión a secas es lo único seguro en ese punto.
+    if (res.headersSent) {
+      try { res.end(); } catch { /* la conexión ya puede estar rota */ }
+      return;
+    }
     return send(res, 500, "Error interno", "text/plain");
   }
 });
