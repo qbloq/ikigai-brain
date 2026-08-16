@@ -289,7 +289,7 @@ sinrep AS (
     ORDER BY (o3.project_id = m.project_id) DESC, o3.created_date DESC NULLS LAST
     LIMIT 1) cl ON true
   WHERE m.meeting_type='call'
-    AND m.status NOT IN ('completed','confirmed')
+    AND m.status NOT IN ('completed','confirmed','cancelled')
     AND (m.scheduled_start_time AT TIME ZONE 'UTC') <= (now() AT TIME ZONE 'America/Bogota')
     AND $sinfechas
     $cmpproj_m
