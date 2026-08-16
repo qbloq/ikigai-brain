@@ -396,22 +396,20 @@ function renderCloserDashboard(ui) {
     <div class="max-w-6xl mx-auto">
       ${controls}
 
-      ${section("La llamada", "lo que el analizador midió sobre sus llamadas con reporte")}
-      <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))">${kpisLlamada}</div>
+      <div class="grid gap-3 mt-8" style="grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))">${kpisLlamada}</div>
 
-      ${section("La plata", "lo que de verdad pasó — planes, cuotas cobradas y su comisión (todo USD)")}
-      <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))">${kpisPlata}</div>
+      <div class="grid gap-3 mt-3" style="grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))">${kpisPlata}</div>
 
-      ${section("Llamadas de hoy", "su agenda del día — solo las confirmadas en el tablero")}
+      ${section("Llamadas de hoy")}
       ${tHoy}
 
-      ${section("Tramos BANT", "sus llamadas por banda de calificación — ceros (sin transcript) excluidos")}
+      ${section("Tramos BANT")}
       ${tTramos}
 
       ${section("Cola de seguimiento", `${num(k.cola_n)} llamadas de BANT ≥ 81 que quedaron en seguimiento y nunca cerraron — el dinero sobre la mesa${colaBorde ? ` (+${num(colaBorde)} de 70-80, sombreadas)` : ""}`)}
       ${tCola}
 
-      ${section("Ventas recientes", "sus últimos planes de pago, con lo efectivamente cobrado")}
+      ${section("Ventas recientes")}
       ${tVentas}
 
       ${section("Coaching por llamada")}
