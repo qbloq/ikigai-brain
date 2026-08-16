@@ -313,6 +313,80 @@ La cola real es el comando **sin** `--all`.
 formulario, el cuarto par va a nacer solo. Anular estos tres limpia el síntoma.
 **Es trabajo de Pablo (la app), no de la DB.**
 
+### 2026-08-14/16 — las 6 ventas perdidas de Mateo Restrepo ✅ EJECUTADA Y VERIFICADA
+
+SQL: [reparaciones-mateo-2026-08-14.sql](reparaciones-mateo-2026-08-14.sql) — una sola txn.
+El caso más grande del informe: **cinco veces** lo de Edwin/Kevin/Samuel.
+
+**Origen.** Mateo reportó por email una lista de 7 «clientes perdidos» desde el
+1-jun. Se verificaron uno a uno contra GHL (la fuente, 7.336 oportunidades de
+los 12 pipelines de DG + 500 de Andrea), contra `payment_plans` **por
+`customer_id`, no por nombre**, y contra el histórico COMPLETO del grupo
+(16.148 mensajes, feb→ago). Resultado: **6 reales, 1 sin sustento.**
+
+**El hueco estructural que lo delata:** Mateo pasó **35 días sin un solo plan de
+pago** (19-jun → 24-jul). Las seis ventas caen exactamente ahí. No dejó de
+vender: lo que vendió no entró al sistema.
+
+**El mecanismo, documentado en vivo.** El 10-jul 15h el chat registra a Mateo:
+«bro me ayudas, **se me bloqueó la app**» · «Esta que acabé de hacer **no se
+grabó**» → Pablo pregunta cuál → «**Iván Darío Giraldo Giraldo / como a las 3 y
+20**». Esa es la venta de 3.500 que GHL marca `won` ese mismo día. En la misma
+sesión Pablo está reparando el plan de Edwin (el 430 de §8), que nació ese día
+con los datos mal. **El 10-jul fue un día roto para todos** — Ayrton también
+reporta que las llamadas no se grababan.
+
+**Lo creado** (todo closer Mateo `3dd88377`, 1 cuota `Paid`, comisión `pending`):
+
+| Plan | Cliente | Monto | Producto | Fecha | Comisión |
+|------|---------|-------|----------|-------|----------|
+| 483 | Edilio Suazo | 699 | PA 3 meses | 22-jun | 69,90 |
+| 484 | Jonathan Marulanda Vásquez | 3.500 | PM Lite | 2-jul | 350,00 |
+| 485 | Vane de Jesús Ricciulli Rojas | 699 | PA 3 meses | 3-jul | 69,90 |
+| 486 | María Paula Niño Rincón | 1.000 | PA 6 meses | 8-jul | 100,00 |
+| 487 | Cristian Camilo Herrera Serna | 1.000 | PA 6 meses | 9-jul | 100,00 |
+| 488 | Iván Darío Giraldo Giraldo | 3.500 | PM Lite | 10-jul | 350,00 |
+| | | **$10.398** | | | **$1.039,80** |
+
+Mateo confirmó que las seis entraron en **un solo pago**. Verificado tras
+ejecutar: ninguna cayó en la cola de cobranza (correcto, cuota única `Paid`) y
+las 6 comisiones están en la cola de aprobación de `comisiones.sh`. **Julio
+sube a $84.106 cobrados** (102 cuotas).
+
+**Dos identidades que el cruce resolvió:**
+- **«Ilder Bonifacio» = Edilio Suazo** — el MISMO contacto GHL
+  (`dmy4MxvaQrMzSp2gV5V9`, mismo email y teléfono) tiene **dos oportunidades**:
+  «Ilder Bonifacio» (`open`, jun-**2025**) y «Edilio Suazo» (`won` 699,
+  jun-2026). Mateo mezcló el nombre de la ficha vieja con la fecha real.
+- **Renan Romero — NO existe la venta.** Contacto sí
+  (`1wdklKPpXbGqdLJFPZnu`, entró por «Formulario datos Funnel lead magnet 2»
+  el 13-may), pero **cero oportunidades** (verificado por `contactId` contra
+  las 7.336, no por nombre), cero llamadas (`contactId` buscado dentro de
+  `meetings.event`), cero menciones en 16.148 mensajes. Si cobró, fue
+  íntegramente fuera del sistema; la única evidencia posible es el comprobante.
+
+⚠️ **El bug de fondo sigue vivo y es más grande que Mateo.** El ingestor de GHL
+trae oportunidades nuevas pero **no refresca el `status` de las existentes**:
+Cristian Camilo, María Paula y Edilio figuraban `open` en el espejo cuando GHL
+ya decía `won` (uno desde el 23-jul). Antes de la sync manual del 14-ago había
+**288 `won` en el espejo contra 312 en GHL**. Esas ~24 ventas invisibles son la
+misma familia de agujero, y por el patrón de Mateo es probable que varias
+tampoco tengan plan. Correr la auditoría global —`won` en GHL sin
+`payment_plan`— es el siguiente paso, y arreglar el ingestor es de Pablo.
+
+**Herramienta que quedó:** `bash/ghl/contacts.sh --query` (búsqueda por nombre /
+email / teléfono vía `POST /contacts/search`). Resuelve en una llamada lo que
+antes exigía paginar ~2.000 contactos. Es la **única excepción** a la regla
+«solo GET» de `bash/ghl/`, autorizada por Santiago el 14-ago porque es un fetch
+que no crea ni modifica nada; documentada en `ghl_api_search` (lib/common.sh).
+Falta reflejarla en [bash/ghl/README.md](../bash/ghl/README.md).
+
+**Lección de método:** buscar por **nombre** falla en este CRM. «Vásquez» usa
+acento combinante (`%marulanda vás%` no matchea), GHL no encuentra un teléfono
+sin el `+`, y la misma persona vive bajo dos nombres. El identificador que
+nunca miente es el **`contactId`** — las 7.336 oportunidades lo traen, ninguna
+lo omite. Toda auditoría futura debe cruzar por ahí.
+
 ### 2026-08-13 — Miguel Lara: oportunidad sin dueño ✅ CORREGIDA EN LA FUENTE
 
 Prospecto con llamada agendada el 13-ago 9:00 (etiquetada a Carlos en el
@@ -345,3 +419,56 @@ Esquema `mensajes`: `id` (key.id Evolution), `ts/fecha/hora/dia_semana`
 *Límite del histórico: la instancia (`ParalleloFinal`, creada 2026-05-01,
 `syncFullHistory:false`) guarda desde que está conectada; más atrás de mayo
 2026 no hay datos.*
+
+## 10. El Setter / Call Confirmer — historial completo (2026-08-16)
+
+*Análisis sobre el historial visible completo del grupo (el history-sync
+alcanza hasta el 2026-02-02 — más atrás no hay copia; la nota de límite de §9
+quedó corta: el volcado ampliado llegó a febrero). Una sola conclusión: el rol
+no ha rotado en la ventana visible.*
+
+| Período | Setter | Evidencia |
+|---|---|---|
+| 2026-02-02 → hoy | **Antonio Buelvas** (LID `8165068402847`) | Ya el primer día del historial publicaba fichas «Confirmado Y calificado» y listas de «No Califica». **530 de ~575 fichas de lead de todo el historial (92%)**. Sin ausencias >3 días en 6,5 meses (los huecos de 2-3 días son fines de semana). Nadie lo cubrió nunca. |
+| 2026-08-03 → hoy | **Anthony** («A», LID `23424885883087`), segundo setter en entrenamiento | Luis F lo anuncia el 02-ago 21h («Mañana empezará Anthony»); el 03-ago le crean usuario en la app (Luis F → Pablo). Opera bajo validación de Antonio («cuando vayas a agendar una me envías un video y yo valido»). |
+
+**Antes del 2 de febrero no se puede saber** — es el techo del history-sync.
+Los dos LIDs que solo existen en febrero (`46596…` feb 2-16, `259592…` feb
+18-26) **parecen ser Pablo antes de su LID actual, no un setter**: secuencia
+perfecta (el LID actual de Pablo nace el 26-feb, justo cuando muere el
+segundo) y hablan como el dueño de la app («yo ya quité esa automation», «las
+cuotas de Floppy por qué están en rojo»). Coordinaba desde el CRM/app, no
+confirmando llamadas. *Inferencia — verificable preguntándole a Pablo.*
+
+**Funciones de Antonio (del propio chat):**
+
+1. Calificar y confirmar cada lead pre-llamada y publicar la ficha:
+   `name | phone | email | Confirmado y Calificado | presupuesto (700/1.5K/2K)
+   | fecha y hora | closer dueño («Es de Carlos - DG») | nota`. Los que no
+   pasan, con motivo («No Califica — no tiene dinero, indica que más adelante»).
+2. El resumen del día siguiente: «Leads Confirmados y Calificados DD/MM» —
+   la agenda completa de mañana por franja, casi siempre 17-20h (pico 18h).
+3. Gestionar la agenda viva: reagendas, buscar closer disponible, reportar
+   no-shows («Sebastián Díaz - No contestó»).
+4. **Cobrar los reportes post-llamada a los closers** («Quedó atento a los
+   reportes de hoy señores» + tags; «Aquí falta Daniela»).
+5. Higiene CRM/app con Pablo (desde febrero): leads que saltan a «llamada
+   confirmada» sin calificar, citas fuera del calendario del closer, ventas
+   que no están en la app.
+6. Desde agosto: entrenar a Anthony.
+
+**Rutinas.** Antonio: arranca 6-7am (confirmación de las llamadas de la
+mañana), carga fuerte 10-13h (fichas + confirmación del día siguiente), pico
+absoluto 18-19h (resumen + cobro de reportes). **Trabaja los 7 días** (sábado a
+media máquina, domingo a un cuarto — 161 mensajes en domingo). Anthony: 7am-7pm
+con picos 10-12 y 17-19 (calca la rutina, ~10% del volumen); usa Centralize,
+publica estado por bloque horario y su ficha tiene formato propio
+(`Nombre | Correo | Numero | Closer | Hora | Presupuesto`).
+
+⚠️ **Identidad sin resolver contra el sistema** (cruce 2026-08-16 vs
+`team_members`): no existe ningún «Antonio Buelvas» en la DB — el setter
+estructural del equipo no está registrado. §2 lo tenía como «probablemente
+Cristian Buelvas» (que figura como *Closer*); son hipótesis en conflicto.
+Anthony Velásquez figura como *Closer*, no como Setter, y el rol Setter de la
+DB apunta a Mateo Restrepo — que en el grupo opera como closer. Tres higienes
+de roster pendientes antes de craftear el rol Setter/Confirmador.
