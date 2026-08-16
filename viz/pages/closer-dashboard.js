@@ -197,6 +197,15 @@ function renderCloserDashboard(ui) {
   } catch (e) {
     agenda = null;
   }
+  // DUMMY (pedido 2026-08-16): fila de demo a las 12:00 para ver la sección
+  // poblada —y el botón de grabar en su franja— mientras el feature de
+  // grabación se define. QUITAR al cablear la grabación real.
+  if (Array.isArray(agenda)) {
+    agenda = [
+      { hora: "12:00", fin: "13:00", lead: "Lead de prueba (demo)", meet_url: "https://meet.google.com/abc-defg-hij" },
+      ...agenda,
+    ].sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
+  }
   const ahoraHM = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Bogota", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
   const ICON_MEET = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/></svg>`;
   const ICON_REC = `<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="var(--neg-solid)"/></svg>`;
