@@ -21,7 +21,7 @@ source "$(dirname "$0")/lib/common.sh"
 export GHL_API_VERSION=2021-04-15   # los endpoints de calendars viven en esta versión
 
 FORMAT=table; PROJECT=""; PROJECT_ID=""; CALENDAR=""; DESDE=-1; HASTA=30; LIMIT=0
-usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project) PROJECT="$2"; shift 2 ;;
