@@ -15,6 +15,7 @@
 
 const { fetchSource } = require("../lib/datasources");
 const { escape, jsStr, checkCtl } = require("../lib/kit");
+const { chartEl } = require("../blocks/charts");
 
 const TONE = { pos: "var(--pos-text)", neg: "var(--neg-text)", cau: "var(--cau-text)", brand: "var(--text-brand)", muted: "var(--text-3)" };
 
@@ -95,10 +96,23 @@ function coachCard(c) {
 }
 
 function renderCloserDashboard(ui) {
+  // Ventana por defecto: el mes actual (America/Bogota). Solo aplica cuando ni
+  // el spec ni el navegador traen fechas — un from o to explícito manda, y
+  // vaciar los inputs vuelve al mes (la historia completa se pide con un from
+  // viejo). El servidor tira los overrides vacíos, así que «ausente» es la
+  // única señal disponible.
+  const params = { ...(ui.params || {}) };
+  if (!params.from && !params.to) {
+    const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
+    const [y, m] = hoy.split("-").map(Number);
+    const fin = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    params.from = `${hoy.slice(0, 7)}-01`;
+    params.to = `${hoy.slice(0, 7)}-${String(fin).padStart(2, "0")}`;
+  }
   let d = {};
   let err;
   try {
-    const { rows } = fetchSource(ui.source || "closer_dashboard", ui.params || {});
+    const { rows } = fetchSource(ui.source || "closer_dashboard", params);
     d = rows[0] || {};
   } catch (e) {
     err = e.message;
@@ -145,7 +159,7 @@ function renderCloserDashboard(ui) {
     <input type="date" data-bind="cdFrom" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
     <span style="color:var(--text-3)">~</span>
     <input type="date" data-bind="cdTo" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
-    <span class="text-xs" style="color:var(--text-3)">sin fechas = toda la historia</span>
+    <span class="text-xs" style="color:var(--text-3)">por defecto: el mes actual</span>
     <span class="badge badge-neutral ml-auto">corte ${escape(d.corte || "—")}</span>
     <a href="/u/${escape(ui.id)}" target="_blank" class="text-xs hover:underline" style="color:var(--text-brand)">abrir solo ↗</a>
   </div>`;
@@ -248,6 +262,81 @@ function renderCloserDashboard(ui) {
         : "Sin llamadas evaluadas en la ventana."
     }</p>`;
 
+  // --- Gráficas de cierre --------------------------------------------------
+  // Comparativo mensual: venta y cash (misma unidad, USD) de los 3 meses que
+  // terminan en el mes de la ventana; llamadas/conversión van en la tabla
+  // gemela (mezclar conteos con dólares en un eje es mentirle a la escala).
+  const cmp = d.comparativo || [];
+  const cmpSpec = cmp.length
+    ? {
+        kind: "bar",
+        horizontal: false,
+        labels: cmp.map((x) => x.mes),
+        series: [
+          { label: "Venta programada (USD)", data: cmp.map((x) => Number(x.venta_usd) || 0) },
+          { label: "Cash cobrado (USD)", data: cmp.map((x) => Number(x.cash_usd) || 0) },
+        ],
+      }
+    : null;
+  const tCmp = tbl(
+    ["Mes", "Llamadas analizadas", "Convirtió", "Venta (USD)", "Cash (USD)"],
+    cmp.map((x) => [
+      `<span class="tabular-nums font-semibold">${escape(x.mes)}</span>`,
+      `<span class="tabular-nums">${num(x.llamadas)}</span>`,
+      `<span class="tabular-nums">${num(x.convirtio)}</span>`,
+      `<span class="tabular-nums">${usd(x.venta_usd)}</span>`,
+      `<span class="tabular-nums">${usd(x.cash_usd)}</span>`,
+    ]),
+    { empty: "Sin datos mensuales." }
+  );
+
+  // Leaderboard: la venta del periodo por closer, con los DEMÁS anonimizados
+  // (Closer A, B…) — la identidad ajena no viaja a la vista del closer; la
+  // propia (el closer seleccionado) sí se nombra. El share es contra la venta
+  // total del periodo de todos los closers.
+  const lbTodos = (d.closers || [])
+    .map((c) => ({ closer: c.closer || "—", venta: Number(c.venta_usd) || 0 }))
+    .sort((a, b) => b.venta - a.venta);
+  const totalVenta = lbTodos.reduce((s, c) => s + c.venta, 0);
+  let anonSeq = 0;
+  const lbRows = lbTodos
+    .map((c) => ({
+      self: c.closer === cur,
+      label: c.closer === cur ? c.closer : `Closer ${String.fromCharCode(65 + anonSeq++)}`,
+      venta: c.venta,
+      share: totalVenta ? Math.round((100 * c.venta) / totalVenta) : 0,
+    }))
+    .filter((r) => r.venta > 0 || r.self);
+  const selfShare = (lbRows.find((r) => r.self) || {}).share;
+  const lbSpec = lbRows.length
+    ? { kind: "bar", labels: lbRows.map((r) => r.label), series: [{ label: "Venta (USD)", data: lbRows.map((r) => r.venta) }] }
+    : null;
+  const tLb = tbl(
+    ["Closer", "Venta (USD)", "Share"],
+    lbRows.map((r) => [
+      `<span class="${r.self ? "font-bold" : ""}">${escape(r.label)}</span>`,
+      `<span class="tabular-nums">${usd(r.venta)}</span>`,
+      `<span class="tabular-nums">${num(r.share)}%</span>`,
+    ]),
+    { empty: "Sin ventas en el periodo." }
+  );
+
+  const chartCard = (spec, table, sig) => `<div class="card card-pad">
+    ${chartEl(spec, { height: 260 })}
+    <div class="mt-3 pt-2" style="border-top:1px solid var(--border-1)">
+      <button data-on:click="$${sig}=!$${sig}" class="text-xs hover:underline" style="color:var(--text-brand)">
+        <span data-text="$${sig} ? 'ocultar tabla' : 'ver tabla'">ver tabla</span>
+      </button>
+      <div data-show="$${sig}" style="display:none" class="mt-2">${table}</div>
+    </div>
+  </div>`;
+  const charts = `<div data-signals="{showcmp:false,showlead:false}">
+    ${section("Comparativo mensual", "venta y cash de los últimos 3 meses — llamadas y conversión, en la tabla")}
+    ${chartCard(cmpSpec, tCmp, "showcmp")}
+    ${section("Leaderboard de venta", `venta total del periodo ${usd(totalVenta)}${selfShare != null ? ` — share de ${cur}: ${selfShare}%` : ""}`)}
+    ${chartCard(lbSpec, tLb, "showlead")}
+  </div>`;
+
   // id="pane" NO es decorativo: el SSE parchea por id (ver pages/lead-score.js).
   return `<section id="pane" class="flex-1 relative overflow-auto p-6">
     <style>#cd-loading{opacity:0;transition:opacity .2s ease}#cd-loading.on{opacity:1}</style>
@@ -280,6 +369,8 @@ function renderCloserDashboard(ui) {
         ${checkCtl("objNot", "solo NOT OVERCOME", "", { indicator: "" })}
       </div>
       ${tObj}
+
+      ${charts}
     </div>
   </section>`;
 }
