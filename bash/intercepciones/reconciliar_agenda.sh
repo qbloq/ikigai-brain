@@ -69,7 +69,19 @@ def cancelado(e):
     return (e.get("appointmentStatus") or "").lower() in CANCELADOS
 
 ghl_por_id = {e["id"]: e for e in ghl if e.get("id")}
-db_por_appt = {m["event_id"]: m for m in db if m.get("event_id")}
+con_appt = [m for m in db if m.get("event_id")]
+db_por_appt = {m["event_id"]: m for m in con_appt}
+# Dos meetings con el mismo event_id se colapsan en el dict y el segundo gana
+# en silencio. No hay tipo de drift para eso (el CHECK es cerrado), asi que
+# por ahora se OBSERVA: se avisa por stderr con los ids afectados.
+if len(con_appt) != len(db_por_appt):
+    vistos, dupes = set(), []
+    for m in con_appt:
+        if m["event_id"] in vistos:
+            dupes.append(m["event_id"])
+        vistos.add(m["event_id"])
+    sys.stderr.write("aviso: {} meetings con event_id duplicado en {} -> {}\n".format(
+        len(con_appt) - len(db_por_appt), pnombre, ", ".join(sorted(set(dupes)))))
 vivos = {i: e for i, e in ghl_por_id.items() if not cancelado(e)}
 
 drift = []
@@ -173,8 +185,11 @@ TRABAJO="$(mktemp -d)"
 trap 'rm -rf "$TRABAJO"' EXIT
 RESUMENES="$TRABAJO/resumenes.jsonl"; : >"$RESUMENES"
 
-VENT_DESDE="$(date -d "$DESDE days" +%F)"
-VENT_HASTA="$(date -d "$HASTA days" +%F)"
+# La etiqueta de la ventana se calcula en hora BOGOTÁ, no en la del host: el
+# servidor api corre en UTC y entre las 19:00 y la medianoche de Bogotá
+# `date` ya está en el día siguiente — corridas.ventana_* mentiría a diario.
+VENT_DESDE="$(TZ=America/Bogota date -d "$DESDE days" +%F)"
+VENT_HASTA="$(TZ=America/Bogota date -d "$HASTA days" +%F)"
 
 # fd 3: el bucle llama scripts que también leen stdin — la lista no se les cede.
 while IFS=$'\t' read -r CAL PID PNOMBRE <&3; do

@@ -23,13 +23,16 @@ int_es_local() { [[ -n "${INTERCEPCIONES_DB:-}" || -f "$INT_DB_LOCAL" || "$REPO_
 
 # int_sql [-json] : ejecuta el SQL de stdin en la db del interceptor.
 # Antepone PRAGMA foreign_keys=ON a cada conexión para enforcement de FK.
+# -bail: sin él el CLI de sqlite3 IMPRIME el error y SIGUE, así que una txn
+# con un statement fallido comitea a medias — y bajo concurrencia un
+# (SELECT max(id) FROM …) colgaría filas de la corrida de otro proceso.
 int_sql() {
   local flags=(); [[ "${1:-}" == "-json" ]] && flags=(-json)
   if int_es_local; then
     mkdir -p "$(dirname "$INT_DB_LOCAL")"
-    { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 "${flags[@]}" "$INT_DB_LOCAL"
+    { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 -bail "${flags[@]}" "$INT_DB_LOCAL"
   else
-    ssh "$INT_SSH" "mkdir -p '$INT_DIR/data/sqlite' && { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 ${flags[*]:-} '$INT_DB_REMOTA'"
+    ssh "$INT_SSH" "mkdir -p '$INT_DIR/data/sqlite' && { printf 'PRAGMA foreign_keys=ON;\n'; cat; } | sqlite3 -bail ${flags[*]:-} '$INT_DB_REMOTA'"
   fi
 }
 
