@@ -63,6 +63,33 @@ sin recargar la página.
 | `POST /ui/:id/archive` · `/unarchive` | Archiva/restaura una UI (soft-hide vía `archived_at`; sobre una spec org/rol crea un fork local con linaje) y re-pinta `#ui-list`. |
 | `GET /health` | Liveness. |
 
+### publish.js — el entrypoint de PRODUCCIÓN
+
+`server.js` es el viz de trabajo (localhost, sin auth). **`viz/publish.js`** es
+el otro entrypoint: el **publicador**, que corre en el servidor `api` bajo pm2
+(`viz-publish`) detrás de https://app.ikigaigm.parallelo.ai y sirve únicamente
+las UIs registradas en `data/sqlite/publicaciones.db`, con datos vivos, login
+contra Marketico (JWT verificado localmente) y params forzados por identidad.
+Comparte las piezas de render (`lib/components`, `lib/html` `standalone()`,
+`lib/sse`, `lib/theme`) y **no importa `lib/actions.js`** — la superficie mínima
+es por construcción, no por configuración.
+
+| Ruta | Qué hace |
+|------|----------|
+| `GET /<slug>` | Render standalone del despliegue (sesión + permiso). |
+| `GET /s/<codigo>` | Alias corto → 303 a `/<slug>`. |
+| `GET /ui/<slug>` | SSE de re-render — resuelve por **slug**, no por spec id. |
+| `GET /u/<slug>` | El «abrir solo ↗» de las páginas → 303 a `/<slug>`. |
+| `GET\|POST /login` · `/logout` | Página + proxy de credenciales a Marketico; cookie `viz_sesion`. |
+| `GET /health` | Liveness. |
+
+Sin sesión, cualquier GET devuelve la página de login; sin permiso, el mismo
+`404` que un slug inexistente. **`/c/` no se monta en v1**: los frags/acts de
+bloque no existen en el publicador, así que solo se publican UIs autosuficientes
+(las que se renderizan de un tirón + SSE). El detalle y el camino para levantar
+esa restricción: [../docs/viz-publish-fragmentos.md](../docs/viz-publish-fragmentos.md).
+Se opera desde la conversación con `bash/publicar/` (ver el CLAUDE.md raíz).
+
 ## Piezas
 
 El render está organizado como la **torre de composición**

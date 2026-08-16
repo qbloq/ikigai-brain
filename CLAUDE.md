@@ -716,3 +716,47 @@ required loaders, store details) live in [viz/CLAUDE.md](viz/CLAUDE.md) —
 auto-loaded when working under `viz/`. Architecture narrative + component
 catalog: [viz/README.md](viz/README.md).
 
+## Publicar domain — UIs publicadas ([bash/publicar/](bash/publicar/))
+
+El **publicador** es `viz/publish.js` corriendo en el servidor `api` desde
+`/apps/hermetico` (pm2 `viz-publish`, puerto 4318 solo en loopback, nginx+TLS
+en **https://app.ikigaigm.parallelo.ai**). Es un entrypoint aparte del viz, con
+superficie mínima por construcción: sirve **solo** las UIs registradas, con
+datos vivos, login contra Marketico (JWT verificado localmente con el mismo
+`JWT_SECRET`) — no existen el shell, la creación/edición de UIs ni los `acts`.
+Rutas: `GET /<slug>` · `/s/<codigo>` (alias corto) · `/ui/<slug>` (SSE) ·
+`/u/<slug>` · `/login` · `/logout` · `/health`.
+
+| Script | Use it to… |
+|--------|-----------|
+| `publicar_ui.sh <spec-id> --slug S [--identidad k=v]… [--fijar k=v]… [--archivar] [--dry-run] [--json]` **[WRITE remoto]** | Publicar (o re-publicar) un spec del viz como despliegue. `--identidad` declara la plantilla; `--fijar` clava params; `--archivar` despublica. |
+| `permiso_ui.sh <slug> --rol R \| --user EMAIL [--identidad k=v]… \| --sin-identidad [--revocar] [--listar] [--visitas]` **[WRITE remoto]** | Dar/quitar acceso y ver quién entró. `--listar`/`--visitas` siempre emiten JSON. |
+| `desplegar.sh [--dry-run]` **[WRITE remoto]** | Llevar el CÓDIGO al publicador: push a `origin`, `git pull --ff-only` en `/apps/hermetico` y `pm2 restart viz-publish`. No toca el registro. |
+
+**Permisos — tres estados de `params_identidad`**, y entre varios roles gana el
+**menos restrictivo** (un permiso por `--user` siempre gana sobre los de rol):
+`NULL` = *hereda* la plantilla de identidad del despliegue (el closer se ve solo
+a sí mismo) · `'{}'` = *anula* la plantilla, ve todo (el Director Comercial) ·
+json explícito = fuerza esos valores (la excepción). Sin permiso que matchee,
+la respuesta es el **mismo 404** que un slug inexistente — no se filtra qué
+existe.
+
+**Plantilla de identidad**: `--identidad 'closer=$name'` guarda la plantilla, no
+el valor; en cada visita `$name`/`$email`/`$user_id` se resuelven contra el JWT
+del visitante y los params resueltos se aplican **al final** (spec → fijos →
+overrides del navegador → forzados), así que la query string no los puede pisar
+y el control del param sale bloqueado en la UI.
+
+**El spec viaja CONGELADO**: publicar guarda un snapshot del spec, y re-publicar
+inserta `generación+1` — nunca sobreescribe ni borra (archivar sella). Editar la
+UI en el viz **no** cambia lo publicado hasta que se vuelva a publicar.
+
+**v1 = solo UIs autosuficientes**: `/c/` (frags/acts de los bloques) no se monta,
+así que un componente que dependa de fragmentos enrutados no se publica todavía.
+Ver [docs/viz-publish-fragmentos.md](docs/viz-publish-fragmentos.md).
+
+⚠️ **Excepción declarada al rail de «nada de SQL fuera de `bash/`»**: el registro
+del publicador (`data/sqlite/publicaciones.db` — despliegues, permisos, visitas)
+es **estado propio del publicador**, no dato de la org, y por eso estos scripts
+sí llevan SQL (sqlite, por ssh y por stdin, nunca en el argv del remoto). Los
+datos de la org siguen entrando únicamente por `bash/ --json`.
