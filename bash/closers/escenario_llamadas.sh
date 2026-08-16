@@ -74,6 +74,6 @@ if [[ "$FORMAT" == json ]]; then
   printf '[%s]\n' "$(IFS=,; echo "${RES[*]:-}")"
 else
   for r in "${RES[@]:-}"; do echo "$r"; done
-  [[ ${#RES[@]} -eq 0 ]] && echo "Tick sin novedades ($AHORA)."
+  [[ ${#RES[@]} -eq 0 ]] && echo "Tick sin novedades ($(TZ=America/Bogota date +%F) $AHORA)."
 fi
 exit 0
