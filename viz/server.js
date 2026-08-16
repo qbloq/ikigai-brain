@@ -20,12 +20,11 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const store = require("./lib/store");
-const { shell, listPanel } = require("./lib/html");
+const { shell, listPanel, standalone } = require("./lib/html");
 const { renderPane, getComponent, overridableFor, dispatch, validateSpec, escape } = require("./lib/components");
 const { fetchSource, SOURCES } = require("./lib/datasources");
 const { makeRunner } = require("./lib/actions");
 const { startSSE, patchElements } = require("./lib/sse");
-const { loadTheme, themeHead } = require("./lib/theme");
 
 const PORT = Number(process.env.PORT) || 4317;
 
@@ -138,19 +137,6 @@ function withParamOverrides(ui, searchParams) {
     if (v != null && v !== "") params[key] = v;
   }
   return { ...ui, params };
-}
-
-function standalone(ui) {
-  const pane = renderPane(ui);
-  const theme = loadTheme();
-  return `<!doctype html><html lang="es" class="h-full" data-theme="${theme.modo}"><head>
-    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${ui ? ui.name : "UI no encontrada"} · ${escape(theme.nombre)}</title>
-    ${themeHead(theme)}
-    <script type="module" src="/datastar.js"></script>
-    <script defer src="/chart.umd.js"></script>
-    <script type="module" src="/charts-init.js"></script>
-  </head><body class="h-full"><div class="flex h-screen bg-white text-slate-900">${pane}</div></body></html>`;
 }
 
 const server = http.createServer(async (req, res) => {

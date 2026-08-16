@@ -6,6 +6,7 @@
 const { escape } = require("./kit");
 const { listSources } = require("./datasources");
 const { loadTheme, themeHead, MODE_TOGGLE } = require("./theme");
+const { renderPane } = require("./components");
 
 // Temporarily hide the "Nueva UI" form in the left panel (feature paused).
 // Flip back to true to restore it.
@@ -126,4 +127,17 @@ function shell({ uis, activeId, paneHtml }) {
 </html>`;
 }
 
-module.exports = { shell, listPanel };
+function standalone(ui) {
+  const pane = renderPane(ui);
+  const theme = loadTheme();
+  return `<!doctype html><html lang="es" class="h-full" data-theme="${theme.modo}"><head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${ui ? ui.name : "UI no encontrada"} · ${escape(theme.nombre)}</title>
+    ${themeHead(theme)}
+    <script type="module" src="/datastar.js"></script>
+    <script defer src="/chart.umd.js"></script>
+    <script type="module" src="/charts-init.js"></script>
+  </head><body class="h-full"><div class="flex h-screen bg-white text-slate-900">${pane}</div></body></html>`;
+}
+
+module.exports = { shell, listPanel, standalone };
