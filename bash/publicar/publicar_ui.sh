@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 # publicar_ui.sh <spec-id> --slug <slug> [--identidad k=v]... [--fijar k=v]...
-#                [--archivar] [--dry-run] [--json]     [WRITE remoto]
+#                [--archivar] [--forzar] [--dry-run] [--json]   [WRITE remoto]
 # Publica (o re-publica: generación+1) un spec del viz como despliegue del
 # publicador. El spec viaja CONGELADO (snapshot); la identidad es la plantilla
 # {"k":"$name|$email|$user_id|literal"}. --archivar despublica (sella, no borra).
+# --forzar salta la sonda de render (NO la negativa por `pattern`).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
-usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -6; exit "${1:-0}"; }
+usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -7; exit "${1:-0}"; }
 
-SPEC_ID="" SLUG="" DRY=0 JSON=0 ARCHIVAR=0
+SPEC_ID="" SLUG="" DRY=0 JSON=0 ARCHIVAR=0 FORZAR=0
 declare -A IDENT=() FIJAR=()
 while [[ $# -gt 0 ]]; do case "$1" in
   --slug) SLUG="$2"; shift 2;;
   --identidad) k="${2%%=*}"; IDENT[$k]="${2#*=}"; shift 2;;
   --fijar) k="${2%%=*}"; FIJAR[$k]="${2#*=}"; shift 2;;
   --archivar) ARCHIVAR=1; shift;;
+  --forzar) FORZAR=1; shift;;
   --dry-run) DRY=1; shift;;
   --json) JSON=1; shift;;
   -h|--help) usage;;
@@ -37,6 +39,29 @@ validar_spec "$SPEC_JSON"
 COMPONENT="$(node -pe 'JSON.parse(process.argv[1]).component || ""' "$SPEC_JSON")"
 SOURCE="$(node -pe 'JSON.parse(process.argv[1]).source || ""' "$SPEC_JSON")"
 
+# --- guarda 1: los specs v2 (por `pattern`) no son publicables --------------
+# Un patrón compone bloques ruteados y el publicador NO monta /c/ por
+# construcción (no importa lib/actions.js). Publicarlo da una página que
+# renderiza y muere al primer clic. Ni --forzar la salta: no es un falso
+# positivo, es una superficie que ahí no existe.
+if [[ "$(node -pe 'JSON.parse(process.argv[1]).pattern ? "1" : "0"' "$SPEC_JSON")" == "1" ]]; then
+  echo "ERROR: '$SPEC_ID' es un spec v2 (tiene 'pattern'): compone bloques ruteados bajo /c/," >&2
+  echo "       y el publicador no sirve esas rutas. No es publicable." >&2
+  exit 1
+fi
+
+# --- guarda 2 (M5): las variables de identidad son un set cerrado -----------
+# Un '$closer' mal escrito no explota: resolverIdentidad lo trata como literal
+# y fuerza la cadena "$closer" como filtro. Se detecta AQUÍ, no en producción.
+for k in "${!IDENT[@]}"; do
+  v="${IDENT[$k]}"
+  if [[ "$v" == \$* && "$v" != "\$name" && "$v" != "\$email" && "$v" != "\$user_id" ]]; then
+    echo "ERROR: identidad '$k=$v': variable desconocida. Solo existen \$name, \$email, \$user_id." >&2
+    echo "       (un literal que empiece por '\$' no es representable — usá otro valor)" >&2
+    exit 2
+  fi
+done
+
 # json de identidad y fijos desde los pares k=v
 to_json() { node -e '
   const out = {}; for (const kv of process.argv.slice(1)) { const i = kv.indexOf("=");
@@ -57,6 +82,43 @@ VALUES ($(sql_lit "$SLUG"), <codigo_corto existente o nuevo>, $(sql_lit "$SPEC_I
   echo "[dry-run] generacion=? de '$SLUG':"
   echo "$SQL"
   exit 0
+fi
+
+# --- guarda 3 (I3): la sonda de render --------------------------------------
+# La pregunta que ningún check estático responde: ¿esta página, con ESTE spec,
+# emite URLs /c/? Un `component` v1 puede delegar en un patrón por dentro
+# (pages/tasks.js lo hace) y quedar igual de roto en el publicador. Así que se
+# renderiza de verdad y se lee el HTML. Pega contra la DB real (~1-3 s): es
+# barato al publicar, y --dry-run ya salió arriba sin pagarlo.
+if [[ $FORZAR -eq 1 ]]; then
+  echo "[--forzar] sonda de render saltada." >&2
+else
+  # stderr aparte de stdout: si el render escupe una advertencia, no debe
+  # terminar concatenada al JSON de la sonda (un `[]` contaminado la rompe).
+  SONDA_ERR="$(mktemp)"; trap 'rm -f "$SONDA_ERR"' EXIT
+  if ! SONDA="$(node -e '
+    const root = process.argv[1];
+    const spec = JSON.parse(process.argv[2]);
+    const { getComponent } = require(root + "/viz/lib/components");
+    const page = getComponent(spec.component || "table");
+    if (!page || typeof page.render !== "function")
+      throw new Error("componente sin render: " + (spec.component || "table"));
+    const html = String(page.render(spec) || "");
+    const urls = [...new Set((html.match(/[\x27"(]\/c\/[^\x27")\s]*/g) || [])
+      .map((u) => u.slice(1)))];
+    console.log(JSON.stringify(urls));
+  ' "$REPO_ROOT" "$SPEC_JSON" 2>"$SONDA_ERR")"; then
+    echo "ERROR: la sonda de render falló — no se publica a ciegas:" >&2
+    sed 's/^/       /' "$SONDA_ERR" >&2
+    echo "       (si estás seguro de que el spec no usa /c/, repetí con --forzar)" >&2
+    exit 1
+  fi
+  if [[ "$SONDA" != "[]" ]]; then
+    echo "ERROR: el render de '$SPEC_ID' emite URLs /c/ — rutas que el publicador NO sirve." >&2
+    node -pe 'JSON.parse(process.argv[1]).map(u => "       " + u).join("\n")' "$SONDA" >&2
+    echo "       La página quedaría muerta al primer clic. Usá --forzar solo si sabés que no." >&2
+    exit 1
+  fi
 fi
 
 ensure_schema
