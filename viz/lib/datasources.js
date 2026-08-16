@@ -551,6 +551,27 @@ const SOURCES = {
     emits: "rows",
     args: { estado: "--estado", limit: "--limit" },
   },
+  // La mirilla del webhook CRM (processBooking) + la reconciliación de agenda
+  // DB↔GHL. Object de resumen sin cache (vista operativa viva); log y drift
+  // son rows planos sobre la sqlite local de bash/intercepciones/.
+  intercepciones_resumen: {
+    label: "Intercepciones — resumen",
+    script: "bash/intercepciones/resumen.sh",
+    emits: "object",
+    args: {},
+  },
+  intercepciones_log: {
+    label: "Intercepciones — log del webhook CRM",
+    script: "bash/intercepciones/log.sh",
+    emits: "rows",
+    args: { desde: "--desde", limit: "--limit", solo_errores: { flag: "--solo-errores", bool: true } },
+  },
+  intercepciones_drift: {
+    label: "Intercepciones — drift de agenda",
+    script: "bash/intercepciones/drift.sh",
+    emits: "rows",
+    args: { historia: { flag: "--historia", bool: true } },
+  },
 };
 
 function listSources() {
