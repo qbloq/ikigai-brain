@@ -41,6 +41,11 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
+// El origen público del publicador — la única procedencia aceptable para un
+// POST /login con cabecera Origin. PUBLICAR_URL lo hace configurable para el
+// que levante esto en otro dominio.
+const ORIGEN = (process.env.PUBLICAR_URL || "https://app.ikigaigm.parallelo.ai").replace(/\/+$/, "");
+
 const PUBLIC_FILES = new Set(["/datastar.js", "/chart.umd.js", "/charts-init.js", "/tw-bridge.js", "/tokens.css"]);
 const RUTAS_RESERVADAS = new Set(["login", "logout", "health", "ui", "u", "c", "s", "api", "fonts"]);
 
@@ -132,7 +137,20 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
     pathname = url.pathname;
 
-    if (pathname === "/health") return send(res, 200, "ok", "text/plain");
+    // /health responde a GET y a HEAD: los monitores de uptime piden HEAD, y
+    // un 404 ahí se lee como caída. HEAD = las mismas cabeceras, sin cuerpo.
+    if (pathname === "/health") {
+      if (req.method === "HEAD") {
+        res.writeHead(200, {
+          "Content-Type": "text/plain",
+          "Content-Length": "2",
+          "Cache-Control": "private, no-store",
+          "X-Content-Type-Options": "nosniff",
+        });
+        return res.end();
+      }
+      return send(res, 200, "ok", "text/plain");
+    }
 
     // --- assets (sin auth: la página de login los necesita) ---
     const isFont = /^\/fonts\/[a-z0-9._-]+\.(woff2|css)$/.test(pathname);
@@ -152,6 +170,11 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/login" && req.method === "GET")
       return send(res, 200, paginaLogin({ next: nextSeguro(url.searchParams.get("next")) }));
     if (pathname === "/login" && req.method === "POST") {
+      // CSRF: un formulario en otro sitio puede POSTear acá. Si el navegador
+      // manda Origin y no es el nuestro, se corta. Origin ausente se permite
+      // a propósito — curl y los scripts operativos no lo mandan.
+      const origin = req.headers.origin;
+      if (origin && origin !== ORIGEN) return send(res, 403, "Origen no permitido", "text/plain");
       const body = new URLSearchParams(await readBody(req));
       const next = nextSeguro(body.get("next"));
       const token = await loginMarketico(String(body.get("email") || "").trim(), String(body.get("password") || ""))

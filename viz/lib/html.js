@@ -132,7 +132,7 @@ function standalone(ui) {
   const theme = loadTheme();
   return `<!doctype html><html lang="es" class="h-full" data-theme="${theme.modo}"><head>
     <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${ui ? ui.name : "UI no encontrada"} · ${escape(theme.nombre)}</title>
+    <title>${escape(ui ? ui.name : "UI no encontrada")} · ${escape(theme.nombre)}</title>
     ${themeHead(theme)}
     <script type="module" src="/datastar.js"></script>
     <script defer src="/chart.umd.js"></script>
