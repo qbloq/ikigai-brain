@@ -96,6 +96,15 @@ pwhere="true" cwhere="true" iwhere=""
                       pwhere="$pwhere AND pp.start_date <= '$to'"
                       cwhere="$cwhere AND cp.created_at::date <= '$to'"
                       iwhere="$iwhere AND i.payment_date <= '$to'"; }
+# Cuotas del periodo: cada grupo entra por SU fecha natural — las programadas
+# por vencimiento, las pagadas por fecha de pago. Sobre TODOS los planes del
+# closer (una cuota que vence hoy puede ser de un plan viejo).
+cuotapend="true" cuotapag="true"
+[[ -n "$from" ]] && { cuotapend="$cuotapend AND i.due_date >= '$from'"
+                      cuotapag="$cuotapag AND i.payment_date >= '$from'"; }
+[[ -n "$to" ]]   && { cuotapend="$cuotapend AND i.due_date <= '$to'"
+                      cuotapag="$cuotapag AND i.payment_date <= '$to'"; }
+
 cmpproj_m="" cmpproj_p=""
 if [[ -n "$project" ]]; then
   pid="$(resolve_project "$project")"
@@ -241,6 +250,22 @@ cmpcash AS (
     AND i.payment_date <  cmpanchor.m0 + interval '1 month'
     AND ($cashpred)
     $cmpproj_p
+),
+cuotas AS (
+  SELECT i.due_date, i.payment_date, i.scheduled_amount,
+         coalesce(i.paid_amount,0) AS paid_amount, i.status,
+         pp.customer_name AS cliente, pr6.name AS proyecto,
+         CASE WHEN i.status = 'Paid' THEN 'pagada' ELSE 'pendiente' END AS grupo
+  FROM installments i
+  JOIN payment_plans pp ON pp.plan_id = i.plan_id
+  JOIN users u5   ON u5.id = pp.user_id
+  JOIN persons pe5 ON pe5.person_id = u5.person_id
+  LEFT JOIN projects pr6 ON pr6.id = pp.project_id
+  CROSS JOIN pick
+  WHERE i.status <> 'Cancelled'
+    AND ($cashpred)
+    $cmpproj_p
+    AND ((i.status <> 'Paid' AND $cuotapend) OR (i.status = 'Paid' AND $cuotapag))
 )
 SELECT json_build_object(
   'corte',   to_char(current_date,'YYYY-MM-DD'),
@@ -287,6 +312,15 @@ SELECT json_build_object(
       SELECT left(id::text,8) AS id, to_char(ts,'YYYY-MM-DD') AS fecha, lead, programa, proyecto,
              round(bant)::int AS bant, st AS status
       FROM v WHERE bant >= 70 AND resultado='seguimiento') t), '[]'::json),
+  'cuotas', coalesce((SELECT json_agg(t) FROM (
+      SELECT grupo,
+             to_char(due_date,'YYYY-MM-DD')     AS vence,
+             to_char(payment_date,'YYYY-MM-DD') AS pagada_el,
+             cliente, proyecto,
+             round(scheduled_amount)::int AS monto,
+             round(paid_amount)::int      AS pagado,
+             status
+      FROM cuotas ORDER BY coalesce(payment_date, due_date), cliente) t), '[]'::json),
   'comparativo', coalesce((SELECT json_agg(t ORDER BY t.mes) FROM (
       SELECT to_char(gs.mes,'YYYY-MM') AS mes,
              (SELECT count(*) FROM cmpsel s WHERE s.mes = gs.mes) AS llamadas,

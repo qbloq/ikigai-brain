@@ -228,6 +228,40 @@ function renderCloserDashboard(ui) {
           { empty: "Sin llamadas agendadas hoy." }
         );
 
+  // Cuotas del periodo, con filtro de estado OBLIGATORIO (no hay «todas»):
+  // programadas (por vencimiento) o pagadas (por fecha de pago). El filtro es
+  // presentación pura — ambos grupos viajan en d.cuotas y el segmentado solo
+  // mueve $cuotasG (data-show por fila, sin re-fetch).
+  const cuotas = d.cuotas || [];
+  const nPend = cuotas.filter((c) => c.grupo === "pendiente").length;
+  const nPag = cuotas.length - nPend;
+  const tCuotas = tbl(
+    ["Vence", "Pagada el", "Cliente", "Proyecto", "Monto", "Pagado", "Estado"],
+    cuotas.map((c) => [
+      `<span class="tabular-nums text-xs">${escape(c.vence || "—")}</span>`,
+      `<span class="tabular-nums text-xs">${escape(c.pagada_el || "—")}</span>`,
+      `<span class="font-medium">${escape(c.cliente || "—")}</span>`,
+      `<span class="text-xs">${escape(c.proyecto || "—")}</span>`,
+      `<span class="tabular-nums">${usd(c.monto)}</span>`,
+      `<span class="tabular-nums" style="color:${(c.pagado || 0) >= (c.monto || 0) ? TONE.pos : c.pagado > 0 ? TONE.cau : TONE.muted}">${usd(c.pagado)}</span>`,
+      `<span class="badge ${c.grupo === "pagada" ? "badge-pos" : "badge-neutral"}">${escape(c.status || "—")}</span>`,
+    ]),
+    {
+      empty: "Sin cuotas en el periodo.",
+      rowAttrs: cuotas.map((c) => `data-show="$cuotasG==='${c.grupo}'"`),
+    }
+  );
+  const cuotasHdr = `<div class="flex items-baseline gap-3 mt-10 mb-3 flex-wrap" data-signals="{cuotasG:'pendiente'}">
+    <h2 class="text-sm font-bold uppercase tracking-wider" style="color:var(--text-2);letter-spacing:var(--tr-micro)">Cuotas del periodo</h2>
+    <div class="btn-group">
+      <button class="btn btn-sm" data-attr:aria-pressed="$cuotasG==='pendiente'" data-on:click="$cuotasG='pendiente'">Programadas (${nPend})</button>
+      <button class="btn btn-sm" data-attr:aria-pressed="$cuotasG==='pagada'" data-on:click="$cuotasG='pagada'">Pagadas (${nPag})</button>
+    </div>
+  </div>`;
+  const cuotasVacias = cuotas.length
+    ? `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)" data-show="($cuotasG==='pendiente'&&${nPend === 0})||($cuotasG==='pagada'&&${nPag === 0})">Sin cuotas de ese estado en el periodo.</p>`
+    : "";
+
   const tTramos = tbl(
     ["Tramo BANT", "Llamadas", "Convirtió", "Conversión", "En seguimiento"],
     (d.tramos || []).map((t) => [
@@ -403,14 +437,18 @@ function renderCloserDashboard(ui) {
       ${section("Llamadas de hoy")}
       ${tHoy}
 
+      ${cuotasHdr}
+      ${tCuotas}
+      ${cuotasVacias}
+
+      ${section("Ventas recientes")}
+      ${tVentas}
+
       ${section("Tramos BANT")}
       ${tTramos}
 
       ${section("Cola de seguimiento", `${num(k.cola_n)} llamadas de BANT ≥ 81 que quedaron en seguimiento y nunca cerraron — el dinero sobre la mesa${colaBorde ? ` (+${num(colaBorde)} de 70-80, sombreadas)` : ""}`)}
       ${tCola}
-
-      ${section("Ventas recientes")}
-      ${tVentas}
 
       ${section("Coaching por llamada")}
       <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(24rem,1fr))">${coaching}</div>
