@@ -20,7 +20,9 @@ remote_sql() {
 }
 
 # ensure_schema : aplica el schema idempotente antes de cualquier escritura.
-ensure_schema() { remote_sql < "$PUBLICAR_LIB_DIR/schema.sql"; }
+# Silencioso: el `PRAGMA journal_mode=WAL` responde «wal», y esa línea salía
+# por stdout ANTES del JSON de --json — un consumidor con `| jq` se rompía.
+ensure_schema() { remote_sql < "$PUBLICAR_LIB_DIR/schema.sql" >/dev/null; }
 
 # spec_local <id> : el spec JSON (una línea) desde el store del viz, o falla.
 spec_local() {
@@ -42,4 +44,13 @@ validar_spec() {
 }
 
 # codigo_nuevo : 10 chars base62 aleatorios.
-codigo_nuevo() { tr -dc 'A-Za-z0-9' </dev/urandom | head -c 10; }
+# Sin tuberías a `head`: bajo `set -o pipefail` el productor (`tr </dev/urandom`)
+# recibe SIGPIPE cuando head corta, y la sustitución de comando devuelve 141 —
+# mataba la PRIMERA publicación de cada slug (la única que genera código nuevo).
+codigo_nuevo() {
+  node -e '
+    const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const bytes = require("node:crypto").randomBytes(10);
+    console.log([...bytes].map((b) => alfabeto[b % 62]).join(""));
+  '
+}
