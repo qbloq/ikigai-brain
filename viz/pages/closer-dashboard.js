@@ -236,15 +236,16 @@ function renderCloserDashboard(ui) {
   const nPend = cuotas.filter((c) => c.grupo === "pendiente").length;
   const nPag = cuotas.length - nPend;
   const tCuotas = tbl(
-    ["Vence", "Pagada el", "Cliente", "Proyecto", "Monto", "Pagado", "Estado"],
+    ["Vence", "Pagada el", "Cliente", "Proyecto", "Monto", "Pagado"],
     cuotas.map((c) => [
       `<span class="tabular-nums text-xs">${escape(c.vence || "—")}</span>`,
-      `<span class="tabular-nums text-xs">${escape(c.pagada_el || "—")}</span>`,
+      c.pagada_el
+        ? `<span class="badge badge-pos tabular-nums">${escape(c.pagada_el)}</span>`
+        : `<span class="text-xs" style="color:var(--text-3)">—</span>`,
       `<span class="font-medium">${escape(c.cliente || "—")}</span>`,
       `<span class="text-xs">${escape(c.proyecto || "—")}</span>`,
       `<span class="tabular-nums">${usd(c.monto)}</span>`,
       `<span class="tabular-nums" style="color:${(c.pagado || 0) >= (c.monto || 0) ? TONE.pos : c.pagado > 0 ? TONE.cau : TONE.muted}">${usd(c.pagado)}</span>`,
-      `<span class="badge ${c.grupo === "pagada" ? "badge-pos" : "badge-neutral"}">${escape(c.status || "—")}</span>`,
     ]),
     {
       empty: "Sin cuotas en el periodo.",
