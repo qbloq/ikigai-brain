@@ -7,8 +7,11 @@
 #              clasificación de lead_profile.sh — ganada+compromiso = conversión;
 #              el ILIKE 'closed won%' de call_stats.sh subcuenta) y sus tramos
 #              BANT (ceros excluidos: sin transcript ≠ mal calificado).
-#   cola       BANT ≥ 81 que quedó en seguimiento y nunca cerró — el dinero
-#              sobre la mesa, la aplicación inmediata del score.
+#   cola       BANT ≥ 70 que quedó en seguimiento y nunca cerró — el dinero
+#              sobre la mesa, la aplicación inmediata del score. El corazón
+#              sigue siendo ≥ 81 (el tramo que convierte ~39%; cola_n cuenta
+#              solo esos); el borde 70-80 viaja en las mismas filas y la UI
+#              lo distingue por fondo.
 #   coaching   su evaluación por llamada (score, fortalezas, mejoras, coaching)
 #              y sus objeciones recientes — esto SÍ es del closer.
 #   ventas     el cash REAL: payment_plans.user_id ES el closer (el cliente va
@@ -208,7 +211,7 @@ SELECT json_build_object(
   'cola', coalesce((SELECT json_agg(t ORDER BY t.bant DESC, t.fecha DESC) FROM (
       SELECT left(id::text,8) AS id, to_char(ts,'YYYY-MM-DD') AS fecha, lead, programa, proyecto,
              round(bant)::int AS bant, st AS status
-      FROM v WHERE bant >= 81 AND resultado='seguimiento') t), '[]'::json),
+      FROM v WHERE bant >= 70 AND resultado='seguimiento') t), '[]'::json),
   'coaching', coalesce((SELECT json_agg(t) FROM (
       SELECT left(id::text,8) AS id, to_char(ts,'YYYY-MM-DD') AS fecha, lead, resultado, score,
              eval->'strengths'->'items'           AS fortalezas,

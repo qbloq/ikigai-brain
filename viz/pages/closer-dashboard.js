@@ -6,7 +6,8 @@
 //
 // Dos mitades deliberadas, en este orden:
 //   la llamada  lo que el analizador midió (conversión canónica, tramos BANT,
-//               la cola de BANT ≥ 81 que se enfría, coaching, objeciones)
+//               la cola de BANT ≥ 70 que se enfría — el borde 70-80 sombreado
+//               con --cau-soft —, coaching, objeciones)
 //   la plata    lo que de verdad pasó (payment_plans.user_id ES el closer;
 //               installments es la verdad del dinero; su comisión)
 // El callStatus del reporte y el cash real son fuentes distintas — mostrarlas
@@ -42,12 +43,12 @@ function section(title, hint) {
 // Tabla con una columna porcentual pintada como barra (el idioma de la página
 // lead-score, su vecina en la capa del DC): el tramo que discrimina se ve de
 // un vistazo, sin leer decimales.
-function tbl(headers, rows, { empty = "Sin datos.", barCol = null, barMax = 100 } = {}) {
+function tbl(headers, rows, { empty = "Sin datos.", barCol = null, barMax = 100, rowAttrs = [] } = {}) {
   if (!rows.length) return `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">${escape(empty)}</p>`;
   const th = headers.map((h) => `<th>${escape(h)}</th>`).join("");
   const tr = rows
-    .map((cells) =>
-      `<tr>${cells
+    .map((cells, ri) =>
+      `<tr${rowAttrs[ri] ? ` ${rowAttrs[ri]}` : ""}>${cells
         .map((c, i) => {
           if (barCol !== null && i === barCol) {
             const pct = Number(c) || 0;
@@ -171,10 +172,14 @@ function renderCloserDashboard(ui) {
     { barCol: 3, barMax: 40, empty: "Sin llamadas con BANT en la ventana." }
   );
 
+  // La cola trae BANT ≥ 70; el corazón sigue siendo ≥ 81 (el tramo que
+  // convierte ~39%) y el borde 70-80 se distingue por fondo, no por columna.
+  const cola = d.cola || [];
+  const colaBorde = cola.filter((c) => Number(c.bant) < 81).length;
   const tCola = tbl(
     ["BANT", "Fecha", "Lead", "Programa", "Proyecto", "Estado", "Llamada"],
-    (d.cola || []).map((c) => [
-      `<span class="tabular-nums font-bold" style="color:${TONE.neg}">${num(c.bant)}</span>`,
+    cola.map((c) => [
+      `<span class="tabular-nums font-bold" style="color:${Number(c.bant) >= 81 ? TONE.neg : TONE.cau}">${num(c.bant)}</span>`,
       `<span class="tabular-nums text-xs">${escape(c.fecha || "")}</span>`,
       `<span class="font-medium">${escape(c.lead || "—")}</span>`,
       `<span class="text-xs">${escape(String(c.programa || "").slice(0, 60))}</span>`,
@@ -182,7 +187,10 @@ function renderCloserDashboard(ui) {
       `<span class="badge badge-neutral">${escape(c.status || "—")}</span>`,
       `<code class="text-xs">${escape(c.id || "")}</code>`,
     ]),
-    { empty: "La cola está vacía — nada de BANT alto se está enfriando." }
+    {
+      empty: "La cola está vacía — nada de BANT alto se está enfriando.",
+      rowAttrs: cola.map((c) => (Number(c.bant) < 81 ? `style="background:var(--cau-soft)"` : "")),
+    }
   );
 
   const tObj = tbl(
@@ -257,7 +265,7 @@ function renderCloserDashboard(ui) {
       ${section("Tramos BANT", "sus llamadas por banda de calificación — ceros (sin transcript) excluidos")}
       ${tTramos}
 
-      ${section("Cola de seguimiento", `${num(k.cola_n)} llamadas de BANT ≥ 81 que quedaron en seguimiento y nunca cerraron — el dinero sobre la mesa`)}
+      ${section("Cola de seguimiento", `${num(k.cola_n)} llamadas de BANT ≥ 81 que quedaron en seguimiento y nunca cerraron — el dinero sobre la mesa${colaBorde ? ` (+${num(colaBorde)} de 70-80, sombreadas)` : ""}`)}
       ${tCola}
 
       ${section("Ventas recientes", "sus últimos planes de pago, con lo efectivamente cobrado")}
