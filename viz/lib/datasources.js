@@ -263,7 +263,10 @@ const SOURCES = {
     label: "Dashboard por closer",
     script: "bash/calls/closer_dashboard.sh",
     emits: "object",
-    args: { closer: "--closer", project: "--project", from: "--from", to: "--to" },
+    // `closer_id` es la identidad EXACTA (users.id) y le gana a `closer`
+    // (fragmento de nombre, ILIKE) dentro del script. Es lo que el publicador
+    // fuerza por plantilla: el nombre de pila del JWT no identifica a nadie.
+    args: { closer: "--closer", closer_id: "--closer-id", project: "--project", from: "--from", to: "--to" },
   },
   // Objections flattened across call reports — the narrative feedback loop.
   call_objections: {

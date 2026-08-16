@@ -18,27 +18,60 @@
 # Sin --closer toma el de más llamadas analizadas en la ventana. El objeto
 # incluye `closers[]` (llamadas + ventas por closer) para poblar el selector.
 #
-# Uso: closer_dashboard.sh [--closer FRAG] [--project NAME]
+# --closer-id <uuid de users.id> es la IDENTIDAD EXACTA y tiene PRECEDENCIA
+# sobre --closer (que queda ignorado). Existe porque el nombre no identifica:
+# el JWT trae solo el nombre de pila y `ILIKE '%David%'` le entregaba a David
+# Guerrero el dashboard entero de Luis David Flórez. Con --closer-id las cuatro
+# secciones (llamadas, planes, cash, comisiones) filtran por igualdad de uuid;
+# el nombre que se reporta se resuelve DESDE ese id. --closer (ILIKE) se
+# conserva para el dropdown libre del Director Comercial.
+#
+# Uso: closer_dashboard.sh [--closer FRAG | --closer-id UUID] [--project NAME]
 #                          [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--json]
 # Read-only; siempre emite JSON. Alimenta la fuente `closer_dashboard` del viz.
 set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 
-closer="" project="" from="" to=""
+closer="" closer_id="" project="" from="" to=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --closer)  closer="$2"; shift 2 ;;
+    --closer)     closer="$2"; shift 2 ;;
+    --closer-id)  closer_id="$2"; shift 2 ;;
     --project) project="$2"; shift 2 ;;
     --from)    from="$2"; shift 2 ;;
     --to)      to="$2"; shift 2 ;;
     --json)    shift ;;   # siempre JSON; se acepta por simetría
-    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,31p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
 done
 
+# La identidad exacta gana: con --closer-id el fragmento de nombre se descarta
+# entero (no se combina — combinar dejaría al nombre volver a filtrar).
+if [[ -n "$closer_id" ]]; then
+  [[ "$closer_id" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] \
+    || { echo "--closer-id debe ser un uuid de users.id: '$closer_id'" >&2; exit 2; }
+  closer=""
+fi
+
 frag="${closer//\'/\'\'}"
 from="${from//\'/}" to="${to//\'/}"
+
+# Los predicados de selección: por uuid exacto (identidad) o por nombre (ILIKE).
+if [[ -n "$closer_id" ]]; then
+  selpred="p.closer_uid = '$closer_id'::uuid"
+  planpred="a.closer_uid = '$closer_id'::uuid"
+  comipred="cp.user_id = '$closer_id'::uuid"
+  closer_expr="(SELECT trim(regexp_replace(pi.name||' '||coalesce(pi.lastname,''),'\s+',' ','g'))
+                FROM users ui JOIN persons pi ON pi.person_id = ui.person_id
+                WHERE ui.id = '$closer_id'::uuid)"
+else
+  selpred="p.closer ILIKE '%'||pick.frag||'%'"
+  planpred="a.closer ILIKE '%'||pick.frag||'%'"
+  comipred="coalesce(nullif(trim(regexp_replace(coalesce(pe3.name,'')||' '||coalesce(pe3.lastname,''),'\s+',' ','g')),''), cp.contractor_name)
+               ILIKE '%'||pick.frag||'%'"
+  closer_expr="(SELECT closer FROM sel GROUP BY 1 ORDER BY count(*) DESC LIMIT 1)"
+fi
 
 # Cada dominio filtra la ventana por SU fecha natural: llamadas por agenda,
 # planes por inicio, cobros por pago, comisiones por creación.
@@ -74,12 +107,13 @@ WITH base AS (
          nullif(regexp_replace(coalesce(r.report->'leadProfile'->'predictionsAndRecommendations'->'closingProbability'->>'percentage',''),'[^0-9.]','','g'),'')::numeric AS prob,
          r.report->'performanceInsights'->'finalCloserEvaluation' AS eval,
          r.report->'objectionsAndInsights'->'objectionHandling'->'objections' AS objs,
-         cl.closer
+         cl.closer, cl.closer_uid
   FROM meetings m
   JOIN call_report_vigente r ON r.meeting_id = m.id
   LEFT JOIN projects pr ON pr.id = m.project_id
   LEFT JOIN LATERAL (
-    SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer
+    SELECT trim(regexp_replace(p.name||' '||coalesce(p.lastname,''),'\s+',' ','g')) AS closer,
+           u.id AS closer_uid
     FROM crm_contacts c
     JOIN crm_opportunities o2 ON o2.contact_id = c.id
     JOIN users u   ON u.id = o2.user_id
@@ -105,19 +139,20 @@ pick AS (
   SELECT coalesce(nullif('$frag',''),
            (SELECT closer FROM p WHERE closer IS NOT NULL GROUP BY 1 ORDER BY count(*) DESC LIMIT 1)) AS frag
 ),
-sel AS (SELECT p.* FROM p, pick WHERE p.closer ILIKE '%'||pick.frag||'%'),
+sel AS (SELECT p.* FROM p, pick WHERE $selpred),
 v   AS (SELECT * FROM sel WHERE bant > 0),   -- universo válido: BANT distinto de cero
 allplans AS (
   SELECT pp.plan_id, pp.customer_name, pp.start_date, pp.original_amount, pp.currency,
          pp.plan_status, pr2.name AS proyecto,
-         trim(regexp_replace(pe.name||' '||coalesce(pe.lastname,''),'\s+',' ','g')) AS closer
+         trim(regexp_replace(pe.name||' '||coalesce(pe.lastname,''),'\s+',' ','g')) AS closer,
+         pp.user_id AS closer_uid
   FROM payment_plans pp
   JOIN users u2   ON u2.id = pp.user_id
   JOIN persons pe ON pe.person_id = u2.person_id
   LEFT JOIN projects pr2 ON pr2.id = pp.project_id
   WHERE $pwhere
 ),
-selplans AS (SELECT a.* FROM allplans a, pick WHERE a.closer ILIKE '%'||pick.frag||'%'),
+selplans AS (SELECT a.* FROM allplans a, pick WHERE $planpred),
 cash AS (
   SELECT i.paid_amount
   FROM installments i JOIN selplans sp ON sp.plan_id = i.plan_id
@@ -128,13 +163,12 @@ selcomi AS (
   FROM commission_payouts cp
   LEFT JOIN users u3   ON u3.id = cp.user_id
   LEFT JOIN persons pe3 ON pe3.person_id = u3.person_id
-  JOIN pick ON coalesce(nullif(trim(regexp_replace(coalesce(pe3.name,'')||' '||coalesce(pe3.lastname,''),'\s+',' ','g')),''), cp.contractor_name)
-               ILIKE '%'||pick.frag||'%'
+  JOIN pick ON $comipred
   WHERE $cwhere
 )
 SELECT json_build_object(
   'corte',   to_char(current_date,'YYYY-MM-DD'),
-  'closer',  (SELECT closer FROM sel GROUP BY 1 ORDER BY count(*) DESC LIMIT 1),
+  'closer',  $closer_expr,
   'periodo', json_build_object('from', nullif('$from',''), 'to', nullif('$to','')),
   'closers', coalesce((SELECT json_agg(t ORDER BY coalesce(t.llamadas,0) DESC, coalesce(t.ventas,0) DESC) FROM (
       SELECT closer, c.llamadas, s.ventas

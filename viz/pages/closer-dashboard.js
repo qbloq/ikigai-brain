@@ -116,7 +116,10 @@ function renderCloserDashboard(ui) {
   // Selector + ventana. Si `closer` viene FORZADO por identidad (publicador:
   // ui._locked), el dropdown no se pinta — chip fijo; y el re-fetch no emite
   // el param (el servidor lo fuerza igual: el chip es UX, no seguridad).
-  const bloqueado = (ui._locked || []).includes("closer");
+  // `closer_id` (identidad exacta) bloquea igual que `closer`: si no se
+  // contara, el despliegue por id pintaría el dropdown libre y el chip nunca
+  // — el usuario vería un selector que el servidor ignora.
+  const bloqueado = (ui._locked || []).some((k) => k === "closer" || k === "closer_id");
   const reget = bloqueado
     ? `@get('/ui/${escape(ui.id)}?from='+$cdFrom+'&to='+$cdTo)`
     : `@get('/ui/${escape(ui.id)}?closer='+encodeURIComponent($cdCloser)+'&from='+$cdFrom+'&to='+$cdTo)`;

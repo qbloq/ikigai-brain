@@ -95,11 +95,17 @@ function paginaLogin({ next = "/", error = "" } = {}) {
 }
 
 // --- resolución despliegue → ui lista para render ---------------------------
+// → los params forzados, o **null = 404**. Dos caminos distintos llegan al
+// mismo null y los dos son negación: (a) ninguna regla de permiso matchea esta
+// sesión; (b) hay permiso, pero la plantilla de identidad exige una variable
+// que la sesión no puede llenar. El caso (b) es el que fallaba abierto — un
+// permiso con '{}' sigue devolviendo {} (nada forzado), que NO es negación.
 function accesoA(despliegue, payload) {
   const permiso = elegirPermiso(pubstore.permisosDe(despliegue.slug), payload);
   if (!permiso) return null;
   const plantilla = despliegue.identidad ? JSON.parse(despliegue.identidad) : null;
-  return resolverIdentidad(plantilla, permiso, payload);
+  const forzados = resolverIdentidad(plantilla, permiso, payload);
+  return forzados === null ? null : forzados;
 }
 
 function uiRenderizable(despliegue, overrides, forzados) {

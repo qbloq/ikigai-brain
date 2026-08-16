@@ -22,7 +22,17 @@ function elegirPermiso(permisos, payload) {
   return porRol.sort((a, b) => rango(a) - rango(b))[0];
 }
 
-// → los params FORZADOS para este visitante ({} = nada forzado).
+// → los params FORZADOS para este visitante ({} = nada forzado), o **null =
+// DENEGAR**. La distinción importa y es la que sostiene el modelo:
+//
+//   {}    el permiso dice explícitamente «no fuerces nada» (el Director) — sí ve.
+//   null  la plantilla EXIGE una variable que esta sesión no puede llenar — no ve.
+//
+// Sin ese null la cosa fallaba ABIERTA: una variable vacía se volvía "" , y
+// buildArgs descarta los params vacíos, así que el script corría SIN filtro y
+// caía en su default (el closer con más llamadas) — la sesión sin identidad
+// terminaba viendo los datos de otro. Una identidad que no resuelve es una
+// sesión que no tiene derecho a la página, no una sesión sin filtro.
 function resolverIdentidad(plantilla, permiso, payload) {
   let base;
   if (permiso.params_identidad == null) base = plantilla || {};
@@ -30,7 +40,13 @@ function resolverIdentidad(plantilla, permiso, payload) {
   const out = {};
   const vars = { $name: payload.name, $email: payload.email, $user_id: payload.id };
   for (const [k, v] of Object.entries(base)) {
-    out[k] = typeof v === "string" && v in vars ? String(vars[v] ?? "") : v;
+    if (typeof v === "string" && Object.prototype.hasOwnProperty.call(vars, v)) {
+      const resuelto = vars[v];
+      if (resuelto == null || String(resuelto) === "") return null;
+      out[k] = String(resuelto);
+    } else {
+      out[k] = v;
+    }
   }
   return out;
 }
