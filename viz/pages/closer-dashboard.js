@@ -96,18 +96,22 @@ function coachCard(c) {
 }
 
 function renderCloserDashboard(ui) {
-  // Ventana por defecto: el mes actual (America/Bogota). Solo aplica cuando ni
-  // el spec ni el navegador traen fechas — un from o to explícito manda, y
-  // vaciar los inputs vuelve al mes (la historia completa se pide con un from
-  // viejo). El servidor tira los overrides vacíos, así que «ausente» es la
-  // única señal disponible.
+  // Ventana por defecto: del 1° del mes a HOY (America/Bogota). `historia=1`
+  // (el checkbox «toda la historia») la anula del todo — es presentación pura:
+  // buildArgs no lo conoce, la página lo consume y borra las fechas antes del
+  // fetch. Sin historia, un from o to explícito manda; vaciar los inputs
+  // vuelve al mes (el servidor tira los overrides vacíos, así que «ausente»
+  // es la única señal disponible).
   const params = { ...(ui.params || {}) };
-  if (!params.from && !params.to) {
-    const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
-    const [y, m] = hoy.split("-").map(Number);
-    const fin = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const historia = String(params.historia || "") === "1";
+  delete params.historia;
+  const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
+  if (historia) {
+    delete params.from;
+    delete params.to;
+  } else if (!params.from && !params.to) {
     params.from = `${hoy.slice(0, 7)}-01`;
-    params.to = `${hoy.slice(0, 7)}-${String(fin).padStart(2, "0")}`;
+    params.to = hoy;
   }
   let d = {};
   let err;
@@ -135,9 +139,10 @@ function renderCloserDashboard(ui) {
   // contara, el despliegue por id pintaría el dropdown libre y el chip nunca
   // — el usuario vería un selector que el servidor ignora.
   const bloqueado = (ui._locked || []).some((k) => k === "closer" || k === "closer_id");
+  const qwin = `'&from='+$cdFrom+'&to='+$cdTo+'&historia='+($cdAll?1:'')`;
   const reget = bloqueado
-    ? `@get('/ui/${escape(ui.id)}?from='+$cdFrom+'&to='+$cdTo)`
-    : `@get('/ui/${escape(ui.id)}?closer='+encodeURIComponent($cdCloser)+'&from='+$cdFrom+'&to='+$cdTo)`;
+    ? `@get('/ui/${escape(ui.id)}?x=1'+${qwin})`
+    : `@get('/ui/${escape(ui.id)}?closer='+encodeURIComponent($cdCloser)+${qwin})`;
   const opts = closers
     .map((c) => {
       const parts = [c.llamadas != null ? `${c.llamadas} llamadas` : null, c.ventas != null ? `${c.ventas} ventas` : null]
@@ -149,17 +154,20 @@ function renderCloserDashboard(ui) {
   const selector = bloqueado
     ? `<span class="badge badge-brand text-sm">${escape(cur || "—")}</span>`
     : `<select data-bind="cdCloser" data-on:change="${reget}" data-indicator:loadingcloser class="select w-auto font-medium">${opts}</select>`;
+  const winSignals = `cdFrom:${escape(jsStr(per.from || ""))},cdTo:${escape(jsStr(per.to || ""))},cdAll:${historia ? "true" : "false"}`;
   const signals = bloqueado
-    ? `{cdFrom:${escape(jsStr(per.from || ""))},cdTo:${escape(jsStr(per.to || ""))}}`
-    : `{cdCloser:${escape(jsStr(cur))},cdFrom:${escape(jsStr(per.from || ""))},cdTo:${escape(jsStr(per.to || ""))}}`;
+    ? `{${winSignals}}`
+    : `{cdCloser:${escape(jsStr(cur))},${winSignals}}`;
   // La página abre con los filtros (decisión 2026-08-16: sin título ni
-  // subtítulo); el corte y el «abrir solo» viven en esta misma línea.
+  // subtítulo); el corte y el «abrir solo» viven en esta misma línea. Las
+  // fechas van acotadas ene-2026 → hoy (antes no hay datos; adelante no hay
+  // días) y el checkbox «toda la historia» las desactiva y anula.
   const controls = `<div class="flex flex-wrap items-center gap-3" data-signals="${signals}">
     ${selector}
-    <input type="date" data-bind="cdFrom" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
+    <input type="date" min="2026-01-01" max="${hoy}" data-bind="cdFrom" data-attr:disabled="$cdAll" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
     <span style="color:var(--text-3)">~</span>
-    <input type="date" data-bind="cdTo" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
-    <span class="text-xs" style="color:var(--text-3)">por defecto: el mes actual</span>
+    <input type="date" min="2026-01-01" max="${hoy}" data-bind="cdTo" data-attr:disabled="$cdAll" data-on:change="${reget}" data-indicator:loadingcloser class="input w-auto" />
+    ${checkCtl("cdAll", "toda la historia", reget, { indicator: "loadingcloser", checked: historia })}
     <span class="badge badge-neutral ml-auto">corte ${escape(d.corte || "—")}</span>
     <a href="/u/${escape(ui.id)}" target="_blank" class="text-xs hover:underline" style="color:var(--text-brand)">abrir solo ↗</a>
   </div>`;
@@ -377,6 +385,7 @@ function renderCloserDashboard(ui) {
 
 module.exports = {
   id: "closer-dashboard",
-  manifest: { consumes: "object", overridable: ["closer", "project", "from", "to"] },
+  // `historia` es presentación pura (la consume la página, buildArgs la ignora)
+  manifest: { consumes: "object", overridable: ["closer", "project", "from", "to", "historia"] },
   render: renderCloserDashboard,
 };
