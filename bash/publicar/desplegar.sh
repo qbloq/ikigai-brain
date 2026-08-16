@@ -9,7 +9,7 @@ DRY=0; [[ "${1:-}" == "--dry-run" ]] && DRY=1
 
 RAMA="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)"
 if [[ $DRY -eq 1 ]]; then
-  echo "[dry-run] git push origin $RAMA && ssh $PUB_SSH 'cd $PUB_DIR && git pull --ff-only && pm2 restart viz-publish'"
+  echo "[dry-run] git push origin $RAMA && ssh $PUB_SSH 'cd $PUB_DIR && git pull --ff-only && pm2 restart viz-publish --update-env'"
   exit 0
 fi
 git -C "$REPO_ROOT" push origin "$RAMA"

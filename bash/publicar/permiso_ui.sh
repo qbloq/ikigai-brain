@@ -6,11 +6,15 @@
 #   sin flags de identidad  → NULL  (hereda la plantilla del despliegue)
 #   --sin-identidad         → '{}'  (anula la plantilla: ve todo — p.ej. Director)
 #   --identidad k=v         → json explícito (excepciones)
+#   --json     con insert/--revocar: imprime {"slug","accion","rol","user",
+#              "params_identidad"} en vez del echo plano. Ignorado en
+#              --dry-run (siempre imprime el SQL, con o sin --json).
+#   --listar / --visitas SIEMPRE emiten JSON (no miran --json ni --dry-run).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 source "$REPO_ROOT/bash/lib/common.sh"   # psql_ro para resolver email → users.id
 
-usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -8; exit "${1:-0}"; }
+usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -12; exit "${1:-0}"; }
 
 SLUG="" ROL="" EMAIL="" REVOCAR=0 LISTAR=0 VISITAS=0 SIN_IDENT=0 DRY=0 JSON=0
 declare -A IDENT=()
@@ -55,22 +59,43 @@ fi
 
 SUJETO_SQL="$([[ -n "$ROL" ]] && printf 'rol=%s' "$(sql_lit "$ROL")" || printf 'user_id=%s' "$(sql_lit "$USER_ID")")"
 
+# IDENT_MODE/IDENT_JSON_TXT quedan definidos también en la rama --revocar
+# (vacíos, sin usarse) para que el bloque --json de abajo pueda leerlos sin
+# pisar `set -u`.
+IDENT_MODE="hereda" IDENT_JSON_TXT=""
 if [[ $REVOCAR -eq 1 ]]; then
   SQL="UPDATE permisos SET revocado_at=datetime('now') WHERE slug=$(sql_lit "$SLUG") AND $SUJETO_SQL AND revocado_at IS NULL;"
 else
-  IDENT_SQL="NULL"
-  [[ $SIN_IDENT -eq 1 ]] && IDENT_SQL="'{}'"
+  [[ $SIN_IDENT -eq 1 ]] && { IDENT_MODE="vacio"; IDENT_JSON_TXT="{}"; }
   if [[ ${#IDENT[@]} -gt 0 ]]; then
+    IDENT_MODE="explicito"
     PARES=(); for k in "${!IDENT[@]}"; do PARES+=("$k=${IDENT[$k]}"); done
-    IDENT_SQL="$(sql_lit "$(node -e '
+    IDENT_JSON_TXT="$(node -e '
       const out = {}; for (const kv of process.argv.slice(1)) { const i = kv.indexOf("=");
-        out[kv.slice(0, i)] = kv.slice(i + 1); } console.log(JSON.stringify(out));' "${PARES[@]}")")"
+        out[kv.slice(0, i)] = kv.slice(i + 1); } console.log(JSON.stringify(out));' "${PARES[@]}")"
   fi
+  IDENT_SQL="NULL"; [[ "$IDENT_MODE" != "hereda" ]] && IDENT_SQL="$(sql_lit "$IDENT_JSON_TXT")"
   SQL="INSERT INTO permisos (slug, rol, user_id, params_identidad)
        VALUES ($(sql_lit "$SLUG"), $([[ -n "$ROL" ]] && sql_lit "$ROL" || echo NULL),
                $([[ -n "$USER_ID" ]] && sql_lit "$USER_ID" || echo NULL), $IDENT_SQL);"
 fi
 
+# --dry-run sale ANTES de tocar el remoto, con o sin --json: el SQL es la
+# vista honesta del preview, no vale la pena fingir un objeto JSON de un
+# escrito que no ocurrió.
 [[ $DRY -eq 1 ]] && { echo "[dry-run] $SQL"; exit 0; }
 ensure_schema; printf '%s\n' "$SQL" | remote_sql
-echo "Hecho: $([[ $REVOCAR -eq 1 ]] && echo revocado || echo permiso creado) — '$SLUG' ${ROL:+rol=$ROL}${EMAIL:+user=$EMAIL}"
+
+ACCION="permiso"; [[ $REVOCAR -eq 1 ]] && ACCION="revocado"
+if [[ $JSON -eq 1 ]]; then
+  node -e '
+    const [,, slug, accion, rol, user, mode, identTxt] = process.argv;
+    const out = { slug, accion, rol: rol || null, user: user || null };
+    if (accion !== "revocado") {
+      out.params_identidad = mode === "hereda" ? "(hereda)" : JSON.parse(identTxt || "{}");
+    }
+    console.log(JSON.stringify(out));
+  ' "$SLUG" "$ACCION" "$ROL" "$EMAIL" "$IDENT_MODE" "$IDENT_JSON_TXT"
+else
+  echo "Hecho: $([[ $REVOCAR -eq 1 ]] && echo revocado || echo permiso creado) — '$SLUG' ${ROL:+rol=$ROL}${EMAIL:+user=$EMAIL}"
+fi
