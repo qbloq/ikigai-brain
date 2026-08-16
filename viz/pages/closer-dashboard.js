@@ -212,8 +212,22 @@ function renderCloserDashboard(ui) {
     { empty: "Sin planes de pago a su nombre en la ventana." }
   );
 
-  const coaching = (d.coaching || []).map(coachCard).join("") ||
-    `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">Sin llamadas evaluadas en la ventana.</p>`;
+  // «sin data» es el balde RESIDUAL del resultado (el callStatus libre no matcheó
+  // ningún patrón) y viene con score 0-1: análisis sobre llamadas sin transcript
+  // usable. Como coaching es ruido — evalúa una conversación que no se midió —
+  // así que no se muestra. Filtro de PRESENTACIÓN: la fuente sigue emitiéndolas
+  // y el conteo de ocultas se declara abajo (nunca truncar en silencio).
+  const coachTodas = d.coaching || [];
+  const coachVis = coachTodas.filter(
+    (c) => String(c.resultado || "").trim().toLowerCase() !== "sin data"
+  );
+  const coachOcultas = coachTodas.length - coachVis.length;
+  const coaching = coachVis.map(coachCard).join("") ||
+    `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">${
+      coachTodas.length
+        ? `Ninguna llamada evaluable en la ventana (${coachOcultas} sin data).`
+        : "Sin llamadas evaluadas en la ventana."
+    }</p>`;
 
   // id="pane" NO es decorativo: el SSE parchea por id (ver pages/lead-score.js).
   return `<section id="pane" class="flex-1 relative overflow-auto p-6">
@@ -249,7 +263,12 @@ function renderCloserDashboard(ui) {
       ${section("Ventas recientes", "sus últimos planes de pago, con lo efectivamente cobrado")}
       ${tVentas}
 
-      ${section("Coaching por llamada", "la evaluación del analizador — la parte que SÍ es del closer")}
+      ${section(
+        "Coaching por llamada",
+        `la evaluación del analizador — la parte que SÍ es del closer${
+          coachOcultas ? ` · ${coachOcultas} sin data ocultas` : ""
+        }`
+      )}
       <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(24rem,1fr))">${coaching}</div>
 
       ${section("Objeciones recientes", "cómo respondió y qué sugirió la IA — alimenta el protocolo de objeciones (S12.2)")}
