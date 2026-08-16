@@ -186,6 +186,39 @@ function renderCloserDashboard(ui) {
     ${kpi("Cash cobrado", usd(vn.cash_usd), { tone: "pos", sub: "USD · installments pagadas", title: "La verdad del dinero: cuotas efectivamente pagadas de sus planes" })}
     ${kpi("Comisiones", usd(vn.comisiones_usd), { tone: "cau", sub: `${usd(vn.comisiones_pend_usd)} sin pagar`, title: "commission_payouts a su nombre (pendiente + aprobada + pagada)" })}`;
 
+  // Llamadas de HOY del closer, desde closer_agenda (agenda.sh: «el tablero
+  // manda» — solo confirmadas en pipeline; tz = reloj literal). No sigue la
+  // ventana del dashboard a propósito: es la agenda operativa del día. El
+  // botón de grabar es un placeholder (el feature viene después) y solo
+  // aparece cuando la llamada está EN CURSO al momento del render.
+  let agenda = [];
+  try {
+    agenda = fetchSource("closer_agenda", cur ? { closer: cur } : {}).rows || [];
+  } catch (e) {
+    agenda = null;
+  }
+  const ahoraHM = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Bogota", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  const ICON_MEET = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/></svg>`;
+  const ICON_REC = `<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="var(--neg-solid)"/></svg>`;
+  const tHoy =
+    agenda === null
+      ? `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">La agenda del día no respondió.</p>`
+      : tbl(
+          ["Hora", "Nombre", "Meet", "Grabar"],
+          agenda.map((r) => {
+            const enCurso = r.hora && r.hora <= ahoraHM && ahoraHM < (r.fin || "23:59");
+            return [
+              `<span class="tabular-nums font-semibold">${escape(r.hora || "")}</span>`,
+              `<span class="font-medium">${escape(r.lead || "—")}</span>`,
+              r.meet_url
+                ? `<a href="${escape(r.meet_url)}" target="_blank" title="Abrir Google Meet" style="color:var(--text-brand)">${ICON_MEET}</a>`
+                : `<span style="color:var(--text-3)">—</span>`,
+              enCurso ? `<button class="btn btn-icon btn-sm" title="Grabar llamada — próximamente">${ICON_REC}</button>` : "",
+            ];
+          }),
+          { empty: "Sin llamadas agendadas hoy." }
+        );
+
   const tTramos = tbl(
     ["Tramo BANT", "Llamadas", "Convirtió", "Conversión", "En seguimiento"],
     (d.tramos || []).map((t) => [
@@ -359,6 +392,9 @@ function renderCloserDashboard(ui) {
 
       ${section("La plata", "lo que de verdad pasó — planes, cuotas cobradas y su comisión (todo USD)")}
       <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))">${kpisPlata}</div>
+
+      ${section("Llamadas de hoy", "su agenda del día — solo las confirmadas en el tablero")}
+      ${tHoy}
 
       ${section("Tramos BANT", "sus llamadas por banda de calificación — ceros (sin transcript) excluidos")}
       ${tTramos}
