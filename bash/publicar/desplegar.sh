@@ -11,13 +11,15 @@ DRY=0; [[ "${1:-}" == "--dry-run" ]] && DRY=1
 
 RAMA="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)"
 if [[ $DRY -eq 1 ]]; then
-  echo "[dry-run] git push origin $RAMA && ssh $PUB_SSH 'cd $PUB_DIR && git pull --ff-only && pm2 restart viz-publish --update-env && git rev-parse HEAD'"
+  echo "[dry-run] git push origin $RAMA && ssh $PUB_SSH 'cd $PUB_DIR && git pull --ff-only && pm2 restart viz-publish --update-env && (pm2 restart viz-hooks --update-env || true) && git rev-parse HEAD'"
   echo "[dry-run] luego: comparar ese sha contra $(git -C "$REPO_ROOT" rev-parse HEAD) y gritar si difieren"
   exit 0
 fi
 git -C "$REPO_ROOT" push origin "$RAMA"
 LOCAL_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
-REMOTE_SHA="$(ssh "$PUB_SSH" "cd '$PUB_DIR' && git pull --ff-only >&2 && pm2 restart viz-publish --update-env >&2 && git rev-parse HEAD")"
+# viz-hooks se reinicia también si existe (|| true cubre el primer deploy,
+# cuando aún no está dado de alta en pm2).
+REMOTE_SHA="$(ssh "$PUB_SSH" "cd '$PUB_DIR' && git pull --ff-only >&2 && pm2 restart viz-publish --update-env >&2 && (pm2 restart viz-hooks --update-env >&2 || true) && git rev-parse HEAD")"
 
 # El pull remoto puede tener éxito y NO traer nada: si el checkout está en otra
 # rama (o la sigue por otro remoto), `git pull --ff-only` responde «Already
