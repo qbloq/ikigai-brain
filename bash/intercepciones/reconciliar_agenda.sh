@@ -107,6 +107,9 @@ for e in ghl:
 if fuera:
     sys.stderr.write("aviso: {} eventos GHL fuera de la ventana {}..{} descartados en {}\n".format(
         fuera, vent_desde, vent_hasta, pnombre))
+# Las citas VIVAS se calculan aca, ANTES del merge de la consulta por id: son
+# la puerta de ese merge (ver abajo).
+vivos = {i: e for i, e in ghl_por_id.items() if not cancelado(e)}
 
 con_appt = [m for m in db if m.get("event_id")]
 db_por_appt = {m["event_id"]: m for m in con_appt}
@@ -123,10 +126,14 @@ if len(con_appt) != len(db_por_appt):
         len(con_appt) - len(db_por_appt), pnombre, ", ".join(sorted(set(dupes)))))
 # Los meetings traidos por event_id SIN filtro de ventana (segunda consulta):
 # rellenan los pares cuya hora vieja quedo afuera. La fila de ventana gana.
+# ⚠️ SOLO para citas VIVAS y dentro de la ventana: la consulta por id se arma
+# con el payload crudo de GHL, asi que puede traer el meeting de un evento que
+# `en_ventana` (o `cancelado`) acaba de descartar. Metido al dict, ese meeting
+# no tendria par en ghl_por_id y el lado DB lo pintaria `sobra_en_db` con
+# estado_ghl "ausente" — un drift inventado por el propio remedio.
 for m in db_extra:
-    if m.get("event_id") and m["event_id"] not in db_por_appt:
+    if m.get("event_id") in vivos and m["event_id"] not in db_por_appt:
         db_por_appt[m["event_id"]] = m
-vivos = {i: e for i, e in ghl_por_id.items() if not cancelado(e)}
 
 drift = []
 coinciden = 0
