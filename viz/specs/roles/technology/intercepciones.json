@@ -4,6 +4,7 @@
   "component": "intercepciones",
   "source": "intercepciones_resumen",
   "params": {},
-  "scope": "org",
+  "scope": "role",
+  "role": "technology",
   "created_at": "2026-08-16T00:00:00.000Z"
 }
