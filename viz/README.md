@@ -87,7 +87,7 @@ Sin sesión, cualquier GET devuelve la página de login; sin permiso, el mismo
 `404` que un slug inexistente. **`/c/` no se monta en v1**: los frags/acts de
 bloque no existen en el publicador, así que solo se publican UIs autosuficientes
 (las que se renderizan de un tirón + SSE). El detalle y el camino para levantar
-esa restricción: [../docs/viz-publish-fragmentos.md](../docs/viz-publish-fragmentos.md).
+esa restricción: `docs/viz-publish-fragmentos.md` (doc de operador).
 Se opera desde la conversación con `bash/publicar/` (ver el CLAUDE.md raíz).
 
 ## Piezas

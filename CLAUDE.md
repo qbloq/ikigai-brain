@@ -218,7 +218,7 @@ la verdad se mide contra `installments`.
 ⚠️ Todo esto vive bajo una regla de contaminación: **no se miran los puntajes de
 una llamada antes de generar los propios** — ni el JSON, ni la db local, ni la
 UI. Ver el skill. **El informe que junta las tres cohortes y justifica el cambio
-en producción: [docs/bant-prompt-informe.md](docs/bant-prompt-informe.md).**
+en producción: `docs/bant-prompt-informe.md` (operador).**
 
 **Generación de reportes desde el cerebro (pipeline, no experimento).** Decisión
 2026-08-09: los reportes de llamada se generan AQUÍ de ahora en adelante; la
@@ -241,7 +241,7 @@ justificó el pipeline.
 **PRODUCCIÓN (2026-08-13) — el reporte del Cerebro reemplaza al de gemini.**
 Decisión de Santiago: las operaciones de la plataforma se van portando al
 Cerebro y el reporte de llamada es la primera. Migración
-[005_call_reports.sql](catalog/migrations/005_call_reports.sql):
+`catalog/migrations/005_call_reports.sql` (operador):
 
 - **`call_reports`** (+ `call_report_tiradas`) — la fuente de verdad: una fila
   por meeting × generación, con la procedencia EN COLUMNAS (variante, modelo,
@@ -499,7 +499,7 @@ llamadas del día resueltas por closer con la traza CRM de bash/calls/),
 `enviar.sh` **[WRITE→WhatsApp]** (enviador único: sesión o plantilla Meta,
 idempotente por `(escenario,ref)` en la sqlite `closers_ops`), y los tres
 `escenario_*.sh` **[WRITE→WhatsApp]** que el cron dispara. Doc completo, con
-plantillas Meta y pendientes: [docs/closers-whatsapp.md](docs/closers-whatsapp.md).
+plantillas Meta y pendientes: `docs/closers-whatsapp.md` (operador).
 
 ## Notion domain — read-only extraction ([bash/notion/](bash/notion/))
 
@@ -598,7 +598,7 @@ a task instantiates an archetype. A task rolls up archetype → sop → macro.
   (`archetype_params` con `type`/`enum_options`) existe y está **vacío: 120
   params, todos `text`**. Antes de tocar plantillas, instanciación o
   `set_archetype.sh`, leer
-  [docs/plantillas-slots-brief.md](docs/plantillas-slots-brief.md) — evidencia,
+  `docs/plantillas-slots-brief.md` (operador) — evidencia,
   mecanismo y las preguntas de diseño abiertas.
 - **`tasks.archetype_id`** (FK→activity_archetypes) + `archetype_confidence` +
   `archetype_match_method` (`rule|embedding|llm|human`): instance → template link.
@@ -744,7 +744,7 @@ vivos de GHL por cada `crm_calendars` activo, misma ventana en ambos lados,
 todos los status. Todo escribe en la sqlite `intercepciones.db` del servidor
 api (estado propio del interceptor, patrón `publicaciones.db`); los scripts de
 consulta son **local-first + ssh** (la db local si existe, si no `root@api`).
-Spec: [docs/superpowers/specs/2026-08-16-intercepcion-webhook-crm-design.md](docs/superpowers/specs/2026-08-16-intercepcion-webhook-crm-design.md).
+Spec: `docs/superpowers/specs/2026-08-16-intercepcion-webhook-crm-design.md` (operador).
 
 | Script | Use it to… |
 |--------|-----------|
@@ -798,7 +798,7 @@ UI en el viz **no** cambia lo publicado hasta que se vuelva a publicar.
 
 **v1 = solo UIs autosuficientes**: `/c/` (frags/acts de los bloques) no se monta,
 así que un componente que dependa de fragmentos enrutados no se publica todavía.
-Ver [docs/viz-publish-fragmentos.md](docs/viz-publish-fragmentos.md).
+Ver `docs/viz-publish-fragmentos.md` (operador).
 
 ⚠️ **Excepción declarada al rail de «nada de SQL fuera de `bash/`»**: el registro
 del publicador (`data/sqlite/publicaciones.db` — despliegues, permisos, visitas)

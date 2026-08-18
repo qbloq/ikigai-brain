@@ -104,7 +104,7 @@ David Guerrero 2280 / 2281       2490 / 2491
 ## Lo que encontró la auditoría de ventas perdidas (2026-08-14)
 
 Cruzando los reclamos de un closer contra la fuente
-([docs/only-closers-informe.md](../../docs/only-closers-informe.md) §8)
+(`docs/only-closers-informe.md` §8, doc de operador)
 aparecieron dos hallazgos que cambian cómo hay que consultar esta capa.
 
 **5. El ingestor no refresca el `status` de las oportunidades que ya tiene.**
