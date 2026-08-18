@@ -21,14 +21,38 @@ antes=$(git rev-parse HEAD)
 
 ### 2 · Traer lo último
 
+Primero asegura la topología (los forks nacidos antes de agosto 2026
+seguían al canal del cerebro; tu copia sigue a TU servidor — un solo
+punto de rebase). Es idempotente, córrelo siempre:
+
+```bash
+git config branch.main.remote origin
+git config branch.main.merge refs/heads/main
+git config branch.main.pushRemote origin
+```
+
+Luego:
+
 ```bash
 git pull
 ```
 
 `pull.rebase=true` ya está configurado: tus cosas personales quedan
-encima de lo nuevo, solas. Si el pull falla o reporta conflicto, **no
-improvises**: muestra el error tal cual y pide que se lo envíen a
-Santiago (Parallelo). No sigas al paso 3.
+encima de lo nuevo, solas (si git menciona «skipped» commits, es normal:
+son los tuyos que el servidor ya tenía). Si el pull falla o reporta
+conflicto, **no improvises**: muestra el error tal cual y pide que se lo
+envíen a Santiago (Parallelo). No sigas al paso 3.
+
+### 2b · Respaldar lo tuyo
+
+```bash
+git push origin main
+```
+
+Si quedaste con trabajo personal encima (specs, configuraciones), esto
+lo respalda en tu servidor — así nada tuyo vive solo en esta máquina.
+Si dice «up to date», perfecto; si falla, repórtalo igual que un
+conflicto y sigue con el paso 3 (no es bloqueante).
 
 ### 3 · Dejar la carpeta presentable
 
