@@ -79,7 +79,17 @@ def pv(p):
     if t in ("created_by", "last_edited_by"):
         return (v or {}).get("name") if isinstance(v, dict) else None
     if t == "files":
-        return len(v) if v else 0
+        # The locator, not a count: these carry the Drive folders/files that a
+        # task's IO contract binds to (see docs/io-bindings-drive.md). External
+        # links (Drive) are permanent; Notion-hosted `file` urls expire (~1h)
+        # and must be re-resolved, never persisted as a binding.
+        out = []
+        for f in v or []:
+            src = f.get("external") or f.get("file") or {}
+            out.append({"name": f.get("name"),
+                        "url": src.get("url"),
+                        "hosted": f.get("type") == "file"})
+        return out
     return None
 
 

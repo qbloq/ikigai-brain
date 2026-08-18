@@ -1,0 +1,10 @@
+{
+  "id": "dashboard-por-closer",
+  "name": "Dashboard por closer",
+  "component": "closer-dashboard",
+  "source": "closer_dashboard",
+  "params": {},
+  "scope": "role",
+  "role": "director-comercial",
+  "created_at": "2026-08-06T00:00:00.000Z"
+}

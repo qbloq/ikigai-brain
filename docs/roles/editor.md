@@ -1,7 +1,7 @@
 # Rol: Editor
 
 **Quiénes:** Tony Vidal (copiloto `tony-vidal`)
-**Capa de rol (viz):** `.viz/specs/roles/editor/` — aún no creada
+**Capa de rol (viz):** `viz/specs/roles/editor/` — aún no creada
 **Tareas históricas:** 37 asignadas · 37 etiquetadas con arquetipo · 13 abiertas hoy
 
 **Misión.** Convierte material crudo en assets publicables: edición de audio/video de anuncios (3 hooks → ~30 variaciones, S2.2) y edición de testimonios y refresh de VSL (S5/S1).
@@ -44,4 +44,4 @@
 - Su latencia de entrega es la mitad del cuello de botella #1 de la org (la otra mitad es la grabación del talento) — es lo que el PM más persigue.
 
 ---
-*Generado 2026-07-12 de la ontología ([catalog/sop-archetypes.json](../../catalog/sop-archetypes.json)) × las tareas reales (`tasks.archetype_id`, 37/37 etiquetadas). Cualitativo del [discovery original](../role-sops-discovery.md). Regenerable con la consulta del [README](README.md).*
+*Generado 2026-07-12 de la ontología (`catalog/sop-archetypes.json`) × las tareas reales (`tasks.archetype_id`, 37/37 etiquetadas). Cualitativo del `discovery original`. Regenerable con la consulta del [README](README.md).*

@@ -1,7 +1,7 @@
 # Rol: Technology
 
 **Quiénes:** Angelica Ospina (copiloto `angelica-ospina`) · Juan Sebastián Martínez (copiloto `juan-sebastian-martinez`) · Pablo Gaviria (copiloto `pablo-gaviria`)
-**Capa de rol (viz):** `.viz/specs/roles/technology/` — aún no creada
+**Capa de rol (viz):** `viz/specs/roles/technology/` — aún no creada
 **Tareas históricas:** 20 asignadas · 19 etiquetadas con arquetipo · 2 abiertas hoy
 
 **Misión.** La fuente de verdad técnica: consolidación de métricas y alineación de fuentes (Paralelo, S8), plataforma VSL (Biturbo↔GHL, S7), tracking de origen de ventas, pagos y comisiones (Stripe), y herramientas de IA/reporting.
@@ -62,4 +62,4 @@
 - Parte del trabajo Dev/Product que hoy cae aquí está en la brecha «Dev/Producto» del discovery: mucho quedó sin dueño en la pila sin asignar.
 
 ---
-*Generado 2026-07-12 de la ontología ([catalog/sop-archetypes.json](../../catalog/sop-archetypes.json)) × las tareas reales (`tasks.archetype_id`, 19/20 etiquetadas). Cualitativo del [discovery original](../role-sops-discovery.md). Regenerable con la consulta del [README](README.md).*
+*Generado 2026-07-12 de la ontología (`catalog/sop-archetypes.json`) × las tareas reales (`tasks.archetype_id`, 19/20 etiquetadas). Cualitativo del `discovery original`. Regenerable con la consulta del [README](README.md).*

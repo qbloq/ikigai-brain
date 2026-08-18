@@ -65,7 +65,9 @@ SELECT json_build_object(
      LEFT JOIN artifact_types at ON at.id=o.artifact_type_id
      WHERE o.task_id=t.id), '[]'::json),
   'criteria', coalesce((SELECT json_agg(json_build_object(
+       'id', c.id, 'output_id', c.output_id,
        'criterion', c.criterion, 'method', c.verification_method,
+       'category', c.criterion_category,
        'is_required', c.is_required, 'is_met', c.is_met,
        'output', o.title) ORDER BY c.position)
      FROM task_acceptance_criteria c

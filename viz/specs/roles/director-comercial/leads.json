@@ -1,0 +1,15 @@
+{
+  "spec_version": 2,
+  "id": "leads",
+  "name": "Leads",
+  "pattern": "master-detail",
+  "master": {
+    "block": "leads-table",
+    "source": "crm_leads",
+    "params": { "limit": "0", "project": "David Guerrero", "dueno": "sin-dueno", "from": "2026-06-01" }
+  },
+  "detail": { "block": "opp-detail" },
+  "scope": "role",
+  "role": "director-comercial",
+  "created_at": "2026-08-04T17:30:00.000Z"
+}

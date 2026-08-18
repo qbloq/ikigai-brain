@@ -1,7 +1,7 @@
 # Rol: Ejecutivo
 
 **Quiénes:** Juan Camilo Correa (copiloto `juan-camilo-correa`) · Lorenzo Cadavid (copiloto `lorenzo-cadavid`)
-**Capa de rol (viz):** [.viz/specs/roles/ejecutivo/](../../.viz/specs/roles/ejecutivo/) — 9 UIs (portafolio, pauta ×2, cobranza ×2, comisiones, cashflow, pipeline ×2) sobre los dominios `bash/ads/` + `bash/finance/` + `bash/crm/`
+**Capa de rol (viz):** [viz/specs/roles/ejecutivo/](../../viz/specs/roles/ejecutivo/) — 9 UIs (portafolio, pauta ×2, cobranza ×2, comisiones, cashflow, pipeline ×2) sobre los dominios `bash/ads/` + `bash/finance/` + `bash/crm/`
 **Tareas históricas:** 77 asignadas · 76 etiquetadas con arquetipo · 13 abiertas hoy
 
 **Misión.** El generalista de growth: opera y escala paid media (S3), co-desarrolla narrativa y oferta (S1) y monta checkout/funnels (S7). El puente entre estrategia y ejecución de campaña.
@@ -33,7 +33,7 @@
 | S9.3 Secuencias de mensajería de lanzamiento (email/WhatsApp/Telegram) | **A9.5** Programar/automatizar secuencia de mensajería | 12 | 0 | DG-Montar automatización estrategia de E-mail nutrición para audien… |
 | S9.3 Secuencias de mensajería de lanzamiento (email/WhatsApp/Telegram) | **A9.6** Gestionar ciclo de grupos/comunidades de lanzamiento | 6 | 0 | DG-Cambiar nombre del grupo según etapas |
 | S9.3 Secuencias de mensajería de lanzamiento (email/WhatsApp/Telegram) | **A9.7** Configurar canal/infraestructura de mensajería | 3 | 0 | IGM-Crear plantillas en GHL predeterminadas para las secuencias de … |
-| S9.3 Secuencias de mensajería de lanzamiento (email/WhatsApp/Telegram) | **A9.4** Escribir copy/flujo de secuencia de mensajería | 2 | 0 | DG-Crear estrategia de E-mail nutrición para audiencias captadas. [… |
+| S9.3 Secuencias de mensajería de lanzamiento (email/WhatsApp/Telegram) | **A9.4** Escribir copy/flujo de secuencia de mensajería | 2 | 0 | DG-Crear estrategia de E-mail nutrición para audiencias captadas. `… |
 
 ### S7 · Funnel / Landing / Checkout
 
@@ -129,4 +129,4 @@
 - **Absorbe el rol faltante de Media Buyer**: la optimización paid (S3) no tiene dueño formal y hoy se reparte entre Ejecutivo y Estratega — es la brecha organizacional #1 del discovery.
 
 ---
-*Generado 2026-07-12 de la ontología ([catalog/sop-archetypes.json](../../catalog/sop-archetypes.json)) × las tareas reales (`tasks.archetype_id`, 76/77 etiquetadas). Cualitativo del [discovery original](../role-sops-discovery.md). Regenerable con la consulta del [README](README.md).*
+*Generado 2026-07-12 de la ontología ([catalog/sop-archetypes.json`) × las tareas reales (`tasks.archetype_id`, 76/77 etiquetadas). Cualitativo del `discovery original`. Regenerable con la consulta del [README](README.md).*

@@ -1,7 +1,7 @@
 # Rol: Contenido
 
 **Quiénes:** Santiago Ruiz (copiloto `santiago-ruiz`) · Sebastián Castro (copiloto `sebastian-castro`) · Sofia (copiloto `sofia`)
-**Capa de rol (viz):** `.viz/specs/roles/contenido/` — aún no creada
+**Capa de rol (viz):** `viz/specs/roles/contenido/` — aún no creada
 **Tareas históricas:** 35 asignadas · 34 etiquetadas con arquetipo · 7 abiertas hoy
 
 **Misión.** El motor orgánico: reels y stories diarios (S4), desarrollo de ángulos (S1) y la automatización del social-funnel — audios CTO y ManyChat (S6).
@@ -86,4 +86,4 @@
 - Tres personas comparten el rol; la producción es por proyecto (Andrea/David/Ikigai), así que gran parte del volumen son instancias del mismo proceso.
 
 ---
-*Generado 2026-07-12 de la ontología ([catalog/sop-archetypes.json](../../catalog/sop-archetypes.json)) × las tareas reales (`tasks.archetype_id`, 34/35 etiquetadas). Cualitativo del [discovery original](../role-sops-discovery.md). Regenerable con la consulta del [README](README.md).*
+*Generado 2026-07-12 de la ontología (`catalog/sop-archetypes.json`) × las tareas reales (`tasks.archetype_id`, 34/35 etiquetadas). Cualitativo del `discovery original`. Regenerable con la consulta del [README](README.md).*

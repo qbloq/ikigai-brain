@@ -40,28 +40,40 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 | `io_types.sh` | List the semantic IO types (with default artifact type) usable in task contracts. |
 | `io_catalog.sh` | One JSON object `{io_types[], artifact_types[]}` (with ids) — reference data for the viz IO editor's dropdowns. Read-only. |
 | `update_task_io.sh --io <id> [--title T] [--io-type NAME] [--artifact NAME] [--required true\|false]` / `--add input\|output --task <id>` / `--delete --io <id> [--cascade]` **[WRITE]** | Edit one IO row of a task: retype its `io_type`/`artifact_type` (accepts id, name, or display_name), rename, toggle required, or add/remove rows. One op per call, one transaction, before/after, `--dry-run`, `--json` (emits `task_id` for re-render). Deleting an output with acceptance criteria is blocked unless `--cascade`. Powers the viz IO editor. Also `--ref-merge '<json>'` / `--ref-clear`: shallow-merge into / wipe the row's binding jsonb (`artifact_reference`/`deliverable_reference`) — how a **SQL Results** artifact stores its `{query, params}` and how bind caches `_resolved`. |
+| `update_task_criteria.sh --crit <id\|prefix> [--text T] [--method llm\|manual\|automated\|test\|attested] [--required true\|false] [--category C]` / `--add --output <id> --text T` / `--delete --crit <id> [--cascade]` **[WRITE]** | Edit the acceptance criteria of an output — the other half of the work contract. Twin of `update_task_io.sh`: one op per call, one txn, before/after, `--dry-run`, `--json` (emits `task_id`). Ids resolve by **prefix** (ambiguous = error) because this one is driven from the conversation, not the viz. A criterion hangs off an **output** (`output_id`), never off the task. Deleting one that already has attestations is blocked without `--cascade` — cascading erases the human's evidence. ⚠️ `is_met`/`verified_*` are **not** editable here: verification state is earned by attestation, never typed. |
 | `run_io_query.sh <io_id\|prefix> [--limit N] [--json]` | Execute the SQL persisted in one IO row's binding (`reference.query`) and print the result — the concrete data of a `sql_query` artifact (its sql resolver). Read-only + `statement_timeout=10s` + row cap (default 500). Only runs SQL with provenance (already persisted in the DB row); accepts nothing inline. Feeds the viz `io_query` source. |
 | `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. **Provenance:** `source_meeting` (id/prefix→FK), `source_url`/`source_external_id` (Notion), `source_type` (auto-inferred) populate the tasks provenance columns. See `-h`. |
-| `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. |
-| `ingest_notion.sh <classified.json> [--project N] [--limit N] [--only-open] [--yes]` **[WRITE]** | Bulk-ingest Notion tasks (from an ontology-pilot `classified.json`) into `tasks` in ONE txn: born with provenance (`source_type='notion'`, `source_url`, `source_external_id`) + archetype tag (`method='llm'`). v1 = **tag+provenance only** (no IO instantiation, no assignees). Dedups by `source_external_id` (idempotent). Safe by default: previews + ROLLBACK unless `--yes`. |
-| `materialize_io.sh [--source notion] [--label NAME] [--yes]` **[WRITE]** | Backfill the IO work-contract (task_inputs/outputs/acceptance_criteria) onto EXISTING tasks by instantiating their archetype's template (set-based, one txn). Substitutes `{proyecto}`→label; **neutralizes other unfilled `{slots}`→«pendiente»** (templates keep their slots — the dimensional socket — untouched). Idempotent (skips tasks that already have IO); scoped by `--source`. Safe by default: ROLLBACK unless `--yes`. Only tasks whose archetype has a template get IO. |
+| `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. ⚠️ **Re-tagging moves the pointer, it does NOT rewrite the task's IO contract** — the inputs/outputs/criteria stay exactly as the OLD template left them, so a re-tagged task keeps criteria describing a different activity until its contract is re-instantiated. |
 | `cancel_task.sh <id> [--into <id>] [--reason "…"]` **[WRITE]** | Cancel a task (`status='cancelled'`), optionally recording a merge into another (`--into`) with an auditable comment trail on both. Nothing is deleted. `--dry-run` to preview. Use for dedup/merges (e.g. cross-project duplicates the per-project dedup misses). |
-| `wipe_tasks.sh [--yes]` **[WRITE, IRREVERSIBLE]** | Delete the ENTIRE task domain (tasks + inputs + outputs + criteria + attestations + todos + comments) in one FK-safe transaction. Preserves `task_columns` and all FK parents. Safe by default: previews + rolls back unless `--yes`. Back up first (CSV snapshots in `backups/tasks-backup-<date>/`, restore via its `restore.sql`). |
+| `complete_task.sh <id> [<id>…] [--at YYYY-MM-DD] [--note "…"] [--author N]` **[WRITE]** | Mark tasks DONE (`status='completed'` + `is_completed`), with a comment trail. The twin of `cancel_task.sh` — **do not confuse them**: `completed` = the work happened, `cancelled` = it never will; mixing them corrupts every compliance metric. **`--at` is what makes it honest**: without it the migration-003 trigger seals `completed_at` with `now()`, which lies for anything executed weeks ago (an explicit value survives the trigger). Already-completed tasks are skipped, not rewritten — re-running never moves a date or duplicates a comment. `--dry-run` to preview. |
+| `start_task.sh <id> [<id>…] [--note "…"] [--author N] [--reabrir]` **[WRITE]** | Put tasks IN PROGRESS (`status='in_progress'`), with a comment trail. The third state, the one that was missing: `complete`/`cancel` are terminal, this one says *being worked on* — without it a task under active work and one parked for three months both read `pending`, and a queue can't be read. Tasks already in progress are skipped, not rewritten. **Closed tasks are refused unless `--reabrir`**: leaving `completed` makes the migration-003 trigger *erase* `completed_at`, and the date does not come back. `--dry-run` to preview. |
+| `merge_from_cruce.sh [--n LIST] [--contrato plantilla\|copia] [--dry-run]` **[WRITE]** | Execute the curated merges of the PM↔cerebro cruce (rows with `merge=1` in the local sqlite `pm_platform.cruce`, marked from the viz `cruce` UI). Per pair, ONE txn: duplicate the cerebro task with the **PM platform's title** (contract re-instantiated from the archetype template with `{proyecto}` filled + slots neutralized, or `--contrato copia` cloning the live contract with verification state reset), copy comments/todos (timestamps kept) + provenance comments, resolve status (completed if either side is; `completed_at` = Mari's date or **NULL, never an invented now()** — the script un-does the 003 trigger's seal), record PM identity (`source_external_id` = PM uuid), cancel the original into the duplicate, stamp the sqlite row `resuelta`. |
 
-**Skill — IO review session:**
+**Skill — contract review session:**
 - `revisar-tarea-io` ([.claude/skills/revisar-tarea-io/](.claude/skills/revisar-tarea-io/SKILL.md)):
-  `/revisar-tarea-io <task-id>` — interactive review/edit of ONE task's IO
+  `/revisar-tarea-io <task-id>` — interactive review/edit of ONE task's work
   contract with the user: renders `task_detail.sh` + `io_catalog.sh`, then maps
-  each request to a single `update_task_io.sh` call (the CLI twin of the viz
-  "Editor de IO"). Criteria editing is out of scope (no write script yet).
+  each request to a single `update_task_io.sh` (IO rows) or
+  `update_task_criteria.sh` (acceptance criteria) call. **This is where the
+  contract gets edited**: the viz "Editor de IO" is the viewer of the same
+  contract and shows criteria read-only, printing each criterion's short id
+  precisely so the user can dictate it here.
 
 ### Tasks data model (schema `ikigaigm`)
 
 - **tasks** — core. `status` enum (`pending`,`in_progress`,`completed`,`blocked`,`cancelled`), `priority` enum (`Low`,`Medium`,`High`), `due_date`, `assignee` is `uuid[]`, `project_id`, `column_id`, `is_completed`.
-- **task provenance** (migration 002): `source_type` (`meeting`|`notion`|`manual`|`other`), `source_meeting_id` (FK→meetings), `source_url` (external URL, e.g. Notion page — preferred), `source_external_id` (external stable id, e.g. Notion page id — for dedup/sync). Populated by `create_task.sh` (structured twin of the human provenance comment). Schema: [catalog/migrations/002_task_provenance.sql](catalog/migrations/002_task_provenance.sql).
+- **completion instant** (migration 003): `tasks.completed_at`, sealed by trigger
+  on the *transition* into completed and cleared if the task is reopened; an
+  explicitly supplied value is never overwritten. It exists because neither
+  `created_at` (294 tasks share the Notion-import date) nor `updated_at` (two
+  bulk-sync stamps) can measure rhythm. **Deliberately not backfilled** — every
+  rhythm metric is defined over `completed_at IS NOT NULL` only, so the series
+  starts 2026-07-27 instead of inventing a past. Written by `complete_task.sh`.
+  Schema: `catalog/migrations/003_task_completed_at.sql`.
+- **task provenance** (migration 002): `source_type` (`meeting`|`notion`|`manual`|`other`), `source_meeting_id` (FK→meetings), `source_url` (external URL, e.g. Notion page — preferred), `source_external_id` (external stable id, e.g. Notion page id — for dedup/sync). Populated by `create_task.sh` (structured twin of the human provenance comment). Schema: `catalog/migrations/002_task_provenance.sql`.
 - **assignee resolution**: `tasks.assignee[]` → `team_members.id` → `users.user_id` → `persons` (name); role via `team_roles`, team via `teams`. (Note: assignee UUIDs are team_members.id, **not** users.id.)
 - **task_inputs** / **task_outputs** — requirements and deliverables; typed by `io_types` / `artifact_types`.
-- **task_acceptance_criteria** — verification criteria per *output* (`verification_method`: `manual`/`attested`/auto). Linked by `output_id` → `task_outputs.id`.
+- **task_acceptance_criteria** — verification criteria per *output*, linked by `output_id` → `task_outputs.id` (never to the task directly). `verification_method` is a closed set: `llm`, `manual`, `automated`, `test`, `attested` (there is no `auto`). `is_met`/`verified_*` are state earned by attestation, not contract. Edited with `update_task_criteria.sh`.
 - **task_attestations** — human (WhatsApp) confirmation of a criterion.
 - **task_todos** / **task_comments** — checklist and comments per task.
 - **task_columns** — kanban columns.
@@ -79,21 +91,10 @@ and a `meeting_reports` row (structured jsonb, in Spanish).
 | `meeting_show.sh <id\|prefix>` | Full detail: header + participants + report (summary, objectives, decisions, action items, blockers, next steps). `--json` dumps the raw report jsonb. |
 | `meeting_transcript.sh <id\|prefix>` | Print the raw transcript text. |
 | `meeting_action_items.sh [--since D] [--priority P] [--assignee NAME] [--limit N]` | Flatten action items across team-meeting reports (coordination view). |
-| `upsert_report.sh <id\|prefix> <report.json\|-> [--dry-run]` **[WRITE]** | Insert or REPLACE a team meeting's structured report (jsonb). Upserts on UNIQUE `meeting_id` (overwrites without looking back); validates the meeting + all 14 canonical keys; leaves `report_es` untouched. |
-
-**Skills — the meeting pipeline:**
-- `transcript-to-report` ([.claude/skills/transcript-to-report/](.claude/skills/transcript-to-report/SKILL.md)):
-  **Stage 1** — regenerates the canonical report jsonb from the transcript with an
-  evidence-grounded, SOP-mapped task-discovery pass, then upserts it via
-  `upsert_report.sh` (replace without looking back). Emits a discovery **sidecar**
-  to `backups/meeting-reports/<id>.discovery.md` (resolved owners + ISO dates +
-  SOP refs + evidence) that feeds Stage 2–3.
-- `meeting-to-tasks` ([.claude/skills/meeting-to-tasks/](.claude/skills/meeting-to-tasks/SKILL.md)):
-  **Stages 2–3** — turns the action items (preferring the sidecar) into proposed
-  task work contracts (via `create_task.sh`) for review + insertion.
 
 ### Meetings data model
 - **meetings** — `meeting_type` is `team` (166) or `call` (1731); `status`: scheduled/completed/ended/cancelled/processing/… `scheduled_start_time`/`actual_start_time`, `project_id`→projects, `space_id`→spaces. `meeting_type` matters: `team` = coordination, `call` = sales calls.
+- ⚠️ **`scheduled_start_time` guarda hora BOGOTÁ etiquetada como UTC** (verificado 2026-08-13: histograma del reloj crudo = jornada 07-20 + calendario real). Leer el reloj LITERAL (`AT TIME ZONE 'UTC'`); convertir a America/Bogota corre todo −5h. Patrón correcto en `bash/closers/agenda.sh`.
 - **meeting_reports.report** (jsonb, ES) keys: `reportTitle`, `reportSubtitle`, `executiveSummary` (string), `meetingObjectives`/`meetingContext`/`nextStepsAndFollowUp` (objects), `actionItems` (array of `{task,dueDate,priority,assignedTo[],dependencies}`), `discussionPointsAndDecisions` (array of `{topic,summary,decision,rationale}`), `criticalIssuesAndBlockers` (array of `{issue,status,nextSteps}`), plus `risksAndConcerns`/`keySubjectAreas`/`resourceRequirements`/`futureConsiderations`/`additionalNotes`. `report_es` is unused (always null).
 - **meeting_transcripts.transcript** — plain text (Speaker A/B/… diarized). **meeting_participants** is sparse (only ~9 team meetings populated; names often blank). Note: action-item `assignedTo` uses free-text nicknames, not team_member ids.
 
@@ -121,8 +122,224 @@ Resolves ~83% of reported calls; the rest is the S8.2 data-hygiene queue.
 | `call_show.sh <id\|prefix>` | Full detail of one call: header + all 6 report sections rendered (métricas, estructura por fases, evaluación del closer + coaching, objeciones con respuestas, momentos críticos, perfil del lead, marketing insights, conclusión). `--json` = one object incl. raw report. |
 | `call_stats.sh [--by closer\|result\|program\|project\|week] [--project N] [--from D] [--to D]` | Effectiveness aggregates over analyzed calls: calls, won, win %, avg closing probability, avg closer score. Default `--by closer` — the Director Comercial's KPI. |
 | `call_objections.sh [--project N] [--closer N] [--status S] [--from D] [--to D] [--limit N]` | One row per objection across reports (status, objection, closer response, AI suggestion) — the feedback loop into narrative/copy (S1) and the objection protocol (S12.2). |
+| `lead_profile.sh [--by base\|arquetipo\|tramo\|prioridad\|closer\|resultado] [--project N] [--closer N] [--arquetipo F] [--from D] [--to D] [--incluir-sin-analizar] [--limit N]` | The **lead profile** already inside each report (`leadProfile.bantAnalysis` + `intelligentSegmentation`), extracted and normalized. Without `--by`: one row per call with BANT in 0-100 **and** in the 1-5 scale per item. Carries three declared normalizations, all of which change the numbers — see below. |
+| `reporte_guardar.sh --meeting <uuid> --modelo M [--variante mejorado2] --tirada f.json ×N [--umbral 10] [--destino ambos\|pg\|local] [--sin-escaparate] [--dry-run] [--json]` **[WRITE pg + local]** | Aggregate N tiradas into THE report of a call and persist it (one txn): mediana por ítem, mayoría de arquetipo, narrativa de la tirada más cercana a las medianas, rango>umbral → `baja_confianza`. The deterministic half of the `generar-reporte-llamada` skill (which spawns the N clean-context agents). Regenerating never overwrites (`generacion+1`). **Desde 2026-08-13 escribe en Postgres**: `call_reports` + `call_report_tiradas` y upsert del agregado en `meeting_reports` (el escaparate de la plataforma) — ver «PRODUCCIÓN» abajo. |
+| `reportes_pendientes.sh [--desde N] [--min-chars N] [--con-closer] [--limit N]` | **La cola del pipeline**: llamadas con transcript usable (≥2000 chars) y sin reporte del Cerebro, con closer resuelto. Read-only. |
+| `generar_pendientes.sh [--limit N] [--desde N] [--model M] [--timeout S] [--dry-run]` **[WRITE pg + local]** | **El runner**: por cada llamada de la cola corre el skill `generar-reporte-llamada` en una sesión headless (`claude -p`) — la generación son N subagentes, no un script. Cuenta intentos en `closers_ops.reportes_intentos` y para a los 2 fallos (sin eso, un transcript roto se reintenta para siempre). La verdad de si funcionó no es el exit code: es si quedó la fila en `call_reports`. |
+| `reportes_a_pg.sh [--variante V] [--sin-escaparate] [--dry-run]` **[WRITE pg]** | Promueve a Postgres los reportes que el pipeline ya tenía en la sqlite local (los 63 de la etapa prototipo). Idempotente por meeting: lo ya promovido se salta. |
+| `drive_snapshot.sh [--folder N] [--db N] [--dry-run] [--json]` **[WRITE local]** | Snapshot de la carpeta «Closer Calls» del Drive (vía el ÍNDICE de bash/google/, no el listado live que topa en 100 y sin fechas) cruzada contra los call meetings → sqlite `closer_calls.archivos` (tamaño, creado, meeting+status, contacto CRM, resultado, callStatus del reporte vigente) + log `corridas`. Cascada de match declarada por fila (`drive_file_id`→`meet_code`→nombre→prefijo+fecha). Recalcular = volver a correr; reconstruye la tabla entera (las vistas `no_completadas` —ciclo abierto, sin vacías <10 MB— y `confirmadas` se derivan solas). Si el índice está viejo, antes `drive_sync.sh --wait`. |
+| `procesar_video.sh <meeting-id> [--file-id ID] [--min-chars N] [--force] [--keep] [--dry-run]` **[WRITE pg]** | Recuperar el transcript de una llamada desde su VIDEO en Drive (la cola de `no_completadas`): descarga (backend mkt) → audio (`bash/audio/`) → STT (AssemblyAI) → upsert `meeting_transcripts` + `meetings.status='completed'` en una txn → borra la descarga. Dos guardas simétricas: no pisa un transcript ya usable (≥2000 chars) sin `--force`, y no persiste NADA (ni el status) si el STT devuelve <2000 — un transcript basura con status completed es justo el hueco que repara. Tras esto, la llamada cae sola en la cola del pipeline de reportes. |
 
-Viz sources: `calls`, `call_detail` (object), `call_stats`, `call_objections`.
+⚠️ **Three normalizations that `lead_profile.sh` declares and the rest of the
+calls domain does not** — they are not cosmetic, each moves the numbers:
+
+1. **Sin analizar ≠ mal calificado.** 66 of 230 reports carry all four BANT
+   scores at literal zero — calls with no usable transcript, not bad leads.
+   Excluded by default (`--incluir-sin-analizar` brings them back). Any average
+   that includes them understates everything.
+2. **Archetype is free text**: 43 canonical labels for what are really **four
+   traits** (Novato · Emocional · Inexperto · Experimentado) plus qualifiers.
+   `--by base` collapses to the traits and their combinations; `--by arquetipo`
+   keeps the qualifier.
+3. **`callStatus` is free text too**: 131 distinct values for 230 calls.
+   `call_stats.sh` counts wins with `ILIKE 'closed won%'` and therefore **misses**
+   `Closed/Won`, `Closed - Payment Initiated`, `Cerrado Pendiente Pago` — its win
+   rate is undercounted. `lead_profile.sh` classifies into 7 buckets, strongest
+   signal first, and counts `ganada`+`compromiso` as conversion (the real close
+   is sealed by the first installment, days after the call). Still a heuristic:
+   **the truth about money lives in `installments`**, not in `callStatus`.
+
+Result of all three: BANT **does** discriminate — the 81-100 band converts
+**38.9%** against **3.2%** for 61-80.
+
+**Experimento de prompt (en curso).** El 60% de los puntajes BANT no nulos cae
+en 90-100 y el arquetipo se fragmentó en 47 etiquetas para lo que son cuatro
+rasgos. Para separar «es del prompt» de «es del modelo» hay un cuadro de dos
+ejes en la db local sqlite `reportes_llamada`: el skill
+`replicar-reporte-llamada` regenera el reporte de UNA llamada
+(`prompt-produccion.md`, `prompt-mejorado.md` —rúbrica de anclaje + lista
+cerrada de arquetipos— o `prompt-mejorado-2.md`),
+`bash/calls/importar_produccion.sh` trae el reporte real de gemini como celda de
+control, `bash/calls/bant_diff.sh` lo contrasta y
+`bash/calls/comparativo_bant.sh` emite la matriz completa (una fila por llamada
+× cuatro celdas, las que faltan con `existe:0` + su handle).
+
+**Lo medido hasta hoy** (cohorte ciega de 15 + 3 piloto; pareado mismo-modelo
+n=3, que es poco): la rúbrica baja la media 11.7 puntos y casi duplica la
+dispersión (sd 8.7→15.9) — *separa*, no comprime. Pero por ítem baja budget
+−16.7, timeline −15.0, authority −13.3 y **`need` solo −1.7**: las anclas
+genéricas piden que el lead «lo haya dicho explícitamente» y agendar la llamada
+ya lo dice, así que ese ítem no tiene modo de fallo (gemini le pone ≥90 a 17 de
+18 leads). `prompt-mejorado-2.md` corrige justo eso dándole a `need` un eje
+propio —costo de la inacción— y no toca nada más. El confound del modelo va en
+contra del hallazgo (claude+producción puntúa +5.1 sobre gemini, n=6), así que
+las caídas medidas son un piso. Lo que sí está cerrado: el arquetipo se rompe en
+los **dos** modelos (`Emotional Trader / Novice Trader`, `Inexperienced Person
+(Emotionally Blocked by Past Losses)` salieron de corridas a ciegas con el
+prompt de producción) — eso es del prompt, no del modelo.
+
+**Cohorte 2 — v1 vs v2, un subagente por reporte** (tabla `muestra2`, 8 llamadas
+nuevas × 2 variantes, corridas `*-agente`). El diseño cambió y por eso el
+resultado vale más: **cada reporte se generó en un contexto independiente**, así
+que las dos variantes de una misma llamada no se conocen. Eso elimina el
+anclaje intra-sesión —el Δ deja de ser «un piso» y pasa a ser una medida— y
+además es *más fiel a producción*, que puntúa cada llamada sin memoria de las
+anteriores. Resultado: `need` **81.4 → 60.0**, baja en 7/8 y no sube en ninguna
+(prueba de signos **p=0.016**), ≥90 pasa de 3/8 a **0/8**. Los otros tres ítems
+—anclas byte-idénticas entre v1 y v2— son el **grupo de control** y se comportan
+como ruido: |Δ| 4.0-6.6 sin dirección (p 0.38 / 1.00 / 0.45). El eje nuevo se
+mueve **4.2× el ruido**. La llamada que v1 ya había puntuado bajo (45) salió 45
+también en v2: corrige lo inflado, no descuenta todo. Arquetipos: **7/8
+idénticos** entre contextos que no se conocen, cero etiquetas fuera de la lista.
+⚠️ Lo que esto NO prueba: que el puntaje v2 **prediga mejor**. Eso se valida
+contra plata (`installments`), no contra otro prompt. Y la sd de `need` casi no
+cambió (14.4→13.7): el eje quita el techo, no demuestra dar más granularidad.
+Hallazgo lateral que hay que respetar de aquí en adelante: **el ruido de corrida
+a corrida con prompt idéntico es de ±4-7 puntos**, así que toda comparación
+futura necesita grupo de control.
+
+**Cohorte 3 — test-retest de `mejorado2`** (tabla `muestra3`, 6 llamadas
+aleatorias jamás usadas, semilla `20260809`, × 5 tiradas cada una en contextos
+limpios; corridas `*-mejorado2-t*`). Mide LA pregunta de fondo: el reporte lo
+produce un LLM, ¿cuánto del puntaje es el lead y cuánto es el dado? Resultado:
+**ICC 0.88-0.95 en los cuatro ítems** (sd_intra 2.2-4.5 contra sd_inter
+8.2-17.4) — la varianza es del lead, el proceso es un instrumento y no una
+ruleta. La cifra OPERATIVA es la **diferencia mínima detectable** (2.77·sd_intra):
+budget ±12.4 · need ±10.0 · authority ±8.5 · timeline ±6.0 — dos leads que
+difieren menos que eso en UNA corrida son indistinguibles del azar, y eso aplica
+también a los reportes de producción, que son una tirada única. Arquetipo:
+unánime 5/5 en 3 de 6 llamadas; donde difiere, difiere en el rasgo *secundario*
+(el primario coincidió en 30/30 tiradas) — el punto flaco es la regla de cuándo
+componer con `+`, no el vocabulario. Análisis servido por
+`bash/calls/variabilidad_bant.sh` (fuente viz `bant_variabilidad`, UI
+`bant-variabilidad`: KPIs de ICC + tiras de puntos por tirada). ⚠️ n=6 llamadas;
+y el ICC alto NO valida el contenido del puntaje — consistencia no es verdad;
+la verdad se mide contra `installments`.
+⚠️ Todo esto vive bajo una regla de contaminación: **no se miran los puntajes de
+una llamada antes de generar los propios** — ni el JSON, ni la db local, ni la
+UI. Ver el skill. **El informe que junta las tres cohortes y justifica el cambio
+en producción: `docs/bant-prompt-informe.md` (operador).**
+
+**Generación de reportes desde el cerebro (pipeline, no experimento).** Decisión
+2026-08-09: los reportes de llamada se generan AQUÍ de ahora en adelante; la
+generación por gemini en el API se depreca eventualmente. El skill
+`generar-reporte-llamada` lanza **N subagentes de contexto limpio** (default 3)
+con el prompt canónico vigente (`prompt-mejorado-2.md`), y
+`bash/calls/reporte_guardar.sh` **[WRITE local]** agrega y persiste en la db
+local `generador_reportes` en una txn: **mediana por ítem** (el ruido real es
+«pelotón + tirada suelta», y la mediana-de-3 baja el mínimo distinguible de
+±11/±9 a ±4.5/±3.2), **voto de mayoría** para el arquetipo, narrativa de la
+tirada más cercana a las medianas, y **rango>10 → ítem en `baja_confianza`**
+(umbral calibrado con ruido de claude; recalibrar si cambia el modelo). Tablas:
+`reportes` (agregado: medianas/rangos/votos en columnas + JSON canon con bloque
+`_generacion`) y `tiradas` (los N crudos, siempre). Regenerar = `generacion+1`,
+nunca sobreescribe. La motivación con números: el primer cruce
+contra plata (14 llamadas v2, 5 con primera cuota pagada 0-3 días post-llamada)
+dio AUC 0.93 para v2 contra 0.59 de producción — n chico, pero la dirección
+justificó el pipeline.
+
+**PRODUCCIÓN (2026-08-13) — el reporte del Cerebro reemplaza al de gemini.**
+Decisión de Santiago: las operaciones de la plataforma se van portando al
+Cerebro y el reporte de llamada es la primera. Migración
+`catalog/migrations/005_call_reports.sql` (operador):
+
+- **`call_reports`** (+ `call_report_tiradas`) — la fuente de verdad: una fila
+  por meeting × generación, con la procedencia EN COLUMNAS (variante, modelo,
+  N, medianas, **rangos**, `baja_confianza`, votos de arquetipo, tirada
+  narrativa). Un puntaje sin su rango no dice si es señal o ruido.
+- **`meeting_reports`** pasa a ser el **escaparate**: lo que la plataforma
+  muestra. `reporte_guardar.sh` lo upsertea con el agregado — reemplazando al
+  de gemini. (Tiene UNIQUE por meeting: no caben los dos.)
+- **`call_reports_gemini`** — los 240 reportes de gemini **congelados antes del
+  primer reemplazo**. Es la celda de CONTROL de las cohortes 1-5; sin ella el
+  experimento que justificó el cambio deja de ser reproducible. No se toca.
+- **`call_report_vigente`** (vista) — cuál manda por llamada: cerebro (última
+  generación) si existe, si no lo que haya en `meeting_reports`. Cada fila
+  declara su `fuente`.
+
+⚠️ **Regla de consumo que hay que sostener.** Los scripts **operativos**
+(`calls.sh`, `call_show.sh`, `call_stats.sh`, `call_objections.sh`,
+`lead_profile.sh`, `closer_dashboard.sh`) leen **la vista**. Los del
+**experimento** (`bant_diff`, `comparativo_bant`, `importar_produccion`,
+`validacion_plata`, `rasgo_plata`, `conversion_real`, `lead_score_model`) leen
+**`call_reports_gemini`**, nunca `meeting_reports`: desde hoy esa tabla trae
+reportes nuestros, así que seguir leyéndola como «producción» convierte el
+control en el tratamiento y pudre todos los AUC en silencio. Verificado tras el
+corte: la cohorte 4 sigue dando 0.850 vs 0.620.
+
+**El pipeline automático** (transcript → reporte → coaching al closer):
+`reportes_pendientes.sh` (cola) → `generar_pendientes.sh` (corre el skill
+headless) → `bash/closers/escenario_reporte.sh` (el mensaje de vuelta). El
+disparador es la **aparición del transcript**, no `meetings.status` (que es
+inservible: hay llamadas con transcript en `completed`, `ended` y una en
+`in_progress` al día siguiente). Dos hechos medidos que el diseño respeta:
+la fila de transcript aparece **+4 a +90 min** del inicio, pero **la mitad son
+basura de ~210-220 chars** (las de verdad pesan 23k-70k) y **solo 25-40% de las
+llamadas que ocurren dejan transcript** — así que esta cola no es el universo
+del día y el mensaje post-llamada a ciegas sigue haciendo falta.
+
+**Cohorte 4 — VALIDACIÓN CONTRA PLATA** (tabla `muestra_validacion` en
+`generador_reportes`, semilla `validacion-plata-20260809`). La pregunta que las
+cohortes 1-3 no podían responder: consistencia no es verdad. Diseño
+**caso-control ciego**: 20 llamadas estratificadas 10 que pagaron / 10 que no
+(de 131 candidatas frescas con transcript y reporte de producción), puntuadas
+por el pipeline de 3 tiradas en contextos limpios — los agentes solo vieron el
+transcript, y el desenlace es posterior a la llamada, así que no puede
+filtrarse. Criterio externo: `bash/calls/conversion_real.sh` (llamada→contacto→
+`payment_plans`→cuota pagada, con **ventana temporal** de 30 días y
+**atribución única** al llamado más cercano que precede al plan). Métrica: AUC
+con **p por permutación exacta** sobre las C(20,10)=184.756 asignaciones
+(`bash/calls/validacion_plata.sh`).
+
+Resultado: **v2-mediana AUC 0.850 (p=0.0068) contra producción 0.620
+(p=0.38)**. Por ítem, v2 authority 0.82 · need 0.81 · timeline 0.835 ·
+budget 0.64; producción no pasa de 0.625 en ninguno. **El eje de `need` quedó
+validado contra dinero**: producción da 95.0 a los que pagaron y 94.0 a los que
+no (3 valores distintos en 20 llamadas — el techo diagnosticado en la cohorte
+1), v2 da 74.3 vs 57.2. Granularidad: v2 usa 11-13 valores distintos por ítem
+contra 3-8 de producción, y **cero empates** en el promedio contra 5 de
+producción — un puntaje que empata no ordena. ⚠️ **Qué es «la plata»**:
+`pagado` = total cobrado hasta hoy (suma de cuotas `Paid`) — ni el primer pago
+ni el precio del producto, y **confundido con el tiempo** (una llamada vieja
+acumuló más cuotas), así que sirve para el binario pero NO como magnitud; la
+variable limpia de tiempo es `payment_plans.original_amount` (valor del
+contrato). Los dos «convertidos» que v2 manda al fondo pagaron \$25 y \$50 pero
+**firmaron planes de \$450 y \$1.000**: son ventas incumplidas, no pagos
+simbólicos. Contra desenlaces más exigentes el AUC **sube**: firmó plan
+≥\$1.000 → **0.893**; pagó ≥50% del plan → **0.945 (p=0.0005)**. Entre los que
+compraron, el puntaje ordena también el tamaño de la venta (Spearman ρ=+0.58,
+n=10). ⚠️ Muestra caso-control: el AUC es válido (no depende de prevalencia)
+pero **las tasas de conversión por banda NO** — eso pide muestra aleatoria
+aparte. n=20; el orden de magnitud es sólido, el tercer decimal no.
+
+**Cohorte 5 — LA RÉPLICA** (misma tabla, `cohorte=5`, semilla
+`replicacion-plata-20260809-c5`): 20 llamadas nuevas, mismo diseño 10/10, mismo
+pipeline, cero solapamiento. Se reporta sola ANTES que combinada — juntar 40
+filas escondería si la réplica falló. **v2: 0.850 (c4) → 0.760 (c5) → 0.804
+(las 40, p=0.0007)**; producción: 0.620 → 0.700 → 0.655 (p=0.09). El hallazgo
+**se sostiene y se encoge**: el primer número fue el más alto de dos muestras,
+la lectura honesta es la combinada, y v2 le saca ~15 puntos de AUC a producción
+en ambas. Lo que NO se replicó: `need` cayó a 0.605 en la c5 (era 0.810) — el
+eje suma en el combinado (0.719) pero **no es el motor estable** que sugería la
+c4; `timeline` (0.791) y `authority` (0.774) sí. Lo que SÍ se replicó exacto:
+el `need` de producción es plano en las dos (95.0/94.0 · 95.5/94.0). Con n=40
+el p ya no se enumera (C(40,20)≈1.4e11) → Monte Carlo 200k con semilla fija; el
+script declara el método por fila. `validacion_plata.sh [--cohorte 4|5|todas]`.
+
+Viz sources: `calls`, `call_detail` (object), `call_stats`, `call_objections`,
+`bant_comparativo` (la matriz del experimento; UI `bant-comparativo`).
+
+## Audio domain — video→texto ([bash/audio/](bash/audio/))
+
+Piezas locales y sin estado para convertir grabaciones en texto; la composición
+con Drive y la DB vive en `bash/calls/procesar_video.sh`. `extract_audio.sh
+<video> [--out F]` extrae la pista con ffmpeg (mono 16 kHz mp3 48 kbps, ~21
+MB/hora). En [bash/audio/stt/](bash/audio/stt/) vive un script por motor STT,
+todos con el mismo contrato (entra audio, sale texto diarizado `Speaker A: …`
+— el formato de `meeting_transcripts`): hoy solo `assemblyai.sh <audio>
+[--lang es] [--out F] [--raw F]` (credencial `ASSEMBLYAI_API_KEY` en `.env`,
+pasada por fd, nunca argv; cobra por minuto de audio — transcribe UNA vez, sin
+reintentos).
 
 ## Ads domain — Meta pauta ([bash/ads/](bash/ads/))
 
@@ -159,15 +376,130 @@ ALQUIMIA CRM (Andrea Torres). **Caveat:** open opportunities carry
 `monetary_value` ≈ 0 — counts are meaningful, forecast value is not; `won`
 value IS real. Closer resolves via `o.user_id`→users→persons.
 
+⚠️ **The mirror is SCOPED, and it drifts.** Verified against the source on
+2026-08-04 (`bash/ghl/gap.sh`, `bash/ghl/opportunities.sh`):
+
+- **Scope is one pipeline per project** — the rows in `crm_pipelines`. GHL holds
+  12 pipelines for David Guerrero and 5 for Andrea; only NEW CRM TEST and
+  ALQUIMIA CRM are ingested. That is mostly *correct*: of the other pipelines
+  only **LOW TICKET** (David) still receives opportunities, and it went quiet in
+  July. The rest are historical. Whole-CRM totals therefore overstate the gap —
+  always compare within the mirrored pipeline.
+- **It drifts because the ingestor pages at 100 per run and is fired by hand.**
+  `crm_contacts.created_at` shows runs of exactly 100 (04-ago, 23-jul, 14-jul,
+  29-jun, 29-may); when more than ~10 days pass, the excess is dropped silently.
+  July 2026 (the heaviest month) lost 202 of 552 opportunities that way. Repair
+  the gap backwards with `node scripts/backfill-ghl.js` **[WRITE]**; the ingestor
+  itself is not fixed by it.
+- **`crm_contacts` is a by-product of opportunity ingestion**, not a contact
+  mirror: contacts and opportunities sit ~1:1 in the DB, ~1.6:1 in GHL. A call
+  whose booking points at a contact with no opportunity cannot resolve its
+  closer — that is the residual ~14% (`bash/calls/`). Of the calls that still
+  fail, most reference contacts that no longer exist in GHL at all.
+- **`crm_contacts.created_at` is the INGESTION timestamp** (no GHL creation date
+  is stored), so contact cohorts measure our ingestion, not the business.
+  `crm_opportunities.created_date` IS the real one.
+
+State after the 2026-08-04 backfill: the mirrored pipeline is complete for
+May–August (1086/1086 for David), closer resolution is 86% (195/226 analyzed
+calls), and ~237 opportunities/contacts were recovered. Opportunities with no
+`user_id` (237 in July alone) are a real ownership gap in GHL, not an ingestion
+artifact.
+
 | Script | Use it to… |
 |--------|-----------|
 | `pipeline.sh [--by stage\|status\|month\|closer] [--list] [--project N] [--status S] [--stage FRAG] [--from D] [--to D] [--limit N]` | Default `--by stage`: the pipeline board in order with open/won/lost/abandoned counts + won value per stage. `--by month` = cohorts (created, won, win %, won value). `--by closer` = per-closer effectiveness by opp (complements `call_stats.sh`, which is per-call). `--list` = raw opportunity rows (lead, stage, status, value, assigned). |
+| `leads.sh [--dueno LISTA] [--sin-dueno] [--project N] [--stage FRAG] [--from D] [--to D] [--dias-min N] [--pagado\|--organico] [--limit N]` | The leads as ROWS, with owner **and attribution**: resolves `utm_source`/`utm_campaign` from the contact's `custom_fields` against `crm_custom_fields`, so each row says whether the lead came from paid media (and which campaign) or an organic form. `--dueno` takes a comma list of name fragments plus the token `sin-dueno` for the orphans. Supersedes `pipeline.sh --list`. |
+| `opp_detail.sh <id\|prefix>` | One opportunity + its contact as a single JSON object, with the GHL custom fields resolved to their question — the qualification survey the lead answered plus the `utm_*`. Feeds the viz detail panel. |
+| `facets.sh [--project N] [--from D]` | The universe of owners and stages with counts (`{tipo,valor,n}`) — reference data that populates the leads filters. Kept separate on purpose: derived from already-filtered rows, a filter's options would close in on themselves. |
 
-Viz source: `crm_pipeline`. The **Ejecutivo role layer**
-([.viz/specs/roles/ejecutivo/](.viz/specs/roles/ejecutivo/), 9 UIs) covers all
+## GHL domain — el CRM en la fuente ([bash/ghl/](bash/ghl/))
+
+**Read-only** access to the GoHighLevel API v2, direct. Exists to **measure the
+mirror against the source** — it is a probe, not a second ingestion path
+(nothing here writes, to GHL or to the DB). Credentials are the org's GHL
+Private Integration Tokens, which live in `project_crm_configs` **in
+plaintext** (despite the column name `api_key_encrypted`), so the layer is
+fenced: it **refuses to run inside a copilot fork**, only GETs, and hands the
+token to curl over stdin so it never reaches `argv`. Moving the credentials
+behind the backend (the `bash/google/` pattern) is the right end state.
+
+| Script | Use it to… |
+|--------|-----------|
+| `auth_status.sh` | Which projects have an integration and whether it answers — live probe with GHL's own contact/opportunity totals. |
+| `gap.sh [--project N] [--ids]` | **The coverage report**: GHL vs the DB per project. `--ids` walks the full pagination and counts the opportunities actually missing. |
+| `contacts.sh --project N [--limit N] [--id ID] [--missing]` | Contacts from the source. `--id` answers "does this contact exist upstream?" when a call won't resolve its closer; `--missing` lists what the mirror lacks. |
+| `opportunities.sh --project N [--limit N] [--status S] [--missing]` | Opportunities from the source, same flags. |
+
+`--limit 0` pages to the end (via `meta.startAfterId`). The API paginates fine
+— 495/495 for Andrea — so the **100-record cap is the ingestor's**, not GHL's:
+`crm_contacts.created_at` shows runs of exactly 100 (04-ago, 23-jul, 14-jul,
+29-jun, 29-may). Findings and the credentials policy: [bash/ghl/README.md](bash/ghl/README.md).
+
+Viz sources: `crm_pipeline`, `crm_leads`, `crm_opp_detail` (object), `crm_facets`
+(cached 60s). The **Leads** UI (Director Comercial layer) is master-detail over
+them, and is built on a UX rule worth keeping: *a table with filters can express
+any query, and precisely for that reason it proposes nothing* — so it opens with
+**named views** («Sin dueño», «Pagados sin dueño», «Sin dueño y fríos»,
+«Estancados en NUEVO LEAD», «Todos»), and the filters stay for what those don't
+anticipate. The **Ejecutivo role layer**
+([viz/specs/roles/ejecutivo/](viz/specs/roles/ejecutivo/), 9 UIs) covers all
 three domains: portafolio, pauta (campañas + line chart de gasto diario),
 cobranza (vencidas + aging), comisiones (cola de aprobación), cashflow y
 pipeline CRM (tablero + donut por estado).
+
+## PM domain — la plataforma de Mari ([bash/pm/](bash/pm/))
+
+El API de project360 (`PM360_BASE`+`PM360_TOKEN` en `.env`, Bearer; superficie:
+`GET /tasks?limite=&offset=` y `GET /tasks/{id}`) es la fuente del **lado PM del
+cruce**. El cruce PM↔cerebro se lee sobre *snapshots* en la sqlite local
+`pm_platform`, no sobre datos vivos: sin refresco, propone acciones sobre
+estados que ya cambiaron.
+
+| Script | Use it to… |
+|--------|-----------|
+| `sync_tareas.sh [--dry-run] [--limit N] [--no-cruce] [--no-snapshot] [--json]` **[WRITE local]** | Refrescar el espejo `tareas` desde el API (upsert por id, una txn) y, con él, las copias denormalizadas `pm_titulo`/`pm_estado`/`pm_asignado` de las filas **no resueltas** de `cruce`. Guarda el JSON crudo en `data/pm-platform/tareas-<fecha>.json` y registra la corrida en `pm_sync`. |
+
+Tres reglas que el script sostiene y conviene no romper:
+
+- **Nunca borra.** Una tarea que desaparece del API se *reporta* (`desaparecidas`),
+  no se elimina: hay filas de `cruce` apuntándole, y la línea es «cruzar y
+  ajustar, no borrar». Tampoco escribe jamás en Postgres — promover al cerebro
+  es trabajo de `bash/tasks/merge_from_cruce.sh`.
+- **Las filas `resuelta=1` del cruce se congelan.** Una fila resuelta documenta
+  una decisión tomada sobre el contenido que muestra; refrescarla reescribe la
+  historia. Solo se re-sincronizan las abiertas.
+- **Un fetch de 0 tareas aborta sin escribir** — eso es el API caído, no una
+  plataforma vacía.
+
+**El cruce es multi-proyecto desde 2026-08-10.** Nació mirando solo las 402
+tareas de David Guerrero, y por eso todo lo que Mari archivó bajo DG sin serlo
+cayó en `otro_proyecto`. Al entrar las 24 de Ikigai (`cerebro_tareas.proyecto`,
+`cruce.ce_proyecto` — antes el proyecto era implícito), ese balde se desplomó de
+**23 a 3** (solo Andrea, aún fuera de alcance) y aparecieron 19 pares que el
+alcance DG no podía ver. La regla que lo hace posible: **la plataforma PM archiva
+todo bajo DG, así que el único lado que sabe de qué proyecto es un par es el
+cerebro** — de ahí que el filtro de la UI lea `ce_proyecto` y que las filas «solo
+PM» no pertenezcan a ningún proyecto. Meter Andrea es la misma operación.
+
+Lo que hay que mirar en la salida: `cruce_alertas` (filas sin resolver que Mari
+pasó a `completed` — cambian la acción propuesta, típicamente a
+`completar_en_cerebro`) y `nuevas_sin_par` (tareas nuevas sin fila de cruce; el
+cruce semántico se hace aparte, el script no lo inventa). ⚠️ El **lado cerebro**
+(`cerebro_tareas`) sigue siendo un snapshot congelado del 2026-08-06 — este
+script no lo toca.
+
+## Closers domain — acompañamiento WhatsApp ([bash/closers/](bash/closers/))
+
+Los 5 escenarios diarios de los closers por WhatsApp (saludo 07:00 con agenda
+· recordatorio 45 min con link de Meet · resultado post-llamada · confirmación
+de plan de pagos · cierre 20:00 con cuotas de mañana), mitad cron/scripts y
+mitad Iki (protocolo post-llamada de su AGENTS.md). `agenda.sh` (read-only,
+llamadas del día resueltas por closer con la traza CRM de bash/calls/),
+`enviar.sh` **[WRITE→WhatsApp]** (enviador único: sesión o plantilla Meta,
+idempotente por `(escenario,ref)` en la sqlite `closers_ops`), y los tres
+`escenario_*.sh` **[WRITE→WhatsApp]** que el cron dispara. Doc completo, con
+plantillas Meta y pendientes: `docs/closers-whatsapp.md` (operador).
 
 ## Notion domain — read-only extraction ([bash/notion/](bash/notion/))
 
@@ -183,7 +515,7 @@ linked views that report `data_sources: []`) in [bash/notion/README.md](bash/not
 ## Google domain — Drive vía el API mkt ([bash/google/](bash/google/))
 
 **Read-only** access to the org's Drive through the **Meetico backend**
-(contract: [apis/mkt/drive.openapi.json](apis/mkt/drive.openapi.json)) — the
+(contract: `apis/mkt/drive.openapi.json`) — the
 backend owns the Google identity (token, refresh, index); these scripts never
 see Google credentials and never touch the DB. Mode picked from `.env`:
 **copiloto** (`CEREBRO_API`+`CEREBRO_TOKEN` → forja-proxy `/v1/mkt/…`, audited
@@ -196,57 +528,12 @@ a clear «el backend aún no expone …» message. See [bash/google/README.md](b
 |--------|-----------|
 | `auth_status.sh` | Mode, base and a live probe against the backend. |
 | `drive_ls.sh [--folder ID\|url\|name] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf] [--limit N]` | List a folder live (`/drive/contents`) or search the whole drive (index). |
+| `drive_recent.sh [--days N] [--from D] [--to D] [--modified] [--docs] [--type T] [--folder FRAG] [--owner FRAG] [--exclude FRAG] [--with-folders] [--by day\|type\|owner\|folder] [--limit N]` | What **entered or changed** lately, newest first — the index has no other way to be asked "what's new". Always prints the index's freshness to stderr and shouts past 48h, because the index is a hand-refreshed cache and a stale one answers "what came in this week?" with silence. Needs the 2026-08-04 backend change (date filters + `sort` + `/drive/index/status`); refuses to run without it. |
+| `drive_sync.sh [--all-drives] [--trashed] [--wait] [--timeout N] [--status]` **[WRITE]** | Refresh the index (`POST /drive/index` → 202, poll `/drive/index/status`; 409 if one is already running). The **only** write in `bash/google/` — and it rewrites our index, not the Drive. Since 2026-08-09 a PM2 `drive-index` job also runs it daily at 10:00 UTC (05:00 Bogotá), so this is for "I need it fresh *now*". |
 | `drive_file.sh <id\|url>` | Metadata of one file. |
 | `doc_read.sh <id\|url> [--out F] [--txt]` | A Google Doc as **Markdown** (`?format=markdown`). `--out` writes a file. |
 | `sheet_show.sh <id\|url>` | Sheet metadata (tabs not exposed by the backend yet). |
 | `sheet_read.sh <id\|url> [--limit N] [--raw]` | First tab's values as an aligned table (CSV; row 1 = header); `--json` = array of objects. |
-
-## Users domain — Marketico API ([bash/users/](bash/users/))
-
-The app's **user accounts** (login identities, ~28 — the layer behind
-`users`/`persons`), managed through the Marketico backend HTTP API instead of
-SQL (spec: [apis/mkt/users.openapi.json](apis/mkt/users.openapi.json); auth
-`MARKETICO_JWT_TOKEN` in `.env`; base `MARKETICO_URL`, default
-`https://ikigaigm.api.parallelo.ai`). Own helper lib
-([bash/users/lib/common.sh](bash/users/lib/common.sh) — `mkt_data` unwraps the
-`{success,data}` envelope, `resolve_user` accepts id-prefix/name/email and
-errors on ambiguity), independent of the Postgres lib. Same policy mirror:
-reads by default, WRITE scripts print payload + before/after and support
-`--dry-run` (nothing sent). All accept `--json`.
-
-| Script | Use it to… |
-|--------|-----------|
-| `users.sh [--q FRAG] [--disabled\|--enabled]` | List app users (id, name, email, phone, disabled, created). |
-| `contact_users.sh` | List the users assignable as contact owners (`{id, full_name}`). |
-| `gh_users.sh --location ID` | GoHighLevel users of one GHL location (ids in `project_crm_configs.location_id`). Currently 422s for both known locations — upstream GHL call fails server-side. |
-| `create_user.sh --name N --email E --password P [--lastname L] [--phone T]` **[WRITE]** | Create a user (POST). Prints payload (password redacted) + the created row. |
-| `update_user.sh <id\|prefix\|name> [--name\|--lastname\|--email\|--phone] [--disable\|--enable]` **[WRITE]** | Patch one user's fields or toggle `disabled`. Prints before/after. |
-| `set_ghl.sh <ref> --location LOC --ghl-user GID [--primary] [--remove]` **[WRITE, SQL]** | Bind the user's GoHighLevel identity: merges `{LOC: GID}` into `users.integrations` (jsonb map location→ghl_user); `--primary` also sets `users.crm_id` (what the calls-domain closer resolution reads). The API doesn't expose these columns, so this one writes via `psql_rw`. `--dry-run` rolls back. |
-
-**Skill — alta de usuario:**
-- `crear-usuario` ([.claude/skills/crear-usuario/](.claude/skills/crear-usuario/SKILL.md)):
-  `/crear-usuario` — interactive alta of ONE app user: gathers nombre/apellido/
-  email/teléfono (+ apodos and GHL location+user id, both optional), pre-checks
-  duplicates, then `create_user.sh` → `set_ghl.sh` → nickname-map update.
-  Team/role membership (`team_members`) is out of scope (no write script yet).
-
-## WhatsApp domain — Evolution API ([bash/whatsapp_evo_api/](bash/whatsapp_evo_api/))
-
-WhatsApp messaging to one recipient (the closer) via a local Evolution API
-instance. Config in `.env`: `EVOLUTION_API_URL`/`EVOLUTION_API_KEY`/
-`EVOLUTION_API_INSTANCE` + default recipient `PHONE_NUMBER`; `PROJECT_ID`
-scopes the DB read. **Unlike the rest of bash/, senders WRITE to the outside
-world** (a real WhatsApp message goes out) — both support `--dry-run`.
-**Caveat:** `ikigaigm.whatsapp_messages` is NOT being populated (no Evolution
-webhook), so `messages.sh` shows a stale trail; `last_inbound.sh` reads live
-from the API and is the source of truth for replies.
-
-| Script | Use it to… |
-|--------|-----------|
-| `send_message.sh --message TEXT [--to NUMBER] [--dry-run]` **[SEND]** | Send one text message. Recipient defaults to `$PHONE_NUMBER`. Prints the Evolution message id + status. |
-| `send_message_template.sh --template NAME --data TEXT [--dry-run]` **[SEND]** | Render `templates/<NAME>/render.py` (repo root) with `--data` (raw output of a data-source script) and send the result via `send_message.sh`. No templates exist yet — create the dir first. |
-| `last_inbound.sh [--jid JID] [--since TS]` | Latest message authored by the HUMAN in the conversation, live from `/chat/findMessages`. Excludes only API sends (`fromMe` + `source=web`), so self-tests (phone = instance's own number) still work. `--since` (epoch or ISO) guards against stale replies. Emits one JSON object or `null`. |
-| `messages.sh [--phone N] [--limit N] [--date-after D] [--date-before D] [--inbound\|--outbound]` | Conversation trail from `ikigaigm.whatsapp_messages` (filtered by `PROJECT_ID` + jid). Stale until the webhook populates the table. |
 
 ## Metrics domain ([bash/metrics/](bash/metrics/))
 
@@ -274,10 +561,10 @@ Data caveats: ~46 unpaid installments hang off plans with NULL `project_id`
 
 Viz sources: `portfolio`, `cobranza`, `comisiones`, `cashflow`.
 
-## Catalog domain — process ontology ([catalog/](catalog/), [bash/catalog/](bash/catalog/))
+## Catalog domain — process ontology (`catalog/`, [bash/catalog/](bash/catalog/))
 
 The org's process ontology, mapped from the start so every task is born tagged.
-**Three process tiers** (per [docs/role-sops-discovery.md](docs/role-sops-discovery.md)):
+**Three process tiers** (per `docs/role-sops-discovery.md`):
 
 ```
 value chain → macro_process (S1…S12) → sop (Sx.y) → activity archetype (A_.__) → task
@@ -286,39 +573,52 @@ S1–S10 are **macro-processes** (§1 spine); each is broken into canonical **SO
 (deduped from §2 per-role candidates); each SOP groups **archetypes** (activities);
 a task instantiates an archetype. A task rolls up archetype → sop → macro.
 
-- **[catalog/sop-archetypes.json](catalog/sop-archetypes.json)** — canonical source
-  of truth: 12 macro-processes (S1–S10 + gaps S11 Producto / S12 Cierre-Retención),
-  33 SOPs, 65 archetypes `{id, sop, verb, name, slots[]}`. Every SOP has ≥1 archetype.
+- **`catalog/sop-archetypes.json`** — canonical source
+  of truth: 12 macro-processes (S1–S10 + S11 Producto / S12 Cierre-Retención, born
+  as gaps and filled by the Mastermind pilot), 36 SOPs, 78 archetypes
+  `{id, sop, verb, name, slots[]}`. Every SOP has ≥1 archetype.
 - **DB tables** (`ikigaigm`, seeded from the JSON): `macro_processes`, `sops`
   (→macro_processes), `activity_archetypes` (→sops, +`embedding extensions.vector(1536)`
   for the future matcher), `archetype_params`, and the template-contract tables
   `archetype_inputs`/`archetype_outputs`/`archetype_acceptance_criteria` (an
-  archetype = a task template with declared I/O+criteria; **S5 Testimonios is the
-  first SOP authored**, the rest are pending). Template contracts are declared in
-  the catalog JSON per archetype and seeded by `sync_catalog.sh`.
+  archetype = a task template with declared I/O+criteria; **60 of the 78 archetypes
+  already carry one** — S5 Testimonios was the first authored, the Mastermind pilot
+  wrote the rest; the 18 without a template are listed in the meeting-to-tasks
+  skill). Template contracts are declared in the catalog JSON per archetype and
+  seeded by `sync_catalog.sh`. ⚠️ `create_task.sh` leaves **unfilled `{slots}`
+  literal** (unlike `materialize_io.sh`, which neutralizes them) — always pass
+  `slots`, including `proyecto`.
+- ⚠️ **Los slots son un hueco de diseño abierto, no un detalle de formato.**
+  Hay **tres** sustituidores con dos comportamientos incompatibles, y los
+  **valores de los slots no se persisten en ninguna parte** — se hornean en el
+  texto al instanciar, así que toda re-instanciación (merge, re-tag, corrección
+  de plantilla) los pierde. Ya costó: el merge PM↔cerebro degradó 16 contratos
+  que estaban llenos, y el daño se concentra en los **criterios de aceptación**
+  (un criterio con `«pendiente»` es inverificable, no solo feo). El socket
+  (`archetype_params` con `type`/`enum_options`) existe y está **vacío: 120
+  params, todos `text`**. Antes de tocar plantillas, instanciación o
+  `set_archetype.sh`, leer
+  `docs/plantillas-slots-brief.md` (operador) — evidencia,
+  mecanismo y las preguntas de diseño abiertas.
 - **`tasks.archetype_id`** (FK→activity_archetypes) + `archetype_confidence` +
   `archetype_match_method` (`rule|embedding|llm|human`): instance → template link.
   The SOP/macro are reached by joining through `activity_archetypes`→`sops`.
-- `bash/catalog/sync_catalog.sh [--dry-run]` **[WRITE]** — rebuilds the catalog
-  tables from the JSON (task archetype_id values preserved). Re-run after editing it.
 - `bash/catalog/sops.sh [--macro CODE] [--json]` — **read-only** listing of the
   ontology: one row per archetype (SOP + macro-process + task count). Feeds the
   viz `sop-tree` UI for navigating SOPs with their activities.
 - `bash/graph/ontology_stats.sh [--json] [--no-db]` — health + findings of the
-  **ontology itself**, over the built graph artifacts in [docs/graph/](docs/graph/README.md)
+  **ontology itself**, over the built graph artifacts in `docs/graph/`
   (not the DB: the graph is a *curated* artifact about it). Feeds the viz
   `ontologia` source / `ontology` dashboard. Rebuilding the graph refreshes it;
   the freshness bar reports build dates + drift vs the live DB. The graph has two
   layers — **dato** (98 entidades, FKs+reglas) and **negocio** (cadena de valor →
   macro → SOP → arquetipo), each with `graph.json`/`business.json`, a validated
   `.ttl` and a self-contained viewer built by `build_viewer.py --profile`.
-- **Schema of record:** [catalog/migrations/001_process_ontology.sql](catalog/migrations/001_process_ontology.sql)
+- **Schema of record:** `catalog/migrations/001_process_ontology.sql`
   — the documented, idempotent DDL for all tables/columns added (the 7 tables above
   + the 3 `tasks.archetype_*` columns). DDL only; seeding is `sync_catalog.sh`'s job.
 
-**Where it plugs in:** `transcript-to-report` classifies each action item (sop +
-archetype) in the discovery sidecar; `meeting-to-tasks`/`create_task.sh` persist
-the tag. Matching is manual now; the path to automatic is rule → pgvector
+**Where it plugs in:** `create_task.sh` persists the tag at birth. Matching is manual now; the path to automatic is rule → pgvector
 embedding → LLM judge (thresholds: ≥0.85 auto · 0.6–0.85 confirm · <0.6 new
 candidate), growing the catalog from the tail. Rollup example:
 `SELECT mp.code, count(*) FROM tasks t JOIN activity_archetypes a ON a.id=t.archetype_id JOIN sops s ON s.code=a.sop_code JOIN macro_processes mp ON mp.code=s.macro_process_code GROUP BY mp.code`.
@@ -326,7 +626,7 @@ candidate), growing the catalog from the tail. Rollup example:
 ## Localdb domain — local SQLite databases ([bash/localdb/](bash/localdb/))
 
 The user's OWN local databases — the **personal data layer** of
-[docs/deltas-architecture.md](docs/deltas-architecture.md): prototype schemas
+`docs/deltas-architecture.md`: prototype schemas
 and datasets here without touching the shared Postgres; a proven local schema
 (`db_schema.sh`) is the *candidate* for a real migration. All dbs live in
 `data/sqlite/` (git-ignored; `LOCALDB_DIR` overrides). Helpers in
@@ -343,6 +643,7 @@ WRITE scripts, one whitelisted dir, scripts take db *names*, never paths.
 | `db_query.sh <db> [SQL\|-] [--limit N]` | Read-only SQL (the connection is `-readonly -safe`, so the engine rejects writes/dot-commands). Inline SQL is fine locally; via the viz (`localdb_query`) the query comes from the saved UI spec, never the browser. |
 | `db_exec.sh <db> [SQL\|-] [--create] [--dry-run]` **[WRITE]** | DDL/DML in ONE transaction — how a local db is created, filled and evolved, and the hook for external syncs (pipe INSERTs in). Local only; cannot touch Postgres. |
 | `db_import.sh <db> <file.csv> [--table T] [--replace] [--create] [--dry-run]` **[WRITE]** | CSV → table: new table from the header row, append to an existing one, `--replace` drops it first. One txn. |
+| `cruce_mark.sh <n> [--merge 0\|1] [--resuelta 0\|1] [--resolucion T]` **[WRITE]** | Curation marks on ONE row of `pm_platform.cruce` (the PM↔cerebro reconciliation). The only write behind the viz `cruce` UI's Merge button; guardrail: merge only on `igual`+`alta` unresolved rows. The marked set is what `bash/tasks/merge_from_cruce.sh` executes. |
 
 The viz `localdb` page (seeded as «Bases locales») is the explorer: left,
 every db with its tables + counts; right, a ≤200-row preview. The selection
@@ -359,20 +660,14 @@ CLAUDE.md stays byte-identical across brain and forks — it composes identity
 via `@identidad.md`, never by assembling a per-fork copy. The viz store loads
 ONLY that role's spec layer and stamps `owner`/`role` on everything created.
 The brain (no copilot.json) sees org + all roles.
-Everything a copilot writes lands in `.viz/specs/local/` and auto-commits —
+Everything a copilot writes lands in `viz/specs/local/` and auto-commits —
 git IS the telemetry; structure is observed, content never. Structural
 changes propose themselves by push; governance reviews and, when approved,
 promotes a spec into `org/` or `roles/<rol>/` with `promoted_from` lineage.
 Each fork's own CLAUDE.md/copilot.json belongs to that copilot — never edit
 them from the brain.
 
-## Snapshot exports ([scripts/](scripts/))
-
-Regenerate the `backups/` snapshots from the live DB (read-only, open tasks).
-`npm run export` runs all three; or `export:json` / `export:by-role` /
-`export:by-due-date` individually. See [scripts/README.md](scripts/README.md).
-
-## On-demand UIs — viz server ([.viz/](.viz/))
+## On-demand UIs — viz server ([viz/](viz/))
 
 When the user asks to **"crear una UI"** (a table/dashboard/visualization), this
 is the system to use — **do not** hand-write a one-off HTML file. A "UI" is a
@@ -382,30 +677,132 @@ TailwindCSS (Play CDN) + **Datastar 1.0** (vendored) over **SSE**.
 
 ```bash
 npm run viz                 # http://localhost:4317   (PORT=… overrides)
-npm run viz:restart         # REQUIRED after editing .viz/ (Node caches modules)
+npm run viz:restart         # REQUIRED after editing viz/ (Node caches modules)
 ```
+
+- **Tema — la identidad visual de la org**
+  (`docs/ui-theming/README.md`; la fuente de diseño es
+  `docs/ui-theming/ikigai-design-system.html`,
+  se lee en el navegador). Un tema son **10 hex + tipografía** en `tema.json` a
+  la raíz del repo; de ahí [viz/lib/theme.js](viz/lib/theme.js) emite
+  `:root{--pal-*}` y [viz/public/tokens.css](viz/public/tokens.css) deriva con
+  `color-mix()` los ~90 semánticos, el tema oscuro, las rampas y ~130 clases de
+  componente (`.btn`, `.card`, `.kpi`, `.tbl`, `.badge`, `.check`…). **Regla de
+  oro: los componentes jamás consumen `--pal-*`, solo los semánticos.** Editar
+  `tema.json` no pide reinicio (se lee por request). Claro/oscuro es preferencia
+  del usuario (`localStorage` `viz-modo`, botón «◐»), no del tema.
+  [viz/public/tw-bridge.js](viz/public/tw-bridge.js) es el puente: el viz usaba
+  sus ~700 clases de color Tailwind semánticamente (slate=neutral,
+  indigo/blue/sky/violet=marca, red=negativo, emerald=positivo, amber=precaución,
+  pink=acento), así que redefine esas familias sobre las rampas de tokens.css —
+  todo lo no portado se tematiza igual, y gana modo oscuro porque las rampas
+  invierten sus polos bajo `[data-theme="dark"]`. Sora + JetBrains Mono van
+  **vendorizadas** en `viz/public/fonts/` (variables, ~104 KB).
 
 - **Data only flows through `bash/ --json`** — same read-only policy as
   everything else. The whitelist of sources + their CLI flags is `SOURCES` in
-  [.viz/lib/datasources.js](.viz/lib/datasources.js); each domain section above
+  [viz/lib/datasources.js](viz/lib/datasources.js); each domain section above
   names its viz sources. **Never** add SQL to the viz — the one write path (the
   IO editor) also shells out to a whitelisted bash script.
-- **The spec store is LAYERED** ([.viz/lib/store.js](.viz/lib/store.js)):
-  `.viz/specs/org/` (shared genome, in git — seeds live here) →
+- **The spec store is LAYERED** ([viz/lib/store.js](viz/lib/store.js)):
+  `viz/specs/org/` (shared genome, in git — seeds live here) →
   `roles/<rol>/` → `local/` (the ONLY writable layer). Editing/archiving an
   org/role spec forks it into local with `derived_from` lineage; every local
   write auto-commits (`Delta-Type`/`Delta-Scope` trailers) — git is the delta
   event log. Programmatically: `store.create({name, component, source, params})`.
 - Render code is layered as the **composition tower**
-  ([docs/deltas-architecture.md](docs/deltas-architecture.md)): kernel
-  [.viz/lib/kit.js](.viz/lib/kit.js) → blocks → patterns (`master-detail`) →
+  (`docs/deltas-architecture.md`): kernel
+  [viz/lib/kit.js](viz/lib/kit.js) → blocks → patterns (`master-detail`) →
   pages (one per `ui.component`); a saved spec can also be v2 pattern-addressed.
   Components: `table`, `dashboard`, `chart` (bar/donut), `sop-tree`, `localdb`,
   `notion-tasks`, `tasks`, `meetings`, `task-editor` (the IO editor — the viz's
   only write path).
+- **viz is the VIEWER; the editor is the conversation with the brain.** The IO
+  editor's write path predates that rule and stays, but nothing new gets one:
+  when a view needs to become editable, the write goes into a `bash/` script and
+  a skill, and the panel's job is to render the state **plus the row's short id**
+  — the handle the user dictates. Acceptance criteria were the first thing built
+  this way (read-only under their output in the panel, edited via
+  `update_task_criteria.sh` / `revisar-tarea-io`).
 
 **Operating rules** (Datastar colon syntax, caching policy, manifest contracts,
-required loaders, store details) live in [.viz/CLAUDE.md](.viz/CLAUDE.md) —
-auto-loaded when working under `.viz/`. Architecture narrative + component
-catalog: [.viz/README.md](.viz/README.md).
+required loaders, store details) live in [viz/CLAUDE.md](viz/CLAUDE.md) —
+auto-loaded when working under `viz/`. Architecture narrative + component
+catalog: [viz/README.md](viz/README.md).
+
+## Intercepciones domain — procesos de Marketico observados ([bash/intercepciones/](bash/intercepciones/))
+
+La **segunda operación de Marketico interceptada** (la primera fue el reporte
+de llamada): el webhook de agendamiento GHL→`/webhooks/crm`. Dos piezas
+complementarias, ambas vivas desde 2026-08-17: **auto-reporte** — Marketico
+(`src/services/cerebroReporter.js` en su repo) POSTea el desenlace de cada
+`processBooking` a `viz/hooks.js` (pm2 `viz-hooks`, puerto 4319 loopback,
+nginx `app.ikigaigm.parallelo.ai/hooks/crm-resultado`, Bearer `HOOKS_TOKEN`);
+y **verificación independiente** — pm2 cron `intercepciones-cron` (minuto 17
+de cada hora) corre `reconciliar_agenda.sh`: meetings de la DB vs Appointments
+vivos de GHL por cada `crm_calendars` activo, misma ventana en ambos lados,
+todos los status. Todo escribe en la sqlite `intercepciones.db` del servidor
+api (estado propio del interceptor, patrón `publicaciones.db`); los scripts de
+consulta son **local-first + ssh** (la db local si existe, si no `root@api`).
+Spec: `docs/superpowers/specs/2026-08-16-intercepcion-webhook-crm-design.md` (operador).
+
+| Script | Use it to… |
+|--------|-----------|
+| `log.sh [--desde D] [--solo-errores] [--limit N]` | El log del webhook: qué reportó Marketico de cada `/crm` (ok/error, paso, duración). |
+| `drift.sh [--historia]` | Drift de agenda **vigente** (última corrida ok por calendario); `--historia` lista corridas. |
+| `resumen.sh` | Un objeto: KPIs 24h/7d del webhook + últimas corridas + drift — la fuente de la UI. |
+| `reconciliar_agenda.sh [--desde N] [--hasta N] [--dry-run] [--json]` **[WRITE sqlite]** | La reconciliación a mano (el cron la corre sola cada hora). |
+| `bash/ghl/appointments.sh (--project F\|--project-id U) [--calendar ID] [--desde N] [--hasta N]` | La sonda GHL de calendario (Version 2021-04-15, epoch millis) que alimenta la reconciliación. |
+
+Reglas que sostener: **GHL caído ≠ agenda vacía** (corrida `estado='error'`,
+jamás drift inventado); `scheduled_start_time` se compara por **reloj literal**
+(el quirk Bogotá-como-UTC); solo meetings `scheduled` pueden dar `sobra_en_db`
+/ `horas_difieren` — un status vivo con par en GHL cuenta como `coinciden`.
+Viz: fuentes `intercepciones_resumen`/`_log`/`_drift`, UI org `intercepciones`.
+Fase actual: **observar** — ni alerta ni repara (eso se gana con datos).
+
+## Publicar domain — UIs publicadas ([bash/publicar/](bash/publicar/))
+
+El **publicador** es `viz/publish.js` corriendo en el servidor `api` desde
+`/apps/hermetico` (pm2 `viz-publish`, puerto 4318 solo en loopback, nginx+TLS
+en **https://app.ikigaigm.parallelo.ai**). Es un entrypoint aparte del viz, con
+superficie mínima por construcción: sirve **solo** las UIs registradas, con
+datos vivos, login contra Marketico (JWT verificado localmente con el mismo
+`JWT_SECRET`) — no existen el shell, la creación/edición de UIs ni los `acts`.
+Rutas: `GET /<slug>` · `/s/<codigo>` (alias corto) · `/ui/<slug>` (SSE) ·
+`/u/<slug>` · `/login` · `/logout` · `/health`.
+
+| Script | Use it to… |
+|--------|-----------|
+| `publicar_ui.sh <spec-id> --slug S [--identidad k=v]… [--fijar k=v]… [--archivar] [--dry-run] [--json]` **[WRITE remoto]** | Publicar (o re-publicar) un spec del viz como despliegue. `--identidad` declara la plantilla; `--fijar` clava params; `--archivar` despublica. |
+| `permiso_ui.sh <slug> --rol R \| --user EMAIL [--identidad k=v]… \| --sin-identidad [--revocar] [--listar] [--visitas]` **[WRITE remoto]** | Dar/quitar acceso y ver quién entró. `--listar`/`--visitas` siempre emiten JSON. |
+| `desplegar.sh [--dry-run]` **[WRITE remoto]** | Llevar el CÓDIGO al publicador: push a `origin`, `git pull --ff-only` en `/apps/hermetico` y `pm2 restart viz-publish`. No toca el registro. |
+
+**Permisos — tres estados de `params_identidad`**, y entre varios roles gana el
+**menos restrictivo** (un permiso por `--user` siempre gana sobre los de rol):
+`NULL` = *hereda* la plantilla de identidad del despliegue (el closer se ve solo
+a sí mismo) · `'{}'` = *anula* la plantilla, ve todo (el Director Comercial) ·
+json explícito = fuerza esos valores (la excepción). Sin permiso que matchee,
+la respuesta es el **mismo 404** que un slug inexistente — no se filtra qué
+existe.
+
+**Plantilla de identidad**: `--identidad 'closer=$name'` guarda la plantilla, no
+el valor; en cada visita `$name`/`$email`/`$user_id` se resuelven contra el JWT
+del visitante y los params resueltos se aplican **al final** (spec → fijos →
+overrides del navegador → forzados), así que la query string no los puede pisar
+y el control del param sale bloqueado en la UI.
+
+**El spec viaja CONGELADO**: publicar guarda un snapshot del spec, y re-publicar
+inserta `generación+1` — nunca sobreescribe ni borra (archivar sella). Editar la
+UI en el viz **no** cambia lo publicado hasta que se vuelva a publicar.
+
+**v1 = solo UIs autosuficientes**: `/c/` (frags/acts de los bloques) no se monta,
+así que un componente que dependa de fragmentos enrutados no se publica todavía.
+Ver `docs/viz-publish-fragmentos.md` (operador).
+
+⚠️ **Excepción declarada al rail de «nada de SQL fuera de `bash/`»**: el registro
+del publicador (`data/sqlite/publicaciones.db` — despliegues, permisos, visitas)
+es **estado propio del publicador**, no dato de la org, y por eso estos scripts
+sí llevan SQL (sqlite, por ssh y por stdin, nunca en el argv del remoto). Los
+datos de la org siguen entrando únicamente por `bash/ --json`.
 
