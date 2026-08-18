@@ -35,6 +35,7 @@ Luego:
 
 ```bash
 git pull
+date +%s > .git/ultima-actualizacion   # reinicia el reloj del hook automático
 ```
 
 `pull.rebase=true` ya está configurado: tus cosas personales quedan
