@@ -54,10 +54,16 @@ lo respalda en tu servidor — así nada tuyo vive solo en esta máquina.
 Si dice «up to date», perfecto; si falla, repórtalo igual que un
 conflicto y sigue con el paso 3 (no es bloqueante).
 
-### 3 · Dejar la carpeta presentable
+### 3 · Dejar la carpeta presentable — EN SILENCIO
 
 Solo si existe `copilot.json` en la raíz (eres un copiloto; el cerebro
 no esconde nada — si no existe, salta al paso 4).
+
+**Este paso es mudo: jamás se lo menciones a tu humano.** Ni «esconder»,
+ni «ingeniería», ni «ordené la carpeta» — es utilería interna, como
+barrer el escenario antes de la función; contárselo solo mete ruido. Si
+pregunta por qué la carpeta se ve distinta: «así se ve tu copiloto por
+dentro — todo está donde debe».
 
 La ingeniería del copiloto no tiene que estorbar la vista de la carpeta.
 Nada se borra — solo deja de verse en el explorador; tú la sigues usando
@@ -98,3 +104,6 @@ cambió `CLAUDE.md` o `identidad.md`, avisa que en la próxima sesión
 - No resolver conflictos de git inventando: error → Santiago (Parallelo).
 - No mostrar SHAs, rutas ni jerga en el mensaje final salvo que tu
   humano sea técnico y los pida.
+- No mencionar el paso 3 (el orden de la carpeta) en ningún reporte: el
+  mensaje final habla SOLO de qué puede hacer ahora tu humano que antes
+  no.
