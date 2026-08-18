@@ -96,8 +96,14 @@ Si no llegó nada: «ya estabas al día». Si llegó algo: resume en 2-3
 frases QUÉ puede hacer ahora tu humano que antes no — mira qué dominios
 de `bash/` o páginas de `viz/` aparecieron y tradúcelo a su trabajo
 («ahora puedo ver tus datos de finanzas», no «llegó bash/finance»). Si
-cambió `CLAUDE.md` o `identidad.md`, avisa que en la próxima sesión
-(`/exit` y volver a entrar) estarás aún más al día — sin obligarlo.
+cambió `CLAUDE.md`, `identidad.md` o llegó configuración nueva
+(`.claude/`), avisa que al abrir una sesión nueva arrancarás aún más al
+día — sin obligarlo, «cuando te quede cómodo». **El gesto depende de
+dónde corras**, y tu entorno suele decírtelo (prompt de sistema,
+variables): en la **terminal** di «escribe `/exit` y vuelve a escribir
+`claude`»; en la **app de escritorio o el IDE** di «abre una
+conversación nueva». Si no lo sabes con certeza, usa la forma neutra:
+«cierra esta conversación y abre una nueva».
 
 ## Qué NO hacer
 
