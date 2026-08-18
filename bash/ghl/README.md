@@ -25,7 +25,15 @@ capa va cercada:
 - **Solo el cerebro.** Si existe `copilot.json` en la raíz, los scripts se
   niegan a correr. Los forks heredan este código pero no las credenciales del
   CRM; un copiloto lee el espejo (`bash/crm/`), no la fuente.
-- **Solo GET.** Y la conexión a la base es `psql_ro`.
+- **Solo GET, con UNA excepción declarada.** La conexión a la base es `psql_ro`.
+  La excepción es `POST /contacts/search` (`ghl_api_search` en
+  [lib/common.sh](lib/common.sh), detrás de `contacts.sh --query`): GHL expone
+  la búsqueda de contactos como POST porque los criterios no caben en una query
+  string, pero **es un fetch — no crea ni modifica nada**. Autorizada por
+  Santiago el 2026-08-14, cuando confirmar si un contacto existía obligaba a
+  paginar ~2.000 registros. La regla real de esta capa no es «el verbo GET»
+  sino **«nada que escriba en GHL»**; cualquier endpoint que mute queda fuera,
+  sea POST, PUT o DELETE.
 - **El token nunca pasa por `argv`.** Se le entrega a curl por stdin
   (`--config -`), así no aparece en la lista de procesos.
 
@@ -38,7 +46,7 @@ Mientras tanto, esta cerca es lo que impide que se rieguen.
 |--------|-------|
 | `auth_status.sh [--json]` | Qué proyectos tienen integración y si responde. Sonda en vivo: autenticación + cuántos contactos y oportunidades reporta GHL por location. |
 | `gap.sh [--project N] [--ids] [--json]` | **El informe de cobertura**: GHL contra la base, por proyecto. `--ids` recorre toda la paginación y cuenta cuántas oportunidades faltan de verdad (lento: una página por cada 100). |
-| `contacts.sh --project N [--limit N] [--id ID] [--missing] [--json]` | Contactos desde la fuente. `--missing` = solo los que el espejo no tiene. `--id` busca uno puntual — útil cuando una llamada no resuelve closer y hay que saber si el contacto existe upstream. |
+| `contacts.sh --project N [--query T] [--limit N] [--id ID] [--missing] [--json]` | Contactos desde la fuente. **`--query` BUSCA** por nombre, email o teléfono (`POST /contacts/search`) — la vía correcta para «¿existe este contacto?»: una llamada en vez de paginar miles. `--missing` = solo los que el espejo no tiene. `--id` busca uno puntual — útil cuando una llamada no resuelve closer y hay que saber si el contacto existe upstream. |
 | `opportunities.sh --project N [--limit N] [--status S] [--missing] [--json]` | Oportunidades desde la fuente, con las mismas banderas. `--status open\|won\|lost\|abandoned`. |
 
 `--limit 0` pagina hasta el final. La paginación va por
@@ -92,3 +100,35 @@ David Guerrero 2280 / 2281       2490 / 2491
 - Lo que sigue sin resolver son llamadas cuyo contacto **ya no existe en GHL**.
 - Las oportunidades sin `user_id` (237 solo en julio) son un hueco de asignación
   real en GHL, no un artefacto de ingesta.
+
+## Lo que encontró la auditoría de ventas perdidas (2026-08-14)
+
+Cruzando los reclamos de un closer contra la fuente
+([docs/only-closers-informe.md](../../docs/only-closers-informe.md) §8)
+aparecieron dos hallazgos que cambian cómo hay que consultar esta capa.
+
+**5. El ingestor no refresca el `status` de las oportunidades que ya tiene.**
+Trae las nuevas, sí; pero una que pasa a `won` después de ingerida se queda
+`open` en el espejo para siempre. Tres ventas del mismo closer figuraban `open`
+con GHL diciendo `won` —una desde hacía tres semanas—, y una sincronización
+manual **no las corrigió**. Antes de esa sync: **288 `won` en el espejo contra
+312 en GHL**. Esas ~24 ventas invisibles no son un hueco de paginación como el
+punto 2: es que el upsert no mira el estado. Arreglarlo es del ingestor.
+
+**6. Buscar por NOMBRE en este CRM produce falsos negativos.** Tres motivos,
+los tres verificados:
+- **Acentos combinantes**: «Jonathan Marulanda Vásquez» no matchea
+  `ILIKE '%marulanda vás%'` (la `á` es `a`+U+0301, no U+00E1). Casi nos hace
+  concluir que una fila había desaparecido del espejo.
+- **La misma persona bajo dos nombres**: un contacto tenía dos oportunidades,
+  «Ilder Bonifacio» (2025) y «Edilio Suazo» (2026) — mismo `contactId`, mismo
+  email, mismo teléfono.
+- **El índice de GHL no normaliza teléfonos**: `--query 584146138779` devuelve
+  0 para un contacto cuyo `phone` es `+584146138779`.
+
+**El identificador que nunca miente es `contactId`.** Las 7.336 oportunidades de
+David lo traen y ninguna lo omite (verificado); el bloque `relations` además
+embebe email y teléfono del contacto, así que **buscar oportunidades por
+contacto en vez de por nombre** es lo correcto y detecta el caso «la ficha está
+con otro nombre». Toda auditoría futura debe cruzar por ahí — y contra
+`payment_plans.customer_id`, que guarda justamente el id de contacto de GHL.

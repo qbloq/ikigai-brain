@@ -111,6 +111,33 @@ ghl_api() {
   cat "$tmp"; rm -f "$tmp"
 }
 
+# ghl_api_search <path> <json-body> : the ONE non-GET call of this layer.
+#
+# GHL's contact search lives at POST /contacts/search: it is a *fetch* whose
+# criteria travel in the body because they don't fit a query string. It creates
+# nothing and mutates nothing — the layer stays read-only in effect, and the
+# fence («solo GET») is relaxed here on purpose, by decision of the repo owner
+# (2026-08-14), so that looking one contact up doesn't require pulling 2.000.
+# Any endpoint that WRITES stays out, POST or not.
+#
+# Same token discipline as ghl_api: token and body both reach curl off `argv`
+# (config on stdin, body from a 0600 temp file).
+ghl_api_search() {
+  local path="$1" body="$2" tmp body_f code
+  tmp="$(mktemp)"; body_f="$(mktemp)"
+  chmod 600 "$body_f"; printf '%s' "$body" >"$body_f"
+  code="$(printf 'url = "%s"\nrequest = "POST"\nheader = "Authorization: Bearer %s"\nheader = "Version: %s"\nheader = "Accept: application/json"\nheader = "Content-Type: application/json"\ndata = "@%s"\n' \
+      "$GHL_BASE$path" "$GHL_TOKEN" "$GHL_API_VERSION" "$body_f" \
+    | curl -sS --config - -o "$tmp" -w '%{http_code}')" || { rm -f "$tmp" "$body_f"; return 1; }
+  rm -f "$body_f"
+  if [[ "$code" != 2* ]]; then
+    echo "ghl search HTTP $code — $path" >&2
+    head -c 400 "$tmp" >&2; echo >&2
+    rm -f "$tmp"; return 1
+  fi
+  cat "$tmp"; rm -f "$tmp"
+}
+
 # ghl_qs <k> <v> [<k> <v> ...] : url-encoded query string, leading '?'.
 ghl_qs() {
   python3 -c '
