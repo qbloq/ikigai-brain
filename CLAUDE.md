@@ -127,6 +127,8 @@ Resolves ~83% of reported calls; the rest is the S8.2 data-hygiene queue.
 | `reportes_pendientes.sh [--desde N] [--min-chars N] [--con-closer] [--limit N]` | **La cola del pipeline**: llamadas con transcript usable (≥2000 chars) y sin reporte del Cerebro, con closer resuelto. Read-only. |
 | `generar_pendientes.sh [--limit N] [--desde N] [--model M] [--timeout S] [--dry-run]` **[WRITE pg + local]** | **El runner**: por cada llamada de la cola corre el skill `generar-reporte-llamada` en una sesión headless (`claude -p`) — la generación son N subagentes, no un script. Cuenta intentos en `closers_ops.reportes_intentos` y para a los 2 fallos (sin eso, un transcript roto se reintenta para siempre). La verdad de si funcionó no es el exit code: es si quedó la fila en `call_reports`. |
 | `reportes_a_pg.sh [--variante V] [--sin-escaparate] [--dry-run]` **[WRITE pg]** | Promueve a Postgres los reportes que el pipeline ya tenía en la sqlite local (los 63 de la etapa prototipo). Idempotente por meeting: lo ya promovido se salta. |
+| `drive_snapshot.sh [--folder N] [--db N] [--dry-run] [--json]` **[WRITE local]** | Snapshot de la carpeta «Closer Calls» del Drive (vía el ÍNDICE de bash/google/, no el listado live que topa en 100 y sin fechas) cruzada contra los call meetings → sqlite `closer_calls.archivos` (tamaño, creado, meeting+status, contacto CRM, resultado, callStatus del reporte vigente) + log `corridas`. Cascada de match declarada por fila (`drive_file_id`→`meet_code`→nombre→prefijo+fecha). Recalcular = volver a correr; reconstruye la tabla entera (las vistas `no_completadas` —ciclo abierto, sin vacías <10 MB— y `confirmadas` se derivan solas). Si el índice está viejo, antes `drive_sync.sh --wait`. |
+| `procesar_video.sh <meeting-id> [--file-id ID] [--min-chars N] [--force] [--keep] [--dry-run]` **[WRITE pg]** | Recuperar el transcript de una llamada desde su VIDEO en Drive (la cola de `no_completadas`): descarga (backend mkt) → audio (`bash/audio/`) → STT (AssemblyAI) → upsert `meeting_transcripts` + `meetings.status='completed'` en una txn → borra la descarga. Dos guardas simétricas: no pisa un transcript ya usable (≥2000 chars) sin `--force`, y no persiste NADA (ni el status) si el STT devuelve <2000 — un transcript basura con status completed es justo el hueco que repara. Tras esto, la llamada cae sola en la cola del pipeline de reportes. |
 
 ⚠️ **Three normalizations that `lead_profile.sh` declares and the rest of the
 calls domain does not** — they are not cosmetic, each moves the numbers:
@@ -326,6 +328,18 @@ script declara el método por fila. `validacion_plata.sh [--cohorte 4|5|todas]`.
 
 Viz sources: `calls`, `call_detail` (object), `call_stats`, `call_objections`,
 `bant_comparativo` (la matriz del experimento; UI `bant-comparativo`).
+
+## Audio domain — video→texto ([bash/audio/](bash/audio/))
+
+Piezas locales y sin estado para convertir grabaciones en texto; la composición
+con Drive y la DB vive en `bash/calls/procesar_video.sh`. `extract_audio.sh
+<video> [--out F]` extrae la pista con ffmpeg (mono 16 kHz mp3 48 kbps, ~21
+MB/hora). En [bash/audio/stt/](bash/audio/stt/) vive un script por motor STT,
+todos con el mismo contrato (entra audio, sale texto diarizado `Speaker A: …`
+— el formato de `meeting_transcripts`): hoy solo `assemblyai.sh <audio>
+[--lang es] [--out F] [--raw F]` (credencial `ASSEMBLYAI_API_KEY` en `.env`,
+pasada por fd, nunca argv; cobra por minuto de audio — transcribe UNA vez, sin
+reintentos).
 
 ## Ads domain — Meta pauta ([bash/ads/](bash/ads/))
 
@@ -716,6 +730,37 @@ required loaders, store details) live in [viz/CLAUDE.md](viz/CLAUDE.md) —
 auto-loaded when working under `viz/`. Architecture narrative + component
 catalog: [viz/README.md](viz/README.md).
 
+## Intercepciones domain — procesos de Marketico observados ([bash/intercepciones/](bash/intercepciones/))
+
+La **segunda operación de Marketico interceptada** (la primera fue el reporte
+de llamada): el webhook de agendamiento GHL→`/webhooks/crm`. Dos piezas
+complementarias, ambas vivas desde 2026-08-17: **auto-reporte** — Marketico
+(`src/services/cerebroReporter.js` en su repo) POSTea el desenlace de cada
+`processBooking` a `viz/hooks.js` (pm2 `viz-hooks`, puerto 4319 loopback,
+nginx `app.ikigaigm.parallelo.ai/hooks/crm-resultado`, Bearer `HOOKS_TOKEN`);
+y **verificación independiente** — pm2 cron `intercepciones-cron` (minuto 17
+de cada hora) corre `reconciliar_agenda.sh`: meetings de la DB vs Appointments
+vivos de GHL por cada `crm_calendars` activo, misma ventana en ambos lados,
+todos los status. Todo escribe en la sqlite `intercepciones.db` del servidor
+api (estado propio del interceptor, patrón `publicaciones.db`); los scripts de
+consulta son **local-first + ssh** (la db local si existe, si no `root@api`).
+Spec: [docs/superpowers/specs/2026-08-16-intercepcion-webhook-crm-design.md](docs/superpowers/specs/2026-08-16-intercepcion-webhook-crm-design.md).
+
+| Script | Use it to… |
+|--------|-----------|
+| `log.sh [--desde D] [--solo-errores] [--limit N]` | El log del webhook: qué reportó Marketico de cada `/crm` (ok/error, paso, duración). |
+| `drift.sh [--historia]` | Drift de agenda **vigente** (última corrida ok por calendario); `--historia` lista corridas. |
+| `resumen.sh` | Un objeto: KPIs 24h/7d del webhook + últimas corridas + drift — la fuente de la UI. |
+| `reconciliar_agenda.sh [--desde N] [--hasta N] [--dry-run] [--json]` **[WRITE sqlite]** | La reconciliación a mano (el cron la corre sola cada hora). |
+| `bash/ghl/appointments.sh (--project F\|--project-id U) [--calendar ID] [--desde N] [--hasta N]` | La sonda GHL de calendario (Version 2021-04-15, epoch millis) que alimenta la reconciliación. |
+
+Reglas que sostener: **GHL caído ≠ agenda vacía** (corrida `estado='error'`,
+jamás drift inventado); `scheduled_start_time` se compara por **reloj literal**
+(el quirk Bogotá-como-UTC); solo meetings `scheduled` pueden dar `sobra_en_db`
+/ `horas_difieren` — un status vivo con par en GHL cuenta como `coinciden`.
+Viz: fuentes `intercepciones_resumen`/`_log`/`_drift`, UI org `intercepciones`.
+Fase actual: **observar** — ni alerta ni repara (eso se gana con datos).
+
 ## Publicar domain — UIs publicadas ([bash/publicar/](bash/publicar/))
 
 El **publicador** es `viz/publish.js` corriendo en el servidor `api` desde
@@ -760,3 +805,4 @@ del publicador (`data/sqlite/publicaciones.db` — despliegues, permisos, visita
 es **estado propio del publicador**, no dato de la org, y por eso estos scripts
 sí llevan SQL (sqlite, por ssh y por stdin, nunca en el argv del remoto). Los
 datos de la org siguen entrando únicamente por `bash/ --json`.
+
