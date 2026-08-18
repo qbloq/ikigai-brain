@@ -27,6 +27,7 @@ const { makeRunner } = require("./lib/actions");
 const { startSSE, patchElements } = require("./lib/sse");
 
 const PORT = Number(process.env.PORT) || 4317;
+const HOST = process.env.HOST || '0.0.0.0'; // bind global (toda la red); HOST=127.0.0.1 lo vuelve solo-local
 
 // --- API JSON de solo-lectura: la puerta de los AGENTES (Iki) -------------
 // Sub-whitelist explícita de SOURCES expuesta como JSON crudo bajo
@@ -297,6 +298,8 @@ for (const ui of store.list()) {
   for (const w of v.warnings) console.warn(`[spec ${ui.id} «${ui.name}»] aviso: ${w}`);
 }
 
-server.listen(PORT, () => {
-  console.log(`viz on http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+  const ifaces = Object.values(require('os').networkInterfaces()).flat()
+    .filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address);
+  console.log(`viz on http://localhost:${PORT} (bind ${HOST}${ifaces.length ? ` — red: ${ifaces.map((a) => `http://${a}:${PORT}`).join(' ')}` : ''})`);
 });
