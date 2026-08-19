@@ -198,6 +198,23 @@ const SOURCES = {
     emits: "object",
     args: { id: { positional: true } },
   },
+  // Todas las llamadas de un closer, con los indicadores de captura
+  // (transcript usable ≥2000 chars / fuente del reporte vigente) — la UI
+  // publicada «Llamadas del closer». `meeting` filtra a una (el guard del
+  // relay de transcript y de la página de reporte).
+  closer_llamadas: {
+    label: "Llamadas del closer",
+    script: "bash/calls/closer_llamadas.sh",
+    emits: "rows",
+    args: {
+      closer: "--closer",
+      closer_id: "--closer-id",
+      meeting: "--meeting",
+      from: "--from",
+      to: "--to",
+      limit: "--limit",
+    },
+  },
   // La matriz del experimento de prompt: una fila por llamada, tres celdas
   // (producción·gemini · producción·claude · mejorado·claude), y las celdas
   // que faltan se emiten con `existe:0` + el handle para mandarlas a correr.

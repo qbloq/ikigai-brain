@@ -24,6 +24,7 @@ const { elegirPermiso, resolverIdentidad, mergeParams } = require("./lib/publogi
 const { COOKIE, verifyJWT, parseCookies, cookieSesion, cookieBorrar, loginMarketico } = require("./lib/pubauth");
 const { standalone } = require("./lib/html");
 const { renderPane, overridableFor, escape } = require("./lib/components");
+const { fetchSource } = require("./lib/datasources");
 const { startSSE, patchElements } = require("./lib/sse");
 const { loadTheme, themeHead } = require("./lib/theme");
 
@@ -47,7 +48,12 @@ if (!process.env.JWT_SECRET) {
 const ORIGEN = (process.env.PUBLICAR_URL || "https://app.ikigaigm.parallelo.ai").replace(/\/+$/, "");
 
 const PUBLIC_FILES = new Set(["/datastar.js", "/chart.umd.js", "/charts-init.js", "/tw-bridge.js", "/tokens.css"]);
-const RUTAS_RESERVADAS = new Set(["login", "logout", "health", "ui", "u", "c", "s", "api", "fonts"]);
+const RUTAS_RESERVADAS = new Set(["login", "logout", "health", "ui", "u", "c", "s", "t", "api", "fonts"]);
+
+// Base del API de Marketico — el relay de transcript (/t/…) le pide el
+// contenido con el propio token del visitante. Derivada del AUTH_URL para no
+// duplicar la config.
+const MKT_API = (process.env.MARKETICO_AUTH_URL || "https://ikigaigm.api.parallelo.ai/api/auth/login").replace(/\/auth\/login\/?$/, "");
 
 function send(res, status, body, type = "text/html; charset=utf-8", extra = {}) {
   res.writeHead(status, {
@@ -222,6 +228,39 @@ const server = http.createServer(async (req, res) => {
       startSSE(res);
       patchElements(res, html);
       return res.end();
+    }
+
+    // --- relay de transcript: GET /t/<slug>/<meeting-uuid> ------------------
+    // Misma authz que /ui (permiso del slug, mismo 404 opaco) + guard por
+    // identidad: si la plantilla fuerza closer_id, la llamada debe ser de ese
+    // closer (verificada vía closer_llamadas.sh; DC con identidad {} pasa).
+    // El CONTENIDO lo entrega Marketico con el PROPIO token del visitante —
+    // el JWT jamás toca el JS del navegador (la cookie sigue HttpOnly); este
+    // proceso solo lo reenvía, la autorización de fondo la da Marketico.
+    if ((m = /^\/t\/([a-z0-9-]+)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/.exec(pathname)) && req.method === "GET") {
+      const d = pubstore.vigente(m[1]);
+      if (!d) return send(res, 404, "No encontrado", "text/plain");
+      const forzados = accesoA(d, payload);
+      if (forzados === null) return send(res, 404, "No encontrado", "text/plain");
+      const meetingId = m[2];
+      if (forzados.closer_id) {
+        const g = fetchSource("closer_llamadas", { closer_id: String(forzados.closer_id), meeting: meetingId, limit: "1" }).rows || [];
+        if (!g.length) return send(res, 404, "No encontrado", "text/plain");
+      }
+      const rMkt = await fetch(`${MKT_API}/meetings/${meetingId}/transcript`, {
+        headers: { Authorization: `Bearer ${parseCookies(req.headers.cookie)[COOKIE]}` },
+      }).catch(() => null);
+      if (!rMkt || !rMkt.ok) return send(res, 404, "No encontrado", "text/plain");
+      const cuerpo = await rMkt.json().catch(() => null);
+      const texto = cuerpo && cuerpo.data && cuerpo.data.transcript;
+      if (!texto) return send(res, 404, "No encontrado", "text/plain");
+      pubstore.visita(d.slug, payload, req.url);
+      res.writeHead(200, {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Disposition": `attachment; filename="transcript-${meetingId.slice(0, 8)}.txt"`,
+        "Cache-Control": "no-store",
+      });
+      return res.end(String(texto));
     }
 
     // --- «abrir solo ↗» de las páginas → la URL canónica del despliegue ---

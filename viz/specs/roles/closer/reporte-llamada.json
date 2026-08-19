@@ -1,0 +1,10 @@
+{
+  "id": "reporte-llamada",
+  "name": "Reporte de llamada",
+  "component": "call-reporte",
+  "source": "call_detail",
+  "params": {},
+  "scope": "role",
+  "role": "closer",
+  "created_at": "2026-08-19T00:00:00.000Z"
+}
