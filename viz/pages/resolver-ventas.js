@@ -62,10 +62,23 @@ function renderResolverVentas(ui) {
   // Solo lo PENDIENTE se pinta: una fila reportada (plan creado o desenlace
   // sin venta registrado) desaparece — la meta del closer es dejar esto en
   // blanco. Lo bloqueado tampoco se muestra: es cola de reparación nuestra,
-  // no algo sobre lo que él pueda actuar.
+  // no algo sobre lo que él pueda actuar. Excepción que se autorrepara: un
+  // plan creado con el abono SIN sellar (el flujo se cortó a mitad) reaparece
+  // como «falta sellar el pago» con el paso que faltó y nada más.
   const cards = rows
-    .filter((r) => r.estado === "pendiente")
+    .filter((r) => r.estado === "pendiente" || (r.estado === "resuelto" && r.sello_pendiente && r.cuota1_id))
     .map((r) => {
+      if (r.estado === "resuelto") {
+        return `<div class="card p-4 flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow" onclick="RV.sellar(${Number(r.n)})" id="rv-card-${Number(r.n)}">
+      <div class="flex items-start justify-between gap-2">
+        <span class="font-semibold leading-tight">${escape(r.lead)}</span>
+        <span class="tabular-nums font-semibold whitespace-nowrap">${money(r.plan_monto)}</span>
+      </div>
+      <div class="flex flex-wrap gap-1.5"><span class="badge badge-cau">Falta sellar el pago</span><span class="badge badge-neutral">plan #${escape(String(r.plan_id))} creado</span></div>
+      <p class="text-xs leading-snug" style="color:var(--text-2)">El plan quedó registrado pero el pago del abono no alcanzó a confirmarse. Solo falta ese paso.</p>
+      <span class="text-xs font-medium mt-1" style="color:var(--text-brand)">Sellar pago →</span>
+    </div>`;
+      }
       const activo = true;
       return `<div class="card p-4 flex flex-col gap-2 ${activo ? "cursor-pointer hover:shadow-md transition-shadow" : "opacity-70"}"
         ${activo ? `onclick="RV.abrir(${Number(r.n)})"` : ""} id="rv-card-${Number(r.n)}">
@@ -349,6 +362,40 @@ function renderResolverVentas(ui) {
       }
     }
 
+    // --- sellar un registro a medias (plan creado, abono sin confirmar) ---
+    function pintaSello(lead) {
+      pinta('<div class="flex items-center justify-between mb-3"><div><p class="text-xs" style="color:var(--text-3)">' + lead.lead +
+        '</p><h2 class="font-bold">Sellar el pago</h2></div><button type="button" class="btn btn-ghost" onclick="RV.cerrar()">✕</button></div>' +
+        '<p class="text-sm mb-3" style="color:var(--text-2)">El plan #' + lead.plan_id + ' ya está creado. Solo falta confirmar el pago del abono de <b>' + money(lead.cuota1_monto) + '</b>.</p>' +
+        '<label class="text-sm">Fecha del pago recibido<input type="date" id="rv-sello-fecha" class="input w-full mt-1" value="' + hoy() + '"/></label>' +
+        '<label class="text-sm block mt-2">Comprobante (opcional)<input type="file" id="rv-sello-file" accept="image/*,.pdf" class="input w-full mt-1"/></label>' +
+        '<div class="flex justify-end mt-4"><button type="button" id="rv-go" class="btn btn-primary" onclick="RV.sellarEnviar()">Confirmar pago</button></div>' +
+        '<div id="rv-msg" class="mt-3"></div>');
+    }
+    async function sellarEnviar() {
+      const lead = S.lead;
+      const boton = $("rv-go");
+      boton.disabled = true;
+      boton.textContent = "Enviando…";
+      try {
+        await api("PUT", "installments/" + lead.cuota1_id, {
+          status: "Paid", paid_amount: lead.cuota1_monto, payment_date: $("rv-sello-fecha").value || hoy(),
+        });
+        const f = $("rv-sello-file").files && $("rv-sello-file").files[0];
+        if (f) {
+          const fd = new FormData();
+          fd.append("file", f);
+          try { await api("POST", "installments/" + lead.cuota1_id + "/receipt", fd, true); } catch (e) {}
+        }
+        $("rv-msg").innerHTML = '<div class="alert alert-pos">Pago sellado ✓</div>';
+        setTimeout(() => location.reload(), 1200);
+      } catch (e) {
+        boton.disabled = false;
+        boton.textContent = "Confirmar pago";
+        $("rv-msg").innerHTML = '<div class="alert alert-neg">' + e.message + "</div>";
+      }
+    }
+
     // --- API pública del stepper -----------------------------------------
     window.RV = {
       abrir(n) {
@@ -394,6 +441,15 @@ function renderResolverVentas(ui) {
       c2(k, v) { S[k] = v; paso3(); },
       archivo(inp) { S.file = inp.files && inp.files[0] ? inp.files[0] : null; },
       irPaso(p) { S.paso = p; [null, paso1, paso2, paso3, paso4][p](); },
+      sellar(n) {
+        const lead = D.leads.find((r) => Number(r.n) === n);
+        if (!lead || !lead.cuota1_id) return;
+        S = { lead };
+        $("rv-modal").classList.remove("hidden");
+        $("rv-modal").classList.add("flex");
+        pintaSello(lead);
+      },
+      sellarEnviar,
       enviar,
     };
     // el click fuera del panel cierra

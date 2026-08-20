@@ -54,7 +54,13 @@ SELECT coalesce(json_agg(t), '[]') FROM (
   SELECT pp.customer_id, pp.plan_id, pp.created_at::date AS plan_creado,
          pp.original_amount, pp.number_of_installments, pp.plan_status,
          (SELECT count(*) FROM ikigaigm.installments i
-           WHERE i.plan_id = pp.plan_id AND i.status = 'Paid') AS cuotas_pagadas
+           WHERE i.plan_id = pp.plan_id AND i.status = 'Paid') AS cuotas_pagadas,
+         (SELECT i.installment_id FROM ikigaigm.installments i
+           WHERE i.plan_id = pp.plan_id AND i.installment_number = 1) AS cuota1_id,
+         (SELECT i.scheduled_amount FROM ikigaigm.installments i
+           WHERE i.plan_id = pp.plan_id AND i.installment_number = 1) AS cuota1_monto,
+         (SELECT i.status FROM ikigaigm.installments i
+           WHERE i.plan_id = pp.plan_id AND i.installment_number = 1) AS cuota1_status
   FROM ikigaigm.payment_plans pp
   WHERE pp.customer_id IN ($IDS) AND pp.created_at >= '$DESDE'
     AND pp.plan_status = 'Active'  -- un plan cancelado no resuelve el lead
@@ -98,6 +104,12 @@ for r in leads:
         r['plan_monto'] = plan['original_amount']
         r['plan_cuotas'] = plan['number_of_installments']
         r['plan_cuotas_pagadas'] = plan['cuotas_pagadas']
+        r['cuota1_id'] = plan.get('cuota1_id')
+        r['cuota1_monto'] = plan.get('cuota1_monto')
+        # plan creado pero abono sin sellar = registro a medias (p. ej. la
+        # página se cerró entre el POST del plan y el PUT de la cuota) —
+        # la UI lo reaparece como «falta sellar el pago».
+        r['sello_pendiente'] = plan.get('cuota1_status') not in (None, 'Paid')
     elif r.get('meeting_id') in reportados:
         r['estado'] = 'resuelto'
         r['resuelto_por'] = 'reporte'
