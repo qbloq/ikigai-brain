@@ -1,0 +1,201 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Marketico — Closer Calls (reporte de llamada y plan de pagos)",
+    "version": "2026-08-20",
+    "description": "Subconjunto destilado de /projects/marketico/docs/openapi.json + código fuente (src/routes/callsRoutes.ts, paymentRoutes.ts, leadsRoutes.ts, src/services/callsService.ts, paymentService.ts). El openapi autogenerado no declara los request bodies; los schemas de aquí vienen de las interfaces TypeScript reales. Auth: Bearer JWT de Marketico (el mismo que emite /api/auth/login y que el publicador guarda en cookie HttpOnly).\n\nCAVEATS verificados en código (2026-08-20):\n1. El enum de resultado del backend es VENTA | SEGUIMIENTO | 'NO CALIFICA' — **'NO SHOW' NO existe**. En runtime un result desconocido no falla: se persiste en call_meeting_results, no matchea ningún case del switch (no mueve stage ni crea plan), actualiza la oportunidad solo con call_notes y marca el meeting 'confirmed'. Sirve como registro, pero es comportamiento por omisión, no contrato.\n2. POST /confirm EXIGE cadena completa: meeting con project_id → crm_contacts (por event.booking.contact_id) → crm_opportunities (la más reciente del contacto). Sin oportunidad lanza 'No opportunity found' (500). Leads sin meeting/oportunidad en el espejo NO se pueden reportar por aquí.\n3. En VENTA, el closer del plan es el user_id de la OPORTUNIDAD (no el del JWT que llama). paymentPlan.product_id es el UUID de la tabla products (product_uuid), no el id GHL. currency e installment_frequency van fijos ('USD', 'Monthly'). start_date = due_date de la cuota 1.\n4. createPaymentPlan crea TODAS las cuotas en status 'Scheduled' — 'pagado' no se declara al crear. Marcar una cuota Paid es PUT /api/payment-plans/installments/{id}, y ese transition dispara el payout engine (comisiones) de forma asíncrona.\n5. POST /confirm no devuelve el plan creado ({confirmed, result}); para ubicarlo: GET /api/payment-plans/customer/{ghl_contact_id}.\n6. Convención de negocio (no del backend): la cuota 1 ES el abono — el sistema la ve como installment_number=1, el usuario la ve como 'abono'."
+  },
+  "servers": [{ "url": "https://ikigaigm.api.parallelo.ai" }],
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/api/calls/{meeting_id}/result": {
+      "get": {
+        "summary": "Resultado calculado/cacheado de la llamada (worker c74618a0-…)",
+        "parameters": [{ "name": "meeting_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "{ success, result: { meetingId, results } }" },
+          "404": { "description": "Sin resultado calculado" }
+        }
+      }
+    },
+    "/api/calls/{meeting_id}/confirm": {
+      "post": {
+        "summary": "EL endpoint de reportar una closer call: persiste el resultado, sincroniza la oportunidad GHL (stage/tags/notas) y, si es VENTA, crea el payment plan",
+        "description": "Body vacío ⇒ usa el resultado cacheado del worker. Body con los campos de CallResultsPayload ⇒ reporte manual (el flujo del stepper). Efectos: upsert call_meeting_results; NO CALIFICA → opp lost + stage 'NO CALIFICO' + tag 'no calificado'; SEGUIMIENTO → stage 'SEGUIMIENTO'; VENTA → opp won + stage/tag del producto + monetaryValue = cuota 1 + createPaymentPlan (closer = user_id de la oportunidad); siempre → meetings.status='confirmed'.",
+        "parameters": [{ "name": "meeting_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CallResultsPayload" } } }
+        },
+        "responses": {
+          "200": { "description": "{ success, result, outcome: { confirmed, result?, reason? } }" },
+          "404": { "description": "Meeting sin resultado y sin body" },
+          "500": { "description": "Cadena rota: meeting sin project_id / contacto sin oportunidad / producto inexistente / VENTA sin paymentPlan+installments" }
+        }
+      }
+    },
+    "/api/leads/products": {
+      "get": {
+        "summary": "Catálogo de productos (el paso 'selecciona producto' del stepper)",
+        "parameters": [{ "name": "clearCache", "in": "query", "schema": { "type": "string", "enum": ["true"] } }],
+        "responses": { "200": { "description": "{ success, data: Product[], count }" } }
+      }
+    },
+    "/api/closers/": {
+      "get": { "summary": "Listado de closers", "responses": { "200": { "description": "OK" } } }
+    },
+    "/api/payment-plans/": {
+      "get": {
+        "summary": "Planes de pago con filtros",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["Active", "Completed", "Cancelled", "Defaulted"] } },
+          { "name": "userId", "in": "query", "schema": { "type": "string" }, "description": "closer (users.id)" },
+          { "name": "integrationId", "in": "query", "schema": { "type": "string" } },
+          { "name": "productId", "in": "query", "schema": { "type": "string" } },
+          { "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "{ success, data, total }" } }
+      },
+      "post": {
+        "summary": "Crear plan directo (SIN sincronizar GHL — para eso está /api/calls/{id}/confirm). user_id se toma del JWT",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePaymentPlanPayload" } } }
+        },
+        "responses": { "201": { "description": "{ success, data: { paymentPlan, installments[] } }" } }
+      }
+    },
+    "/api/payment-plans/customer/{customerId}": {
+      "get": {
+        "summary": "Planes de un cliente (customer_id = ghl_contact_id) con sus cuotas — cómo ubicar el plan que /confirm creó",
+        "parameters": [{ "name": "customerId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "{ success, data: (PaymentPlan & { installments[] })[] }" } }
+      }
+    },
+    "/api/payment-plans/{planId}": {
+      "get": {
+        "summary": "Un plan por id",
+        "parameters": [{ "name": "planId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "No existe" } }
+      },
+      "put": {
+        "summary": "Actualizar plan; si el body trae installments[] reescribe también las cuotas",
+        "parameters": [{ "name": "planId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "installments": { "type": "array", "items": { "$ref": "#/components/schemas/InstallmentUpdate" } } }, "additionalProperties": true, "description": "Campos restantes = planUpdates parciales del PaymentPlan" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "summary": "Borrar plan",
+        "parameters": [{ "name": "planId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/payment-plans/installments/{installmentId}": {
+      "put": {
+        "summary": "Actualizar UNA cuota. ⚠️ El transition a status='Paid' dispara el payout engine (comisiones) asíncrono",
+        "parameters": [{ "name": "installmentId", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/InstallmentUpdate" }], "description": "Acepta además _previousStatus (hint del cliente para detectar el transition a Paid)" } } }
+        },
+        "responses": { "200": { "description": "{ success, data: Installment }" } }
+      }
+    },
+    "/api/leads/installments/{id}/receipt": {
+      "post": {
+        "summary": "Subir comprobante de pago de una cuota (multipart)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/payment-plans/installments-report": {
+      "get": {
+        "summary": "Cuotas en un rango + vencidas (cobranza)",
+        "parameters": [
+          { "name": "startDate", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "endDate", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": { "200": { "description": "{ success, data, total }" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" } },
+    "schemas": {
+      "CallResultsPayload": {
+        "type": "object",
+        "required": ["result"],
+        "properties": {
+          "result": { "type": "string", "enum": ["VENTA", "SEGUIMIENTO", "NO CALIFICA"], "description": "Enum real del backend (callsService.CallResultStatus). 'NO SHOW' no existe — ver caveat 1 del info.description" },
+          "reason": { "type": "string", "description": "Notas: van a call_notes de la oportunidad y como nota del contacto GHL" },
+          "discount": { "type": "number" },
+          "paymentPlan": {
+            "type": "object",
+            "required": ["product_id", "original_amount", "number_of_installments"],
+            "properties": {
+              "product_id": { "type": "string", "format": "uuid", "description": "⚠️ UUID de la tabla products (products.id), NO el id GHL" },
+              "original_amount": { "type": "number" },
+              "number_of_installments": { "type": "integer" }
+            }
+          },
+          "installments": {
+            "type": "array",
+            "description": "Obligatorio si result=VENTA. La cuota 1 (installmentNumber=1) es el abono; su dueDate se vuelve start_date del plan y su monto el monetaryValue de la oportunidad",
+            "items": {
+              "type": "object",
+              "required": ["installmentNumber", "dueDate", "scheduledAmount"],
+              "properties": {
+                "installmentNumber": { "type": "integer" },
+                "dueDate": { "type": "string", "format": "date" },
+                "scheduledAmount": { "type": "number" }
+              }
+            }
+          }
+        }
+      },
+      "CreatePaymentPlanPayload": {
+        "type": "object",
+        "required": ["integration_id", "customer_id", "customer_name", "original_amount", "number_of_installments", "installment_frequency", "start_date", "installments"],
+        "properties": {
+          "integration_id": { "type": "string", "description": "= location_id GHL del proyecto" },
+          "project_id": { "type": "string", "description": "Se resuelve de la integración si se omite" },
+          "product_id": { "type": "string", "description": "Id GHL (legacy)" },
+          "product_uuid": { "type": "string", "format": "uuid", "description": "FK a products (preferido)" },
+          "customer_id": { "type": "string", "description": "ghl_contact_id" },
+          "customer_name": { "type": "string" },
+          "original_amount": { "type": "number" },
+          "currency": { "type": "string", "default": "USD" },
+          "number_of_installments": { "type": "integer" },
+          "installment_frequency": { "type": "string", "enum": ["Monthly", "Bi-weekly", "Weekly", "Quarterly", "Semi-annual", "Annual"] },
+          "start_date": { "type": "string", "format": "date" },
+          "installments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["installment_number", "due_date", "scheduled_amount"],
+              "properties": {
+                "installment_number": { "type": "integer" },
+                "due_date": { "type": "string", "format": "date" },
+                "scheduled_amount": { "type": "number" }
+              }
+            }
+          }
+        }
+      },
+      "InstallmentUpdate": {
+        "type": "object",
+        "properties": {
+          "due_date": { "type": "string", "format": "date" },
+          "scheduled_amount": { "type": "number" },
+          "paid_amount": { "type": "number" },
+          "payment_date": { "type": "string", "format": "date" },
+          "status": { "type": "string", "enum": ["Scheduled", "Paid", "Partial", "Overdue", "Waived"] },
+          "payment_method": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -27,6 +27,7 @@ const { renderPane, overridableFor, escape } = require("./lib/components");
 const { fetchSource } = require("./lib/datasources");
 const { startSSE, patchElements } = require("./lib/sse");
 const { loadTheme, themeHead } = require("./lib/theme");
+const { relayMkt, RELAY_COMPONENTS } = require("./lib/mktrelay");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORT) || 4318;
@@ -48,7 +49,7 @@ if (!process.env.JWT_SECRET) {
 const ORIGEN = (process.env.PUBLICAR_URL || "https://app.ikigaigm.parallelo.ai").replace(/\/+$/, "");
 
 const PUBLIC_FILES = new Set(["/datastar.js", "/chart.umd.js", "/charts-init.js", "/tw-bridge.js", "/tokens.css"]);
-const RUTAS_RESERVADAS = new Set(["login", "logout", "health", "ui", "u", "c", "s", "t", "api", "fonts"]);
+const RUTAS_RESERVADAS = new Set(["login", "logout", "health", "ui", "u", "c", "s", "t", "api", "fonts", "mkt"]);
 
 // Base del API de Marketico — el relay de transcript (/t/…) le pide el
 // contenido con el propio token del visitante. Derivada del AUTH_URL para no
@@ -261,6 +262,37 @@ const server = http.createServer(async (req, res) => {
         "Cache-Control": "no-store",
       });
       return res.end(String(texto));
+    }
+
+    // --- relay Marketico: /mkt/<slug>/<subpath> ---------------------------
+    // La ESCRITURA de resolver-ventas (reportar llamada / crear plan). Mismo
+    // modelo que /t/: whitelist de forma (lib/mktrelay), autz del slug igual
+    // que /ui, y el request viaja a Marketico con el token del PROPIO
+    // visitante — la autorización de fondo es de Marketico, este proceso solo
+    // reenvía. Guard extra: el despliegue debe renderizar un componente de
+    // RELAY_COMPONENTS — ninguna otra UI publicada gana este canal por existir.
+    if ((m = /^\/mkt\/([a-z0-9-]+)\/(.+)$/.exec(pathname))) {
+      // CSRF: cookie + escritura ⇒ un Origin presente tiene que ser el nuestro
+      // (fetch same-origin lo manda; un form/fetch de otro sitio también, y ahí
+      // se corta). Origin ausente = curl/scripts, mismo criterio que /login.
+      const origin = req.headers.origin;
+      if (origin && origin !== ORIGEN) return send(res, 403, "Origen no permitido", "text/plain");
+      const d = pubstore.vigente(m[1]);
+      if (!d) return send(res, 404, "No encontrado", "text/plain");
+      if (accesoA(d, payload) === null) return send(res, 404, "No encontrado", "text/plain");
+      let comp = "";
+      try { comp = JSON.parse(d.spec_json).component || ""; } catch {}
+      if (!RELAY_COMPONENTS.has(comp)) return send(res, 404, "No encontrado", "text/plain");
+      const out = await relayMkt({
+        mktBase: MKT_API.replace(/\/api\/?$/, ""),
+        method: req.method,
+        subpath: m[2],
+        req,
+        token: parseCookies(req.headers.cookie)[COOKIE],
+      });
+      if (!out) return send(res, 404, "No encontrado", "text/plain");
+      pubstore.visita(d.slug, payload, req.url);
+      return send(res, out.status, out.body, out.contentType);
     }
 
     // --- «abrir solo ↗» de las páginas → la URL canónica del despliegue ---

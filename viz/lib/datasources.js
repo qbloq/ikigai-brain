@@ -215,6 +215,20 @@ const SOURCES = {
       limit: "--limit",
     },
   },
+  // La cola de ventas por resolver de un closer: leads curados en la sqlite
+  // local (pareo CRM+meetings hecho a mano) cruzados EN VIVO contra
+  // payment_plans — una fila pasa a 'resuelto' cuando su plan existe en el
+  // sistema, nunca por marca manual. Alimenta la UI `resolver-ventas`.
+  leads_resolucion: {
+    label: "Ventas por resolver (closer)",
+    script: "bash/closers/leads_resolucion.sh",
+    emits: "rows",
+    args: {
+      db: "--db",
+      tabla: "--tabla",
+      desde: "--desde",
+    },
+  },
   // La matriz del experimento de prompt: una fila por llamada, tres celdas
   // (producción·gemini · producción·claude · mejorado·claude), y las celdas
   // que faltan se emiten con `existe:0` + el handle para mandarlas a correr.

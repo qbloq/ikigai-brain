@@ -207,6 +207,26 @@ const server = http.createServer(async (req, res) => {
       return send(res, ui ? 200 : 404, standalone(ui));
     }
 
+    // --- relay Marketico de DESARROLLO: /mkt/dev/<subpath> ----------------
+    // El gemelo local del /mkt/<slug>/ del publicador (misma whitelist,
+    // lib/mktrelay). Token: MEETICO_JWT_TOKEN del .env (la identidad del
+    // cerebro) — existe solo para probar resolver-ventas en local; sin la
+    // variable, la ruta ni aparece. En producción la identidad es la del
+    // closer (cookie del publicador), nunca esta.
+    if (pathname.startsWith("/mkt/dev/") && process.env.MEETICO_JWT_TOKEN) {
+      const { relayMkt } = require("./lib/mktrelay");
+      const base = (process.env.MEETICO_BASE || "https://ikigaigm.api.parallelo.ai").replace(/\/+$/, "").replace(/\/api$/, "");
+      const out = await relayMkt({
+        mktBase: base,
+        method: req.method,
+        subpath: pathname.slice("/mkt/dev/".length),
+        req,
+        token: process.env.MEETICO_JWT_TOKEN,
+      });
+      if (!out) return send(res, 404, "Not found", "text/plain");
+      return send(res, out.status, out.body, out.contentType);
+    }
+
     // --- generic component routes (paso 3) ---
     // GET /c/:component/frag/:name · POST /c/:component/act/:name — the
     // component's frags/acts maps own the handlers; server.js never grows a
