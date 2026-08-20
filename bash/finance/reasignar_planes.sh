@@ -93,3 +93,5 @@ $end;
 SQL
 
 [[ -n "$dry" ]] && echo "(dry-run: rollback, sin cambios)"
+
+exit 0
