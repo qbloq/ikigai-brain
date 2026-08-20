@@ -59,9 +59,14 @@ function renderResolverVentas(ui) {
         ? `<span class="badge badge-neutral">solo CRM</span>`
         : `<span class="badge badge-neg">sin rastro</span>`;
 
+  // Solo lo PENDIENTE se pinta: una fila reportada (plan creado o desenlace
+  // sin venta registrado) desaparece — la meta del closer es dejar esto en
+  // blanco. Lo bloqueado tampoco se muestra: es cola de reparación nuestra,
+  // no algo sobre lo que él pueda actuar.
   const cards = rows
+    .filter((r) => r.estado === "pendiente")
     .map((r) => {
-      const activo = r.estado === "pendiente";
+      const activo = true;
       return `<div class="card p-4 flex flex-col gap-2 ${activo ? "cursor-pointer hover:shadow-md transition-shadow" : "opacity-70"}"
         ${activo ? `onclick="RV.abrir(${Number(r.n)})"` : ""} id="rv-card-${Number(r.n)}">
       <div class="flex items-start justify-between gap-2">
@@ -86,7 +91,7 @@ function renderResolverVentas(ui) {
       <h1 class="text-lg font-bold">Resolver ventas</h1>
       <p class="text-sm" style="color:var(--text-2)">Selecciona un lead y reporta el resultado de su llamada. Si fue venta, el plan de pagos queda creado en el sistema — la fila pasa a «Resuelto» sola.</p>
     </div>
-    <div class="grid gap-3 sm:grid-cols-2">${cards || `<p class="text-sm italic" style="color:var(--text-3)">Sin leads en la cola.</p>`}</div>
+    <div class="grid gap-3 sm:grid-cols-2">${cards || `<div class="card p-8 text-center sm:col-span-2"><p class="text-2xl mb-2">🎉</p><p class="font-semibold">Todo al día</p><p class="text-sm mt-1" style="color:var(--text-2)">No tienes ventas pendientes por reportar.</p></div>`}</div>
   </div>
 
   <div id="rv-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center" style="background:color-mix(in srgb, var(--text-1) 40%, transparent)">

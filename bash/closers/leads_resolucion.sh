@@ -64,11 +64,25 @@ SQL
   PLANES_JSON="$(printf '%s' "$PLANES_JSON" | tr -d '\n')"
 fi
 
-printf '%s\n%s' "$LEADS_JSON" "$PLANES_JSON" | python3 -c "
+# meetings ya reportados (call_meeting_results = lo que escribe el confirm):
+# un desenlace SIN venta no crea plan, pero también resuelve la fila.
+MIDS="$(printf '%s' "$LEADS_JSON" | python3 -c "
+import json,sys
+rows=json.load(sys.stdin)
+ids=sorted({r['meeting_id'] for r in rows if r.get('meeting_id')})
+import re
+print(','.join(\"'\"+i+\"'\" for i in ids if re.fullmatch(r'[0-9a-f-]{36}', i)))")"
+REPORTADOS_JSON='[]'
+if [[ -n "$MIDS" ]]; then
+  REPORTADOS_JSON="$(psql_ro -At -c "SELECT coalesce(json_agg(json_build_object('meeting_id', meeting_id, 'resultado', results->>'result')), '[]') FROM ikigaigm.call_meeting_results WHERE meeting_id::text IN ($MIDS)" | tr -d '\n')"
+fi
+
+printf '%s\n%s\n%s' "$LEADS_JSON" "$PLANES_JSON" "$REPORTADOS_JSON" | python3 -c "
 import json, sys
-leads_raw, planes_raw = sys.stdin.read().split('\n', 1)
+leads_raw, planes_raw, reportados_raw = sys.stdin.read().split('\n', 2)
 leads = json.loads(leads_raw or '[]')
 planes = json.loads(planes_raw or '[]')
+reportados = {x['meeting_id']: x.get('resultado') for x in json.loads(reportados_raw or '[]')}
 por_contacto = {}
 for p in planes:
     por_contacto.setdefault(p['customer_id'], p)  # el más reciente (ya ordenado DESC)
@@ -77,11 +91,16 @@ for r in leads:
     plan = por_contacto.get(r.get('ghl_contact_id') or '')
     if plan:
         r['estado'] = 'resuelto'
+        r['resuelto_por'] = 'plan'
         r['plan_id'] = plan['plan_id']
         r['plan_creado'] = plan['plan_creado']
         r['plan_monto'] = plan['original_amount']
         r['plan_cuotas'] = plan['number_of_installments']
         r['plan_cuotas_pagadas'] = plan['cuotas_pagadas']
+    elif r.get('meeting_id') in reportados:
+        r['estado'] = 'resuelto'
+        r['resuelto_por'] = 'reporte'
+        r['resultado_reportado'] = reportados[r['meeting_id']]
     else:
         r['estado'] = 'bloqueado' if r.get('pareo') == 'no_encontrado' else 'pendiente'
     out.append(r)
