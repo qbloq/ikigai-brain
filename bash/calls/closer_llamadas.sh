@@ -51,8 +51,9 @@ if [[ -n "$meeting" ]]; then
   WHERE="$WHERE AND m.id::text LIKE '$M_ESC%'"
 fi
 if [[ -n "$status" ]]; then
-  [[ "$status" =~ ^[a-z_]+$ ]] || { echo "--status inválido: $status" >&2; exit 2; }
-  WHERE="$WHERE AND m.status = '$status'"
+  # acepta lista separada por comas: --status completed,confirmed → IN (…)
+  [[ "$status" =~ ^[a-z_]+(,[a-z_]+)*$ ]] || { echo "--status inválido: $status" >&2; exit 2; }
+  WHERE="$WHERE AND m.status IN ('${status//,/\',\'}')"
 fi
 from="${from//\'/}" to="${to//\'/}"
 [[ -n "$from" ]] && WHERE="$WHERE AND (m.scheduled_start_time AT TIME ZONE 'UTC')::date >= '$from'"
