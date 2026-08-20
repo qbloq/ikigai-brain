@@ -458,6 +458,7 @@ estados que ya cambiaron.
 
 | Script | Use it to… |
 |--------|-----------|
+| `sync_cerebro.sh [--dry-run] [--no-cruce] [--json]` **[WRITE local]** | El **espejo** del anterior, para el otro lado: refresca `cerebro_tareas` desde Postgres (upsert por prefijo de 8) y con él las copias `ce_titulo`/`ce_estado`/`ce_proyecto` de las filas **no resueltas** de `cruce`. Existe porque al cruce se le había construido refresco a UNA sola mitad: medido el 2026-08-20, **140 de 205 filas mentían** sobre el lado cerebro (94 decían `pending` de tareas ya canceladas), así que la UI ofrecía como candidatas vivas cosas cerradas hacía horas. Solo LEE Postgres (`psql_ro`) — no cierra, no cancela, no crea. Registra la corrida en `cerebro_sync`. ⚠️ **No recalcula el cruce**: veredictos y pares salieron de una pasada semántica hecha una vez; lo nacido después del snapshot sale listado como «sin fila en el cruce», no gana fila solo. Un prefijo de 8 compartido por dos tareas se excluye y se reporta antes que adivinar. |
 | `sync_tareas.sh [--dry-run] [--limit N] [--no-cruce] [--no-snapshot] [--json]` **[WRITE local]** | Refrescar el espejo `tareas` desde el API (upsert por id, una txn) y, con él, las copias denormalizadas `pm_titulo`/`pm_estado`/`pm_asignado` de las filas **no resueltas** de `cruce`. Guarda el JSON crudo en `data/pm-platform/tareas-<fecha>.json` y registra la corrida en `pm_sync`. |
 
 Tres reglas que el script sostiene y conviene no romper:
@@ -485,9 +486,12 @@ PM» no pertenezcan a ningún proyecto. Meter Andrea es la misma operación.
 Lo que hay que mirar en la salida: `cruce_alertas` (filas sin resolver que Mari
 pasó a `completed` — cambian la acción propuesta, típicamente a
 `completar_en_cerebro`) y `nuevas_sin_par` (tareas nuevas sin fila de cruce; el
-cruce semántico se hace aparte, el script no lo inventa). ⚠️ El **lado cerebro**
-(`cerebro_tareas`) sigue siendo un snapshot congelado del 2026-08-06 — este
-script no lo toca.
+cruce semántico se hace aparte, el script no lo inventa). El **lado cerebro**
+(`cerebro_tareas`) lo refresca su gemelo `sync_cerebro.sh` — este script no lo
+toca, y hasta el 2026-08-20 nadie lo hacía: fue un snapshot congelado del
+2026-08-06 durante dos semanas. **Los dos hay que correrlos**; refrescar una
+sola mitad deja la comparación coja, que es exactamente el estado del que salió
+el gemelo.
 
 ## Closers domain — acompañamiento WhatsApp ([bash/closers/](bash/closers/))
 
