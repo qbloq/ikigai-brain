@@ -16,6 +16,7 @@
 const { fetchSource } = require("../lib/datasources");
 const { escape, jsStr, checkCtl } = require("../lib/kit");
 const { chartEl } = require("../blocks/charts");
+const { tablaPaginada } = require("../lib/tabla");
 
 const TONE = { pos: "var(--pos-text)", neg: "var(--neg-text)", cau: "var(--cau-text)", brand: "var(--text-brand)", muted: "var(--text-3)" };
 
@@ -238,7 +239,7 @@ function renderCloserDashboard(ui) {
       <option value="" selected>Confirmar…</option>
       ${RESULTADOS.map((r) => `<option>${r}</option>`).join("")}
     </select>`;
-  const tSinRep = tbl(
+  const tSinRep = tablaPaginada(
     ["Fecha", "Hora", "Lead", "Proyecto", "Estado", "Resultado"],
     sinRep.map((r) => [
       `<span class="tabular-nums text-xs">${escape(r.fecha || "")}</span>`,
@@ -248,7 +249,7 @@ function renderCloserDashboard(ui) {
       `<span class="badge badge-neutral">${escape(r.status || "—")}</span>`,
       dropResultado,
     ]),
-    { empty: "Nada sin reportar en el periodo." }
+    { empty: "Nada sin reportar en el periodo.", sig: "pgSin", porPagina: 10 }
   );
 
   // Cuotas del periodo, con filtro de estado OBLIGATORIO (no hay «todas»):
@@ -339,9 +340,9 @@ function renderCloserDashboard(ui) {
     }
   );
 
-  const tVentas = tbl(
+  const tVentas = tablaPaginada(
     ["Inicio", "Cliente", "Proyecto", "Monto", "Cobrado", "Estado"],
-    ((vn.recientes || [])).map((p) => [
+    ((vn.lista || [])).map((p) => [
       `<span class="tabular-nums text-xs">${escape(p.inicio || "")}</span>`,
       `<span class="font-medium">${escape(p.cliente || "—")}</span>`,
       `<span class="text-xs">${escape(p.proyecto || "—")}</span>`,
@@ -349,7 +350,7 @@ function renderCloserDashboard(ui) {
       `<span class="tabular-nums" style="color:${(p.cobrado || 0) >= (p.monto || 0) ? TONE.pos : TONE.cau}">${usd(p.cobrado)}</span>`,
       `<span class="badge badge-neutral">${escape(p.estado || "—")}</span>`,
     ]),
-    { empty: "Sin planes de pago a su nombre en la ventana." }
+    { empty: "Sin planes de pago a su nombre en la ventana.", sig: "pgVen", porPagina: 10 }
   );
 
   // «sin data» es el balde RESIDUAL del resultado (el callStatus libre no matcheó
@@ -468,7 +469,7 @@ function renderCloserDashboard(ui) {
       ${tCuotas}
       ${cuotasVacias}
 
-      ${section("Ventas recientes")}
+      ${section("Ventas del periodo")}
       ${tVentas}
 
       ${section("Tramos BANT")}
