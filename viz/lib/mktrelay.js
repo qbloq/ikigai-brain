@@ -29,9 +29,11 @@ const RUTAS = [
 
 const RELAY_COMPONENTS = new Set(["resolver-ventas"]);
 
-// 64KB para JSON; 8MB para el comprobante (una foto de un pago).
+// 64KB para JSON; 10MB para el comprobante (el mismo tope del multer de
+// Marketico — un relay más estricto rechazaría fotos de celular que el
+// backend sí acepta).
 const MAX_JSON = 64 * 1024;
-const MAX_MULTIPART = 8 * 1024 * 1024;
+const MAX_MULTIPART = 10 * 1024 * 1024;
 
 function matchMkt(method, subpath) {
   for (const r of RUTAS) {
