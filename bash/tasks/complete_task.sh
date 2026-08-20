@@ -3,12 +3,19 @@
 # WRITE, transactional, --dry-run rolls back. Leaves a comment trail.
 #
 # Usage:
-#   complete_task.sh <id|prefix> [<id|prefix>...] [--at YYYY-MM-DD]
+#   complete_task.sh <id|prefix> [<id|prefix>...] [--at YYYY-MM-DD | --sin-fecha]
 #                    [--note "text"] [--author NAME] [--dry-run]
 #
 #   --at FECHA    cuándo se completó DE VERDAD. Sin esto, el trigger sella
 #                 completed_at con now(), que para una tarea ejecutada hace
 #                 semanas es mentira. Migración 003 respeta un valor explícito.
+#   --sin-fecha   se completó, NO se sabe cuándo. Deshace el sello del trigger
+#                 dejando completed_at en NULL — no es lo mismo que --at hoy.
+#                 Las métricas de ritmo viven sobre completed_at IS NOT NULL,
+#                 así que la tarea cuenta como hecha y no entra en la serie de
+#                 tempo: una métrica equivocada es peor que una ausente (mismo
+#                 criterio que merge_from_cruce.sh). Para el caso real de la
+#                 plataforma PM, que deja 41 de 116 cierres sin fecha.
 #   --note TEXTO  evidencia del cierre (p.ej. la reunión donde consta)
 #   --author NOM  autor del comentario (default: complete_task)
 #
@@ -23,10 +30,11 @@ source "$(dirname "$0")/../lib/common.sh"
 
 [[ $# -eq 0 || "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { sed -n '2,20p' "$0"; exit 0; }
 
-refs=() at="" note="" author="complete_task" dry=""
+refs=() at="" note="" author="complete_task" dry="" sinfecha=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --at) at="$2"; shift 2 ;;
+    --sin-fecha) sinfecha=1; shift ;;
     --note) note="$2"; shift 2 ;;
     --author) author="$2"; shift 2 ;;
     --dry-run) dry=1; shift ;;
@@ -39,6 +47,9 @@ done
 
 if [[ -n "$at" && ! "$at" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
   echo "--at espera YYYY-MM-DD (recibí '$at')." >&2; exit 2
+fi
+if [[ -n "$at" && -n "$sinfecha" ]]; then
+  echo "--at y --sin-fecha se excluyen: o sabes la fecha o no la sabes." >&2; exit 2
 fi
 
 resolve_task() { # echoes the single full id for a prefix, errors otherwise
@@ -60,7 +71,7 @@ done_already="$(psql_ro -t -A -c "
 [[ -n "$done_already" ]] && echo "Ya estaban completadas (se omiten): $done_already" >&2
 
 end="COMMIT"; [[ -n "$dry" ]] && end="ROLLBACK"
-psql_rw -v list="$list" -v at="$at" -v note="$note" -v author="$author" <<SQL
+psql_rw -v list="$list" -v at="$at" -v sinfecha="$sinfecha" -v note="$note" -v author="$author" <<SQL
 BEGIN;
 \echo '==== ANTES ===='
 SELECT left(id::text,8) AS id, status, to_char(due_date,'YYYY-MM-DD') AS vence,
@@ -71,6 +82,7 @@ FROM tasks WHERE id IN ($list) ORDER BY due_date;
 -- la TRANSICIÓN, y un completed_at explícito sobrevive (no se sobreescribe).
 -- El comentario cuelga del RETURNING, no de un SELECT posterior: así sólo se
 -- comenta lo que esta corrida cerró de verdad, y nunca lo que ya estaba cerrado.
+CREATE TEMP TABLE _cerradas ON COMMIT DROP AS
 WITH upd AS (
   UPDATE tasks
      SET status = 'completed'::task_status,
@@ -84,12 +96,26 @@ WITH upd AS (
      AND status <> 'completed' AND coalesce(is_completed,false) = false
   RETURNING id
 )
+SELECT id FROM upd;
+
+-- --sin-fecha: el trigger de la 003 acabe de sellar now() en la transición y
+-- aquí se deshace (mismo criterio que merge_from_cruce.sh). Va en un statement
+-- APARTE a propósito: reescribir en el mismo statement una fila que una CTE ya
+-- actualizó es un no-op silencioso — todas las sub-sentencias comparten el
+-- snapshot y no se ven entre sí.
+UPDATE tasks SET completed_at = NULL
+ WHERE id IN (SELECT id FROM _cerradas)
+   AND nullif(:'sinfecha','') IS NOT NULL;
+
 INSERT INTO task_comments (task_id, author_name, text)
 SELECT id, :'author',
        'Completada'
-       || CASE WHEN nullif(:'at','')   IS NOT NULL THEN ' el '||:'at' ELSE '' END
-       || CASE WHEN nullif(:'note','') IS NOT NULL THEN '. '||:'note' ELSE '' END
-FROM upd;
+       || CASE WHEN nullif(:'at','')       IS NOT NULL THEN ' el '||:'at' ELSE '' END
+       || CASE WHEN nullif(:'sinfecha','') IS NOT NULL
+               THEN ' — se hizo, pero no consta cuándo, así que completed_at queda vacío en vez de inventar una fecha'
+               ELSE '' END
+       || CASE WHEN nullif(:'note','')     IS NOT NULL THEN '. '||:'note' ELSE '' END
+FROM _cerradas;
 
 \echo '==== DESPUÉS ===='
 SELECT left(id::text,8) AS id, status, to_char(due_date,'YYYY-MM-DD') AS vence,
