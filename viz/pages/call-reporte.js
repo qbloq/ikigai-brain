@@ -128,14 +128,22 @@ function renderCallReporte(ui) {
           .join("")}</tbody></table></div></div>`
     : "";
 
-  const arquetipo = seg.archetype || seg.arquetipo || "";
-  const estrategia = pred.recommendedStrategy || pred.closingStrategy || pred.strategy || "";
+  // archetype llega como {name, description} (canon), a veces como string
+  // plano; recommendedClosingStrategy es un ARRAY de pasos.
+  const arqObj = seg.archetype || seg.arquetipo || "";
+  const arquetipo = typeof arqObj === "string" ? arqObj : arqObj.name || "";
+  const arqDesc = typeof arqObj === "object" && arqObj ? String(arqObj.description || "") : "";
+  const estrategiaRaw =
+    pred.recommendedClosingStrategy || pred.recommendedStrategy || pred.closingStrategy || pred.strategy || "";
+  const estrategiaPasos = (Array.isArray(estrategiaRaw) ? estrategiaRaw : estrategiaRaw ? [estrategiaRaw] : [])
+    .map((s) => String(typeof s === "string" ? s : s.description || s.step || JSON.stringify(s)).slice(0, 400));
   const perfilBloque =
-    arquetipo || estrategia
+    arquetipo || estrategiaPasos.length
       ? `${section("Perfil del lead")}
        <div class="card card-pad">
-         ${arquetipo ? `<p class="text-sm"><span class="font-semibold" style="color:var(--text-1)">Arquetipo:</span> <span style="color:var(--text-2)">${escape(String(arquetipo))}</span></p>` : ""}
-         ${estrategia ? `<p class="text-sm mt-2"><span class="font-semibold" style="color:var(--text-1)">Estrategia sugerida:</span> <span style="color:var(--text-2)">${escape(String(estrategia).slice(0, 600))}</span></p>` : ""}
+         ${arquetipo ? `<p class="text-sm"><span class="font-semibold" style="color:var(--text-1)">Arquetipo:</span> <span class="badge badge-brand">${escape(arquetipo)}</span></p>` : ""}
+         ${arqDesc ? `<p class="text-sm mt-1" style="color:var(--text-2)">${escape(arqDesc.slice(0, 600))}</p>` : ""}
+         ${estrategiaPasos.length ? `<p class="text-sm mt-3 font-semibold" style="color:var(--text-1)">Estrategia sugerida:</p><ul class="list-disc ml-4 mt-1">${estrategiaPasos.map((s) => `<li class="mb-1 text-sm" style="color:var(--text-2)">${escape(s)}</li>`).join("")}</ul>` : ""}
        </div>`
       : "";
 
