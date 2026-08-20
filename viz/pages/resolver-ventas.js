@@ -277,7 +277,6 @@ function renderResolverVentas(ui) {
         status: "Paid",
         paid_amount: c1.scheduled_amount,
         payment_date: S.fechaPago,
-        _previousStatus: "Scheduled",
       });
       return c1.installment_id;
     }
@@ -325,7 +324,7 @@ function renderResolverVentas(ui) {
             const c1 = insts.find((i) => i.installment_number === 1);
             if (!c1) throw new Error("El plan se creó sin cuota 1.");
             await api("PUT", "installments/" + c1.installment_id, {
-              status: "Paid", paid_amount: c1.scheduled_amount, payment_date: S.fechaPago, _previousStatus: "Scheduled",
+              status: "Paid", paid_amount: c1.scheduled_amount, payment_date: S.fechaPago,
             });
             cuotaId = c1.installment_id;
           }
