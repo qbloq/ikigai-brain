@@ -42,10 +42,10 @@ LEADS_JSON="$(sqlite_ro "$DB_PATH" -json "SELECT * FROM \"$TABLA\" ORDER BY n" 2
 
 # ids de contacto con comillas SQL, solo los no nulos
 IDS="$(printf '%s' "$LEADS_JSON" | python3 -c "
-import json,sys
+import json,sys,re
 rows=json.load(sys.stdin)
 ids=sorted({r['ghl_contact_id'] for r in rows if r.get('ghl_contact_id')})
-print(','.join(\"'\"+i+\"'\" for i in ids if i.replace('_','').isalnum()))")"
+print(','.join(\"'\"+i+\"'\" for i in ids if re.fullmatch(r'[A-Za-z0-9_-]{5,60}', i)))")"
 
 PLANES_JSON='[]'
 if [[ -n "$IDS" ]]; then
