@@ -203,18 +203,24 @@ function renderResolverVentas(ui) {
       const p = productos.find((x) => x.id === S.productoId);
       const err = planValido();
       const filas = err ? [] : cuotas();
+      // Filas apiladas, NUNCA una tabla: en un teléfono la tabla desborda y
+      // esconde el monto tras un scroll horizontal que nadie descubre. La
+      // cuota editable pone sus dos inputs en su propia línea, a todo ancho.
       const filasHtml = filas
         .map((c) => {
           const editable = S.modo === "abono" && c.n === 2;
-          return "<tr><td>" + (c.n === 1 ? "Abono" : "Cuota " + c.n) + "</td><td>" +
-            (editable
-              ? '<input type="date" class="input w-36" value="' + c.fecha + '" onchange="RV.c2(\\'c2fecha\\', this.value)"/>'
-              : '<span class="tabular-nums text-xs">' + c.fecha + "</span>") +
-            "</td><td class=\\"text-right\\">" +
-            (editable
-              ? '<input type="number" step="0.01" class="input w-28 text-right" value="' + c.monto + '" onchange="RV.c2(\\'c2monto\\', this.value)"/>'
-              : '<span class="tabular-nums">' + money(c.monto) + "</span>") +
-            "</td></tr>";
+          const nombre = c.n === 1 ? "Abono" : "Cuota " + c.n;
+          if (!editable)
+            return '<div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background:var(--surface-2)">' +
+              '<span class="text-sm font-medium">' + nombre + "</span>" +
+              '<span class="text-xs tabular-nums ml-auto" style="color:var(--text-3)">' + c.fecha + "</span>" +
+              '<span class="tabular-nums font-semibold w-20 text-right">' + money(c.monto) + "</span></div>";
+          return '<div class="px-3 py-2 rounded-lg" style="background:var(--surface-2);outline:2px solid var(--brand-solid)">' +
+            '<div class="text-sm font-medium mb-1">' + nombre + ' <span class="text-xs font-normal" style="color:var(--text-3)">— ajusta fecha o monto y el resto se reacomoda</span></div>' +
+            '<div class="flex gap-2">' +
+            '<input type="date" class="input flex-1 min-w-0" value="' + c.fecha + '" onchange="RV.c2(\\'c2fecha\\', this.value)"/>' +
+            '<input type="number" step="0.01" inputmode="decimal" class="input w-24 text-right" value="' + c.monto + '" onchange="RV.c2(\\'c2monto\\', this.value)"/>' +
+            "</div></div>";
         })
         .join("");
       pinta(cabecera("Plan de pagos — " + (p ? p.name : "")) +
@@ -233,9 +239,7 @@ function renderResolverVentas(ui) {
           : "") +
         (err
           ? '<div class="alert alert-cau">' + err + "</div>"
-          : '<div class="table-wrap"><table class="tbl"><thead><tr><th></th><th>Vence</th><th class="text-right">Monto</th></tr></thead><tbody>' + filasHtml + "</tbody></table>" +
-            (S.modo === "abono" ? '<p class="text-xs px-2 py-1" style="color:var(--text-3)">Solo la cuota 2 se puede editar; las siguientes se reacomodan solas.</p>' : "") +
-            "</div>") +
+          : '<div class="grid gap-1.5">' + filasHtml + "</div>") +
         '<div class="flex justify-between mt-1">' + btn("← Atrás", "btn-ghost", "RV.irPaso(2)") + btn("Continuar →", "btn-primary", "RV.irPaso(4)") + "</div>" +
         "</div>");
     }
