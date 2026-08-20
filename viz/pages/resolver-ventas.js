@@ -227,7 +227,9 @@ function renderResolverVentas(ui) {
         '<div class="grid gap-3">' +
         '<div class="flex gap-2">' +
         '<button type="button" class="btn flex-1 justify-center ' + (S.modo === "completo" ? "btn-primary" : "") + '" onclick="RV.modo(\\'completo\\')">Pago completo</button>' +
-        '<button type="button" class="btn flex-1 justify-center ' + (S.modo === "abono" ? "btn-primary" : "") + '" onclick="RV.modo(\\'abono\\')">Abono</button>' +
+        (S.abonoBloqueado
+          ? '<button type="button" class="btn flex-1 justify-center opacity-40 pointer-events-none" title="El monto reportado cubre el precio completo del producto">Abono</button>'
+          : '<button type="button" class="btn flex-1 justify-center ' + (S.modo === "abono" ? "btn-primary" : "") + '" onclick="RV.modo(\\'abono\\')">Abono</button>') +
         "</div>" +
         '<label class="text-sm">Monto total (USD)<input type="number" step="0.01" class="input w-full mt-1" value="' + (S.total ?? "") + '" onchange="RV.set(\\'total\\', this.value)"/></label>' +
         '<label class="text-sm">Fecha del pago recibido<input type="date" class="input w-full mt-1" value="' + S.fechaPago + '" onchange="RV.set(\\'fechaPago\\', this.value)"/></label>' +
@@ -349,7 +351,7 @@ function renderResolverVentas(ui) {
         const lead = D.leads.find((r) => Number(r.n) === n);
         if (!lead || lead.estado !== "pendiente") return;
         S = { lead, paso: 1, resultado: null, productoId: null, modo: "completo",
-              total: lead.monto_reportado || "", abono: "", ncuotas: 3,
+              total: "", abono: "", ncuotas: 3, abonoBloqueado: false,
               fechaPago: hoy(), c2monto: "", c2fecha: "", notas: "", file: null };
         $("rv-modal").classList.remove("hidden");
         $("rv-modal").classList.add("flex");
@@ -367,7 +369,20 @@ function renderResolverVentas(ui) {
       producto(id) {
         S.productoId = id;
         const p = productos.find((x) => x.id === id);
-        if (p && (!S.total || Number(S.total) === 0)) S.total = p.base_price;
+        // Con el precio ya conocido, el monto reportado del lead decide el
+        // modo: menor al precio = era un abono (modo Abono preseleccionado y
+        // prellenado); igual o mayor = fue pago completo (Abono no aplica).
+        const precio = p ? Number(p.base_price || 0) : 0;
+        const reportado = Number(S.lead.monto_reportado || 0);
+        S.total = precio || S.total || "";
+        S.abonoBloqueado = reportado > 0 && precio > 0 && reportado >= precio;
+        if (reportado > 0 && precio > 0 && reportado < precio) {
+          S.modo = "abono";
+          S.abono = reportado;
+        } else {
+          S.modo = "completo";
+        }
+        S.c2monto = ""; S.c2fecha = "";
         paso3();
       },
       modo(m) { S.modo = m; S.c2monto = ""; S.c2fecha = ""; paso3(); },
