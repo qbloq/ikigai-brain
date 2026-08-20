@@ -186,7 +186,12 @@ function renderResolverVentas(ui) {
         pinta(cabecera("Producto") + '<div class="alert alert-neg">No pude cargar el catálogo: ' + e.message + "</div>");
         return;
       }
-      const lista = productos
+      // solo los productos del proyecto del lead — un closer de DG no debe ver
+      // el catálogo de Andrea. Sin project_id en la fila (o sin match), se
+      // muestra todo antes que bloquear el paso.
+      const delProyecto = S.lead.project_id ? productos.filter((p) => p.project_id === S.lead.project_id) : [];
+      const catalogo = delProyecto.length ? delProyecto : productos;
+      const lista = catalogo
         .map((p) => '<button type="button" class="btn w-full justify-between py-3" onclick="RV.producto(\\'' + p.id + '\\')"><span>' +
           p.name + '</span><span class="tabular-nums">' + money(p.base_price) + "</span></button>")
         .join("");
@@ -298,7 +303,7 @@ function renderResolverVentas(ui) {
           } else {
             const p = productos.find((x) => x.id === S.productoId);
             const creado = await api("POST", "payment-plans", {
-              integration_id: D.integrationId,
+              integration_id: L.integration_id || D.integrationId,
               product_uuid: S.productoId,
               product_id: p && p.product_id ? p.product_id : undefined,
               customer_id: L.ghl_contact_id,
