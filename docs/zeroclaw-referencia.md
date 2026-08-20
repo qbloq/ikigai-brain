@@ -177,6 +177,32 @@ sync y despacho. Lectura: `despachos.sh` / `recados.sh` / `entradas.sh`
    pendiente del mismo alta (write remoto bloqueado por el clasificador;
    comando en el doc de closers).
 
+14. **El puente Cerebro→Iki: los envíos del Cerebro dejan constancia en la
+   sesión del destinatario** (2026-08-20). Los escenarios de `bash/closers/`
+   salen por WABA sin que zeroclaw se entere — Iki sostenía la mitad de una
+   conversación que no vio empezar (el closer respondía «fue venta» a una
+   pregunta que Iki nunca hizo). El remedio: `bash/closers/enviar.sh`, tras
+   cada envío exitoso, llama a `bash/agentes/aviso_iki.sh` **[WRITE → brain.db]**
+   — el ÚNICO escritor de avisos: inserta `AVISO DEL CEREBRO: enviado a
+   <persona> el <fecha> (<escenario>): "<texto>"` con `session_id` del
+   destinatario (sanitizado `whatsapp__<digitos>`), `category=conversation`,
+   key idempotente `aviso_cerebro_<escenario>_<ref>`, guard de
+   `schema_version` (upstream migra → falla ruidoso) y `--dry-run`. La
+   inyección de `[Memory context]` filtra por sesión (`session_id = <sid> OR
+   (NULL AND category IN (core,daily))`), así que el aviso solo se
+   auto-inyecta en los turnos de ESA persona — por eso jamás se inserta con
+   session NULL ni como daily/core. El AGENTS.md de Iki ganó la sección
+   «Avisos del Cerebro» (tratarlo como conversación propia, nunca
+   re-entregar, recall `AVISO <nombre>` ante respuestas sin contexto).
+   Excepción declarada al rail sqlite: brain.db es DB viva del daemon (WAL).
+   Verificado e2e 2026-08-20: envío real → wamid + fila en sesión de Santiago.
+   **Anotación de alcance**: la originación por el AGENTE (SOP cron +
+   `send_via`, que existen y corren bajo nuestro daemon) queda para cuando el
+   disparo sea *conversacional* («el closer no respondió en 2h») — los
+   escenarios actuales disparan sobre estado de negocio y le pertenecen al
+   Cerebro; ojo: el canal Cloud no soporta plantillas (`send()` = texto
+   plano), así que el agente solo puede originar dentro de ventana de 24h.
+
 ## Línea de no-fork (y qué la pondría a prueba)
 
 **Política (2026-08-12): no se parcha zeroclaw mientras no sea irremediable.**
@@ -205,6 +231,16 @@ Registro de situaciones que podrían requerirlo:
 - **Bind race del gateway al reiniciar** (`os error 99` en 10.0.0.2, dos
   arranques viejos): hoy anecdótico; si se vuelve frecuente pediría
   retry-with-backoff en el bind.
+- **`memory_recall` no scopéa por sesión** (verificado 2026-08-20: el tool
+  llama `recall(query, limit, None, …)` — `session_id` hardcodeado a `None`).
+  El flujo de recados DEPENDE de eso (el recado de la sesión de Santiago debe
+  aparecer en la de Pablo), pero implica que la frontera de confidencialidad
+  entre interlocutores de Iki es **blanda**: vive en el prompt (SOUL +
+  «datos de OTRO closer no se comparten»), no en el motor — cualquier turno
+  puede recallar acuerdos/resultados/avisos de cualquiera. Mitigación actual:
+  reglas de prompt, allowlist corta, datos sensibles detrás de la puerta HTTP.
+  Candidato natural a PR upstream: modo de recall scoped-por-sesión con
+  carve-out explícito (beneficio general, cambio chico).
 - **El canal WhatsApp descarta mensajes de audio/imagen** («Could be image,
   audio, etc. — skip for now», whatsapp.rs): una nota de voz de un closer
   jamás llega a Iki. Mitigado: el protocolo post-llamada pide el acuerdo de

@@ -9,6 +9,10 @@
 # --fallback-plantilla, reintenta automáticamente como plantilla con el mismo
 # cuerpo colapsado a una línea (las variables de plantilla no aceptan saltos).
 #
+# Puente Cerebro→Iki: cada envío exitoso deja constancia en la memoria del
+# Agente (bash/agentes/aviso_iki.sh — best-effort) para que Iki tenga el
+# contexto cuando el destinatario responda por el mismo chat.
+#
 # Usage:
 #   enviar.sh --para <+E164|nombre> --texto "..."            [opciones]
 #   enviar.sh --para <+E164|nombre> --plantilla N --vars "a|b|c" [opciones]
@@ -184,6 +188,18 @@ if resp:
                      wamid=excluded.wamid, estado='enviado', tipo=excluded.tipo, error=NULL""",
                 (fecha, escenario, ref, nombre, numero, tipo, usada, (cuerpo or "")[:1000], wamid))
     con.commit()
+    # Puente Cerebro→Iki: dejar constancia del envío en la SESIÓN del
+    # destinatario para que el Agente tenga el contexto de esta conversación.
+    # Best-effort: el mensaje ya salió — un aviso fallido se pierde, no revierte.
+    try:
+        aviso = texto if texto else f"[plantilla {usada}] {vars_raw}"
+        __import__("subprocess").run(
+            ["bash/agentes/aviso_iki.sh", "--numero", numero, "--persona", nombre,
+             "--texto", aviso, "--escenario", escenario,
+             "--ref", re.sub(r"[^A-Za-z0-9_-]", "-", ref)],
+            capture_output=True, timeout=15)
+    except Exception:
+        pass
     salir({"estado": "enviado", "numero": numero, "tipo": tipo, "wamid": wamid})
 else:
     con.execute("""INSERT INTO envios(fecha,escenario,ref,closer,numero,tipo,plantilla,cuerpo,estado,error)
