@@ -14,9 +14,13 @@ en `brain.db` en una máquina que controlamos: se puede leer en batch y cortar
 en un router nuestro. **El copiloto interno no tiene ningún dato
 centralizado** — cada conversación vive solo en la máquina del empleado,
 dentro de su fork. La única superficie instrumentable es un **hook de Claude
-Code**, y como los forks heredan `.claude/settings.json` por `pull
---rebase` desde este repo (upstream), un hook que vive aquí se propaga solo a
-los 19 forks en su próximo pull — sin tocar cada máquina a mano.
+Code**, y los forks ya tienen un mecanismo real de auto-actualización
+(`.claude/hooks/session-start.sh`, SessionStart: fetch+rebase al despertar
+la sesión, throttled a 4h, fail-soft, probado en producción) — un hook que
+vive aquí se propaga solo, sin que el empleado tenga que sincronizar a mano.
+De los 19 forks que existen estructuralmente, **hoy solo 2 son usuarios
+activos**: Juan Camilo y Pablo — el blast radius real de este spec es
+pequeño mientras el resto de la flota sigue en alta/piloto.
 
 **Amenazas cubiertas** (ampliado respecto a ZeroClaw, decisión explícita de
 la conversación):
@@ -253,10 +257,18 @@ en pantalla para que Technology lo copie y relaye).
 5. Crear `data/sqlite/copiloto_seguridad.db` en servidor api (se crea sola
    en el primer insert, patrón `--create`).
 6. UI: sources nuevas + sección "Copiloto interno" en el panel Señales.
-7. **Rollout no es instantáneo**: cada fork recibe el hook recién en su
-   próximo `pull --rebase` de upstream — no hay forma de empujarlo a los 19
-   a la vez sin que cada empleado sincronice. Vale la pena verificar cuántos
-   forks están al día antes de asumir cobertura completa.
+7. **Rollout casi automático, no instantáneo**: `.claude/hooks/session-start.sh`
+   ya hace fetch+rebase de `origin` al arrancar sesión (throttle 4h,
+   fail-soft) y trae consigo cualquier cambio a `.claude/` — para Juan
+   Camilo y Pablo (los únicos usuarios activos hoy) esto llega solo, en
+   cuestión de horas, sin pedirles nada. Dos matices a no perder de vista:
+   (a) el pull que trae los hooks nuevos y la sesión que ya queda con esos
+   hooks activos pueden no ser la misma sesión — cuenta con que la cobertura
+   real llega en, como mucho, dos arranques de sesión, no en el primero
+   necesariamente; (b) esto cubre solo a quien ya tiene el copiloto
+   actualizándose — cuando se sumen más de los 17 forks restantes a uso
+   activo, confirmar que cada uno tiene este mismo hook antes de asumir
+   cobertura.
 8. Calibrar el umbral con el historial real disponible (16-18 commits por
    fork ya existen en `forja/data/copilotos/ikigai/`, pero eso es señal
    estructural, no conversación — el umbral de ESTE sistema necesita su
