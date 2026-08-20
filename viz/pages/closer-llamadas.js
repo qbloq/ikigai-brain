@@ -9,7 +9,23 @@
 // Identidad publicada: closer_id forzado por plantilla ($user_id) — el DC
 // (identidad {}) ve todos los closers y puede filtrar con ?closer=.
 const { fetchSource } = require("../lib/datasources");
-const { escape, jsStr } = require("../lib/kit");
+const { escape, jsStr, selectCtl } = require("../lib/kit");
+
+// meetings.status → español (la DB habla inglés, la UI español)
+const ES_STATUS = {
+  scheduled: "Programada",
+  confirmed: "Confirmada",
+  in_progress: "En curso",
+  ended: "Terminada",
+  completed: "Completada",
+  processing: "Procesando",
+  cancelled: "Cancelada",
+};
+// «todas» es sentinela (no un status real): el server tira los overrides
+// vacíos, así que el valor vacío no puede significar «sin filtro» — sin
+// status en la URL el default es completed (las llamadas que quedaron
+// grabadas, regla de Santiago 2026-08-19).
+const STATUS_OPTS = [["todas", "Todos los estados"], ...Object.entries(ES_STATUS)];
 
 const ICON_DL = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 20h14v-2H5v2zM12 2v12l4-4 1.4 1.4L12 17.8 5.6 11.4 7 10l4 4V2h1z"/></svg>`;
 const ICON_DOC = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`;
@@ -20,6 +36,11 @@ function renderCloserLlamadas(ui) {
   const baseR = String(params.base_r || `/u/reporte-llamada`);
   delete params.base_t;
   delete params.base_r;
+
+  const stParam = String(params.status || "");
+  const stSelect = stParam === "" ? "completed" : stParam;
+  if (stSelect === "todas") delete params.status;
+  else params.status = stSelect;
 
   let rows = [];
   let err;
@@ -34,9 +55,9 @@ function renderCloserLlamadas(ui) {
 
   const bloqueado = (ui._locked || []).some((k) => k === "closer" || k === "closer_id");
   const reget = bloqueado
-    ? `@get('/ui/${escape(ui.id)}?from='+$clFrom+'&to='+$clTo)`
-    : `@get('/ui/${escape(ui.id)}?from='+$clFrom+'&to='+$clTo+'&closer='+encodeURIComponent($clCloser))`;
-  const signals = `{clFrom:${escape(jsStr(params.from || ""))},clTo:${escape(jsStr(params.to || ""))}${bloqueado ? "" : `,clCloser:${escape(jsStr(params.closer || ""))}`}}`;
+    ? `@get('/ui/${escape(ui.id)}?from='+$clFrom+'&to='+$clTo+'&status='+$clStatus)`
+    : `@get('/ui/${escape(ui.id)}?from='+$clFrom+'&to='+$clTo+'&status='+$clStatus+'&closer='+encodeURIComponent($clCloser))`;
+  const signals = `{clFrom:${escape(jsStr(params.from || ""))},clTo:${escape(jsStr(params.to || ""))},clStatus:${escape(jsStr(stSelect))}${bloqueado ? "" : `,clCloser:${escape(jsStr(params.closer || ""))}`}}`;
 
   const closerUnico = new Set(rows.map((r) => r.closer).filter(Boolean));
   const chip = closerUnico.size === 1 ? `<span class="badge badge-brand">${escape([...closerUnico][0])}</span>` : "";
@@ -44,6 +65,7 @@ function renderCloserLlamadas(ui) {
   const controls = `<div class="flex flex-wrap items-center gap-3" data-signals="${signals}">
     ${chip}
     ${bloqueado ? "" : `<input type="text" placeholder="closer…" data-bind="clCloser" data-on:change="${reget}" data-indicator:loadingcl class="input w-40" />`}
+    ${selectCtl("clStatus", stSelect, STATUS_OPTS, reget, "loadingcl")}
     <input type="date" data-bind="clFrom" data-on:change="${reget}" data-indicator:loadingcl class="input w-auto" />
     <span style="color:var(--text-3)">~</span>
     <input type="date" data-bind="clTo" data-on:change="${reget}" data-indicator:loadingcl class="input w-auto" />
@@ -75,7 +97,7 @@ function renderCloserLlamadas(ui) {
     <td class="align-top"><span class="text-xs">${escape(String(r.programa || "—").slice(0, 40))}</span></td>
     <td class="align-top"><span class="text-xs">${escape(r.proyecto || "—")}</span></td>
     ${closerUnico.size === 1 ? "" : `<td class="align-top"><span class="text-xs">${escape(r.closer || "—")}</span></td>`}
-    <td class="align-top"><span class="badge badge-neutral">${escape(r.status || "—")}</span></td>
+    <td class="align-top"><span class="badge badge-neutral">${escape(ES_STATUS[r.status] || r.status || "—")}</span></td>
     <td class="align-top text-center">${celTranscript(r)}</td>
     <td class="align-top">${celReporte(r)}</td>
   </tr>`
@@ -102,6 +124,6 @@ function renderCloserLlamadas(ui) {
 
 module.exports = {
   id: "closer-llamadas",
-  manifest: { consumes: "rows", overridable: ["closer", "from", "to"] },
+  manifest: { consumes: "rows", overridable: ["closer", "status", "from", "to"] },
   render: renderCloserLlamadas,
 };

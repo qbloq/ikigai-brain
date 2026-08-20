@@ -210,6 +210,7 @@ const SOURCES = {
       closer: "--closer",
       closer_id: "--closer-id",
       meeting: "--meeting",
+      status: "--status",
       from: "--from",
       to: "--to",
       limit: "--limit",

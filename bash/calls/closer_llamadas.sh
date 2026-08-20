@@ -21,12 +21,13 @@
 set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 
-closer="" closer_id="" meeting="" from="" to="" limit=200
+closer="" closer_id="" meeting="" from="" to="" status="" limit=200
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --closer)    closer="$2"; shift 2 ;;
     --closer-id) closer_id="$2"; shift 2 ;;
     --meeting)   meeting="$2"; shift 2 ;;
+    --status)    status="$2"; shift 2 ;;
     --from)      from="$2"; shift 2 ;;
     --to)        to="$2"; shift 2 ;;
     --limit)     limit="$2"; shift 2 ;;
@@ -48,6 +49,10 @@ fi
 if [[ -n "$meeting" ]]; then
   M_ESC="${meeting//\'/''}"
   WHERE="$WHERE AND m.id::text LIKE '$M_ESC%'"
+fi
+if [[ -n "$status" ]]; then
+  [[ "$status" =~ ^[a-z_]+$ ]] || { echo "--status inválido: $status" >&2; exit 2; }
+  WHERE="$WHERE AND m.status = '$status'"
 fi
 from="${from//\'/}" to="${to//\'/}"
 [[ -n "$from" ]] && WHERE="$WHERE AND (m.scheduled_start_time AT TIME ZONE 'UTC')::date >= '$from'"
