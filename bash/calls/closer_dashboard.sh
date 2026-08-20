@@ -326,7 +326,9 @@ SELECT json_build_object(
                to_char(sp.start_date,'YYYY-MM-DD') AS inicio, round(sp.original_amount)::int AS monto,
                sp.plan_status AS estado, sp.proyecto,
                (SELECT coalesce(round(sum(i.paid_amount)),0)::int FROM installments i WHERE i.plan_id = sp.plan_id) AS cobrado
-        FROM selplans sp ORDER BY sp.start_date DESC NULLS LAST LIMIT 10) t), '[]'::json)),
+        FROM selplans sp
+        WHERE sp.plan_status <> 'Cancelled'
+        ORDER BY sp.start_date DESC NULLS LAST LIMIT 10) t), '[]'::json)),
   'tramos', coalesce((SELECT json_agg(t ORDER BY t.tramo DESC) FROM (
       SELECT CASE WHEN bant >= 81 THEN '81-100' WHEN bant >= 61 THEN '61-80'
                   WHEN bant >= 41 THEN '41-60'  WHEN bant >= 21 THEN '21-40'
