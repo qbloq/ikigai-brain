@@ -57,6 +57,7 @@ SELECT coalesce(json_agg(t), '[]') FROM (
            WHERE i.plan_id = pp.plan_id AND i.status = 'Paid') AS cuotas_pagadas
   FROM ikigaigm.payment_plans pp
   WHERE pp.customer_id IN ($IDS) AND pp.created_at >= '$DESDE'
+    AND pp.plan_status = 'Active'  -- un plan cancelado no resuelve el lead
   ORDER BY pp.created_at DESC
 ) t
 SQL
