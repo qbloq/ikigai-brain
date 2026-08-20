@@ -291,7 +291,9 @@ const server = http.createServer(async (req, res) => {
         token: parseCookies(req.headers.cookie)[COOKIE],
       });
       if (!out) return send(res, 404, "No encontrado", "text/plain");
-      pubstore.visita(d.slug, payload, req.url);
+      // método + status en la ruta: la bitácora de visitas es también la
+      // telemetría de escritura (qué confirmó quién, y si el backend aceptó).
+      pubstore.visita(d.slug, payload, `${req.method} ${pathname} → ${out.status}`);
       return send(res, out.status, out.body, out.contentType);
     }
 
