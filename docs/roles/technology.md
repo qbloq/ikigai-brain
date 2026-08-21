@@ -2,7 +2,7 @@
 
 **Quiénes:** Pablo Gaviria (copiloto `pablo-gaviria`) — único Technology en el roster (confirmado contra la DB 2026-08-21; Angélica Ospina y Juan Sebastián Martínez ya no hacen parte del equipo — sus forks siguen en la flota con `role: technology`, sin acceso git, pendientes de baja)
 **Capa de rol (viz):** [viz/specs/roles/technology/](../../viz/specs/roles/technology/)
-**Nivel de acceso:** **todo-poderoso** — `acceso.json`: `{uis:*, fuentes:*}` (decisión 2026-08-21). Su viz carga las capas de UI de **todos** los roles (con badge de rol por UI) y `bash/ghl/`+`bash/vturb/` le responden. Es el rol de Parallelo: quien construye y audita el sistema tiene que poder verlo entero.
+**Nivel de acceso:** **todo-poderoso** — `acceso.json`: `{uis:*, dominios:*}` (decisión 2026-08-21). Su viz carga las capas de UI de **todos** los roles (con badge de rol por UI) y todo `bash/` cercado por rol le responde (`bash/ghl/`, `bash/vturb/`, `bash/users/`…). Es el rol de Parallelo: quien construye y audita el sistema tiene que poder verlo entero.
 **Tareas históricas:** 20 asignadas · 19 etiquetadas con arquetipo · 2 abiertas hoy
 
 **Misión.** La fuente de verdad técnica: consolidación de métricas y alineación de fuentes (Paralelo, S8), plataforma VSL (Biturbo↔GHL, S7), tracking de origen de ventas, pagos y comisiones (Stripe), y herramientas de IA/reporting.

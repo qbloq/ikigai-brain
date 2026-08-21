@@ -204,3 +204,30 @@ a los copilotos, así que el mapa llega solo.
 `npm run test:viz` 38/38; forks simulados: technology carga las 4 capas de
 rol, ejecutivo solo la suya, editor y «sin role» ninguna, cerebro todo.
 
+## Adenda 2 · 2026-08-21 — `bash/users` sale de `EXCLUIR`; `fuentes` → `dominios`
+
+**La pregunta de Santiago**: «el rol Technology debe tener acceso a todos los
+bash; ¿lo podemos hacer con el esquema que ya tenemos, o lo pasamos de largo?».
+Lo pasamos de largo a medias: había **dos mecanismos** decidiendo lo mismo —
+`acceso.json` (por rol, explícito) y la lista `EXCLUIR` de
+`derivar_canal.sh` (forja; «esto no viaja a ningún fork», implícito, anterior
+al sistema de acceso). `technology` ya tenía `*`, pero tres directorios
+(`bash/ops`, `bash/users`, `bash/whatsapp_evo_api`) no le llegaban porque no
+llegaban a nadie.
+
+**Decisión (Santiago)**: el sistema de acceso es el juez; **`EXCLUIR` queda
+para lo que no debe existir en un laptop**. Por ahora sale solo
+**`bash/users`**: viaja a todos los forks y lo cerca `require_acceso users`
+(en `bash/users/lib/common.sh` y en `usuarios_db.sh`, que no carga esa lib).
+`bash/ops` (escrituras destructivas de operador: `wipe_tasks.sh`…) y
+`bash/whatsapp_evo_api` siguen excluidos — el riel no basta para eso.
+
+**Rename**: la clave `fuentes` pasa a **`dominios`** — ya no son solo fuentes
+de datos con credencial, son los `bash/` cercados por rol. Mapa vigente:
+`technology = {uis:*, dominios:*}`, `ejecutivo = {dominios:*}`.
+
+**Capa que sigue aparte**: la credencial. `bash/users` necesita
+`MARKETICO_JWT_TOKEN` en `.env`; un fork technology pasa la cerca y después
+se detiene en el token si su máquina no lo tiene. Eso no es del esquema de
+roles — es *qué secretos tiene la máquina* — y se decide al dar el `.env`.
+

@@ -7,11 +7,22 @@
 # Read scripts only ever GET. Write scripts (create_user.sh, update_user.sh)
 # are clearly marked WRITE, print before/after and support --dry-run.
 # Deliberately independent of bash/lib/common.sh (no Postgres involved).
+#
+# FENCED BY ROLE (docs/roles/acceso.json → bash/lib/acceso.sh): until
+# 2026-08-21 this directory did not even travel to the copilot forks; now it
+# travels like every other domain and the access map decides who may run it
+# (cerebro and `technology` today; everyone else gets exit 3 and is pointed
+# at the cerebro / the crear-usuario skill). The credential is a separate
+# gate: MARKETICO_JWT_TOKEN lives in .env, and forks do not carry it.
 set -euo pipefail
 
 USERS_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USERS_DIR="$(cd "$USERS_LIB_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$USERS_DIR/../.." && pwd)"
+
+# shellcheck disable=SC1091
+source "$REPO_ROOT/bash/lib/acceso.sh"
+require_acceso users
 
 # --- Load token from .env ---------------------------------------------------
 if [[ -z "${MARKETICO_JWT_TOKEN:-}" && -f "$REPO_ROOT/.env" ]]; then

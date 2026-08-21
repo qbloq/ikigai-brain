@@ -5,6 +5,9 @@
 #
 # Usage:  usuarios_db.sh [--json]
 set -euo pipefail
+# DB-direct, so it skips lib/common.sh — but not the role fence of the domain.
+source "$(dirname "$0")/../lib/acceso.sh"
+require_acceso users
 source "$(dirname "$0")/../lib/common.sh"
 
 while [[ $# -gt 0 ]]; do

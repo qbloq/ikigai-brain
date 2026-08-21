@@ -1,15 +1,17 @@
-<!-- bash/users/CLAUDE.md — manual del dominio. Este directorio NO viaja al
-     copiloto (excluido en derivar_canal.sh); su documentación vive aquí y no
-     en el CLAUDE.md raíz, que es byte-idéntico en todos los forks. -->
+<!-- bash/users/CLAUDE.md — manual del dominio. Desde 2026-08-21 el
+     directorio SÍ viaja a los copilotos, cercado por rol (docs/roles/acceso.json
+     → bash/lib/acceso.sh: cerebro y `technology`; el resto exit 3). La
+     documentación vive aquí y no en el CLAUDE.md raíz, que es byte-idéntico en
+     todos los forks. `apis/` no viaja: el contrato se cita, no se enlaza. -->
 
-## Users domain — Marketico API ([bash/users/](bash/users/))
+## Users domain — Marketico API ([bash/users/](./))
 
 The app's **user accounts** (login identities, ~28 — the layer behind
 `users`/`persons`), managed through the Marketico backend HTTP API instead of
-SQL (spec: [apis/mkt/users.openapi.json](apis/mkt/users.openapi.json); auth
+SQL (spec: `apis/mkt/users.openapi.json`, artefacto de operador; auth
 `MARKETICO_JWT_TOKEN` in `.env`; base `MARKETICO_URL`, default
 `https://ikigaigm.api.parallelo.ai`). Own helper lib
-([bash/users/lib/common.sh](bash/users/lib/common.sh) — `mkt_data` unwraps the
+([bash/users/lib/common.sh](lib/common.sh) — `mkt_data` unwraps the
 `{success,data}` envelope, `resolve_user` accepts id-prefix/name/email and
 errors on ambiguity), independent of the Postgres lib. Same policy mirror:
 reads by default, WRITE scripts print payload + before/after and support

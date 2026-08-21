@@ -26,13 +26,19 @@
 # sin .env ni Postgres. No toca red ni base: decide con archivos locales.
 #
 # EL MAPA vive en docs/roles/acceso.json — UNA sola fuente, DOS consumidores:
-# este helper (clave `fuentes`: dominios con credencial) y viz/lib/store.js
+# este helper (clave `dominios`: los bash/ cercados por rol) y viz/lib/store.js
 # (clave `uis`: qué capas de UI de rol carga el viz). Decisión 2026-08-21
-# (Santiago): technology = {uis:*, fuentes:*} — el rol todo-poderoso — y
-# ejecutivo = {fuentes:*}. Editarlo es decisión de gobernanza; se registra en
-# el spec. Lectura de `fuentes`: "*" = todos los dominios con credencial;
-# lista = solo esos; rol ausente del mapa = negado; mapa ausente = negado
+# (Santiago): technology = {uis:*, dominios:*} — el rol todo-poderoso — y
+# ejecutivo = {dominios:*}. Editarlo es decisión de gobernanza; se registra en
+# el spec. Lectura de `dominios`: "*" = todos los dominios cercados; lista =
+# solo esos; rol ausente del mapa = negado; mapa ausente = negado
 # (fail-closed) salvo para el cerebro, que no consulta el mapa.
+#
+# Dominios cercados hoy: ghl, vturb (credencial de proveedor en la DB) y
+# users (cuentas de Marketico; antes ni viajaba a los forks — desde el
+# 2026-08-21 viaja y lo decide este mapa). Regla: lo que NO debe existir en
+# un laptop (bash/ops, bash/whatsapp_evo_api) sigue en EXCLUIR del canal;
+# todo lo demás viaja y lo decide acceso.json.
 #
 # Parse en python3 (stdlib), como copilot.json; nada de `declare -A` ni
 # `${x,,}`: los copilotos macOS corren bash 3.2.
@@ -58,14 +64,14 @@ except Exception:
 PY
 }
 
-# acceso_perm_rol <rol> : echoes the role's `fuentes` from the map — "*",
+# acceso_perm_rol <rol> : echoes the role's `dominios` from the map — "*",
 # a space-separated list, or "" (absent role / unreadable map → fail-closed).
 acceso_perm_rol() {
   python3 - "$ACCESO_MAPA" "$1" 2>/dev/null <<'PY'
 import json, sys
 try:
     m = json.load(open(sys.argv[1]))
-    v = (m.get(sys.argv[2]) or {}).get("fuentes") if isinstance(m, dict) else None
+    v = (m.get(sys.argv[2]) or {}).get("dominios") if isinstance(m, dict) else None
     if v == "*": print("*")
     elif isinstance(v, list): print(" ".join(str(x) for x in v))
     else: print("")
@@ -79,6 +85,7 @@ acceso_alternativa() {
   case "$1" in
     ghl)   echo "bash/ghl/ lee tokens de project_crm_configs; el espejo del CRM es bash/crm/ (ingestado, sin credencial)." ;;
     vturb) echo "bash/vturb/ lee tokens de project_vturb_video_configs; el fallback vía proxy Mkt (apis/mkt/vturb-video.openapi.json) está pendiente." ;;
+    users) echo "bash/users/ crea y edita las cuentas de Marketico (MARKETICO_JWT_TOKEN); las altas las hace el cerebro (skill crear-usuario) — pídelas ahí." ;;
     meta)  echo "bash/ads/creativos_sync.sh lee el user token de identities (provider facebook*) para el Graph API; las métricas por anuncio (anuncios.sh) salen de la DB sin credencial." ;;
     *)     echo "el dominio '$1' opera con credencial de proveedor." ;;
   esac
@@ -103,7 +110,7 @@ require_acceso() {
   perm="$(acceso_perm_rol "$rol")"
   if [[ "$perm" == "*" ]]; then return 0; fi
   for d in $perm; do [[ "$d" == "$dom" ]] && return 0; done
-  echo "$dom: este dominio no está habilitado para el rol '$rol' — solo el cerebro y los roles con \`fuentes\` en docs/roles/acceso.json manejan credenciales de proveedor." >&2
+  echo "$dom: este dominio no está habilitado para el rol '$rol' — solo el cerebro y los roles con \`dominios\` en docs/roles/acceso.json pueden usarlo." >&2
   echo "     ($(acceso_alternativa "$dom"))" >&2
   exit 3
 }
