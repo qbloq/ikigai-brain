@@ -36,6 +36,10 @@ Dos honestidades que el diseño tiene que cargar, no esconder:
    honesto (y evita que se construya algo NUEVO que dependa de la llave en un
    fork); el muro de verdad es mover las credenciales detrás del backend —
    estado final ya declarado en `bash/ghl/README.md`.
+   *Corrección (adenda 3, 2026-08-21): eso era cierto para el DSN admin, no
+   para los roles PG de copiloto — la migración 003 §2b ya les REVOCABA
+   `project_*_configs`; Postgres era un muro más alto que el riel, y los dos
+   mapas se contradecían. Desde la 007 el mapa es uno solo (`tablas`).*
 2. **La máquina no es el criterio.** Hoy «el copiloto de Lorenzo» corre en la
    máquina de Santiago; mañana en la de Lorenzo. La cerca decide por
    `copilot.json` (rol), no por dónde corre, para que no se olvide de cerrar
@@ -231,3 +235,54 @@ de datos con credencial, son los `bash/` cercados por rol. Mapa vigente:
 se detiene en el token si su máquina no lo tiene. Eso no es del esquema de
 roles — es *qué secretos tiene la máquina* — y se decide al dar el `.env`.
 
+
+## Adenda 3 · 2026-08-21 — Postgres entra al mapa: `tablas` y el tier total
+
+**La pregunta de Santiago**: «¿cómo está funcionando el control de acceso por
+usuario (copiloto) a Postgres? ¿a ese nivel también estamos aprovechando la
+arquitectura de acceso?».
+
+**Lo que había** (verificado en la DB viva): un rol PG por copiloto
+(`ikigai_<empleado>` LOGIN, `NOBYPASSRLS`, `CONNECTION LIMIT 5`) miembro de
+`ikigai_copiloto_base` — SELECT en todo el schema menos el **tier sensible**
+(runtime LLM, `project_*_configs`, compensación, `identities`: 003 §2b) —
+y `ikigai_tier_compensacion` (004) devuelto a los ejecutivos. Seis altas
+reales (Lorenzo, Juan Camilo, Pablo, Luis David, David Castaño, Marisol); los
+otros 13 forks no tienen rol PG ni `.env`. **No aprovechaba el mapa**: los
+tiers estaban hardcodeados en `crear_alta.sh` (`ejecutivo → compensacion`) y la
+membresía nombrada en la 004. Consecuencia medida: `acceso.json` decía
+`ejecutivo: dominios:*` (pasa `bash/vturb`) y Postgres respondía `permission
+denied for table project_vturb_video_configs` con el DSN real de Lorenzo — la
+cerca de la adenda 1 se había probado en un clon sin `.env`, no en el camino
+completo.
+
+**Decisión (Santiago)**: «por ahora los roles **Ejecutivo** y **Technology**
+tienen acceso a **todas** las tablas, pero solamente esos roles».
+
+**Cómo quedó**:
+- `catalog/migrations/007_tier_total.sql` (aplicada): rol `ikigai_tier_total`
+  NOLOGIN con SELECT sobre todas las tablas del schema (+ default privileges
+  para las futuras) y política RLS `tier_total FOR SELECT USING(true)` en las
+  89 tablas con RLS. **Solo lectura** — las escrituras siguen siendo las del
+  `copiloto_base`. Membresía al aplicar: Lorenzo, Juan Camilo, Pablo. Incluye,
+  declarado, el runtime LLM (`llmrouter_api_keys`) e `identities`; dejar el
+  runtime fuera es un `REVOKE` de 14 tablas si se decide.
+- `docs/roles/acceso.json` gana la clave **`tablas`** (`"*"` → `tier_total`;
+  lista → `tier_<nombre>`; sin clave → solo base). Tercer consumidor:
+  `forja/bash/fleet/crear_alta.sh` la lee del clon del copiloto al dar de alta,
+  y **re-ejecutar re-sincroniza** (concede los tiers del rol, revoca los que ya
+  no le tocan); el chequeo del tier sensible se invierte cuando el rol tiene
+  `tier_total`. Ya no hay hardcode de rol en forja.
+- `slices.md` §4 lleva la excepción vigente; §5 describe el consumidor PG.
+
+**Verificado**: con el DSN real de Lorenzo, en su clon: `bash/vturb/auth_status.sh`
+→ `auth ok` en los dos proyectos; `bash/finance/comisiones.sh` lista; `INSERT`
+en `project_crm_configs` → `permission denied`. `has_table_privilege` de Luis
+David (director-comercial) sobre `project_crm_configs` → `f`.
+
+**Lo que sigue abierto**: cambiar `tablas` en el mapa no mueve a los copilotos
+ya dados de alta sin re-correr `crear_alta.sh` (que rota credenciales) o un
+GRANT/REVOKE del operador — falta un `sync_tiers.sh` que solo re-sincronice
+membresías. Y la Etapa 2 de `slices.md` (un slice RLS por rol de negocio)
+sigue sin construirse: todo copiloto con alta ve toda la org menos el tier
+sensible.

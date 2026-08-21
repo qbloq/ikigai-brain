@@ -54,21 +54,27 @@ Lo que un copiloto puede **ver** (capas de UI) y **consultar** (fuentes con
 credencial de proveedor) lo define **el rol**, no el hecho de ser copiloto
 (spec `docs/superpowers/specs/2026-08-20-control-de-acceso-fuentes-design.md`
 + adenda 2026-08-21). El mapa es UN archivo, [`acceso.json`](acceso.json),
-con dos consumidores:
+con tres consumidores:
 
 | Clave | Quién la lee | Significado |
 |---|---|---|
 | `uis` | `viz/lib/store.js` | `"*"` = el viz carga las capas de UI de **todos** los roles (con badge de rol por UI). Sin la clave = solo la capa propia. |
+| `tablas` | `forja/bash/fleet/crear_alta.sh` (al crear el rol LOGIN de Postgres del copiloto) | `"*"` = miembro de `ikigai_tier_total` (SELECT sobre **todas** las tablas del schema, incluido el tier sensible de `slices.md` §4 — migración `007_tier_total.sql`); lista = `ikigai_tier_<nombre>` por ítem (hoy existe `compensacion`, migración 004); sin la clave = solo `ikigai_copiloto_base` (toda la org menos el tier sensible, 003 §2b). Cambiar el valor de un rol **no** mueve a los copilotos ya dados de alta: la membresía se ajusta con `GRANT/REVOKE ikigai_tier_… TO/FROM ikigai_<empleado>` (lo hace el operador; ver la migración). |
 | `dominios` | `bash/lib/acceso.sh` (`require_acceso <dominio>`) | `"*"` = todos los `bash/` cercados por rol (`bash/ghl/`, `bash/vturb/` — credencial de proveedor — y `bash/users/` — cuentas de Marketico); lista = solo esos; sin la clave = negado con `exit 3` y un mensaje que dice a dónde ir (el espejo `bash/crm/` para GHL; el proxy Mkt, pendiente, para VTurb; el cerebro/skill `crear-usuario` para users). |
 
-Hoy: **`technology` = `{uis:*, dominios:*}`** (el rol todo-poderoso — Parallelo)
-y **`ejecutivo` = `{dominios:*}`** (mira el embudo completo con el VSL en vivo).
+Hoy: **`technology` = `{uis:*, dominios:*, tablas:*}`** (el rol todo-poderoso —
+Parallelo) y **`ejecutivo` = `{dominios:*, tablas:*}`** (mira el embudo completo
+con el VSL en vivo y, desde 2026-08-21, **todas las tablas de Postgres** — decisión
+de Santiago: «por ahora Ejecutivo y Technology tienen acceso a todas las tablas,
+pero solamente esos roles»). Las tres claves tienen que decir lo mismo para un
+rol: hasta la 007, `dominios:*` dejaba pasar `bash/vturb` y Postgres negaba
+`project_vturb_video_configs` al mismo copiloto.
 Regla de reparto con el canal: **`EXCLUIR` (forja) es para lo que no debe
 existir en un laptop** (`bash/ops/`, `bash/whatsapp_evo_api/`, `catalog/`,
 `apis/`…); todo lo demás viaja y lo decide `acceso.json`.
 Sin `copilot.json` = cerebro = todo, sin consultar el mapa. Un `copilot.json`
 sin `role` legible, o un mapa ausente, **no hereda nada** (fail-closed en los
-dos consumidores). **Editar el mapa es decisión de gobernanza** y se registra
+tres consumidores). **Editar el mapa es decisión de gobernanza** y se registra
 en el spec. La cerca es un riel, no un muro (un fork con `DATABASE_URL` puede
 leer el token); el muro es mover las credenciales detrás del backend.
 

@@ -74,6 +74,13 @@ territorio del Director Comercial; Setter/Líder ven reports, no transcripts).
 
 ## 4 · Sensibilidad — lo que el slice NUNCA incluye (ningún rol)
 
+> **Excepción vigente (2026-08-21, «por ahora»):** los roles **Ejecutivo** y
+> **Technology** reciben el tier `ikigai_tier_total` — SELECT sobre todas las
+> tablas, incluidas las de esta sección — por decisión de Santiago. Está
+> declarado en `docs/roles/acceso.json` (`tablas:"*"`) y aplicado por
+> `catalog/migrations/007_tier_total.sql`. Para el resto de roles esta tabla
+> sigue siendo ley.
+
 | Qué | Por qué |
 |---|---|
 | `runtime` completo (14 tablas) | Plataforma Parallelo: `llmrouter_api_keys` (¡llaves en la DB!), prompts, workers. Solo operador. |
@@ -83,7 +90,10 @@ territorio del Director Comercial; Setter/Líder ven reports, no transcripts).
 
 ## 5 · Cómo se aplica
 
-- **Postgres (Etapa 2):** por cada rol se genera la política que reemplaza a
+- **Postgres (hoy):** `crear_alta.sh` (forja) lee `acceso.json.tablas` del rol y
+  hace al LOGIN miembro de los tiers: `*` → `ikigai_tier_total` (007), lista →
+  `ikigai_tier_<nombre>` (hoy `compensacion`, 004). Un mapa, tres consumidores.
+- **Postgres (Etapa 2, pendiente):** por cada rol se genera la política que reemplaza a
   `copiloto_acceso` en las tablas de su slice — un rol de grupo por rol de
   negocio (`ikigai_rol_copy`, …) entre `copiloto_base` y el empleado, y la
   política ata `USING` a la membresía. Tablas fuera del slice: sin política →

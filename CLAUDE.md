@@ -815,8 +815,11 @@ via `@identidad.md`, never by assembling a per-fork copy. The viz store loads
 that role's spec layer — or every role's, when `docs/roles/acceso.json` says
 `uis:"*"` for it (today: `technology`) — and stamps `owner`/`role` on
 everything created. The brain (no copilot.json) sees org + all roles. That
-same file's `fuentes` key is what `bash/lib/acceso.sh` reads: **one map, two
-consumers** (`docs/roles/README.md`).
+same file's `dominios` key is what `bash/lib/acceso.sh` reads, and its
+`tablas` key is what forja's `crear_alta.sh` turns into Postgres tiers
+(`"*"` → `ikigai_tier_total`, every table read-only — today ejecutivo and
+technology, migration `007_tier_total.sql`): **one map, three consumers**
+(`docs/roles/README.md`).
 Everything a copilot writes lands in `viz/specs/local/` and auto-commits —
 git IS the telemetry; structure is observed, content never. Structural
 changes propose themselves by push; governance reviews and, when approved,
