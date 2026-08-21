@@ -77,8 +77,9 @@ WITH params AS (
 lw AS (
   SELECT o.id, o.status, o.created_date::date AS creada, c.ghl_contact_id,
          coalesce(st.name,'—') AS etapa, utm.src,
-         coalesce(ca.name, utm.camp) AS camp,
-         ca.name AS camp_ghl, utm.camp AS camp_form,
+         coalesce(ca.name, caa.name, CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN '— pauta sin campaña resuelta (ad fuera de las cuentas mapeadas)' END, utm.camp) AS camp,
+         coalesce(ca.name, caa.name, CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN '— pauta sin campaña resuelta (ad fuera de las cuentas mapeadas)' END) AS camp_ghl,
+         utm.camp AS camp_form,
          coalesce(c.last_attribution_source, c.attribution_source)->>'sessionSource' AS sesion_ghl,
          CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN c.attr_ad_id END AS ad_id
   FROM crm_opportunities o
@@ -86,6 +87,8 @@ lw AS (
              AND o.created_date::date BETWEEN params.d1 AND params.d2
   LEFT JOIN crm_contacts c ON c.id = o.contact_id
   LEFT JOIN campaigns ca ON ca.id = c.attr_campaign_id
+  LEFT JOIN ads ad_ ON ad_.id = c.attr_ad_id AND c.attr_ad_id ~ '^[0-9]+$'
+  LEFT JOIN campaigns caa ON caa.id = ad_.campaign_id
   LEFT JOIN crm_pipelines pl ON pl.id = o.pipeline_id
   LEFT JOIN LATERAL (
     SELECT s->>'name' AS name FROM jsonb_array_elements(pl.stages) s

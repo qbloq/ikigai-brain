@@ -98,8 +98,8 @@ fi
 [[ "$CONTACT" == "no" ]] && where="$where AND c.id IS NULL"
 [[ -n "$STAGE"   ]] && where="$where AND st.name ILIKE '%$(esc "$STAGE")%'"
 [[ -n "$DIASMIN" ]] && where="$where AND (CURRENT_DATE - o.created_date::date) >= $((DIASMIN))"
-[[ "$PAGADO" == "si" ]] && where="$where AND coalesce(ca.name, utm.camp) IS NOT NULL"
-[[ "$PAGADO" == "no" ]] && where="$where AND coalesce(ca.name, utm.camp) IS NULL"
+[[ "$PAGADO" == "si" ]] && where="$where AND (coalesce(ca.name, caa.name, utm.camp) IS NOT NULL OR c.attr_ad_id ~ '^[0-9]+$')"
+[[ "$PAGADO" == "no" ]] && where="$where AND coalesce(ca.name, caa.name, utm.camp) IS NULL AND NOT coalesce(c.attr_ad_id ~ '^[0-9]+$', false)"
 
 lim=""; [[ "$LIMIT" != "0" ]] && lim="LIMIT $((LIMIT))"
 
@@ -122,11 +122,12 @@ SELECT left(o.id::text,8)                                   AS id,
        -- sesión que registró GHL (pauta sin form → 'fb', o Social media /
        -- Referral / Direct traffic para lo no pagado).
        coalesce(utm.src,
-                CASE WHEN ca.name IS NOT NULL THEN 'fb' END,
+                CASE WHEN coalesce(ca.name, caa.name) IS NOT NULL OR c.attr_ad_id ~ '^[0-9]+$' THEN 'fb' END,
                 coalesce(c.last_attribution_source, c.attribution_source)->>'sessionSource',
                 '—')                                         AS origen,
-       coalesce(ca.name, utm.camp, '—')                     AS campana,
-       coalesce(ad.name, '—')                               AS anuncio,
+       coalesce(ca.name, caa.name, utm.camp,
+                CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN '— pauta sin campaña resuelta (ad fuera de las cuentas mapeadas)' END, '—') AS campana,
+       coalesce(ad.name, CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN '(ad ' || c.attr_ad_id || ' no mapeado)' END, '—') AS anuncio,
        coalesce(c.ghl_source, '—')                          AS formulario,
        pr.name                                              AS proyecto
 FROM crm_opportunities o
@@ -134,6 +135,7 @@ JOIN projects pr        ON pr.id = o.project_id
 LEFT JOIN crm_contacts c ON c.id = o.contact_id
 LEFT JOIN campaigns ca   ON ca.id = c.attr_campaign_id
 LEFT JOIN ads ad         ON ad.id = c.attr_ad_id AND c.attr_ad_id ~ '^[0-9]+$'
+LEFT JOIN campaigns caa  ON caa.id = ad.campaign_id
 LEFT JOIN crm_pipelines pl ON pl.id = o.pipeline_id
 LEFT JOIN users u        ON u.id = o.user_id
 LEFT JOIN persons pe     ON pe.person_id = u.person_id
