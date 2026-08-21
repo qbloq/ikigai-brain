@@ -242,8 +242,9 @@ obj["manychat"] = {
     "mapa": tags or [],
     "nota": "solo el vocabulario del flujo (tags de la cuenta de operación de Instagram): el API no lista suscriptores ni da conteos por tag; los de IG no traen email/teléfono y por nombre matchea ~18% con falsos positivos — por eso este bloque no cuenta DMs ni setters. Llave pendiente: que el flujo escriba ig_username/subscriber id en el contacto de GHL.",
 }
+mc_estado = (f"ManyChat CONECTADO ({len(tags)} tags de la cuenta de operación)" if tags is not None else "ManyChat sin conexión (" + (os.environ["MC_ERR"] or "?") + ")")
 obj["sin_instrumentar"] = [
-    "conversaciones y setters de Instagram (ManyChat): sin API de conteos ni llave con el CRM",
+    mc_estado + " — pero su API no lista suscriptores ni cuenta DMs/setters, y no hay llave con el CRM (los suscriptores de IG no traen email/teléfono): lo que se ve es el MAPA del flujo, no su volumen. Pedido: que el flujo escriba ig_username/subscriber_id en el contacto de GHL",
     "vistas/suscriptores de YouTube por módulo: la serie se ve solo desde el lead que llega al form",
     "seguidores nuevos por día (Meta/IG): los follow-me ads se leen por su gasto, no por el seguidor que trajeron",
 ]
