@@ -28,7 +28,7 @@ reads by default, WRITE scripts print payload + before/after and support
 | `set_ghl.sh <ref> --location LOC --ghl-user GID [--primary] [--remove]` **[WRITE, SQL]** | Bind the user's GoHighLevel identity: merges `{LOC: GID}` into `users.integrations` (jsonb map location→ghl_user); `--primary` also sets `users.crm_id` (what the calls-domain closer resolution reads). The API doesn't expose these columns, so this one writes via `psql_rw`. `--dry-run` rolls back. |
 
 **Skill — alta de usuario:**
-- `crear-usuario` ([.claude/skills/crear-usuario/](.claude/skills/crear-usuario/SKILL.md)):
+- `crear-usuario` (`.claude/skills/crear-usuario/` (skill de operador; no viaja al copiloto)):
   `/crear-usuario` — interactive alta of ONE app user: gathers nombre/apellido/
   email/teléfono (+ apodos and GHL location+user id, both optional), pre-checks
   duplicates, then `create_user.sh` → `set_ghl.sh` → nickname-map update.
