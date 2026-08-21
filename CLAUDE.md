@@ -590,8 +590,17 @@ van en `params.metas` del spec, no en código).
 El registro que la alineación DG 2026-08-19 dejó como acuerdo: cada testeo del
 embudo con sus **métricas iniciales y finales congeladas** (snapshots de
 `bash/metrics/embudo.sh` con procedencia — no se digitan) y su desenlace.
-Sqlite local `testeos` (patrón `bash/lib/sqlite.sh`; nace con el primer
-`testeo_abrir.sh`). Las dos disciplinas de la reunión van en el diseño:
+Vive en **Postgres** (`ikigaigm.testeos`, migración
+`catalog/migrations/006_testeos.sql`; nació sqlite y se graduó el mismo día)
+porque **los testeos los crean y monitorean los copilotos del rol Ejecutivo**
+(Juan Camilo y Lorenzo) y un histórico compartido no puede vivir en la sqlite
+de una máquina. `abierto_por`/`cerrado_por` salen del `copilot.json` del fork
+(`cerebro` si no hay). ⚠️ **En un fork el bloque VSL del snapshot viene con
+error declarado** (`bash/vturb` se niega fuera del cerebro): los testeos con
+métrica `vsl.*` se abren desde el cerebro hasta que el fallback vía el proxy
+Mkt exista (`apis/mkt/vturb-video.openapi.json` ya expone analytics; ojo al
+bug de retención del normalizador de Marketico, ver `bash/vturb/README.md`).
+Las dos disciplinas de la reunión van en el diseño:
 **un solo cambio por testeo** (`--variable` es singular y obligatoria) y
 **un testeo por step** (`testeo_abrir.sh` se niega si ya hay uno `en_curso`
 en ese step+proyecto; `--forzar` para la excepción consciente).

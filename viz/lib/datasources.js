@@ -376,9 +376,10 @@ const SOURCES = {
     emits: "object",
     args: { project: "--project", desde: "--desde", corte: "--corte" },
   },
-  // El HISTÓRICO de testeos del embudo (sqlite local `testeos`): cada fila con
-  // su métrica objetivo, valores inicial/final congelados y desenlace. El viz
-  // solo LEE y muestra el id corto como handle; abrir/cerrar es conversación
+  // El HISTÓRICO de testeos del embudo (Postgres ikigaigm.testeos, migración
+  // 006 — compartido entre cerebro y copilotos): cada fila con su métrica
+  // objetivo, valores inicial/final congelados y desenlace. El viz solo LEE y
+  // muestra el id corto como handle; abrir/cerrar es conversación
   // (bash/testeos/testeo_abrir.sh / testeo_cerrar.sh).
   testeos: {
     label: "Testeos del embudo (histórico)",
