@@ -26,14 +26,17 @@
 # sin .env ni Postgres. No toca red ni base: decide con el archivo local.
 #
 # EL MAPA — editarlo es decisión de gobernanza (registrarla en el spec).
-#   rol               : dominios           nota
-#   ejecutivo         : *                  acceso total a fuentes del negocio
-#   # director-comercial : ghl             candidato; NO decidido (2026-08-21) — lee el espejo bash/crm/
+# Es un `case` y no un arreglo asociativo a propósito: los copilotos macOS
+# corren bash 3.2, que no tiene `declare -A` (ya mató a bash/publicar/ una vez).
 # Lectura: `*` = todos los dominios con credencial; lista = solo esos
-# (separados por espacio). Rol ausente del mapa = negado.
-declare -A ACCESO_ROLES=(
-  [ejecutivo]='*'
-)
+# (separados por espacio); vacío = rol ausente del mapa = negado.
+acceso_perm_rol() {  # acceso_perm_rol <rol> → echoes the role's domains
+  case "$1" in
+    ejecutivo) echo '*' ;;                 # acceso total a fuentes del negocio
+    # director-comercial) echo 'ghl' ;;    # candidato; NO decidido (2026-08-21) — lee el espejo bash/crm/
+    *) echo '' ;;
+  esac
+}
 
 ACCESO_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ACCESO_REPO_ROOT="$(cd "$ACCESO_LIB_DIR/../.." && pwd)"
@@ -75,7 +78,7 @@ require_acceso() {
     echo "     (bash/lib/acceso.sh: el acceso a fuentes con credencial lo define el rol; arregla copilot.json o pide el alta de nuevo)" >&2
     exit 3
   fi
-  perm="${ACCESO_ROLES[$rol]:-}"
+  perm="$(acceso_perm_rol "$rol")"
   if [[ "$perm" == "*" ]]; then return 0; fi
   for d in $perm; do [[ "$d" == "$dom" ]] && return 0; done
   echo "$dom: este dominio no está habilitado para el rol '$rol' — solo el cerebro y los roles del mapa en bash/lib/acceso.sh manejan credenciales de proveedor." >&2

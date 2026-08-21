@@ -61,7 +61,7 @@ ghl_projects() {
 # same contract as resolve_member in the tasks layer.
 ghl_resolve_project() {
   local frag="$1" rows n
-  rows="$(ghl_projects | awk -F'\t' -v f="${frag,,}" 'tolower($2) ~ f {print $1 "\t" $2}')"
+  rows="$(ghl_projects | awk -F'\t' -v f="$(printf '%s' "$frag" | tr '[:upper:]' '[:lower:]')" 'tolower($2) ~ f {print $1 "\t" $2}')"
   if [[ -z "$rows" ]]; then
     echo "ghl: ningún proyecto con CRM configurado coincide con '$frag'." >&2
     echo "Disponibles: $(ghl_projects | cut -f2 | paste -sd', ')" >&2
