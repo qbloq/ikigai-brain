@@ -198,6 +198,38 @@ const SOURCES = {
     emits: "object",
     args: { id: { positional: true } },
   },
+  // Todas las llamadas de un closer, con los indicadores de captura
+  // (transcript usable ≥2000 chars / fuente del reporte vigente) — la UI
+  // publicada «Llamadas del closer». `meeting` filtra a una (el guard del
+  // relay de transcript y de la página de reporte).
+  closer_llamadas: {
+    label: "Llamadas del closer",
+    script: "bash/calls/closer_llamadas.sh",
+    emits: "rows",
+    args: {
+      closer: "--closer",
+      closer_id: "--closer-id",
+      meeting: "--meeting",
+      status: "--status",
+      from: "--from",
+      to: "--to",
+      limit: "--limit",
+    },
+  },
+  // La cola de ventas por resolver de un closer: leads curados en la sqlite
+  // local (pareo CRM+meetings hecho a mano) cruzados EN VIVO contra
+  // payment_plans — una fila pasa a 'resuelto' cuando su plan existe en el
+  // sistema, nunca por marca manual. Alimenta la UI `resolver-ventas`.
+  leads_resolucion: {
+    label: "Ventas por resolver (closer)",
+    script: "bash/closers/leads_resolucion.sh",
+    emits: "rows",
+    args: {
+      db: "--db",
+      tabla: "--tabla",
+      desde: "--desde",
+    },
+  },
   // La matriz del experimento de prompt: una fila por llamada, tres celdas
   // (producción·gemini · producción·claude · mejorado·claude), y las celdas
   // que faltan se emiten con `existe:0` + el handle para mandarlas a correr.
@@ -343,6 +375,29 @@ const SOURCES = {
     script: "bash/finance/desercion.sh",
     emits: "object",
     args: { project: "--project", desde: "--desde", corte: "--corte" },
+  },
+  // El HISTÓRICO de testeos del embudo (Postgres ikigaigm.testeos, migración
+  // 006 — compartido entre cerebro y copilotos): cada fila con su métrica
+  // objetivo, valores inicial/final congelados y desenlace. El viz solo LEE y
+  // muestra el id corto como handle; abrir/cerrar es conversación
+  // (bash/testeos/testeo_abrir.sh / testeo_cerrar.sh).
+  testeos: {
+    label: "Testeos del embudo (histórico)",
+    script: "bash/testeos/testeos.sh",
+    emits: "rows",
+    args: { estado: "--estado", step: "--step", project: "--project", limit: "--limit" },
+  },
+  // EL CRUCE del embudo completo: Meta → VTurb → CRM → llamadas → caja →
+  // cuotas, cada bloque con su fuente declarada (nació del meeting b3f06835:
+  // el dashboard que no cuadraba). Cache corto NO por ser referencia estática
+  // sino porque cada render pega a un API externo (VTurb) — 60s es etiqueta
+  // con la fuente, y el objeto declara su hora de generación en meta.generado.
+  embudo: {
+    label: "Embudo — el cruce (Meta·VTurb·CRM·caja)",
+    script: "bash/metrics/embudo.sh",
+    emits: "object",
+    args: { project: "--project", from: "--from", to: "--to", meses: "--meses" },
+    cache: 60_000,
   },
   // Commission payouts with review state — the approval queue (pending first).
   comisiones: {

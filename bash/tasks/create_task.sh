@@ -244,3 +244,5 @@ $end;
 SQL
 
 [[ -n "$dry" ]] && echo "(dry-run: rolled back, nothing written)"
+
+exit 0

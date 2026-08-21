@@ -52,9 +52,17 @@ list_db_names() {
 
 # sqlite_ro <db_path> [sql] : read-only + safe mode (no .shell/.import/ATTACH),
 # 3s busy timeout. The engine itself rejects writes (mode=ro at open).
+# -safe existe desde el CLI 3.38; el servidor api trae 3.34 — se detecta UNA
+# vez y se omite donde no existe (-readonly sigue siendo la garantía real;
+# -safe solo suma el bloqueo de dot-commands).
+if sqlite3 -safe :memory: "SELECT 1" >/dev/null 2>&1; then
+  _SQLITE_SAFE=(-safe)
+else
+  _SQLITE_SAFE=()
+fi
 sqlite_ro() {
   local p="$1"; shift
-  sqlite3 -readonly -safe -bail -cmd ".timeout 3000" "$p" "$@"
+  sqlite3 -readonly "${_SQLITE_SAFE[@]}" -bail -cmd ".timeout 3000" "$p" "$@"
 }
 
 # sqlite_rw <db_path> [sql] : writable connection for WRITE scripts. -bail stops

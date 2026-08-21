@@ -47,13 +47,13 @@ INSERT INTO task_comments (task_id, author_name, text)
 SELECT :'tid'::uuid, 'cancel_task',
        'Cancelada'
        || CASE WHEN nullif(:'iid','') IS NOT NULL
-               THEN ' — fusionada en '||left(:'iid',8)||' ('||coalesce((SELECT title FROM tasks WHERE id=:'iid'::uuid),'?')||')'
+               THEN ' — fusionada en '||left(:'iid',8)||' ('||coalesce((SELECT title FROM tasks WHERE id=nullif(:'iid','')::uuid),'?')||')'
                ELSE '' END
        || CASE WHEN nullif(:'reason','') IS NOT NULL THEN '. '||:'reason' ELSE '' END;
 
 -- comment trail on the survivor (if any)
 INSERT INTO task_comments (task_id, author_name, text)
-SELECT :'iid'::uuid, 'cancel_task',
+SELECT nullif(:'iid','')::uuid, 'cancel_task',
        'Absorbe la tarea '||left(:'tid',8)||' ('||coalesce((SELECT title FROM tasks WHERE id=:'tid'::uuid),'?')||') por fusión.'
 WHERE nullif(:'iid','') IS NOT NULL;
 

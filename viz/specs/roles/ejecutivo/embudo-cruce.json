@@ -1,0 +1,14 @@
+{
+  "id": "embudo-cruce",
+  "name": "Embudo · El cruce",
+  "component": "embudo",
+  "source": "embudo",
+  "params": {
+    "project": "David Guerrero",
+    "meses": 6,
+    "metas": { "roas_real": 3.5 }
+  },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-08-20T20:10:00.000Z"
+}

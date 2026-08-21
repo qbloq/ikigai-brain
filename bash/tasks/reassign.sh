@@ -82,3 +82,5 @@ $end;
 SQL
 
 [[ -n "$dry" ]] && echo "(dry-run: rolled back, no changes committed)"
+
+exit 0

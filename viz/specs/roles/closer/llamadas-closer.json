@@ -1,0 +1,10 @@
+{
+  "id": "llamadas-closer",
+  "name": "Llamadas del closer",
+  "component": "closer-llamadas",
+  "source": "closer_llamadas",
+  "params": {},
+  "scope": "role",
+  "role": "closer",
+  "created_at": "2026-08-19T00:00:00.000Z"
+}

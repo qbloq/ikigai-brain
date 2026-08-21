@@ -1,0 +1,13 @@
+{
+  "id": "resolver-ventas",
+  "name": "Resolver ventas (closer)",
+  "component": "resolver-ventas",
+  "source": "leads_resolucion",
+  "params": {
+    "db": "ventas_mateo",
+    "tabla": "leads_agosto",
+    "integration_id": "UBREqrQ6n5QEC8lFmyGt"
+  },
+  "scope": "org",
+  "created_at": "2026-08-20T15:30:00.000Z"
+}

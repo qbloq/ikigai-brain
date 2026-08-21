@@ -44,8 +44,9 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 | `run_io_query.sh <io_id\|prefix> [--limit N] [--json]` | Execute the SQL persisted in one IO row's binding (`reference.query`) and print the result — the concrete data of a `sql_query` artifact (its sql resolver). Read-only + `statement_timeout=10s` + row cap (default 500). Only runs SQL with provenance (already persisted in the DB row); accepts nothing inline. Feeds the viz `io_query` source. |
 | `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. **Provenance:** `source_meeting` (id/prefix→FK), `source_url`/`source_external_id` (Notion), `source_type` (auto-inferred) populate the tasks provenance columns. See `-h`. |
 | `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. ⚠️ **Re-tagging moves the pointer, it does NOT rewrite the task's IO contract** — the inputs/outputs/criteria stay exactly as the OLD template left them, so a re-tagged task keeps criteria describing a different activity until its contract is re-instantiated. |
+| `link_external.sh <id> --external <id-ext> [--url URL] [--sistema N] [--nota "…"] [--dry-run] [--json]` **[WRITE]** | **Vincular sin fusionar** — el tercer desenlace que le faltaba al cruce. Escribe `source_external_id` (+`source_url`) sobre una tarea que YA existe: dos tareas que describen el mismo trabajo, cada una nacida en su sistema, donde no hay nada que fusionar porque la del cerebro ya está completa. Hasta 2026-08-20 eso solo cabía en prosa (`cruce.resolucion` o un comentario), y la prosa no la lee ningún chequeo: **13 tareas abiertas en PM figuraban como «sin representación»** estando todas cubiertas. ⚠️ **No toca `source_type`**: eso dice dónde NACIÓ la tarea, no con qué sistema sincroniza — una nacida de un acta y emparejada con PM sigue siendo `meeting`. Se niega si la tarea ya tiene otro id externo (una columna no es una lista: el caso muchos-a-uno pide tabla de enlaces) o si el id ya está en otra tarea **viva** (una cancelada lo conserva como procedencia y no bloquea). Re-vincular al mismo valor es idempotente. |
 | `cancel_task.sh <id> [--into <id>] [--reason "…"]` **[WRITE]** | Cancel a task (`status='cancelled'`), optionally recording a merge into another (`--into`) with an auditable comment trail on both. Nothing is deleted. `--dry-run` to preview. Use for dedup/merges (e.g. cross-project duplicates the per-project dedup misses). |
-| `complete_task.sh <id> [<id>…] [--at YYYY-MM-DD] [--note "…"] [--author N]` **[WRITE]** | Mark tasks DONE (`status='completed'` + `is_completed`), with a comment trail. The twin of `cancel_task.sh` — **do not confuse them**: `completed` = the work happened, `cancelled` = it never will; mixing them corrupts every compliance metric. **`--at` is what makes it honest**: without it the migration-003 trigger seals `completed_at` with `now()`, which lies for anything executed weeks ago (an explicit value survives the trigger). Already-completed tasks are skipped, not rewritten — re-running never moves a date or duplicates a comment. `--dry-run` to preview. |
+| `complete_task.sh <id> [<id>…] [--at YYYY-MM-DD \| --sin-fecha] [--note "…"] [--author N]` **[WRITE]** | Mark tasks DONE (`status='completed'` + `is_completed`), with a comment trail. The twin of `cancel_task.sh` — **do not confuse them**: `completed` = the work happened, `cancelled` = it never will; mixing them corrupts every compliance metric. **`--at` is what makes it honest**: without it the migration-003 trigger seals `completed_at` with `now()`, which lies for anything executed weeks ago (an explicit value survives the trigger). **`--sin-fecha`** is the third case — *it happened, we don't know when*: it undoes the trigger's seal leaving `completed_at` NULL, so the task counts as done and stays out of the tempo series (rhythm metrics are defined over `completed_at IS NOT NULL`). Not a corner case — the PM platform leaves 41 of its 116 closures with no `completada_en`; same criterion `merge_from_cruce.sh` already applied. Mutually exclusive with `--at`. Already-completed tasks are skipped, not rewritten — re-running never moves a date or duplicates a comment. `--dry-run` to preview. |
 | `start_task.sh <id> [<id>…] [--note "…"] [--author N] [--reabrir]` **[WRITE]** | Put tasks IN PROGRESS (`status='in_progress'`), with a comment trail. The third state, the one that was missing: `complete`/`cancel` are terminal, this one says *being worked on* — without it a task under active work and one parked for three months both read `pending`, and a queue can't be read. Tasks already in progress are skipped, not rewritten. **Closed tasks are refused unless `--reabrir`**: leaving `completed` makes the migration-003 trigger *erase* `completed_at`, and the date does not come back. `--dry-run` to preview. |
 | `merge_from_cruce.sh [--n LIST] [--contrato plantilla\|copia] [--dry-run]` **[WRITE]** | Execute the curated merges of the PM↔cerebro cruce (rows with `merge=1` in the local sqlite `pm_platform.cruce`, marked from the viz `cruce` UI). Per pair, ONE txn: duplicate the cerebro task with the **PM platform's title** (contract re-instantiated from the archetype template with `{proyecto}` filled + slots neutralized, or `--contrato copia` cloning the live contract with verification state reset), copy comments/todos (timestamps kept) + provenance comments, resolve status (completed if either side is; `completed_at` = Mari's date or **NULL, never an invented now()** — the script un-does the 003 trigger's seal), record PM identity (`source_external_id` = PM uuid), cancel the original into the duplicate, stamp the sqlite row `resuelta`. |
 
@@ -448,6 +449,30 @@ three domains: portafolio, pauta (campañas + line chart de gasto diario),
 cobranza (vencidas + aging), comisiones (cola de aprobación), cashflow y
 pipeline CRM (tablero + donut por estado).
 
+## VTurb domain — el video en la fuente ([bash/vturb/](bash/vturb/))
+
+Sonda **read-only** contra el VTurb Analytics API (`analytics.vturb.net`) — el
+proveedor de video de las VSLs. Patrón `bash/ghl/` completo: tokens en la DB en
+claro (`project_vturb_video_configs.api_key_encrypted`), cerca de solo-cerebro
+(guard anti-fork), token por stdin jamás en argv, y «solo consultas» (el API usa
+POST para leer stats; no expone mutaciones). Contrato de la superficie proxy de
+Marketico: `apis/mkt/vturb-video.openapi.json`.
+
+| Script | Use it to… |
+|--------|-----------|
+| `auth_status.sh` | Qué proyectos tienen VTurb y si el token responde (sonda live + conteo de players). |
+| `videos.sh --project N [--seleccionados]` | Catálogo de players en vivo (con `pitch_time` y columna `sel`); `--seleccionados` = los curados en `project_vturb_video_selections`, desde la DB (ahí vive la duración, insumo de retención). |
+| `analitica.sh --project N [--video ID [--duracion S]] [--from D] [--to D]` | El funnel de video por seleccionado: impresiones → plays (tasa de play) → retención 25/50/75% → % pitch → % terminó → CTA. Default mes actual (Bogotá). `--json` trae histograma completo + `average_watched_time`/`engagement_rate`. |
+
+⚠️ **Semántica verificada 2026-08-20** (detalle en [bash/vturb/README.md](bash/vturb/README.md)):
+`grouped_timed` es **histograma de abandono** (dónde paró cada espectador; el
+bucket duración+1 = los que terminaron), NO curva de supervivencia — la
+retención se calcula como cola acumulada. El normalizador de Marketico
+(`vturbVideoProvider.normalizeRetention`) lo lee como supervivencia: **bug vivo
+en su funnel, reportable**. `total_viewed_*` = impresiones del player (≥ plays =
+`total_started_*`). La ventana de fechas SÍ aplica también al engagement. Los 2
+proyectos configurados comparten una sola cuenta VTurb (mismo catálogo).
+
 ## PM domain — la plataforma de Mari ([bash/pm/](bash/pm/))
 
 El API de project360 (`PM360_BASE`+`PM360_TOKEN` en `.env`, Bearer; superficie:
@@ -458,6 +483,7 @@ estados que ya cambiaron.
 
 | Script | Use it to… |
 |--------|-----------|
+| `sync_cerebro.sh [--dry-run] [--no-cruce] [--json]` **[WRITE local]** | El **espejo** del anterior, para el otro lado: refresca `cerebro_tareas` desde Postgres (upsert por prefijo de 8) y con él las copias `ce_titulo`/`ce_estado`/`ce_proyecto` de las filas **no resueltas** de `cruce`. Existe porque al cruce se le había construido refresco a UNA sola mitad: medido el 2026-08-20, **140 de 205 filas mentían** sobre el lado cerebro (94 decían `pending` de tareas ya canceladas), así que la UI ofrecía como candidatas vivas cosas cerradas hacía horas. Solo LEE Postgres (`psql_ro`) — no cierra, no cancela, no crea. Registra la corrida en `cerebro_sync`. ⚠️ **No recalcula el cruce**: veredictos y pares salieron de una pasada semántica hecha una vez; lo nacido después del snapshot sale listado como «sin fila en el cruce», no gana fila solo. Un prefijo de 8 compartido por dos tareas se excluye y se reporta antes que adivinar. |
 | `sync_tareas.sh [--dry-run] [--limit N] [--no-cruce] [--no-snapshot] [--json]` **[WRITE local]** | Refrescar el espejo `tareas` desde el API (upsert por id, una txn) y, con él, las copias denormalizadas `pm_titulo`/`pm_estado`/`pm_asignado` de las filas **no resueltas** de `cruce`. Guarda el JSON crudo en `data/pm-platform/tareas-<fecha>.json` y registra la corrida en `pm_sync`. |
 
 Tres reglas que el script sostiene y conviene no romper:
@@ -485,9 +511,12 @@ PM» no pertenezcan a ningún proyecto. Meter Andrea es la misma operación.
 Lo que hay que mirar en la salida: `cruce_alertas` (filas sin resolver que Mari
 pasó a `completed` — cambian la acción propuesta, típicamente a
 `completar_en_cerebro`) y `nuevas_sin_par` (tareas nuevas sin fila de cruce; el
-cruce semántico se hace aparte, el script no lo inventa). ⚠️ El **lado cerebro**
-(`cerebro_tareas`) sigue siendo un snapshot congelado del 2026-08-06 — este
-script no lo toca.
+cruce semántico se hace aparte, el script no lo inventa). El **lado cerebro**
+(`cerebro_tareas`) lo refresca su gemelo `sync_cerebro.sh` — este script no lo
+toca, y hasta el 2026-08-20 nadie lo hacía: fue un snapshot congelado del
+2026-08-06 durante dos semanas. **Los dos hay que correrlos**; refrescar una
+sola mitad deja la comparación coja, que es exactamente el estado del que salió
+el gemelo.
 
 ## Closers domain — acompañamiento WhatsApp ([bash/closers/](bash/closers/))
 
@@ -540,6 +569,47 @@ a clear «el backend aún no expone …» message. See [bash/google/README.md](b
 `dashboard.sh [--project NAME] [--from D] [--to D] [--json]` — financial KPI set
 for one project/period (cash-collected model: ingresos brutos, venta programas,
 pauta, costos, reparto). Read-only; feeds the viz `dashboard` source (emits one object).
+
+`embudo.sh --project NAME [--from D] [--to D] [--meses N]` — **EL CRUCE** del
+embudo completo en un objeto: pauta (Meta) → VSL (VTurb **en vivo**, agregado +
+por video) → leads/etapas con atribución UTM (CRM) → llamadas (meetings, reloj
+literal) → ventas/cash (payment_plans/installments) → serie mensual de cuotas
+(cobrado/día total y solo n≥2, % de planes pagando, empiezan/dejan) →
+`atribucion` por campaña (spend×leads×cash, guardia temporal +60d) →
+`conciliacion` (handoffs entre fuentes con delta) → `series` mensuales
+(CAC/ROAS real) → `frescura` (lags + alertas, p.ej. ingestor CRM quieto) →
+`sin_instrumentar` (huecos declarados). Reglas: leads del CRM y no de Excel;
+la verdad del dinero es la caja (pixel viaja como `*_pixel`); ratios solo
+contra pauta USD. Nació del meeting `b3f06835` (2026-08-19). Read-only; feeds
+la fuente viz `embudo` (cache 60s por etiqueta con el API externo) y la UI de
+rol ejecutivo `embudo-cruce` (page `embudo`; las **metas** — p.ej. ROAS ≥3.5 —
+van en `params.metas` del spec, no en código).
+
+## Testeos domain — el histórico de testeos del embudo ([bash/testeos/](bash/testeos/))
+
+El registro que la alineación DG 2026-08-19 dejó como acuerdo: cada testeo del
+embudo con sus **métricas iniciales y finales congeladas** (snapshots de
+`bash/metrics/embudo.sh` con procedencia — no se digitan) y su desenlace.
+Vive en **Postgres** (`ikigaigm.testeos`, migración
+`catalog/migrations/006_testeos.sql`; nació sqlite y se graduó el mismo día)
+porque **los testeos los crean y monitorean los copilotos del rol Ejecutivo**
+(Juan Camilo y Lorenzo) y un histórico compartido no puede vivir en la sqlite
+de una máquina. `abierto_por`/`cerrado_por` salen del `copilot.json` del fork
+(`cerebro` si no hay). ⚠️ **En un fork el bloque VSL del snapshot viene con
+error declarado** (`bash/vturb` se niega fuera del cerebro): los testeos con
+métrica `vsl.*` se abren desde el cerebro hasta que el fallback vía el proxy
+Mkt exista (`apis/mkt/vturb-video.openapi.json` ya expone analytics; ojo al
+bug de retención del normalizador de Marketico, ver `bash/vturb/README.md`).
+Las dos disciplinas de la reunión van en el diseño:
+**un solo cambio por testeo** (`--variable` es singular y obligatoria) y
+**un testeo por step** (`testeo_abrir.sh` se niega si ya hay uno `en_curso`
+en ese step+proyecto; `--forzar` para la excepción consciente).
+
+| Script | Use it to… |
+|--------|-----------|
+| `testeos.sh [--estado E] [--step S] [--project N] [--limit N]` | El histórico como filas (id corto, variable, métrica, inicial→final, Δ, resultado). Read-only; alimenta la fuente viz `testeos` (UI ejecutivo `testeos-embudo`, componente `table`). |
+| `testeo_abrir.sh --project N --step S --variable "…" [--hipotesis] [--metrica RUTA] [--nota] [--forzar] [--dry-run]` **[WRITE local]** | Abrir un testeo congelando el embudo AHORA como línea base. `--metrica` es ruta punteada dentro del snapshot (`kpis.roas_real`, `vsl.total.tasa_play`, `pauta.0.ctr`); si el embudo no responde, NO se abre. Steps: titular·hook_vsl·survey·pagina·pauta·remarketing·otro. |
+| `testeo_cerrar.sh <id\|prefijo> --resultado gano\|perdio\|inconcluso [--decision] [--abortar] [--dry-run]` **[WRITE local]** | Cerrar con snapshot final y Δ de la métrica. El resultado lo declara el humano (el Δ informa, no decide). `--abortar` = testeo contaminado, sin snapshot final. Un cierre no se reescribe. Id por prefijo (se dicta en conversación). |
 
 ## Finance domain — owner's view ([bash/finance/](bash/finance/))
 
