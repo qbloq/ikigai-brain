@@ -1,0 +1,10 @@
+{
+  "id": "usuarios",
+  "name": "Usuarios",
+  "component": "table",
+  "source": "usuarios",
+  "params": {},
+  "scope": "role",
+  "role": "technology",
+  "created_at": "2026-08-21T14:52:39.000Z"
+}

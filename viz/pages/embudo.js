@@ -148,8 +148,21 @@ function renderEmbudo(ui) {
     { nombre: "Leads", valor: crm.leads, fuente: "CRM", nota: "aquí vive la fuga de la pregunta del capital" },
     { nombre: "Llamadas", valor: (crm.llamadas || {}).total, fuente: "meetings", nota: `${num((crm.llamadas || {}).con_transcript)} con transcript · ${num((crm.llamadas || {}).analizadas)} analizadas` },
     { nombre: "Ganadas (CRM)", valor: crm.ganadas, fuente: "CRM", nota: "" },
-    { nombre: "Planes iniciados", valor: ventas.planes_iniciados, fuente: "caja", nota: `${usd(ventas.valor_contrato)} en contratos` },
+    { nombre: "Planes iniciados", valor: ventas.planes_iniciados, fuente: "caja", nota: `${usd(ventas.valor_contrato)} en contratos${(ventas.excluidos || {}).planes_cancelados ? ` · ${num(ventas.excluidos.planes_cancelados)} cancelados excluidos` : ""}` },
   ]);
+
+  // --- el último eslabón, explicado: de qué cohorte viene cada plan ---
+  const orig = ventas.planes_por_origen || {};
+  const exc = ventas.excluidos || {};
+  const origenCards = [
+    ["Won · lead de la ventana", orig.won_lead_ventana, "pos", "la cohorte comparable con las ganadas del CRM"],
+    ["Won · lead previo (rezagados)", orig.won_lead_previo, "brand", "leads de meses anteriores que compraron ahora"],
+    ["Opp aún abierta", orig.opp_abierta, "cau", "pagaron y el CRM no los movió a venta — higiene"],
+    ["Sin opp en el CRM", orig.sin_opp, "cau", "venta sin rastro en el CRM"],
+    ["Cancelados (excluidos)", exc.planes_cancelados, "muted", `${usd(exc.valor_contrato)} de contrato que no cuenta${Number(ventas.cash_en_cancelados) > 0 ? ` · ${usd(ventas.cash_en_cancelados)} cobrados ahí` : ""}`],
+  ]
+    .map(([l, v, t, s]) => kpi(l, num(v), { tone: t, sub: s }))
+    .join("");
 
   // --- VSL por video: la mesa del testeo de hooks ---
   const tVsl = vsl.error
@@ -225,13 +238,38 @@ function renderEmbudo(ui) {
   );
 
   // --- serie mensual del embudo (benchmarks) ---
+  // Cash vs pauta comparten unidad (USD): la brecha entre las dos líneas ES el
+  // ROAS real visto. Leads/CAC/ROAS viven en otras escalas — van en la tabla
+  // gemela y, el ROAS, en su propio gráfico contra la meta del spec.
   const serieSpec = series.length
     ? {
         kind: "line",
         labels: series.map((r) => r.mes),
-        series: [{ label: "Cash cobrado (USD)", data: series.map((r) => Number(r.cash) || 0) }],
+        series: [
+          { label: "Cash cobrado (USD)", data: series.map((r) => Number(r.cash) || 0) },
+          { label: "Pauta (USD)", data: series.map((r) => Number(r.spend_usd) || 0) },
+        ],
       }
     : null;
+  const roasSpec = series.length
+    ? {
+        kind: "line",
+        labels: series.map((r) => r.mes),
+        series: [
+          { label: "ROAS real", data: series.map((r) => Number(r.roas_real) || 0) },
+          ...(metas.roas_real ? [{ label: `Meta (${metas.roas_real})`, data: series.map(() => Number(metas.roas_real)) }] : []),
+        ],
+      }
+    : null;
+  const tRoas = tbl(
+    ["Mes", "ROAS real", "CAC real", "Meta ROAS"],
+    series.map((r) => [
+      `<span class="tabular-nums font-semibold">${escape(String(r.mes))}</span>`,
+      `<span class="tabular-nums font-semibold" style="color:${metas.roas_real && r.roas_real != null ? (Number(r.roas_real) >= Number(metas.roas_real) ? TONE.pos : TONE.neg) : TONE.brand}">${r.roas_real ?? "—"}</span>`,
+      `<span class="tabular-nums">${usd(r.cac_real)}</span>`,
+      `<span class="tabular-nums" style="color:var(--text-3)">${metas.roas_real ?? "—"}</span>`,
+    ])
+  );
   const tSerie = tbl(
     ["Mes", "Pauta USD", "Leads", "Planes", "Cash", "CAC real", "ROAS real"],
     series.map((r) => [
@@ -290,6 +328,9 @@ function renderEmbudo(ui) {
     ${section("Conciliación entre fuentes", "los handoffs donde las fuentes se tocan — aquí es donde un dashboard miente sin que se note")}
     ${tConc}
 
+    ${section("Planes iniciados, por origen", "el último eslabón explicado: la diferencia entre ganadas del CRM y planes no es discrepancia, es cohorte")}
+    <div class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))">${origenCards}</div>
+
     ${section("VSL por video", "la mesa del testeo de hooks: cada video nuevo aparece como fila con sus tasas — VTurb en vivo")}
     ${tVsl}
 
@@ -308,8 +349,11 @@ function renderEmbudo(ui) {
       «Impago y deserción de cuotas» (la curva completa).
     </p>
 
-    ${section("Serie mensual del embudo", "los benchmarks: cada mes con su CAC y ROAS real — la base para fijar metas")}
-    ${chartCard(serieSpec, "showserie", tSerie)}
+    ${section("Serie mensual del embudo", "los benchmarks: cash vs pauta (la brecha es el ROAS real visto) y el ROAS contra su meta")}
+    <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(22rem,1fr))">
+      ${chartCard(serieSpec, "showserie", tSerie)}
+      ${chartCard(roasSpec, "showroas", tRoas)}
+    </div>
 
     ${section("Sin instrumentar", "los tramos que este cruce todavía no ve — declarados, no inventados")}
     <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))">${sinInstr}</div>

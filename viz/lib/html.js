@@ -14,6 +14,15 @@ const SHOW_NEW_UI_FORM = false;
 
 function listPanel(uis, activeId) {
   const act = activeId ? `?active=${escape(activeId)}` : "";
+  // When this workspace sees more than one ROLE layer (the brain, or a role
+  // with uis:"*" in docs/roles/acceso.json), each row says whose UI it is —
+  // otherwise 24 UIs from four roles read as one soup.
+  const capasRol = new Set(uis.map((u) => u._layer || "").filter((l) => l.startsWith("roles/")));
+  const multiRol = capasRol.size > 1;
+  const badgeRol = (u) =>
+    multiRol && (u._layer || "").startsWith("roles/")
+      ? ` <span class="badge" title="capa de rol ${escape(u._layer)}">${escape(u._layer.slice(6))}</span>`
+      : "";
 
   // One row per UI: the whole row opens it; the hover icon archives/restores.
   // Archived rows still open on click — archiving is a soft-hide, never a delete.
@@ -35,7 +44,7 @@ function listPanel(uis, activeId) {
         <span class="block truncate">${escape(u.name)}</span>
         <span class="block text-xs truncate" style="color:var(--text-3)">${escape(u.source || u.pattern || "")}${
           u.derived_from ? ` <span title="fork de ${escape(u.derived_from)}">⑂</span>` : ""
-        }</span>
+        }${badgeRol(u)}</span>
       </button>
       <button title="${action.title}" data-on:click="@post('${action.url}')"
         class="absolute right-1.5 top-1/2 -translate-y-1/2 hidden group-hover:block leading-none text-slate-400 hover:text-indigo-600">${action.icon}</button>

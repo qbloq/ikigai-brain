@@ -23,23 +23,23 @@
 #      por dónde corre, para que no se olvide cerrar el día de la mudanza.
 #
 # Independiente de common.sh a propósito: tiene que poder responder en un fork
-# sin .env ni Postgres. No toca red ni base: decide con el archivo local.
+# sin .env ni Postgres. No toca red ni base: decide con archivos locales.
 #
-# EL MAPA — editarlo es decisión de gobernanza (registrarla en el spec).
-# Es un `case` y no un arreglo asociativo a propósito: los copilotos macOS
-# corren bash 3.2, que no tiene `declare -A` (ya mató a bash/publicar/ una vez).
-# Lectura: `*` = todos los dominios con credencial; lista = solo esos
-# (separados por espacio); vacío = rol ausente del mapa = negado.
-acceso_perm_rol() {  # acceso_perm_rol <rol> → echoes the role's domains
-  case "$1" in
-    ejecutivo) echo '*' ;;                 # acceso total a fuentes del negocio
-    # director-comercial) echo 'ghl' ;;    # candidato; NO decidido (2026-08-21) — lee el espejo bash/crm/
-    *) echo '' ;;
-  esac
-}
+# EL MAPA vive en docs/roles/acceso.json — UNA sola fuente, DOS consumidores:
+# este helper (clave `fuentes`: dominios con credencial) y viz/lib/store.js
+# (clave `uis`: qué capas de UI de rol carga el viz). Decisión 2026-08-21
+# (Santiago): technology = {uis:*, fuentes:*} — el rol todo-poderoso — y
+# ejecutivo = {fuentes:*}. Editarlo es decisión de gobernanza; se registra en
+# el spec. Lectura de `fuentes`: "*" = todos los dominios con credencial;
+# lista = solo esos; rol ausente del mapa = negado; mapa ausente = negado
+# (fail-closed) salvo para el cerebro, que no consulta el mapa.
+#
+# Parse en python3 (stdlib), como copilot.json; nada de `declare -A` ni
+# `${x,,}`: los copilotos macOS corren bash 3.2.
 
 ACCESO_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ACCESO_REPO_ROOT="$(cd "$ACCESO_LIB_DIR/../.." && pwd)"
+ACCESO_MAPA="$ACCESO_REPO_ROOT/docs/roles/acceso.json"
 
 # acceso_rol : echoes the role of this repo — "cerebro" when there is no
 # copilot.json; the `role` value when there is one; "" when the file is
@@ -53,6 +53,22 @@ try:
     d = json.load(open(sys.argv[1]))
     r = d.get("role") if isinstance(d, dict) else None
     print(r.strip() if isinstance(r, str) and r.strip() else "")
+except Exception:
+    print("")
+PY
+}
+
+# acceso_perm_rol <rol> : echoes the role's `fuentes` from the map — "*",
+# a space-separated list, or "" (absent role / unreadable map → fail-closed).
+acceso_perm_rol() {
+  python3 - "$ACCESO_MAPA" "$1" 2>/dev/null <<'PY'
+import json, sys
+try:
+    m = json.load(open(sys.argv[1]))
+    v = (m.get(sys.argv[2]) or {}).get("fuentes") if isinstance(m, dict) else None
+    if v == "*": print("*")
+    elif isinstance(v, list): print(" ".join(str(x) for x in v))
+    else: print("")
 except Exception:
     print("")
 PY
@@ -78,10 +94,15 @@ require_acceso() {
     echo "     (bash/lib/acceso.sh: el acceso a fuentes con credencial lo define el rol; arregla copilot.json o pide el alta de nuevo)" >&2
     exit 3
   fi
+  if [[ ! -f "$ACCESO_MAPA" ]]; then
+    echo "$dom: falta el mapa de acceso por rol (docs/roles/acceso.json) — sin mapa, un fork no hereda permisos." >&2
+    echo "     (viaja por el canal con docs/roles/; si no está, el fork no se actualizó o el archivo se borró)" >&2
+    exit 3
+  fi
   perm="$(acceso_perm_rol "$rol")"
   if [[ "$perm" == "*" ]]; then return 0; fi
   for d in $perm; do [[ "$d" == "$dom" ]] && return 0; done
-  echo "$dom: este dominio no está habilitado para el rol '$rol' — solo el cerebro y los roles del mapa en bash/lib/acceso.sh manejan credenciales de proveedor." >&2
+  echo "$dom: este dominio no está habilitado para el rol '$rol' — solo el cerebro y los roles con \`fuentes\` en docs/roles/acceso.json manejan credenciales de proveedor." >&2
   echo "     ($(acceso_alternativa "$dom"))" >&2
   exit 3
 }

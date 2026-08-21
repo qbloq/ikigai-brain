@@ -31,14 +31,41 @@ const LOCAL_DIR = path.join(SPECS_DIR, "local");
 
 // Identity without auth (Fase 1): a copilot.json at the repo root
 // ({ employee, team_member_id, role }) marks this workspace as one employee's
-// copilot — the store then loads ONLY that role's layer and stamps ownership
-// on everything created. The brain's workspace has no copilot.json and sees
-// org + every role. Read once at boot (a workspace doesn't change identity).
+// copilot — the store then loads that role's layer (or every role's, when the
+// access map says so) and stamps ownership on everything created. The brain's
+// workspace has no copilot.json and sees org + every role. Read once at boot
+// (a workspace doesn't change identity).
 let COPILOT = null;
 try {
   COPILOT = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "copilot.json"), "utf8"));
 } catch {
   /* no copilot.json → this is the brain */
+}
+
+// WHAT A ROLE MAY SEE — docs/roles/acceso.json, the single map with two
+// consumers: bash/lib/acceso.sh reads `fuentes` (credential-bearing data
+// domains) and this store reads `uis` ("*" = load every role's UI layer).
+// Decision 2026-08-21: technology = {uis:"*", fuentes:"*"} — the all-powerful
+// role; everyone else sees only their own layer. Unreadable/missing map =
+// only your own layer (fail-closed). Read once at boot, like copilot.json.
+let ACCESO = {};
+try {
+  ACCESO = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "docs", "roles", "acceso.json"), "utf8"));
+} catch {
+  /* no map → nobody sees beyond their role */
+}
+
+// rolesVisibles(copilot, acceso, roles) → the role-layer names this workspace
+// loads. Pure, so it is testable without a workspace: no copilot → all (the
+// brain); copilot with uis:"*" → all; otherwise only its own role; a
+// copilot.json WITHOUT a role → no role layer at all (fail-closed, the same
+// rule bash/lib/acceso.sh applies: a fork without identity inherits nothing).
+function rolesVisibles(copilot, acceso, roles) {
+  if (!copilot) return roles;
+  if (!copilot.role) return [];
+  const uis = acceso && acceso[copilot.role] && acceso[copilot.role].uis;
+  if (uis === "*") return roles;
+  return roles.filter((r) => r === copilot.role);
 }
 
 function readLayerDir(dir, layer) {
@@ -71,15 +98,27 @@ function allLayers() {
   } catch {
     /* no roles yet */
   }
-  if (COPILOT && COPILOT.role) roles = roles.filter((r) => r.name === COPILOT.role);
-  for (const r of roles) out.push(readLayerDir(path.join(ROLES_DIR, r.name), `roles/${r.name}`));
+  const visibles = new Set(rolesVisibles(COPILOT, ACCESO, roles.map((r) => r.name)));
+  for (const r of roles) if (visibles.has(r.name)) out.push(readLayerDir(path.join(ROLES_DIR, r.name), `roles/${r.name}`));
   out.push(readLayerDir(LOCAL_DIR, "local"));
   return out;
 }
 
+// Two ROLE layers sharing a slug would shadow each other silently — fine for
+// local-over-org (that is a deliberate fork), not between roles. Whoever sees
+// more than one role (the brain, technology) gets a one-time warning per slug.
+const COLISIONES_AVISADAS = new Set();
 function list() {
   const merged = new Map(); // slug id → spec (later layers shadow earlier)
-  for (const layer of allLayers()) for (const spec of layer) merged.set(spec.id, spec);
+  for (const layer of allLayers())
+    for (const spec of layer) {
+      const prev = merged.get(spec.id);
+      if (prev && prev._layer.startsWith("roles/") && spec._layer.startsWith("roles/") && !COLISIONES_AVISADAS.has(spec.id)) {
+        COLISIONES_AVISADAS.add(spec.id);
+        console.warn(`viz/store: el slug "${spec.id}" existe en ${prev._layer} y ${spec._layer} — ${spec._layer} sombrea al otro`);
+      }
+      merged.set(spec.id, spec);
+    }
   return [...merged.values()].sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
 }
 
@@ -217,4 +256,4 @@ function remove(id) {
   return true;
 }
 
-module.exports = { list, get, create, archive, unarchive, remove, ORG_DIR, ROLES_DIR, LOCAL_DIR };
+module.exports = { list, get, create, archive, unarchive, remove, rolesVisibles, ORG_DIR, ROLES_DIR, LOCAL_DIR };

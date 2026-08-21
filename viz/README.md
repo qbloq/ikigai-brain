@@ -34,7 +34,9 @@ capa personal, la ÚNICA escribible). `list()` fusiona con *shadowing* por slug
 `local/` con linaje (`derived_from: "<capa>/<slug>@<sha>"`) y **auto-commit**
 estructurado (`viz(ui): <verb> <slug>` + trailers `Delta-Type`/`Delta-Scope`;
 `VIZ_AUTOCOMMIT=0` lo apaga). Un `copilot.json` en la raíz del repo filtra la
-capa de rol y estampa `owner`/`role` al crear. El `store/` legado
+capa de rol (o las carga todas si `docs/roles/acceso.json` da `uis:"*"` a ese
+rol — entonces el panel marca cada UI con su rol) y estampa `owner`/`role` al
+crear. El `store/` legado
 (git-ignored) se migra una vez con
 [`scripts/migrate-store-to-specs.js`](scripts/migrate-store-to-specs.js).
 **Archivar** una UI es un soft-hide: solo estampa
