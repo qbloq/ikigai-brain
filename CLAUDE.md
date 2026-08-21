@@ -585,6 +585,23 @@ la fuente viz `embudo` (cache 60s por etiqueta con el API externo) y la UI de
 rol ejecutivo `embudo-cruce` (page `embudo`; las **metas** — p.ej. ROAS ≥3.5 —
 van en `params.metas` del spec, no en código).
 
+## Testeos domain — el histórico de testeos del embudo ([bash/testeos/](bash/testeos/))
+
+El registro que la alineación DG 2026-08-19 dejó como acuerdo: cada testeo del
+embudo con sus **métricas iniciales y finales congeladas** (snapshots de
+`bash/metrics/embudo.sh` con procedencia — no se digitan) y su desenlace.
+Sqlite local `testeos` (patrón `bash/lib/sqlite.sh`; nace con el primer
+`testeo_abrir.sh`). Las dos disciplinas de la reunión van en el diseño:
+**un solo cambio por testeo** (`--variable` es singular y obligatoria) y
+**un testeo por step** (`testeo_abrir.sh` se niega si ya hay uno `en_curso`
+en ese step+proyecto; `--forzar` para la excepción consciente).
+
+| Script | Use it to… |
+|--------|-----------|
+| `testeos.sh [--estado E] [--step S] [--project N] [--limit N]` | El histórico como filas (id corto, variable, métrica, inicial→final, Δ, resultado). Read-only; alimenta la fuente viz `testeos` (UI ejecutivo `testeos-embudo`, componente `table`). |
+| `testeo_abrir.sh --project N --step S --variable "…" [--hipotesis] [--metrica RUTA] [--nota] [--forzar] [--dry-run]` **[WRITE local]** | Abrir un testeo congelando el embudo AHORA como línea base. `--metrica` es ruta punteada dentro del snapshot (`kpis.roas_real`, `vsl.total.tasa_play`, `pauta.0.ctr`); si el embudo no responde, NO se abre. Steps: titular·hook_vsl·survey·pagina·pauta·remarketing·otro. |
+| `testeo_cerrar.sh <id\|prefijo> --resultado gano\|perdio\|inconcluso [--decision] [--abortar] [--dry-run]` **[WRITE local]** | Cerrar con snapshot final y Δ de la métrica. El resultado lo declara el humano (el Δ informa, no decide). `--abortar` = testeo contaminado, sin snapshot final. Un cierre no se reescribe. Id por prefijo (se dicta en conversación). |
+
 ## Finance domain — owner's view ([bash/finance/](bash/finance/))
 
 The CEO/COO money layer over `payment_plans`/`installments` (cash),

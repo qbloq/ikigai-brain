@@ -376,6 +376,16 @@ const SOURCES = {
     emits: "object",
     args: { project: "--project", desde: "--desde", corte: "--corte" },
   },
+  // El HISTÓRICO de testeos del embudo (sqlite local `testeos`): cada fila con
+  // su métrica objetivo, valores inicial/final congelados y desenlace. El viz
+  // solo LEE y muestra el id corto como handle; abrir/cerrar es conversación
+  // (bash/testeos/testeo_abrir.sh / testeo_cerrar.sh).
+  testeos: {
+    label: "Testeos del embudo (histórico)",
+    script: "bash/testeos/testeos.sh",
+    emits: "rows",
+    args: { estado: "--estado", step: "--step", project: "--project", limit: "--limit" },
+  },
   // EL CRUCE del embudo completo: Meta → VTurb → CRM → llamadas → caja →
   // cuotas, cada bloque con su fuente declarada (nació del meeting b3f06835:
   // el dashboard que no cuadraba). Cache corto NO por ser referencia estática
