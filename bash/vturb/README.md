@@ -21,7 +21,9 @@ Como en GHL, los tokens viven **en la base, en claro**:
 `project_vturb_video_configs.api_key_encrypted` (el nombre de la columna
 miente), uno por proyecto. La cerca es la misma de `bash/ghl/`:
 
-- **solo cerebro**: el lib se niega a correr en un fork con `copilot.json`;
+- **cerca por rol**: `bash/lib/acceso.sh` (`require_acceso vturb`) — cerebro y
+  rol `ejecutivo` acceden; los demás roles se niegan con `exit 3` hasta que
+  exista el fallback vía proxy Mkt;
 - **solo consultas**: el API usa POST para sus dos endpoints de stats
   (`/sessions/stats`, `/times/user_engagement`) porque los criterios viajan en
   el body — son *fetches*. La cerca aquí es «solo consultas», no «solo GETs»;

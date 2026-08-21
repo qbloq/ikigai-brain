@@ -16,7 +16,8 @@
 # per project. Anything able to read the org's Postgres can read them, so the
 # layer is fenced the same way:
 #
-#   - brain only: refuses to run inside a copilot fork (guard below);
+#   - fenced by ROLE: bash/lib/acceso.sh decides which copilot roles may use
+#     it (ejecutivo = total; the rest refused);
 #   - read-only in effect: VTurb's read surface uses POST for its two stats
 #     endpoints (/sessions/stats, /times/user_engagement) because the criteria
 #     travel in a body — they fetch, they mutate nothing. The fence here is
@@ -37,14 +38,14 @@ VTURB_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "$VTURB_LIB_DIR/../../lib/common.sh"
 
-# --- Fork guard --------------------------------------------------------------
-# identidad.md: a repo carrying copilot.json is an employee's fork. The brain
-# holds the org's credentials; copilots do not.
-if [[ -f "$REPO_ROOT/copilot.json" ]]; then
-  echo "vturb: este dominio es solo del cerebro — un copiloto no maneja credenciales del proveedor de video." >&2
-  echo "       (bash/vturb/ lee tokens de project_vturb_video_configs)" >&2
-  exit 3
-fi
+# --- Cerca por rol -----------------------------------------------------------
+# identidad.md: a repo carrying copilot.json is an employee's fork. Whether a
+# fork may use THIS domain is decided by its role, in ONE place for every
+# credential-bearing domain: bash/lib/acceso.sh (ejecutivo = total; the rest
+# is refused with exit 3 — the proxy-Mkt fallback for them is still pending).
+# shellcheck disable=SC1091
+source "$VTURB_LIB_DIR/../../lib/acceso.sh"
+require_acceso vturb
 
 VTURB_BASE="${VTURB_BASE:-https://analytics.vturb.net}"
 VTURB_API_VERSION="${VTURB_API_VERSION:-v1}"
