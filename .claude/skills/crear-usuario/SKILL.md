@@ -92,9 +92,11 @@ tasks later.
 
 ## 6. Out of scope — redirect, don't improvise
 
-- **Equipo/rol** (`team_members` row: team, role, WhatsApp): no write script
-  exists yet. Say so; leave the alta as app-account only and flag it so the
-  membership can be created later.
+- **Equipo/rol** (`team_members` row: team, role, WhatsApp): if the person must
+  be an **assignee** (tasks, role layer, WhatsApp onboarding), run
+  `bash/users/add_team_member.sh <email> --team "Ikigai" --role "<rol exacto>"
+  [--whatsapp N] --dry-run` → confirm → commit. Team/role names are exact
+  (`bash/tasks/team.sh` lists them). Otherwise leave the alta as app-account only.
 - **Deshabilitar / editar** an existing user → `bash/users/update_user.sh`.
 - **Notion, CRM contacts, task assignment**: different domains; name the right
   tool (`bash/notion/`, `bash/tasks/reassign.sh`) and stop there.
