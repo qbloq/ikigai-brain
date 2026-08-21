@@ -83,6 +83,10 @@ const SOURCES = {
   },
   projects: { label: "Proyectos", script: "bash/tasks/projects.sh", emits: "rows", args: {}, cache: 60_000 },
   team: { label: "Equipo", script: "bash/tasks/team.sh", emits: "rows", args: { team: "--team" }, cache: 60_000 },
+  // Usuarios de Marketico directo de la tabla `users` (no del API — ver
+  // bash/users/users.sh para el espejo del API). Teléfono = phone_number
+  // (el enlazado a WhatsApp).
+  usuarios: { label: "Usuarios", script: "bash/users/usuarios_db.sh", emits: "rows", args: {}, cache: 60_000 },
   task_stats: {
     label: "Estadísticas",
     script: "bash/tasks/task_stats.sh",
