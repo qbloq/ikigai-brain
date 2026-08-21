@@ -132,12 +132,31 @@ mss AS (
   FROM generate_series((SELECT meses FROM params) - 1, 0, -1) g
 ),
 inst_win AS (   -- cash de la ventana (mismo modelo de dashboard.sh)
-  SELECT i.installment_number AS n, i.paid_amount AS amt
+  SELECT i.installment_number AS n, i.paid_amount AS amt, pp.plan_status
   FROM installments i JOIN payment_plans pp ON pp.plan_id = i.plan_id
   JOIN params ON pp.project_id = params.pid
   WHERE i.payment_date IS NOT NULL
     AND i.payment_date::date BETWEEN params.d1 AND params.d2
-)
+),
+-- Los planes iniciados en la ventana, cada uno con la oportunidad del CRM que
+-- lo respalda (won primero, luego la más reciente) — para explicar el último
+-- eslabón: ¿de qué cohorte de lead viene cada venta? Medido 2026-08-21 en DG:
+-- 34 planes = 21 won de leads del mes + 7 rezagados (leads previos) + 2 que
+-- pagaron con la opp aún `open` (higiene CRM) + 4 cancelados (1 duplicado +
+-- 3 PRUEBA con $10 «pagados»). Sin este desglose la UI mostraba 34 vs 21 como
+-- si fuera discrepancia.
+plw AS (
+  SELECT pp.plan_id, pp.plan_status, pp.original_amount,
+         o.status AS opp_status, o.created_date::date AS opp_creada
+  FROM payment_plans pp JOIN params ON pp.project_id = params.pid
+  LEFT JOIN LATERAL (
+    SELECT o.status, o.created_date
+    FROM crm_opportunities o JOIN crm_contacts c ON c.id = o.contact_id
+    WHERE c.ghl_contact_id = pp.customer_id AND o.project_id = params.pid
+    ORDER BY (o.status = 'won') DESC, o.created_date DESC LIMIT 1) o ON true
+  WHERE pp.start_date BETWEEN params.d1 AND params.d2
+),
+plv AS (SELECT * FROM plw WHERE plan_status <> 'Cancelled')   -- los que cuentan
 SELECT json_build_object(
   'meta', json_build_object(
      'proyecto', :'projname', 'desde', :'d1', 'hasta', :'d2',
@@ -177,12 +196,21 @@ SELECT json_build_object(
         'analizadas',     (SELECT count(*) FROM calls WHERE analizada))),
 
   'ventas', json_build_object(
-     'planes_iniciados', (SELECT count(*) FROM payment_plans pp JOIN params
-                          ON pp.project_id = params.pid
-                          WHERE pp.start_date BETWEEN params.d1 AND params.d2),
-     'valor_contrato',   (SELECT round(coalesce(sum(pp.original_amount),0),2)
-                          FROM payment_plans pp JOIN params ON pp.project_id = params.pid
-                          WHERE pp.start_date BETWEEN params.d1 AND params.d2),
+     'planes_iniciados', (SELECT count(*) FROM plv),
+     'valor_contrato',   (SELECT round(coalesce(sum(original_amount),0),2) FROM plv),
+     'planes_por_origen', (SELECT json_build_object(
+        'won_lead_ventana', count(*) FILTER (WHERE opp_status='won' AND opp_creada BETWEEN (SELECT d1 FROM params) AND (SELECT d2 FROM params)),
+        'won_lead_previo',  count(*) FILTER (WHERE opp_status='won' AND opp_creada < (SELECT d1 FROM params)),
+        'opp_abierta',      count(*) FILTER (WHERE opp_status IS NOT NULL AND opp_status <> 'won'),
+        'sin_opp',          count(*) FILTER (WHERE opp_status IS NULL),
+        'nota', 'won_lead_ventana es la cohorte comparable con crm.ganadas; won_lead_previo son rezagados (leads de meses anteriores que compraron ahora); opp_abierta = pagaron y el CRM no los movió a venta (higiene)')
+        FROM plv),
+     'excluidos', (SELECT json_build_object(
+        'planes_cancelados', count(*),
+        'valor_contrato', round(coalesce(sum(original_amount),0),2),
+        'motivo', 'plan_status=Cancelled: duplicados y pruebas no son ventas; no entran a planes_iniciados ni a valor_contrato')
+        FROM plw WHERE plan_status = 'Cancelled'),
+     'cash_en_cancelados', (SELECT round(coalesce(sum(amt),0),2) FROM inst_win WHERE plan_status = 'Cancelled'),
      'primeras_cuotas',  (SELECT count(*) FROM inst_win WHERE n = 1),
      'cash_nuevas',      (SELECT round(coalesce(sum(amt) FILTER (WHERE n = 1),0),2) FROM inst_win),
      'cash_cuotas',      (SELECT round(coalesce(sum(amt) FILTER (WHERE n >= 2),0),2) FROM inst_win),
@@ -197,6 +225,7 @@ SELECT json_build_object(
                             LEFT JOIN products pr ON pr.id = pp.product_uuid
                             JOIN params ON pp.project_id = params.pid
                             WHERE pp.start_date BETWEEN params.d1 AND params.d2
+                              AND pp.plan_status <> 'Cancelled'
                             GROUP BY 1) t),
      'mezcla_crm',       (SELECT coalesce(json_agg(t ORDER BY t.n DESC),'[]'::json) FROM (
                             SELECT etapa, count(*) AS n FROM lw
@@ -392,11 +421,16 @@ if vsl and vsl.get("total"):
          "leads creados (CRM)", obj.get("crm", {}).get("leads"),
          "cuántos clics al botón terminaron en lead; aquí vive la fuga de la pregunta del capital")
 crm_won = obj.get("crm", {}).get("ganadas")
-fila("ventas: tres fuentes", "compras pixel (Meta)",
+origen = v.get("planes_por_origen") or {}
+fila("ventas: pixel vs caja", "compras pixel (Meta)",
      int(pauta_usd["compras_pixel"]) if pauta_usd and pauta_usd.get("compras_pixel") is not None else None,
-     "planes iniciados (caja)", planes,
-     "el pixel atribuye, la caja cobra; el CRM ganó " + str(crm_won if crm_won is not None else "—")
-     + " en la misma ventana — si difieren mucho, hay ventas sin plan o pixel sobre-atribuyendo")
+     "planes iniciados (caja, sin cancelados)", planes,
+     "el pixel atribuye, la caja cobra; si difieren mucho, hay ventas sin plan o pixel sobre-atribuyendo")
+fila("ventas: CRM vs caja (misma cohorte)", "ganadas CRM de leads de la ventana", crm_won,
+     "planes de esos mismos leads", origen.get("won_lead_ventana"),
+     "peras con peras: el resto de los planes son rezagados (" + str(origen.get("won_lead_previo", "—"))
+     + " de leads previos), opps aún abiertas (" + str(origen.get("opp_abierta", "—"))
+     + ", higiene CRM) o sin opp (" + str(origen.get("sin_opp", "—")) + ")")
 fila("caja: contrato vs cobro", "valor contrato (planes)", v.get("valor_contrato"),
      "cash cobrado", cash,
      "lo firmado vs lo que entró; la brecha es cartera por cobrar de las ventas de la ventana")
@@ -420,6 +454,10 @@ if (f.get("ads_lag_dias") or 0) > 3:
     alertas.append(f"los insights de Meta atrasan {f['ads_lag_dias']} días: el spend de los últimos días está incompleto")
 if vsl and vsl.get("error"):
     alertas.append("VTurb no respondió: el tramo VSL del embudo viene vacío en esta corrida")
+cc = float(v.get("cash_en_cancelados") or 0)
+exc = v.get("excluidos") or {}
+if cc > 0:
+    alertas.append(f"${cc:,.0f} cobrados en planes CANCELADOS dentro de la ventana ({exc.get('planes_cancelados', 0)} planes: duplicados/pruebas) — están dentro de cash_total; si son pruebas, hay que borrarlas en la app")
 f["alertas"] = alertas
 obj["frescura"] = f
 
