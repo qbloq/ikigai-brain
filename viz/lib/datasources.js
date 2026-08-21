@@ -345,6 +345,25 @@ const SOURCES = {
     emits: "rows",
     args: { by: "--by", project: "--project", account: "--account", campaign: "--campaign", from: "--from", to: "--to", limit: "--limit" },
   },
+  // Una fila por ANUNCIO (creativo) con métricas del pixel, hook/hold y la
+  // miniatura desde la caché local (creativos_sync.sh). Feeds «Anuncios».
+  ad_anuncios: {
+    label: "Pauta · anuncios (creativos)",
+    script: "bash/ads/anuncios.sh",
+    emits: "rows",
+    args: { project: "--project", from: "--from", to: "--to", tipo: "--tipo", campaign: "--campaign", min_spend: "--min-spend", limit: "--limit" },
+  },
+  // Ángulos ganadores → titulares: campañas por caja (atribución UTM), familias
+  // de copy de anuncio (caché de creativos_sync.sh) y las landings con su H1
+  // leído EN VIVO. Cache corto por la misma razón que `embudo`: toca la web
+  // (curl a las landings) y encadena anuncios.sh; no es dato de referencia.
+  ad_angulos: {
+    label: "Pauta · ángulos ganadores → titulares",
+    script: "bash/ads/angulos.sh",
+    emits: "object",
+    args: { project: "--project", from: "--from", to: "--to", min_spend: "--min-spend" },
+    cache: 60_000,
+  },
   // One campaign end-to-end: {campaign, totals, adsets[], ads[], daily[]} —
   // the future detail block of the «Pauta» master-detail. `id` is positional.
   ad_detail: {
