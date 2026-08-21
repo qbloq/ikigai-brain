@@ -46,3 +46,7 @@ bin/
 # Runtime local (logs de corridas y descargas temporales)
 data/log/
 data/tmp/
+
+# Datos crudos de reuniones (transcripciones, frames, reportes generados) — datos, no código
+data/transcripts/
+data/meeting-reports-gemini/
