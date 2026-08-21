@@ -116,6 +116,14 @@ const SOURCES = {
   },
   // Financial KPI dashboard. Emits a single JSON OBJECT (not a row array) — the
   // `dashboard` component reads it as one record. Params: project + date range.
+  // LA SERIE DIARIA de un proyecto: una fila por día (caja nuevas/cuotas, pauta
+  // USD del día, leads/ganadas CRM, planes). Feeds the «Ventas diarias» page.
+  ventas_diarias: {
+    label: "Ventas diarias (caja por día)",
+    script: "bash/finance/ventas_diarias.sh",
+    emits: "rows",
+    args: { project: "--project", from: "--from", to: "--to" },
+  },
   dashboard: {
     label: "Dashboard financiero",
     script: "bash/metrics/dashboard.sh",
