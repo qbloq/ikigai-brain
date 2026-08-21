@@ -61,4 +61,5 @@ Fechas: VTurb pide `'YYYY-MM-DD HH:MM:SS'` + `timezone`; estos scripts mandan
 manda reloj UTC.
 
 El contrato de la superficie **proxy** (la de Marketico, con estos mismos
-datos ya normalizados): [apis/mkt/vturb-video.openapi.json](../../apis/mkt/vturb-video.openapi.json).
+datos ya normalizados) vive en el cerebro: `apis/mkt/vturb-video.openapi.json`
+(artefacto de operador — `apis/` no viaja a los copilotos).
