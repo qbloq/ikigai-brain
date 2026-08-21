@@ -531,6 +531,38 @@ idempotente por `(escenario,ref)` en la sqlite `closers_ops`), y los tres
 `escenario_*.sh` **[WRITE→WhatsApp]** que el cron dispara. Doc completo, con
 plantillas Meta y pendientes: `docs/closers-whatsapp.md` (operador).
 
+## Onboarding domain — primer contacto por WhatsApp ([bash/onboarding/](bash/onboarding/))
+
+El opt-in inicial del equipo al Cerebro por WhatsApp (mismo WABA que
+`bash/closers/`, 690499003502578) — **nunca broadcast**: un destinatario por
+corrida, a quién y cuándo lo decide el humano. `enviar_onboarding.sh --para
+<nombre> [--gancho "…"] [--grupo equipo|closer] [--dry-run] [--json]`
+**[WRITE→WhatsApp]** agrupa por rol (team_members/team_roles): **closer** ya
+tiene ventana abierta con Iki a diario → texto de sesión +
+`--fallback-plantilla onboarding_closer`; **equipo** (primer contacto real,
+nunca les llegó nada de este número) → siempre plantilla `onboarding_equipo`
+(un texto de sesión aquí lo acepta Meta y falla después por webhook, no al
+instante — ver `docs/closers-whatsapp.md`). El gancho (`{{2}}`) es genérico
+por defecto, `--gancho` lo personaliza (p.ej. Juan Camilo: sus dos assets ya
+vivos, dashboard del embudo + testeos VSL/pauta). Idempotente vía
+`bash/closers/enviar.sh` (`escenario=onboarding-cerebro`, `ref=<nombre>`).
+`plantilla_crear.sh --nombre N --categoria UTILITY|MARKETING --cuerpo "…{{1}}…"
+[--ejemplos "a|b"] [--dry-run] [--json]` **[WRITE→Meta]** crea una plantilla
+nueva en el WABA (sin upsert; queda PENDING hasta que Meta la revise, cuenta
+con días).
+
+## ManyChat domain — Instagram DMs en la fuente ([bash/manychat/](bash/manychat/))
+
+Sonda **read-only** contra `api.manychat.com` (patrón `bash/vturb/`: token por
+header, jamás argv ni impreso). Es la entrada del **embudo orgánico** (setters →
+leads orgánicos → cierres), que `embudo.sh` hoy no ve más allá de `crm.organicos`.
+Tokens en `.env` como `MANYCHAT_TOKEN*`; hay **dos cuentas de Instagram**
+distintas a nombre de David Guerrero, las dos activas — la **operación**
+(setters, audios de calificación/agenda, comentarios en reels, y donde aparecen
+los leads ganados del CRM) es la `3175…`; la `5001…` es la secundaria de
+contenido/YouTube. Evidencia y cómo se distinguieron: [bash/manychat/README.md](bash/manychat/README.md).
+`auth_status.sh [--json]` dice a qué página responde cada token.
+
 ## Notion domain — read-only extraction ([bash/notion/](bash/notion/))
 
 Pull Notion content to local via the HTTP API (curl/python3 stdlib, no npm deps;
