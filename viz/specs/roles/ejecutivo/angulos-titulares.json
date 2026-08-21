@@ -1,0 +1,53 @@
+{
+  "id": "angulos-titulares",
+  "name": "Ángulos ganadores → titulares (VSL)",
+  "component": "angulos",
+  "source": "ad_angulos",
+  "params": {
+    "project": "David Guerrero",
+    "min_spend": 50,
+    "metrica": "vsl.total.tasa_play",
+    "control_nota": "Control = el H1 que la landing muestra hoy (leído en vivo). Hoy vende «el trading está manipulado / fondeo en 6 meses» — un ángulo que NO aparece en ningún anuncio ganador de agosto: el clic se compra con «¿vida con el trading o entreteniendo tu ego?» y la página lo recibe con otra promesa. Ese quiebre de message-match es la hipótesis madre de todos los titulares de abajo.",
+    "titulares_nota": "Propuestos por el Cerebro el 2026-08-21 a partir del copy real de los anuncios (caché de creativos_sync.sh) y la caja atribuida por campaña. Son borradores para que Loro/Jhonatan critiquen, no copy aprobado. Disciplina de la reunión del 19-ago: un titular por testeo, el play rate (VTurb) como métrica, VTurb marcando conversiones antes de empezar, y primero titulares, después hooks.",
+    "titulares": [
+      {
+        "texto": "¿Estás construyendo una vida con el trading… o solo entreteniendo tu ego con la idea de «algún día»?",
+        "sub": "En este video te muestro el sistema con el que mis alumnos dejaron de dar vueltas y empezaron a operar en serio.",
+        "angulo": "vida vs. ego / «algún día»",
+        "evidencia": "Es la primera línea del cuerpo ganador: 9 anuncios, ~$5.250 de pauta, 2.777 aterrizajes, 27 compras pixel y ~$3.8k de caja estimada (AD1 HOBBY O PASATIEMPO solo: $1.794, 15 compras). El clic ya viene convencido por esta pregunta.",
+        "hipotesis": "Message-match: repetir en el H1 la pregunta que compró el clic sube la tasa de play (hoy 38,4 %)."
+      },
+      {
+        "texto": "Aprender a operar sin transformar tu mente es como llenar un balde roto.",
+        "sub": "Mira el video: por qué pierdes aunque sepas analizar — y cómo lo reprogramamos en 6 meses.",
+        "angulo": "balde roto / reprogramar la mente",
+        "evidencia": "Segunda idea del mismo cuerpo ganador («aquí no venimos a motivarte, venimos a reprogramarte») y el <title> actual de la landing ya habla de «reprogramar tu mente». Coherente con la mezcla de ventas (Premium Academy / Mastermind = mentalidad + sistema).",
+        "hipotesis": "Una metáfora concreta (balde roto) retiene mejor que una promesa abstracta (fondeo); esperamos play rate ≥ y retención 75 % mejor que el control."
+      },
+      {
+        "texto": "Si después de tanto tiempo el trading sigue siendo tu hobby, el problema no es tu estrategia.",
+        "sub": "Te lo demuestro en el video — y te muestro qué cambia cuando lo conviertes en un sistema.",
+        "angulo": "hobby o pasatiempo (el video ganador)",
+        "evidencia": "El anuncio con más caja del mes es «AD1 // HOBBY O PASATIEMPO // TEST COPIE» (DC_TRAFICO_FRIO_OVERLAY: $1.794, 29 leads, 3 planes, $2.398 de caja, hook 10,6 % — el doble del resto). El ángulo del video, no del cuerpo.",
+        "hipotesis": "Quien llega desde ese video ya se reconoció como «hobbista»; el H1 que lo nombra convierte mejor que el genérico."
+      },
+      {
+        "texto": "La diferencia entre el trader rentable y el que no lo es no está en la estrategia.",
+        "sub": "Está en lo que haces con tu mente antes de abrir la operación. Míralo en el video.",
+        "angulo": "trader rentable vs. no rentable",
+        "evidencia": "AGO_CONTINGENCIA_LEAD_QUALIFY «TRADER RENTABLE // NO RENTABLE»: el mejor CPA pixel del mes ($63, 3 compras con $189) y hook 9,7 % en la variante sin compras. Poco gasto aún — evidencia de dirección, no de volumen.",
+        "hipotesis": "El contraste binario (rentable / no rentable) engancha al que ya opera y no le alcanza — el perfil que compra Mastermind."
+      },
+      {
+        "texto": "+200 traders ya lo hicieron: de dar vueltas a operar con un sistema propio.",
+        "sub": "Mira cómo — y decide si es para ti.",
+        "angulo": "prueba social (+200 testimonios)",
+        "evidencia": "Título de anuncio «+200 Testimonios» en 003_DC_RMK_SALES (la campaña con más caja atribuida: $5.050, 43 leads) y la campaña 005_TESTIMONIOS (33 leads, CPL $48, el más bajo). Prueba social con número concreto.",
+        "hipotesis": "En remarketing (ya vieron el VSL) la prueba social pesa más que la promesa; para tráfico frío debería perder contra T1/T3 — por eso este se testea sobre la landing del remarketing, no la de frío."
+      }
+    ]
+  },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-08-21T17:30:00.000Z"
+}

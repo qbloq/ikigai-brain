@@ -71,6 +71,84 @@ function metaTone(key, value, metas) {
   return ok ? "pos" : "neg";
 }
 
+// --- Salud del embudo vs benchmarks (params.metas.salud) ---
+// Cada fila del spec trae una `ruta` punteada dentro del objeto de embudo.sh,
+// con la MISMA semántica que `testeo_abrir.sh --metrica` (`pauta.0.ctr`,
+// `vsl.total.tasa_play`): un número entero indexa listas. Además admite un
+// cociente `a / b` (dos rutas) con `escala` (p.ej. 100 → %), para las tasas de
+// paso que el script no emite ya calculadas. Umbrales `bueno`/`excelente`,
+// dirección `dir` (max por defecto, min para costos). Son REFERENCIAS del
+// spec, no metas de la org — por eso viven en params y se cambian
+// re-publicando, y por eso la tabla imprime la referencia al lado del valor.
+function resolvePath(path, obj) {
+  if (!path) return null;
+  let cur = obj;
+  for (const part of String(path).trim().split(".")) {
+    if (Array.isArray(cur)) {
+      const i = Number(part);
+      if (!Number.isInteger(i) || i < 0 || i >= cur.length) return null;
+      cur = cur[i];
+    } else if (cur && typeof cur === "object") {
+      cur = cur[part];
+    } else return null;
+  }
+  return typeof cur === "number" && Number.isFinite(cur) ? cur : null;
+}
+function resolveRuta(ruta, obj, escala) {
+  const parts = String(ruta || "").split("/");
+  if (parts.length > 2) return null;
+  const a = resolvePath(parts[0], obj);
+  if (a == null) return null;
+  let v = a;
+  if (parts.length === 2) {
+    const b = resolvePath(parts[1], obj);
+    if (b == null || b === 0) return null;
+    v = a / b;
+  }
+  v = v * (Number(escala) || 1);
+  return Math.round(v * 100) / 100;
+}
+function saludEstado(v, row) {
+  if (v == null) return "sin dato";
+  const min = row.dir === "min";
+  const ok = (t) => (min ? v <= Number(t) : v >= Number(t));
+  if (row.excelente != null && ok(row.excelente)) return "excelente";
+  if (row.bueno != null && ok(row.bueno)) return "bueno";
+  return "mejorable";
+}
+const SALUD_BADGE = { excelente: "badge-pos", bueno: "badge-brand", mejorable: "badge-cau", "sin dato": "badge-neutral" };
+function fmtUnidad(v, u) {
+  if (v == null) return "—";
+  if (u === "%") return pctf(v);
+  if (u === "$") return usd(v);
+  if (u === "x") return `${Number(v).toLocaleString("es-CO")}x`;
+  return num(v);
+}
+function saludRows(salud, d) {
+  return (salud || []).map((row) => {
+    const v = resolveRuta(row.ruta, d, row.escala);
+    const estado = saludEstado(v, row);
+    const cmp = row.dir === "min" ? "≤" : "≥";
+    const ref = [
+      row.bueno != null ? `${cmp}${fmtUnidad(row.bueno, row.unidad)} bueno` : "",
+      row.excelente != null ? `${cmp}${fmtUnidad(row.excelente, row.unidad)} excelente` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return {
+      estado,
+      cells: [
+        `<span class="font-semibold">${escape(String(row.metrica || row.ruta))}</span><br><code class="text-xs" style="color:var(--text-3)">${escape(String(row.ruta || ""))}</code>`,
+        `<span class="tabular-nums font-semibold" style="color:var(--text-1)">${fmtUnidad(v, row.unidad)}</span>`,
+        `<span class="text-xs tabular-nums" style="color:var(--text-3)">${escape(ref || "—")}</span>`,
+        `<span class="badge ${SALUD_BADGE[estado]}">${escape(estado)}</span>`,
+        row.fuente ? srcBadge(row.fuente) : "",
+        `<span class="text-xs" style="color:var(--text-3)">${escape(String(row.nota || ""))}</span>`,
+      ],
+    };
+  });
+}
+
 // Fila del embudo unificado: peldaño, valor, fuente, % del paso anterior.
 function funnelRows(steps) {
   let prev = null;
@@ -129,7 +207,7 @@ function renderEmbudo(ui) {
   // --- KPIs de la ventana, contra metas si el spec las trae ---
   const cab = `
     ${kpi("Pauta (USD)", usd(k.spend_usd), { sub: pautaCop ? `+ ${num(pautaCop.spend)} COP aparte` : "solo USD entra a los ratios", title: m.regla_monedas || "" })}
-    ${kpi("Leads (CRM)", num(k.leads), { tone: metaTone("leads", k.leads, metas) || "brand", sub: `${num(crm.pagados)} por pauta · ${num(crm.organicos)} orgánicos`, title: m.regla_leads || "" })}
+    ${kpi("Leads (CRM)", num(k.leads), { tone: metaTone("leads", k.leads, metas) || "brand", sub: `${num(crm.pagados)} por pauta (${num(crm.con_anuncio)} con anuncio) · ${num(crm.organicos)} sin atribución`, title: (m.regla_leads || "") + (m.regla_atribucion ? " · " + m.regla_atribucion : "") })}
     ${kpi("CPL real", usd(k.cpl_real), { tone: metaTone("cpl_real", k.cpl_real, metas) || "brand", sub: "pauta USD / leads CRM" })}
     ${kpi("Planes iniciados", num(k.planes_iniciados), { sub: `${num(ventas.primeras_cuotas)} primeras cuotas cobradas` })}
     ${kpi("CAC real", usd(k.cac_real), { tone: metaTone("cac_real", k.cac_real, metas) || "brand", sub: "pauta USD / planes iniciados" })}
@@ -150,6 +228,18 @@ function renderEmbudo(ui) {
     { nombre: "Ganadas (CRM)", valor: crm.ganadas, fuente: "CRM", nota: "" },
     { nombre: "Planes iniciados", valor: ventas.planes_iniciados, fuente: "caja", nota: `${usd(ventas.valor_contrato)} en contratos${(ventas.excluidos || {}).planes_cancelados ? ` · ${num(ventas.excluidos.planes_cancelados)} cancelados excluidos` : ""}` },
   ]);
+
+  // --- salud vs benchmarks: cada tasa de paso contra la referencia del spec ---
+  const saludList = Array.isArray(metas.salud) ? metas.salud : [];
+  const saludR = saludRows(saludList, d);
+  const saludCount = saludR.reduce((acc, r) => ((acc[r.estado] = (acc[r.estado] || 0) + 1), acc), {});
+  const saludResumen = ["excelente", "bueno", "mejorable", "sin dato"]
+    .filter((e) => saludCount[e])
+    .map((e) => `<span class="badge ${SALUD_BADGE[e]}">${saludCount[e]} ${escape(e)}</span>`)
+    .join(" ");
+  const tSalud = saludList.length
+    ? tbl(["Métrica", "Tu valor", "Referencia", "Estado", "Fuente", "Nota"], saludR.map((r) => r.cells))
+    : `<div class="alert"><p class="text-sm">Sin benchmarks configurados: agrega <code>params.metas.salud</code> al spec (lista de <code>{metrica, ruta, bueno, excelente, dir, unidad}</code>).</p></div>`;
 
   // --- el último eslabón, explicado: de qué cohorte viene cada plan ---
   const orig = ventas.planes_por_origen || {};
@@ -186,10 +276,11 @@ function renderEmbudo(ui) {
 
   // --- atribución por campaña: los ángulos ganadores ---
   const tAtr = tbl(
-    ["Campaña (UTM)", "Leads", "Spend", "CPL real", "Ganadas", "Planes", "Contrato", "Cash"],
+    ["Campaña", "Leads", "GHL · solo form · con ad", "Spend", "CPL real", "Ganadas", "Planes", "Contrato", "Cash"],
     (d.atribucion || []).map((r) => [
       `<span class="font-semibold">${escape(String(r.campana))}</span>`,
       `<span class="tabular-nums">${num(r.leads)}</span>`,
+      `<span class="tabular-nums text-xs" style="color:var(--text-3)" title="leads con campaña por la atribución nativa de GHL · leads que solo la traen por el utm_campaign del formulario · leads con anuncio (attr_ad_id)">${num(r.leads_ghl)} · ${num(r.leads_solo_form)} · ${num(r.leads_con_anuncio)}</span>`,
       `<span class="tabular-nums">${r.spend == null ? "—" : usd(r.spend)}</span>`,
       `<span class="tabular-nums">${r.cpl_real == null ? "—" : usd(r.cpl_real)}</span>`,
       `<span class="tabular-nums font-semibold" style="color:${(r.ganadas || 0) > 0 ? TONE.pos : TONE.muted}">${num(r.ganadas)}</span>`,
@@ -324,6 +415,11 @@ function renderEmbudo(ui) {
 
     ${section("El embudo, fuente por fuente", "el % es traspaso contra el peldaño anterior; >100% = entra tráfico que el peldaño anterior no ve")}
     ${tbl(["Peldaño", "Valor", "Fuente", "Traspaso", "Nota"], fEmbudo)}
+
+    ${section("Salud del embudo vs benchmarks", "cada tasa de paso contra una referencia declarada en el spec — el estado dice dónde está el cuello, no la meta de la org")}
+    ${saludResumen ? `<div class="flex flex-wrap gap-2 mb-3">${saludResumen}</div>` : ""}
+    ${tSalud}
+    ${metas.salud_nota ? `<p class="mt-2 text-xs" style="color:var(--text-3)">${escape(String(metas.salud_nota))}</p>` : ""}
 
     ${section("Conciliación entre fuentes", "los handoffs donde las fuentes se tocan — aquí es donde un dashboard miente sin que se note")}
     ${tConc}

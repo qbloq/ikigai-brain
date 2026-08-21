@@ -1,6 +1,6 @@
 # Rol: Líder de servicio
 
-**Quiénes:** Francisco Otalvaro (copiloto `francisco-otalvaro`)
+**Quiénes:** Francisco Otalvaro (copiloto `francisco-otalvaro`) · Tatiana Echeverry («Tati», alta 2026-08-21 — servicio al cliente, onboarding y seguimiento de estudiantes de David Guerrero / Premium Academy–Mastermind; sin copiloto aún; email/teléfono provisionales, pendientes de regestionar)
 **Capa de rol (viz):** `viz/specs/roles/lider-de-servicio/` — aún no creada
 **Tareas históricas:** 6 asignadas · 6 etiquetadas con arquetipo · 2 abiertas hoy
 

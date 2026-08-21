@@ -116,6 +116,14 @@ const SOURCES = {
   },
   // Financial KPI dashboard. Emits a single JSON OBJECT (not a row array) — the
   // `dashboard` component reads it as one record. Params: project + date range.
+  // LA SERIE DIARIA de un proyecto: una fila por día (caja nuevas/cuotas, pauta
+  // USD del día, leads/ganadas CRM, planes). Feeds the «Ventas diarias» page.
+  ventas_diarias: {
+    label: "Ventas diarias (caja por día)",
+    script: "bash/finance/ventas_diarias.sh",
+    emits: "rows",
+    args: { project: "--project", from: "--from", to: "--to" },
+  },
   dashboard: {
     label: "Dashboard financiero",
     script: "bash/metrics/dashboard.sh",
@@ -336,6 +344,25 @@ const SOURCES = {
     script: "bash/ads/ad_stats.sh",
     emits: "rows",
     args: { by: "--by", project: "--project", account: "--account", campaign: "--campaign", from: "--from", to: "--to", limit: "--limit" },
+  },
+  // Una fila por ANUNCIO (creativo) con métricas del pixel, hook/hold y la
+  // miniatura desde la caché local (creativos_sync.sh). Feeds «Anuncios».
+  ad_anuncios: {
+    label: "Pauta · anuncios (creativos)",
+    script: "bash/ads/anuncios.sh",
+    emits: "rows",
+    args: { project: "--project", from: "--from", to: "--to", tipo: "--tipo", campaign: "--campaign", min_spend: "--min-spend", limit: "--limit" },
+  },
+  // Ángulos ganadores → titulares: campañas por caja (atribución UTM), familias
+  // de copy de anuncio (caché de creativos_sync.sh) y las landings con su H1
+  // leído EN VIVO. Cache corto por la misma razón que `embudo`: toca la web
+  // (curl a las landings) y encadena anuncios.sh; no es dato de referencia.
+  ad_angulos: {
+    label: "Pauta · ángulos ganadores → titulares",
+    script: "bash/ads/angulos.sh",
+    emits: "object",
+    args: { project: "--project", from: "--from", to: "--to", min_spend: "--min-spend" },
+    cache: 60_000,
   },
   // One campaign end-to-end: {campaign, totals, adsets[], ads[], daily[]} —
   // the future detail block of the «Pauta» master-detail. `id` is positional.

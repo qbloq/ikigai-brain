@@ -6,7 +6,101 @@
   "params": {
     "project": "David Guerrero",
     "meses": 6,
-    "metas": { "roas_real": 3.5 }
+    "metas": {
+      "roas_real": 3.5,
+      "salud_nota": "Umbrales de REFERENCIA (high-ticket infoproductos, alineación DG 2026-08-20), no metas de la org: calibrar con la serie propia. Cada ruta apunta al objeto de embudo.sh con la misma semántica que testeo_abrir.sh --metrica.",
+      "salud": [
+        {
+          "metrica": "CTR (clics / impresiones)",
+          "ruta": "pauta.0.ctr",
+          "unidad": "%",
+          "bueno": 1.0,
+          "excelente": 1.5,
+          "fuente": "Meta"
+        },
+        {
+          "metrica": "Aterrizaje (LPV / clics al link)",
+          "ruta": "pauta.0.aterrizajes / pauta.0.clics_link",
+          "escala": 100,
+          "unidad": "%",
+          "bueno": 50,
+          "excelente": 70,
+          "fuente": "Meta",
+          "nota": "clics pagados que sí cargan la página — velocidad / página rota"
+        },
+        {
+          "metrica": "Tasa de play (plays / player visto)",
+          "ruta": "vsl.total.tasa_play",
+          "unidad": "%",
+          "bueno": 35,
+          "excelente": 50,
+          "fuente": "VTurb"
+        },
+        {
+          "metrica": "Llegan al pitch (/ plays)",
+          "ruta": "vsl.total.tasa_pitch",
+          "unidad": "%",
+          "bueno": 20,
+          "excelente": 30,
+          "fuente": "VTurb"
+        },
+        {
+          "metrica": "Clic al CTA (/ plays)",
+          "ruta": "vsl.total.tasa_cta",
+          "unidad": "%",
+          "bueno": 10,
+          "excelente": 15,
+          "fuente": "VTurb"
+        },
+        {
+          "metrica": "CTA → lead (leads / clics al CTA)",
+          "ruta": "crm.leads / vsl.total.cta_clicks",
+          "escala": 100,
+          "unidad": "%",
+          "bueno": 50,
+          "excelente": 70,
+          "fuente": "VTurb → CRM",
+          "nota": "aquí vive la fuga de la pregunta del capital"
+        },
+        {
+          "metrica": "Conversión final (planes / leads)",
+          "ruta": "ventas.planes_iniciados / crm.leads",
+          "escala": 100,
+          "unidad": "%",
+          "bueno": 6,
+          "excelente": 10,
+          "fuente": "CRM → caja",
+          "nota": "referencia high-ticket: 6-10% bueno · >10% excelente"
+        },
+        {
+          "metrica": "CPL real",
+          "ruta": "kpis.cpl_real",
+          "unidad": "$",
+          "dir": "min",
+          "bueno": 60,
+          "excelente": 40,
+          "fuente": "Meta → CRM"
+        },
+        {
+          "metrica": "CAC real",
+          "ruta": "kpis.cac_real",
+          "unidad": "$",
+          "dir": "min",
+          "bueno": 500,
+          "excelente": 350,
+          "fuente": "Meta → caja"
+        },
+        {
+          "metrica": "ROAS real",
+          "ruta": "kpis.roas_real",
+          "unidad": "x",
+          "bueno": 2.5,
+          "excelente": 3.5,
+          "fuente": "caja / Meta",
+          "nota": "≥3.5 es la meta para escalar (metas.roas_real)"
+        }
+      ]
+    }
   },
   "scope": "role",
   "role": "ejecutivo",

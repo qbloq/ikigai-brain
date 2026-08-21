@@ -2,15 +2,15 @@
   "meta": {
     "schema": "ikigaigm",
     "generated_from": "pg_catalog (entidades, FK+cardinalidad, PK, enums, checks, únicos) + sondeo verificado de jsonb/arrays",
-    "n_nodes": 98,
-    "n_edges": 154,
-    "n_fk": 143,
+    "n_nodes": 102,
+    "n_edges": 157,
+    "n_fk": 146,
     "n_implicit": 11,
-    "n_rules": 85,
+    "n_rules": 88,
     "n_enums": 20,
-    "n_checks": 22,
-    "n_uniques": 43,
-    "n_jsonb": 50,
+    "n_checks": 23,
+    "n_uniques": 45,
+    "n_jsonb": 55,
     "domains": {
       "tasks": "Tareas",
       "meetings": "Reuniones",
@@ -41,7 +41,7 @@
     {
       "id": "activity_archetypes",
       "kind": "table",
-      "rows": 76,
+      "rows": 79,
       "cols": 15,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
@@ -78,7 +78,7 @@
     {
       "id": "ad_insights_daily",
       "kind": "table",
-      "rows": 5994,
+      "rows": 7375,
       "cols": 36,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
@@ -95,7 +95,7 @@
     {
       "id": "ad_sets",
       "kind": "table",
-      "rows": 1375,
+      "rows": 1392,
       "cols": 17,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
@@ -112,7 +112,7 @@
     {
       "id": "ads",
       "kind": "table",
-      "rows": 3715,
+      "rows": 3797,
       "cols": 9,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
@@ -127,7 +127,7 @@
     {
       "id": "archetype_acceptance_criteria",
       "kind": "table",
-      "rows": 169,
+      "rows": 182,
       "cols": 7,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
@@ -142,7 +142,7 @@
     {
       "id": "archetype_inputs",
       "kind": "table",
-      "rows": 101,
+      "rows": 107,
       "cols": 8,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
@@ -157,7 +157,7 @@
     {
       "id": "archetype_outputs",
       "kind": "table",
-      "rows": 62,
+      "rows": 65,
       "cols": 8,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
@@ -172,7 +172,7 @@
     {
       "id": "archetype_params",
       "kind": "table",
-      "rows": 118,
+      "rows": 120,
       "cols": 8,
       "domain": "catalog",
       "domain_label": "Ontología de procesos",
@@ -238,6 +238,18 @@
       "enums": [],
       "checks": [
         {
+          "name": "artifact_types_category_check",
+          "type": "allowed_values",
+          "col": "category",
+          "values": [
+            "document",
+            "approval",
+            "data",
+            "resource",
+            "decision"
+          ]
+        },
+        {
           "name": "artifact_types_resolver_type_check",
           "type": "allowed_values",
           "col": "resolver_type",
@@ -250,18 +262,6 @@
             "gdrive",
             "sql",
             "notion"
-          ]
-        },
-        {
-          "name": "artifact_types_category_check",
-          "type": "allowed_values",
-          "col": "category",
-          "values": [
-            "document",
-            "approval",
-            "data",
-            "resource",
-            "decision"
           ]
         }
       ],
@@ -306,9 +306,110 @@
       "degree": 1
     },
     {
+      "id": "call_report_tiradas",
+      "kind": "table",
+      "rows": 339,
+      "cols": 4,
+      "domain": "misc",
+      "domain_label": "Otros",
+      "pk": "id",
+      "enums": [],
+      "checks": [],
+      "uniques": [
+        {
+          "name": "call_report_tiradas_call_report_id_n_key",
+          "cols": [
+            "call_report_id",
+            "n"
+          ]
+        }
+      ],
+      "jsonb": [
+        "report"
+      ],
+      "arrays": [],
+      "degree": 1
+    },
+    {
+      "id": "call_report_vigente",
+      "kind": "view",
+      "rows": 0,
+      "cols": 8,
+      "domain": "misc",
+      "domain_label": "Otros",
+      "pk": null,
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "report"
+      ],
+      "arrays": [
+        {
+          "col": "baja_confianza",
+          "of": "text"
+        }
+      ],
+      "degree": 0
+    },
+    {
+      "id": "call_reports",
+      "kind": "table",
+      "rows": 121,
+      "cols": 23,
+      "domain": "misc",
+      "domain_label": "Otros",
+      "pk": "id",
+      "enums": [],
+      "checks": [
+        {
+          "name": "call_reports_n_tiradas_check",
+          "type": "expr",
+          "expr": "n_tiradas >= 2"
+        }
+      ],
+      "uniques": [
+        {
+          "name": "call_reports_meeting_id_generacion_key",
+          "cols": [
+            "meeting_id",
+            "generacion"
+          ]
+        }
+      ],
+      "jsonb": [
+        "arquetipo_votos",
+        "report"
+      ],
+      "arrays": [
+        {
+          "col": "baja_confianza",
+          "of": "text"
+        }
+      ],
+      "degree": 2
+    },
+    {
+      "id": "call_reports_gemini",
+      "kind": "table",
+      "rows": 240,
+      "cols": 4,
+      "domain": "misc",
+      "domain_label": "Otros",
+      "pk": "meeting_id",
+      "enums": [],
+      "checks": [],
+      "uniques": [],
+      "jsonb": [
+        "report"
+      ],
+      "arrays": [],
+      "degree": 1
+    },
+    {
       "id": "campaign_insights_daily",
       "kind": "table",
-      "rows": 1331,
+      "rows": 1718,
       "cols": 20,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
@@ -335,7 +436,7 @@
     {
       "id": "campaigns",
       "kind": "table",
-      "rows": 479,
+      "rows": 490,
       "cols": 14,
       "domain": "ads",
       "domain_label": "Pauta (Meta)",
@@ -350,7 +451,7 @@
     {
       "id": "commission_payouts",
       "kind": "table",
-      "rows": 219,
+      "rows": 291,
       "cols": 26,
       "domain": "finance",
       "domain_label": "Finanzas",
@@ -452,7 +553,7 @@
     {
       "id": "crm_contacts",
       "kind": "table",
-      "rows": 1980,
+      "rows": 2734,
       "cols": 13,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
@@ -482,7 +583,7 @@
     {
       "id": "crm_custom_fields",
       "kind": "table",
-      "rows": 110,
+      "rows": 112,
       "cols": 17,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
@@ -508,7 +609,7 @@
     {
       "id": "crm_opportunities",
       "kind": "table",
-      "rows": 2054,
+      "rows": 2761,
       "cols": 16,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
@@ -556,7 +657,7 @@
     {
       "id": "drive_index",
       "kind": "table",
-      "rows": 15500,
+      "rows": 17952,
       "cols": 16,
       "domain": "content",
       "domain_label": "Contenido (Notion/Drive)",
@@ -586,7 +687,7 @@
     {
       "id": "economics_ledger",
       "kind": "table",
-      "rows": 543,
+      "rows": 764,
       "cols": 12,
       "domain": "finance",
       "domain_label": "Finanzas",
@@ -693,7 +794,7 @@
     {
       "id": "funnel_goals",
       "kind": "table",
-      "rows": 0,
+      "rows": 16,
       "cols": 7,
       "domain": "crm",
       "domain_label": "CRM / Ventas",
@@ -758,7 +859,7 @@
     {
       "id": "identities",
       "kind": "table",
-      "rows": 5,
+      "rows": 6,
       "cols": 11,
       "domain": "people",
       "domain_label": "Personas / Equipo",
@@ -783,7 +884,7 @@
     {
       "id": "installments",
       "kind": "table",
-      "rows": 1243,
+      "rows": 1367,
       "cols": 14,
       "domain": "finance",
       "domain_label": "Finanzas",
@@ -971,7 +1072,7 @@
     {
       "id": "meeting_participants",
       "kind": "table",
-      "rows": 863,
+      "rows": 1119,
       "cols": 11,
       "domain": "meetings",
       "domain_label": "Reuniones",
@@ -994,7 +1095,7 @@
     {
       "id": "meeting_reports",
       "kind": "table",
-      "rows": 338,
+      "rows": 431,
       "cols": 6,
       "domain": "meetings",
       "domain_label": "Reuniones",
@@ -1019,7 +1120,7 @@
     {
       "id": "meeting_transcripts",
       "kind": "table",
-      "rows": 333,
+      "rows": 416,
       "cols": 5,
       "domain": "meetings",
       "domain_label": "Reuniones",
@@ -1041,7 +1142,7 @@
     {
       "id": "meetings",
       "kind": "table",
-      "rows": 2226,
+      "rows": 2515,
       "cols": 20,
       "domain": "meetings",
       "domain_label": "Reuniones",
@@ -1053,7 +1154,7 @@
         "event"
       ],
       "arrays": [],
-      "degree": 8
+      "degree": 10
     },
     {
       "id": "meta_capi_events",
@@ -1192,7 +1293,7 @@
     {
       "id": "payment_plans",
       "kind": "table",
-      "rows": 297,
+      "rows": 348,
       "cols": 16,
       "domain": "finance",
       "domain_label": "Finanzas",
@@ -1906,7 +2007,7 @@
     {
       "id": "spaces",
       "kind": "table",
-      "rows": 1963,
+      "rows": 2210,
       "cols": 12,
       "domain": "projects",
       "domain_label": "Proyectos / Config",
@@ -1921,7 +2022,7 @@
     {
       "id": "sql_conversations",
       "kind": "table",
-      "rows": 42,
+      "rows": 69,
       "cols": 5,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
@@ -1936,7 +2037,7 @@
     {
       "id": "sql_messages",
       "kind": "table",
-      "rows": 212,
+      "rows": 290,
       "cols": 10,
       "domain": "runtime",
       "domain_label": "Runtime agéntico / LLM",
@@ -1963,23 +2064,13 @@
     {
       "id": "task_acceptance_criteria",
       "kind": "table",
-      "rows": 944,
+      "rows": 1450,
       "cols": 21,
       "domain": "tasks",
       "domain_label": "Tareas",
       "pk": "id",
       "enums": [],
       "checks": [
-        {
-          "name": "pass_threshold_check",
-          "type": "allowed_values",
-          "col": "pass_threshold",
-          "values": [
-            "high",
-            "medium",
-            "low"
-          ]
-        },
         {
           "name": "task_acceptance_criteria_verification_method_check",
           "type": "allowed_values",
@@ -1990,6 +2081,16 @@
             "automated",
             "test",
             "attested"
+          ]
+        },
+        {
+          "name": "pass_threshold_check",
+          "type": "allowed_values",
+          "col": "pass_threshold",
+          "values": [
+            "high",
+            "medium",
+            "low"
           ]
         },
         {
@@ -2070,7 +2171,7 @@
     {
       "id": "task_comments",
       "kind": "table",
-      "rows": 52,
+      "rows": 564,
       "cols": 8,
       "domain": "tasks",
       "domain_label": "Tareas",
@@ -2085,7 +2186,7 @@
     {
       "id": "task_inputs",
       "kind": "table",
-      "rows": 534,
+      "rows": 739,
       "cols": 15,
       "domain": "tasks",
       "domain_label": "Tareas",
@@ -2103,7 +2204,7 @@
     {
       "id": "task_outputs",
       "kind": "table",
-      "rows": 330,
+      "rows": 461,
       "cols": 16,
       "domain": "tasks",
       "domain_label": "Tareas",
@@ -2136,8 +2237,8 @@
     {
       "id": "tasks",
       "kind": "table",
-      "rows": 329,
-      "cols": 20,
+      "rows": 542,
+      "cols": 21,
       "domain": "tasks",
       "domain_label": "Tareas",
       "pk": "id",
@@ -2280,7 +2381,7 @@
     {
       "id": "users",
       "kind": "table",
-      "rows": 26,
+      "rows": 31,
       "cols": 15,
       "domain": "people",
       "domain_label": "Personas / Equipo",
@@ -2382,16 +2483,6 @@
       "enums": [],
       "checks": [
         {
-          "name": "workers_status_check",
-          "type": "allowed_values",
-          "col": "status",
-          "values": [
-            "active",
-            "paused",
-            "error"
-          ]
-        },
-        {
           "name": "workers_worker_type_check",
           "type": "allowed_values",
           "col": "worker_type",
@@ -2399,6 +2490,16 @@
             "gemini_structured",
             "ax_llm",
             "graph"
+          ]
+        },
+        {
+          "name": "workers_status_check",
+          "type": "allowed_values",
+          "col": "status",
+          "values": [
+            "active",
+            "paused",
+            "error"
           ]
         }
       ],
@@ -2605,6 +2706,45 @@
       "optional": false,
       "on_delete": "cascade",
       "constraint": "call_meeting_results_meeting_id_fkey"
+    },
+    {
+      "source": "call_report_tiradas",
+      "target": "call_reports",
+      "src_col": "call_report_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "call_report_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "cascade",
+      "constraint": "call_report_tiradas_call_report_id_fkey"
+    },
+    {
+      "source": "call_reports",
+      "target": "meetings",
+      "src_col": "meeting_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "meeting_id→id",
+      "card": "N:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "call_reports_meeting_id_fkey"
+    },
+    {
+      "source": "call_reports_gemini",
+      "target": "meetings",
+      "src_col": "meeting_id",
+      "tgt_col": "id",
+      "kind": "fk",
+      "self": false,
+      "label": "meeting_id→id",
+      "card": "1:1",
+      "optional": false,
+      "on_delete": "no action",
+      "constraint": "call_reports_gemini_meeting_id_fkey"
     },
     {
       "source": "campaign_insights_daily",

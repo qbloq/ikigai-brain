@@ -26,7 +26,8 @@ const COLS = [
   { k: "lead", l: "Lead", w: "w-[18%]" },
   { k: "dueno", l: "Dueño", w: "w-36" },
   { k: "origen", l: "Origen", w: "w-24" },
-  { k: "campana", l: "Campaña", w: "w-[20%]" },
+  { k: "campana", l: "Campaña", w: "w-[16%]" },
+  { k: "anuncio", l: "Anuncio", w: "w-[12%]" },
   { k: "tags", l: "Formulario (tags)" },
   { k: "etapa", l: "Etapa", w: "w-40" },
 ];
@@ -85,14 +86,20 @@ function duenoCell(v) {
   return `<span class="text-slate-700">${escape(v)}</span>`;
 }
 
-// Un lead con utm_source llegó por pauta: lo pagamos. Eso pesa distinto que uno
-// orgánico, así que se distingue de un vistazo — violeta (familia de marca)
-// para lo pagado, neutro apagado para lo orgánico.
+// Un lead atribuido a una campaña llegó por pauta: lo pagamos. Eso pesa
+// distinto que uno orgánico, así que se distingue de un vistazo — violeta
+// (familia de marca) para lo pagado, neutro apagado para lo no pagado. Desde
+// 2026-08-21 `origen` trae, para lo no pagado, la sesión que registró GHL
+// (Social media / Referral / Direct traffic) en vez de un «—»: el orgánico
+// deja de ser un balde ciego.
 function origenCell(v, r) {
-  if (!v || v === "—")
-    return '<span class="badge badge-neutral opacity-60" title="Sin utm_* — no llegó por pauta">orgánico</span>';
-  const t = r && r.campana && r.campana !== "—" ? `Meta Ads · ${r.campana}` : "Meta Ads";
-  return `<span class="badge bg-violet-100 text-violet-700" title="${escape(t)}">${escape(v)}</span>`;
+  const pagado = r && r.campana && r.campana !== "—";
+  if (!pagado) {
+    const ses = v && v !== "—" ? v : "orgánico";
+    return `<span class="badge badge-neutral opacity-60" title="Sin campaña ni en la atribución de GHL ni en el formulario — no llegó por pauta. Sesión registrada por GHL: ${escape(ses)}">${escape(ses.toLowerCase())}</span>`;
+  }
+  const t = `Meta Ads · ${r.campana}${r.anuncio && r.anuncio !== "—" ? " · " + r.anuncio : ""}`;
+  return `<span class="badge bg-violet-100 text-violet-700" title="${escape(t)}">${escape(v && v !== "—" ? v : "pauta")}</span>`;
 }
 
 // El nombre de campaña es un slug largo (006_DC_TRAFICO_FRIO_OVERLAY) sin
@@ -120,7 +127,7 @@ function bodyCell(col, r) {
   if (col === "dias") return diasCell(r[col]);
   if (col === "dueno") return duenoCell(r[col]);
   if (col === "origen") return origenCell(r[col], r);
-  if (col === "campana") return campanaCell(r[col]);
+  if (col === "campana" || col === "anuncio") return campanaCell(r[col]);
   if (col === "tags") return tagsCell(r[col]);
   // El nombre del lead suele traer espacios, pero a veces llega un correo o un
   // handle pegado sin ninguno; break-words lo dobla en vez de derramarlo.
@@ -130,8 +137,8 @@ function bodyCell(col, r) {
 
 const ORIGEN_OPTS = [
   ["", "Origen: todos"],
-  ["pagado", "Pagados (con utm)"],
-  ["organico", "Orgánicos (sin utm)"],
+  ["pagado", "Pagados (con campaña: GHL o utm)"],
+  ["organico", "No pagados (orgánico · referral · directo)"],
 ];
 
 function signals(p) {
@@ -262,12 +269,18 @@ function controls(p, reget) {
 // calcula sobre las filas traídas, así que respeta los filtros activos.
 function originBar(rows) {
   if (!rows.length) return "";
-  const pagados = rows.filter((r) => r.origen && r.origen !== "—");
+  // pagado = atribuido a una campaña (GHL o utm del form); `origen` de los no
+  // pagados trae la sesión que registró GHL (Social media / Referral / Direct).
+  const esPagado = (r) => r.campana && r.campana !== "—";
+  const pagados = rows.filter(esPagado);
+  const noPagados = rows.filter((r) => !esPagado(r));
   const huerfanos = rows.filter((r) => !r.dueno || r.dueno === "—");
   const pagadosHuerfanos = pagados.filter((r) => !r.dueno || r.dueno === "—");
 
   const porFuente = new Map();
-  for (const r of pagados) porFuente.set(r.origen, (porFuente.get(r.origen) || 0) + 1);
+  for (const r of pagados) porFuente.set(r.origen && r.origen !== "—" ? r.origen : "pauta", (porFuente.get(r.origen && r.origen !== "—" ? r.origen : "pauta") || 0) + 1);
+  const porSesion = new Map();
+  for (const r of noPagados) porSesion.set(r.origen && r.origen !== "—" ? r.origen.toLowerCase() : "sin sesión", (porSesion.get(r.origen && r.origen !== "—" ? r.origen.toLowerCase() : "sin sesión") || 0) + 1);
   const porCampana = new Map();
   for (const r of pagados) {
     if (r.campana && r.campana !== "—") porCampana.set(r.campana, (porCampana.get(r.campana) || 0) + 1);
@@ -283,7 +296,7 @@ function originBar(rows) {
   return `<div class="card mb-3 p-3 text-xs">
     <p class="text-slate-600 mb-2">
       <b class="text-slate-800">${pagados.length}</b> de ${rows.length} (${pct}%) llegaron por <b>pauta</b>
-      · <b class="text-slate-800">${rows.length - pagados.length}</b> orgánicos${
+      · <b class="text-slate-800">${rows.length - pagados.length}</b> no pagados (orgánico · referral · directo)${
         huerfanos.length
           ? ` · <b class="text-slate-800">${huerfanos.length}</b> sin dueño${
               pagadosHuerfanos.length
@@ -293,11 +306,10 @@ function originBar(rows) {
           : ""
       }
     </p>
-    <div class="mb-1">${fuentes}${
-      rows.length - pagados.length
-        ? `<span class="badge badge-neutral opacity-60">orgánico ${rows.length - pagados.length}</span>`
-        : ""
-    }</div>
+    <div class="mb-1">${fuentes}${[...porSesion.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, n]) => `<span class="badge badge-neutral opacity-60 mr-1" title="no pagado · sesión registrada por GHL">${escape(k)} ${n}</span>`)
+      .join("")}</div>
     ${
       top.length
         ? `<p class="text-slate-500">Campañas con más leads: ${top

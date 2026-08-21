@@ -1,0 +1,10 @@
+{
+  "id": "ventas-diarias",
+  "name": "Ventas diarias · DG (mes)",
+  "component": "ventas-diarias",
+  "source": "ventas_diarias",
+  "params": { "project": "David Guerrero" },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-08-21T16:40:00.000Z"
+}

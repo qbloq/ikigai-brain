@@ -66,15 +66,26 @@ read -r -d '' BODY <<'SQL' || true
 WITH params AS (
   SELECT :'proj'::uuid AS pid, :'d1'::date AS d1, :'d2'::date AS d2, :meses::int AS meses
 ),
--- Los leads de la VENTANA con su atribución resuelta (utm de custom_fields,
--- misma resolución de bash/crm/leads.sh) y su etapa actual.
+-- Los leads de la VENTANA con su atribución resuelta y su etapa actual.
+-- Atribución (desde 2026-08-21, dos fuentes, misma regla en angulos.sh y
+-- leads.sh): la NATIVA de GHL que Marketico persiste en crm_contacts
+-- (attr_campaign_id → campaigns.name, último toque, la que trae el navegador
+-- del lead) y, de fallback, el utm_campaign del formulario (custom_fields).
+-- La de GHL cubre más (agosto DG: 169 vs 143 de 248) porque las campañas de
+-- formulario (WhatsApp/lead form) no pasan por landing y no llenan el custom
+-- field; las dos se guardan aparte para la conciliación.
 lw AS (
   SELECT o.id, o.status, o.created_date::date AS creada, c.ghl_contact_id,
-         coalesce(st.name,'—') AS etapa, utm.src, utm.camp
+         coalesce(st.name,'—') AS etapa, utm.src,
+         coalesce(ca.name, utm.camp) AS camp,
+         ca.name AS camp_ghl, utm.camp AS camp_form,
+         coalesce(c.last_attribution_source, c.attribution_source)->>'sessionSource' AS sesion_ghl,
+         CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN c.attr_ad_id END AS ad_id
   FROM crm_opportunities o
   JOIN params ON o.project_id = params.pid
              AND o.created_date::date BETWEEN params.d1 AND params.d2
   LEFT JOIN crm_contacts c ON c.id = o.contact_id
+  LEFT JOIN campaigns ca ON ca.id = c.attr_campaign_id
   LEFT JOIN crm_pipelines pl ON pl.id = o.pipeline_id
   LEFT JOIN LATERAL (
     SELECT s->>'name' AS name FROM jsonb_array_elements(pl.stages) s
@@ -162,6 +173,7 @@ SELECT json_build_object(
      'proyecto', :'projname', 'desde', :'d1', 'hasta', :'d2',
      'generado', to_char(now() AT TIME ZONE 'America/Bogota','YYYY-MM-DD HH24:MI'),
      'regla_leads', 'los leads salen del CRM (created_date en ventana), no de ningún Excel',
+     'regla_atribucion', 'campaña del lead = atribución nativa de GHL (crm_contacts.attr_campaign_id, último toque) con fallback al utm_campaign del formulario; anuncio = attr_ad_id; las dos fuentes se concilian en crm.atribucion_fuentes',
      'regla_dinero', 'la verdad del dinero es installments/payment_plans; lo de Meta viaja como *_pixel',
      'regla_monedas', 'CAC real y ROAS real solo contra pauta USD; la pauta COP se reporta aparte sin ratios'),
 
@@ -185,6 +197,19 @@ SELECT json_build_object(
      'leads',      (SELECT count(*) FROM lw),
      'pagados',    (SELECT count(*) FROM lw WHERE camp IS NOT NULL),
      'organicos',  (SELECT count(*) FROM lw WHERE camp IS NULL),
+     'con_anuncio', (SELECT count(*) FROM lw WHERE ad_id IS NOT NULL),
+     'atribucion_fuentes', (SELECT json_build_object(
+         'con_form', count(*) FILTER (WHERE camp_form IS NOT NULL),
+         'con_ghl',  count(*) FILTER (WHERE camp_ghl IS NOT NULL),
+         'iguales',  count(*) FILTER (WHERE camp_form IS NOT NULL AND camp_ghl IS NOT NULL AND lower(camp_form) = lower(camp_ghl)),
+         'distintas',count(*) FILTER (WHERE camp_form IS NOT NULL AND camp_ghl IS NOT NULL AND lower(camp_form) <> lower(camp_ghl)),
+         'solo_ghl', count(*) FILTER (WHERE camp_form IS NULL AND camp_ghl IS NOT NULL),
+         'solo_form',count(*) FILTER (WHERE camp_form IS NOT NULL AND camp_ghl IS NULL),
+         'ninguna',  count(*) FILTER (WHERE camp_form IS NULL AND camp_ghl IS NULL)) FROM lw),
+     'sin_atribucion_por_sesion', (SELECT coalesce(json_agg(t ORDER BY t.n DESC),'[]'::json) FROM (
+         SELECT coalesce(sesion_ghl,'(sin atribución en GHL)') AS sesion, count(*) AS n,
+                count(*) FILTER (WHERE status='won') AS ganadas
+         FROM lw WHERE camp IS NULL GROUP BY 1) t),
      'ganadas',    (SELECT count(*) FROM lw WHERE status = 'won'),
      'por_etapa',  (SELECT coalesce(json_agg(t ORDER BY t.n DESC),'[]'::json) FROM (
                       SELECT etapa, count(*) AS n,
@@ -286,7 +311,10 @@ SELECT json_build_object(
             round(coalesce(sum(lc.original_amount),0),2) AS valor_contrato,
             round(coalesce(sum(lc.cash),0),2) AS cash,
             max(sp.spend) AS spend, max(sp.cur) AS cur,
-            round(max(sp.spend) / nullif(count(*),0), 2) AS cpl_real
+            round(max(sp.spend) / nullif(count(*),0), 2) AS cpl_real,
+            count(*) FILTER (WHERE l.camp_ghl IS NOT NULL) AS leads_ghl,
+            count(*) FILTER (WHERE l.camp_ghl IS NULL AND l.camp_form IS NOT NULL) AS leads_solo_form,
+            count(*) FILTER (WHERE l.ad_id IS NOT NULL) AS leads_con_anuncio
      FROM lw l
      LEFT JOIN lw_cash lc ON lc.id = l.id
      LEFT JOIN sp ON sp.name = l.camp
@@ -431,6 +459,14 @@ fila("ventas: CRM vs caja (misma cohorte)", "ganadas CRM de leads de la ventana"
      "peras con peras: el resto de los planes son rezagados (" + str(origen.get("won_lead_previo", "—"))
      + " de leads previos), opps aún abiertas (" + str(origen.get("opp_abierta", "—"))
      + ", higiene CRM) o sin opp (" + str(origen.get("sin_opp", "—")) + ")")
+af = obj.get("crm", {}).get("atribucion_fuentes") or {}
+if af:
+    fila("atribución: formulario vs GHL", "leads con utm_campaign del formulario", af.get("con_form"),
+         "leads con campaña por atribución de GHL", af.get("con_ghl"),
+         "dos fuentes del mismo hecho: coinciden " + str(af.get("iguales", "—")) + ", difieren " + str(af.get("distintas", "—"))
+         + " (último toque de GHL vs lo que llenó el form), solo GHL " + str(af.get("solo_ghl", "—"))
+         + " (campañas de formulario sin landing), solo form " + str(af.get("solo_form", "—"))
+         + ", ninguna " + str(af.get("ninguna", "—")) + " = orgánico/directo; la campaña del lead usa GHL con fallback al form")
 fila("caja: contrato vs cobro", "valor contrato (planes)", v.get("valor_contrato"),
      "cash cobrado", cash,
      "lo firmado vs lo que entró; la brecha es cartera por cobrar de las ventas de la ventana")

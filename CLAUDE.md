@@ -43,6 +43,7 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 | `update_task_criteria.sh --crit <id\|prefix> [--text T] [--method llm\|manual\|automated\|test\|attested] [--required true\|false] [--category C]` / `--add --output <id> --text T` / `--delete --crit <id> [--cascade]` **[WRITE]** | Edit the acceptance criteria of an output — the other half of the work contract. Twin of `update_task_io.sh`: one op per call, one txn, before/after, `--dry-run`, `--json` (emits `task_id`). Ids resolve by **prefix** (ambiguous = error) because this one is driven from the conversation, not the viz. A criterion hangs off an **output** (`output_id`), never off the task. Deleting one that already has attestations is blocked without `--cascade` — cascading erases the human's evidence. ⚠️ `is_met`/`verified_*` are **not** editable here: verification state is earned by attestation, never typed. |
 | `run_io_query.sh <io_id\|prefix> [--limit N] [--json]` | Execute the SQL persisted in one IO row's binding (`reference.query`) and print the result — the concrete data of a `sql_query` artifact (its sql resolver). Read-only + `statement_timeout=10s` + row cap (default 500). Only runs SQL with provenance (already persisted in the DB row); accepts nothing inline. Feeds the viz `io_query` source. |
 | `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. **Provenance:** `source_meeting` (id/prefix→FK), `source_url`/`source_external_id` (Notion), `source_type` (auto-inferred) populate the tasks provenance columns. See `-h`. |
+| `apply_contract.sh <id\|prefix> <contract.json\|-> [--dry-run] [--json]` **[WRITE]** | Aplicar un contrato IO (inputs + outputs + criterios + tag de arquetipo) a una tarea que **ya existe y no tiene ninguno** — el gemelo de `create_task.sh` para las tareas nacidas sin contrato (hoy: las 53 que entraron desde la plataforma PM, `source_type='other'` + `source_external_id`). Misma forma de contrato que `create_task.sh` sin la cabecera; `archetype`+`slots` sin inputs/outputs instancia la plantilla del arquetipo, y un `{slot}` sin valor queda **literal** (nombra lo que falta; el «pendiente» de `materialize_io.sh` lo pierde — brief de slots §6.2). `{proyecto}` se llena solo con el proyecto de la tarea. Se niega si la tarea ya tiene IO (rellena el hueco, nunca reescribe: eso es `materialize_io.sh --replace`). Una txn, before/after, deja comentario de rastro. Nació 2026-08-21 para el backfill de las tareas PM (`docs/io-backfill-pm-2026-08-21.md`). |
 | `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. ⚠️ **Re-tagging moves the pointer, it does NOT rewrite the task's IO contract** — the inputs/outputs/criteria stay exactly as the OLD template left them, so a re-tagged task keeps criteria describing a different activity until its contract is re-instantiated. |
 | `link_external.sh <id> --external <id-ext> [--url URL] [--sistema N] [--nota "…"] [--dry-run] [--json]` **[WRITE]** | **Vincular sin fusionar** — el tercer desenlace que le faltaba al cruce. Escribe `source_external_id` (+`source_url`) sobre una tarea que YA existe: dos tareas que describen el mismo trabajo, cada una nacida en su sistema, donde no hay nada que fusionar porque la del cerebro ya está completa. Hasta 2026-08-20 eso solo cabía en prosa (`cruce.resolucion` o un comentario), y la prosa no la lee ningún chequeo: **13 tareas abiertas en PM figuraban como «sin representación»** estando todas cubiertas. ⚠️ **No toca `source_type`**: eso dice dónde NACIÓ la tarea, no con qué sistema sincroniza — una nacida de un acta y emparejada con PM sigue siendo `meeting`. Se niega si la tarea ya tiene otro id externo (una columna no es una lista: el caso muchos-a-uno pide tabla de enlaces) o si el id ya está en otra tarea **viva** (una cancelada lo conserva como procedencia y no bloquea). Re-vincular al mismo valor es idempotente. |
 | `cancel_task.sh <id> [--into <id>] [--reason "…"]` **[WRITE]** | Cancel a task (`status='cancelled'`), optionally recording a merge into another (`--into`) with an auditable comment trail on both. Nothing is deleted. `--dry-run` to preview. Use for dedup/merges (e.g. cross-project duplicates the per-project dedup misses). |
@@ -342,6 +343,17 @@ todos con el mismo contrato (entra audio, sale texto diarizado `Speaker A: …`
 pasada por fd, nunca argv; cobra por minuto de audio — transcribe UNA vez, sin
 reintentos).
 
+## Video domain — cosas con ffmpeg ([bash/video/](bash/video/))
+
+Piezas locales y sin estado (ni `.env` ni Postgres): entra un archivo, sale un
+archivo; la composición con Drive/DB vive en los dominios que las usan. Hoy:
+`frame.sh <video> --at T [--out F] [--force] [--json]` — UN fotograma en un
+instante (`T` = segundos o `HH:MM:SS[.ms]`), seek preciso (no el keyframe más
+cercano), la extensión de `--out` decide jpg/png/webp, y pedir más allá del
+final es error (ffmpeg calla, el script no). Reglas compartidas con
+`bash/audio/`: `-nostdin` siempre, nunca pisa sin `--force`. Detalle en
+[bash/video/README.md](bash/video/README.md).
+
 ## Ads domain — Meta pauta ([bash/ads/](bash/ads/))
 
 The paid-media view (S3 — the Media Buyer gap the Ejecutivo role absorbs).
@@ -360,13 +372,16 @@ are already in currency units (not cents). Default window: current month
 | `campaigns.sh [--status S] [--active] [--project N] [--account ID] [--from D] [--to D] [--with-spend] [--limit N]` | List campaigns with project, currency, status, daily budget, window spend/purchases/ROAS and `last_data`. Ordered by spend. |
 | `ad_stats.sh [--by campaign\|adset\|ad\|day\|week\|project\|account] [--project N] [--account ID] [--campaign TOK] [--from D] [--to D] [--limit N]` | Aggregate performance: spend, impressions, clicks, CTR, CPC, CPM, LPV, purchases, purchase value, ROAS, CPA. `--campaign` (id prefix or name fragment) pairs with `--by adset`/`--by ad`. |
 | `ad_detail.sh <campaign-id\|prefix\|name> [--from D] [--to D] [--days N]` | One campaign end-to-end: header (account/project/budget), window totals, per-adset breakdown, top-15 ads by spend, daily series (last N days with data, default 14). `--json` = one object `{campaign, totals, adsets[], ads[], daily[]}` (window default: whole life). |
+| `anuncios.sh --project N [--from D] [--to D] [--tipo adquisicion\|marca\|todos] [--campaign TOK] [--min-spend X] [--limit N]` | **Una fila por ANUNCIO** (el creativo como unidad — lo que el equipo mira en la «plataforma de Bala»): campaña/adset/objetivo, `tipo`, estado, spend, impr, clics al link, CTR/CPC/CPM, LPV + tasa, plays y cuartiles, **hook = vistas 25%/plays · hold = 75%/25% · fin = 100%/plays** (⚠️ `video_views` de Meta aquí es autoplay ≈ impresiones, no 3 s: por eso el hook va por cuartil), **compras/valor/ROAS del PIXEL** y, al lado, **la caja REAL por anuncio**: leads (oportunidades del CRM de la ventana atribuidas por `crm_contacts.attr_ad_id` — la atribución nativa de GHL que Marketico persiste desde 2026-08-21 a pedido nuestro, `docs/marketico-pedido-atribucion-ghl.md`; último toque, `url.ad_id` antes que `utmTerm`), won, planes ≤60 d del lead, contrato, cash, **ROAS real** (solo USD), CPL real, CAC, y tres columnas de cobertura repetidas por fila (`cob_leads_total/con_ad/ad_en_ventana`: ~70% de los leads del mes traen ad; el resto es orgánico/directo y no se reparte). CPA, y la **miniatura** desde la caché local. `tipo` = marca si el objetivo de campaña es de awareness/engagement/likes/video **o** si LPV ≤ 2% de los clics (≥50): «no llevan tráfico a la landing» medido, no por nombre — así las campañas de seguidores con objetivo TRAFFIC caen en marca. Read-only. Fuente viz `ad_anuncios` → page `anuncios` (UI ejecutivo `anuncios`: tarjetas con creativo + tabla gemela, selector tipo/orden; KPI «Leads atribuidos N/M» declara la cobertura para que el ROAS real no se lea como exhaustivo). |
+| `angulos.sh --project N [--from D] [--to D] [--min-spend X] [--sin-web]` | **Ángulos ganadores → titulares**, un objeto: `campanas` (ranking por CAJA con la **atribución de GHL** — `crm_contacts.attr_campaign_id`, último toque — y fallback al `utm_campaign` del form, mismas CTEs de `embudo.sh`: leads, won, planes ≤60 d, contrato, cash, CPL/CAC/ROAS real, más `leads_ghl`/`leads_solo_form`; la fila «sin atribución» es orgánico/referral/directo y **no se reparte**; `{{campaign.name}}` literal se marca como UTM roto), `angulos` (familias de **copy** del anuncio agrupadas por texto — el ángulo con que se compró el clic — con spend/LPV/hook/hold/compras pixel y **leads/planes/contrato/cash REALES = suma de los de sus anuncios** vía `anuncios.sh` (`attr_ad_id`); hasta el 2026-08-21 era `cash_estimado` proporcional al gasto y se declaraba), y `landings` (a dónde manda la pauta, con el **H1 leído en vivo** — curl, tolerante: si falla viene `null` + error). Nació del meeting `b3f06835` («testear titulares del VSL»): pone juntos el ángulo que compra el clic y el titular que lo recibe, para que el quiebre de message-match se vea. Read-only. Fuente viz `ad_angulos` → page `angulos` (UI ejecutivo `angulos-titulares`, cuyos **titulares propuestos viven en `params.titulares` del spec** — copy curado, se cambia re-publicando; el testeo se abre con `testeo_abrir.sh --step titular`, nunca desde la página). |
+| `creativos_sync.sh --project N [--from D] [--to D] [--min-spend X] [--dry-run] [--json]` **[WRITE local]** | Llena/refresca la caché de miniaturas `data/sqlite/ads_creativos.db` desde el **Graph API** (`/?ids=…&fields=creative{thumbnail_url,image_url}`, lotes de 50) con el user token de `identities` (provider `facebook*`, el vigente de vencimiento más lejano; por header, jamás argv ni impreso). Existe porque `ads.ad_creative_id` está vacío en toda la tabla. Cerca por rol (`bash/lib/acceso.sh`, dominio `meta`). Las URLs de Meta expiran → cada corrida refresca todos los anuncios de la ventana (110 ads = 3 GETs). **Desde 2026-08-21 trae también el COPY del creativo** (`titulo`/`cuerpo`, de `title`/`body` u `object_story_spec`) **y el `enlace`** (la landing del anuncio) — `anuncios.sh --json` los emite y `angulos.sh` los agrupa; cachés viejas migran solas (ALTER). Solo GET a Meta; la única escritura es la sqlite local. **En el publicador corre solo**: pm2 `creativos-cron` (diario 10:30 UTC = 05:30 Bogotá, `--project "David Guerrero"`; la caché es local a cada máquina). |
 
 Known data caveat: Meta-reported `purchase_value` on the Andrea (COP) account
 has junk magnitudes (~663M COP for 4 purchases in June) — treat COP ROAS as
 unreliable until the pixel currency is fixed; cash truth lives in
 `installments`/`economics_ledger`.
 
-Viz sources: `ad_campaigns`, `ad_stats`, `ad_detail` (object).
+Viz sources: `ad_campaigns`, `ad_stats`, `ad_detail` (object), `ad_anuncios`, `ad_angulos` (object).
 
 ## CRM domain — GHL pipeline ([bash/crm/](bash/crm/))
 
@@ -410,8 +425,8 @@ artifact.
 | Script | Use it to… |
 |--------|-----------|
 | `pipeline.sh [--by stage\|status\|month\|closer] [--list] [--project N] [--status S] [--stage FRAG] [--from D] [--to D] [--limit N]` | Default `--by stage`: the pipeline board in order with open/won/lost/abandoned counts + won value per stage. `--by month` = cohorts (created, won, win %, won value). `--by closer` = per-closer effectiveness by opp (complements `call_stats.sh`, which is per-call). `--list` = raw opportunity rows (lead, stage, status, value, assigned). |
-| `leads.sh [--dueno LISTA] [--sin-dueno] [--project N] [--stage FRAG] [--from D] [--to D] [--dias-min N] [--pagado\|--organico] [--limit N]` | The leads as ROWS, with owner **and attribution**: resolves `utm_source`/`utm_campaign` from the contact's `custom_fields` against `crm_custom_fields`, so each row says whether the lead came from paid media (and which campaign) or an organic form. `--dueno` takes a comma list of name fragments plus the token `sin-dueno` for the orphans. Supersedes `pipeline.sh --list`. |
-| `opp_detail.sh <id\|prefix>` | One opportunity + its contact as a single JSON object, with the GHL custom fields resolved to their question — the qualification survey the lead answered plus the `utm_*`. Feeds the viz detail panel. |
+| `leads.sh [--dueno LISTA] [--sin-dueno] [--project N] [--stage FRAG] [--from D] [--to D] [--dias-min N] [--pagado\|--organico] [--limit N]` | The leads as ROWS, with owner **and attribution from two sources** (desde 2026-08-21): la **nativa de GHL** que Marketico persiste en `crm_contacts` (`attr_campaign_id`/`attr_ad_id`, último toque — campaña y **anuncio** de Meta resueltos contra `campaigns`/`ads`) con fallback al `utm_source`/`utm_campaign` del formulario (`custom_fields` contra `crm_custom_fields`). Cada fila trae `origen` (utm_source si hay; si no `fb` para pauta sin form, o la **sesión** que registró GHL — Social media / Referral / Direct traffic — para lo no pagado: el orgánico deja de ser un balde ciego), `campana`, `anuncio`, `formulario` (`ghl_source`). `--pagado`/`--organico` = con/sin campaña por cualquiera de las dos fuentes. `--dueno` takes a comma list of name fragments plus the token `sin-dueno` for the orphans. Supersedes `pipeline.sh --list`. |
+| `opp_detail.sh <id\|prefix>` | One opportunity + its contact as a single JSON object, with the GHL custom fields resolved to their question — the qualification survey the lead answered plus the `utm_*` — **and the `atribucion` block** (desde 2026-08-21): la atribución nativa de GHL del contacto con sesión, campaña y anuncio de Meta resueltos, `utm_content`, `placement`, referrer, formulario de entrada, fecha real de alta en GHL y el primer toque si difiere del último. Feeds the viz detail panel (bloque «Por dónde entró (GHL)»). |
 | `facets.sh [--project N] [--from D]` | The universe of owners and stages with counts (`{tipo,valor,n}`) — reference data that populates the leads filters. Kept separate on purpose: derived from already-filtered rows, a filter's options would close in on themselves. |
 
 ## GHL domain — el CRM en la fuente ([bash/ghl/](bash/ghl/))
@@ -484,6 +499,7 @@ estados que ya cambiaron.
 
 | Script | Use it to… |
 |--------|-----------|
+| `cobertura.sh [--json] [--estricto] [--horas N]` | **El chequeo del invariante PM↔cerebro**, escrito una vez. Read-only; se corre DESPUÉS de los dos sync (avisa si algún espejo pasa de `--horas`, default 24). Existe porque este invariante se midió mal tres veces el 2026-08-20 por el mismo motivo: hay **dos vías de enlace** —`tasks.source_external_id` y `cruce.ce_id`— y mirar solo una inventa huecos. Reporta **[A]** abiertas en PM sin nada vivo acá, **clasificadas**: `hueco` (hay que crearla) · `decidida` (su fila del cruce ya está resuelta — enlace en prosa, no hueco) · `muchos-a-uno` (la tarea que la cubre ya tiene otro `source_external_id`: pide tabla de enlaces, no `link_external.sh`). Y **[B]** abiertas acá con su gemela PM cerrada → `complete_task.sh`. ⚠️ Una tarea con **varias** gemelas en PM sigue abierta si **alguna** sigue abierta. `--estricto` sale 1 solo con huecos reales (para cron). |
 | `sync_cerebro.sh [--dry-run] [--no-cruce] [--json]` **[WRITE local]** | El **espejo** del anterior, para el otro lado: refresca `cerebro_tareas` desde Postgres (upsert por prefijo de 8) y con él las copias `ce_titulo`/`ce_estado`/`ce_proyecto` de las filas **no resueltas** de `cruce`. Existe porque al cruce se le había construido refresco a UNA sola mitad: medido el 2026-08-20, **140 de 205 filas mentían** sobre el lado cerebro (94 decían `pending` de tareas ya canceladas), así que la UI ofrecía como candidatas vivas cosas cerradas hacía horas. Solo LEE Postgres (`psql_ro`) — no cierra, no cancela, no crea. Registra la corrida en `cerebro_sync`. ⚠️ **No recalcula el cruce**: veredictos y pares salieron de una pasada semántica hecha una vez; lo nacido después del snapshot sale listado como «sin fila en el cruce», no gana fila solo. Un prefijo de 8 compartido por dos tareas se excluye y se reporta antes que adivinar. |
 | `sync_tareas.sh [--dry-run] [--limit N] [--no-cruce] [--no-snapshot] [--json]` **[WRITE local]** | Refrescar el espejo `tareas` desde el API (upsert por id, una txn) y, con él, las copias denormalizadas `pm_titulo`/`pm_estado`/`pm_asignado` de las filas **no resueltas** de `cruce`. Guarda el JSON crudo en `data/pm-platform/tareas-<fecha>.json` y registra la corrida en `pm_sync`. |
 
@@ -530,6 +546,44 @@ llamadas del día resueltas por closer con la traza CRM de bash/calls/),
 idempotente por `(escenario,ref)` en la sqlite `closers_ops`), y los tres
 `escenario_*.sh` **[WRITE→WhatsApp]** que el cron dispara. Doc completo, con
 plantillas Meta y pendientes: `docs/closers-whatsapp.md` (operador).
+⚠️ **El canal como problema de negocio** —capacidad, bloqueos, el pivote a
+WhatsApp como entrada del embudo y los cambios de Meta de octubre— está
+rastreado desde las actas en `docs/whatsapp-canal-brief.md`. Leerlo ANTES
+de tocar rotación de números, verificación paga o coexistencia: el equipo
+viene resolviendo la capacidad multiplicando números, que es justo lo que
+causó los 3 bloqueos de agosto.
+
+## Onboarding domain — primer contacto por WhatsApp ([bash/onboarding/](bash/onboarding/))
+
+El opt-in inicial del equipo al Cerebro por WhatsApp (mismo WABA que
+`bash/closers/`, 690499003502578) — **nunca broadcast**: un destinatario por
+corrida, a quién y cuándo lo decide el humano. `enviar_onboarding.sh --para
+<nombre> [--gancho "…"] [--grupo equipo|closer] [--dry-run] [--json]`
+**[WRITE→WhatsApp]** agrupa por rol (team_members/team_roles): **closer** ya
+tiene ventana abierta con Iki a diario → texto de sesión +
+`--fallback-plantilla onboarding_closer`; **equipo** (primer contacto real,
+nunca les llegó nada de este número) → siempre plantilla `onboarding_equipo`
+(un texto de sesión aquí lo acepta Meta y falla después por webhook, no al
+instante — ver `docs/closers-whatsapp.md`). El gancho (`{{2}}`) es genérico
+por defecto, `--gancho` lo personaliza (p.ej. Juan Camilo: sus dos assets ya
+vivos, dashboard del embudo + testeos VSL/pauta). Idempotente vía
+`bash/closers/enviar.sh` (`escenario=onboarding-cerebro`, `ref=<nombre>`).
+`plantilla_crear.sh --nombre N --categoria UTILITY|MARKETING --cuerpo "…{{1}}…"
+[--ejemplos "a|b"] [--dry-run] [--json]` **[WRITE→Meta]** crea una plantilla
+nueva en el WABA (sin upsert; queda PENDING hasta que Meta la revise, cuenta
+con días).
+
+## ManyChat domain — Instagram DMs en la fuente ([bash/manychat/](bash/manychat/))
+
+Sonda **read-only** contra `api.manychat.com` (patrón `bash/vturb/`: token por
+header, jamás argv ni impreso). Es la entrada del **embudo orgánico** (setters →
+leads orgánicos → cierres), que `embudo.sh` hoy no ve más allá de `crm.organicos`.
+Tokens en `.env` como `MANYCHAT_TOKEN*`; hay **dos cuentas de Instagram**
+distintas a nombre de David Guerrero, las dos activas — la **operación**
+(setters, audios de calificación/agenda, comentarios en reels, y donde aparecen
+los leads ganados del CRM) es la `3175…`; la `5001…` es la secundaria de
+contenido/YouTube. Evidencia y cómo se distinguieron: [bash/manychat/README.md](bash/manychat/README.md).
+`auth_status.sh [--json]` dice a qué página responde cada token.
 
 ## Notion domain — read-only extraction ([bash/notion/](bash/notion/))
 
@@ -573,8 +627,10 @@ pauta, costos, reparto). Read-only; feeds the viz `dashboard` source (emits one 
 
 `embudo.sh --project NAME [--from D] [--to D] [--meses N]` — **EL CRUCE** del
 embudo completo en un objeto: pauta (Meta) → VSL (VTurb **en vivo**, agregado +
-por video) → leads/etapas con atribución UTM (CRM) → llamadas (meetings, reloj
-literal) → ventas/cash (payment_plans/installments) → serie mensual de cuotas
+por video) → leads/etapas con atribución por **dos fuentes** (la nativa de GHL en
+`crm_contacts.attr_*` con fallback al UTM del form; `crm.atribucion_fuentes`
+las concilia y `crm.sin_atribucion_por_sesion` desglosa lo no pagado) →
+llamadas (meetings, reloj literal) → ventas/cash (payment_plans/installments) → serie mensual de cuotas
 (cobrado/día total y solo n≥2, % de planes pagando, empiezan/dejan) →
 `atribucion` por campaña (spend×leads×cash, guardia temporal +60d) →
 `conciliacion` (handoffs entre fuentes con delta) → `series` mensuales
@@ -584,7 +640,15 @@ la verdad del dinero es la caja (pixel viaja como `*_pixel`); ratios solo
 contra pauta USD. Nació del meeting `b3f06835` (2026-08-19). Read-only; feeds
 la fuente viz `embudo` (cache 60s por etiqueta con el API externo) y la UI de
 rol ejecutivo `embudo-cruce` (page `embudo`; las **metas** — p.ej. ROAS ≥3.5 —
-van en `params.metas` del spec, no en código).
+van en `params.metas` del spec, no en código). Desde 2026-08-21 el spec lleva
+también **`metas.salud`**: la lista de benchmarks por tasa de paso (`{metrica,
+ruta, bueno, excelente, dir, unidad, escala}`) que la página pinta como bloque
+«Salud del embudo vs benchmarks» (excelente · bueno · mejorable). La `ruta` es
+punteada con la **misma semántica que `testeo_abrir.sh --metrica`**
+(`pauta.0.ctr`, `vsl.total.tasa_play`) y admite un cociente `a / b` con
+`escala` para tasas que el script no emite calculadas. Son referencias (hoy:
+high-ticket infoproductos, alineación DG 2026-08-20), no metas de la org —
+calibrar con la serie propia re-publicando el spec.
 
 ## Testeos domain — el histórico de testeos del embudo ([bash/testeos/](bash/testeos/))
 
@@ -627,6 +691,7 @@ mirror `bash/metrics/dashboard.sh` (the verified cash-collected KPI model).
 | `cobranza.sh [--overdue] [--upcoming N] [--project N] [--customer FRAG] [--summary] [--all] [--limit N]` | Uncollected installments (Scheduled/Partial/Overdue) with days overdue + aging bucket, computed from `due_date` (the `Overdue` status flag is NOT maintained). `--summary` = aging buckets per project (counts + amounts). |
 | `comisiones.sh [--status S] [--person FRAG] [--project N] [--from D] [--to D] [--by status\|person\|project\|month] [--limit N]` | Commission payouts with person resolved (user→persons, contractor fallback) and review state — the approval queue (pending→approved→paid). Row list puts pending first; `--by` aggregates with pending counts/amounts. |
 | `cashflow.sh [--by month\|type\|month-type] [--project N] [--from D] [--to D]` | Economics ledger: entradas (revenue) vs opex/comisiones/reparto and neto, by month (default), type, or month×type. |
+| `ventas_diarias.sh --project N [--from D] [--to D]` | **La serie diaria**: una fila por día (termina HOY, no inventa días) con caja (nuevas = cuota 1 / cuotas n≥2, por `payment_date` día Bogotá), pauta **solo USD** del día, `roas_dia` = cash/pauta del MISMO día (ritmo, no atribución), leads y ganadas CRM, planes iniciados + contrato. Default mes en curso. Nació del hueco #1 del contraste con el dashboard comercial (2026-08-21): el Cerebro solo tenía series mensuales. Feeds la fuente viz `ventas_diarias` → page `ventas-diarias` (UI ejecutivo `ventas-diarias`: KPIs mejor día / promedio / por día de la semana + cash vs pauta diario). |
 
 Data caveats: ~46 unpaid installments hang off plans with NULL `project_id`
 (show as project `—` — hygiene queue); ledger history starts 2026-03.
