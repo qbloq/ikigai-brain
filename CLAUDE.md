@@ -546,6 +546,12 @@ llamadas del día resueltas por closer con la traza CRM de bash/calls/),
 idempotente por `(escenario,ref)` en la sqlite `closers_ops`), y los tres
 `escenario_*.sh` **[WRITE→WhatsApp]** que el cron dispara. Doc completo, con
 plantillas Meta y pendientes: `docs/closers-whatsapp.md` (operador).
+⚠️ **El canal como problema de negocio** —capacidad, bloqueos, el pivote a
+WhatsApp como entrada del embudo y los cambios de Meta de octubre— está
+rastreado desde las actas en `docs/whatsapp-canal-brief.md`. Leerlo ANTES
+de tocar rotación de números, verificación paga o coexistencia: el equipo
+viene resolviendo la capacidad multiplicando números, que es justo lo que
+causó los 3 bloqueos de agosto.
 
 ## Onboarding domain — primer contacto por WhatsApp ([bash/onboarding/](bash/onboarding/))
 
