@@ -290,6 +290,11 @@ function renderEmbudo(ui) {
     ])
   );
 
+  const sinAttr = (crm.sin_atribucion_por_sesion || []);
+  const tAtrFoot = sinAttr.length
+    ? `<p class="text-xs mt-1" style="color:var(--text-3)">«Sin atribución» por sesión registrada en GHL: ${sinAttr.map((s) => `${escape(String(s.sesion))} <b>${num(s.n)}</b>${Number(s.ganadas) ? ` (${num(s.ganadas)} won)` : ""}`).join(" · ")} — es el embudo orgánico: canales, módulos de la serie YT y caja en <a href="/u/embudo-organico" class="underline" style="color:var(--text-brand)">Embudo orgánico</a>.</p>`
+    : "";
+
   // --- conciliación entre fuentes ---
   const tConc = tbl(
     ["Handoff", "A", "B", "Traspaso", "Lectura"],
@@ -432,6 +437,7 @@ function renderEmbudo(ui) {
 
     ${section("Atribución por campaña", "los ángulos ganadores: qué campaña trae leads que COMPRAN, no solo leads — cash con guardia temporal de +60 días")}
     ${tAtr}
+       ${tAtrFoot}
     <p class="mt-2 text-xs" style="color:var(--text-3)">
       La fila «sin atribución» son leads sin UTM (orgánico, directo, o tracking roto). No se reparte
       entre campañas: si es grande, el problema es de instrumentación, y eso también es un dato.

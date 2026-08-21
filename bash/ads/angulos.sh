@@ -60,12 +60,15 @@ read -r -d '' BODY <<'SQL' || true
 WITH params AS (SELECT :'proj'::uuid AS pid, :'d1'::date AS d1, :'d2'::date AS d2),
 lw AS (
   SELECT o.id, o.status, o.created_date::date AS creada, c.ghl_contact_id,
-         coalesce(ca.name, utm.camp) AS camp, ca.name AS camp_ghl, utm.camp AS camp_form
+         coalesce(ca.name, caa.name, CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN '— pauta sin campaña resuelta (ad fuera de las cuentas mapeadas)' END, utm.camp) AS camp,
+         coalesce(ca.name, caa.name, CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN '— pauta sin campaña resuelta (ad fuera de las cuentas mapeadas)' END) AS camp_ghl, utm.camp AS camp_form
   FROM crm_opportunities o
   JOIN params ON o.project_id = params.pid
              AND o.created_date::date BETWEEN params.d1 AND params.d2
   LEFT JOIN crm_contacts c ON c.id = o.contact_id
   LEFT JOIN campaigns ca ON ca.id = c.attr_campaign_id
+  LEFT JOIN ads ad_ ON ad_.id = c.attr_ad_id AND c.attr_ad_id ~ '^[0-9]+$'
+  LEFT JOIN campaigns caa ON caa.id = ad_.campaign_id
   LEFT JOIN LATERAL (
     SELECT max(CASE WHEN cf.name = 'utm_campaign' THEN nullif(x->>'value','') END) AS camp
     FROM jsonb_array_elements(coalesce(c.custom_fields,'[]'::jsonb)) x

@@ -71,7 +71,7 @@ WITH params AS (SELECT :'proj'::uuid AS pid, :'d1'::date AS d1, :'d2'::date AS d
 base AS (
   SELECT o.id, o.status, o.created_date::date AS creada, c.ghl_contact_id,
          date_trunc('month', o.created_date)::date AS mes,
-         (ca.name IS NOT NULL OR utm.camp IS NOT NULL) AS pagado,
+         (ca.name IS NOT NULL OR utm.camp IS NOT NULL OR coalesce(c.attr_ad_id ~ '^[0-9]+$', false)) AS pagado,
          lower(coalesce(c.ghl_source,'')) AS form,
          coalesce(c.tags,'{}') AS tags,
          coalesce(coalesce(c.last_attribution_source, c.attribution_source)->>'sessionSource','(sin sesión)') AS sesion
@@ -157,7 +157,7 @@ SELECT json_build_object(
   'meta', json_build_object(
      'proyecto', :'projname', 'desde', :'d1', 'hasta', :'d2', 'meses', (SELECT meses FROM params),
      'generado', to_char(now() AT TIME ZONE 'America/Bogota','YYYY-MM-DD HH24:MI'),
-     'regla_organico', 'lead del CRM (created_date en ventana) sin campaña ni en la atribución nativa de GHL (crm_contacts.attr_campaign_id) ni en el utm_campaign del formulario — es «no pagado», no «llegó solo»',
+     'regla_organico', 'lead del CRM (created_date en ventana) sin campaña ni en la atribución nativa de GHL (crm_contacts.attr_campaign_id) ni en el utm_campaign del formulario, y sin ad_id de Meta — es «no pagado», no «llegó solo»',
      'regla_canal', 'canal = regex sobre el formulario de entrada (ghl_source) y, si no dice, sobre los tags del contacto (moduloNyt, leadmagnetN, lleno encuesta organico…); la sesión de GHL (Social media · Referral · Direct) va aparte',
      'regla_dinero', 'primer plan del contacto ≤60 d del lead; cash = cuotas pagadas (misma guardia de embudo.sh)',
      'regla_marca', 'pauta de marca = anuncios tipo=marca de anuncios.sh (objetivo de marca o LPV ≤2% de los clics); roas_vs_marca = cash orgánico / marca USD del mes — heurístico: el orgánico de hoy viene de seguidores de meses atrás y la marca no es su única causa'),
