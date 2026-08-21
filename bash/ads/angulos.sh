@@ -16,10 +16,12 @@
 #
 # Reglas que sostiene:
 #   - la caja es installments/payment_plans (pixel viaja como *_pixel);
-#   - la atribución es por utm_campaign = nombre de campaña (el CRM no guarda
-#     utm_content → no hay caja por ANUNCIO; por anuncio solo hay Meta). Por
-#     eso `cash_estimado` de una familia de copy se reparte proporcional al
-#     gasto dentro de cada campaña y se declara estimado;
+#   - la atribución por campaña es la NATIVA de GHL (crm_contacts.attr_campaign_id,
+#     último toque; Marketico la persiste desde 2026-08-21) con fallback al
+#     utm_campaign del formulario — misma regla que embudo.sh; y la caja por
+#     ANUNCIO es real: attr_ad_id → anuncios.sh (leads/planes/cash por ad), así
+#     que la caja de una familia de copy es la SUMA de la de sus anuncios, no
+#     un reparto proporcional (hasta el 21 era estimado y se declaraba);
 #   - el H1 de la landing se lee en vivo (curl, 10 s, tolerante): si la página
 #     no responde, `h1` viene null con el error declarado — nunca inventado.
 #
@@ -57,11 +59,13 @@ pid="$(resolve_project "$project")"; [[ -n "$pid" ]] || { echo "No project match
 read -r -d '' BODY <<'SQL' || true
 WITH params AS (SELECT :'proj'::uuid AS pid, :'d1'::date AS d1, :'d2'::date AS d2),
 lw AS (
-  SELECT o.id, o.status, o.created_date::date AS creada, c.ghl_contact_id, utm.camp
+  SELECT o.id, o.status, o.created_date::date AS creada, c.ghl_contact_id,
+         coalesce(ca.name, utm.camp) AS camp, ca.name AS camp_ghl, utm.camp AS camp_form
   FROM crm_opportunities o
   JOIN params ON o.project_id = params.pid
              AND o.created_date::date BETWEEN params.d1 AND params.d2
   LEFT JOIN crm_contacts c ON c.id = o.contact_id
+  LEFT JOIN campaigns ca ON ca.id = c.attr_campaign_id
   LEFT JOIN LATERAL (
     SELECT max(CASE WHEN cf.name = 'utm_campaign' THEN nullif(x->>'value','') END) AS camp
     FROM jsonb_array_elements(coalesce(c.custom_fields,'[]'::jsonb)) x
@@ -104,7 +108,9 @@ SELECT json_build_object(
             max(sp.spend) AS spend, max(sp.cur) AS cur, max(sp.lpv) AS lpv, max(sp.clics_link) AS clics_link,
             round(max(sp.spend) / nullif(count(l.id),0), 2) AS cpl_real,
             round(max(sp.spend) / nullif(count(lc.plan_id),0), 2) AS cac_real,
-            round(coalesce(sum(lc.cash),0) / nullif(max(sp.spend),0), 2) AS roas_real
+            round(coalesce(sum(lc.cash),0) / nullif(max(sp.spend),0), 2) AS roas_real,
+            count(l.id) FILTER (WHERE l.camp_ghl IS NOT NULL) AS leads_ghl,
+            count(l.id) FILTER (WHERE l.camp_ghl IS NULL AND l.camp_form IS NOT NULL) AS leads_solo_form
      FROM lw l
      LEFT JOIN lw_cash lc ON lc.id = l.id
      FULL JOIN sp ON sp.name = l.camp
@@ -112,6 +118,8 @@ SELECT json_build_object(
   'totales', json_build_object(
      'leads', (SELECT count(*) FROM lw),
      'leads_atribuidos', (SELECT count(*) FROM lw WHERE camp IS NOT NULL),
+     'leads_ghl', (SELECT count(*) FROM lw WHERE camp_ghl IS NOT NULL),
+     'leads_solo_form', (SELECT count(*) FROM lw WHERE camp_ghl IS NULL AND camp_form IS NOT NULL),
      'ganadas', (SELECT count(*) FROM lw WHERE status = 'won'),
      'planes', (SELECT count(plan_id) FROM lw_cash),
      'cash', (SELECT round(coalesce(sum(cash),0),2) FROM lw_cash),
@@ -148,22 +156,20 @@ def norm(t):
     t = re.sub(r"[^\w\sáéíóúñü]", " ", t)          # emojis/puntuación fuera
     return re.sub(r"\s+", " ", t).strip()[:80]
 fam = collections.OrderedDict()
-camp_spend = {c["campana"]: float(c.get("spend") or 0) for c in camps}
-camp_cash  = {c["campana"]: float(c.get("cash") or 0) for c in camps}
-camp_leads = {c["campana"]: int(c.get("leads") or 0) for c in camps}
 for a in ads:
     key = norm(a.get("cuerpo")) or f"(sin copy) {a.get('anuncio')}"
     f = fam.setdefault(key, {"gancho": None, "cuerpo": a.get("cuerpo"), "titulos": collections.Counter(),
         "anuncios": [], "spend": 0.0, "lpv": 0, "clics_link": 0, "impr": 0, "compras_pixel": 0, "valor_pixel": 0.0,
-        "hook_w": 0.0, "hold_w": 0.0, "w": 0.0, "campanas": collections.Counter(), "cash_estimado": 0.0, "leads_estimados": 0.0,
-        "landings": collections.Counter()})
+        "hook_w": 0.0, "hold_w": 0.0, "w": 0.0, "campanas": collections.Counter(),
+        "leads": 0, "won": 0, "planes": 0, "contrato": 0.0, "cash": 0.0, "landings": collections.Counter()})
     if f["gancho"] is None:
         first = next((ln.strip() for ln in (a.get("cuerpo") or "").splitlines() if ln.strip()), None)
         f["gancho"] = first or a.get("anuncio")
     sp = float(a.get("spend") or 0)
     f["anuncios"].append({"anuncio": a.get("anuncio"), "campana": a.get("campana"), "spend": a.get("spend"),
         "lpv": a.get("lpv"), "hook_pct": a.get("hook_pct"), "hold_pct": a.get("hold_pct"), "compras": a.get("compras"),
-        "cpa": a.get("cpa"), "miniatura": a.get("miniatura"), "enlace": a.get("enlace"), "estado": a.get("estado")})
+        "cpa": a.get("cpa"), "miniatura": a.get("miniatura"), "enlace": a.get("enlace"), "estado": a.get("estado"),
+        "leads": a.get("leads"), "planes": a.get("planes"), "cash": a.get("cash"), "roas_real": a.get("roas_real")})
     f["spend"] += sp; f["lpv"] += int(a.get("lpv") or 0); f["clics_link"] += int(a.get("clics_link") or 0)
     f["impr"] += int(a.get("impr") or 0); f["compras_pixel"] += int(a.get("compras") or 0); f["valor_pixel"] += float(a.get("valor_pixel") or 0)
     if a.get("hook_pct") is not None: f["hook_w"] += float(a["hook_pct"]) * sp; f["w"] += sp
@@ -171,10 +177,9 @@ for a in ads:
     if a.get("titulo"): f["titulos"][a["titulo"]] += 1
     f["campanas"][a.get("campana")] += 1
     if a.get("enlace"): f["landings"][a["enlace"]] += 1
-    cs = camp_spend.get(a.get("campana")) or 0
-    if cs > 0:   # reparto proporcional al gasto dentro de la campaña (declarado estimado)
-        f["cash_estimado"] += camp_cash.get(a.get("campana"), 0) * sp / cs
-        f["leads_estimados"] += camp_leads.get(a.get("campana"), 0) * sp / cs
+    # caja REAL del anuncio (anuncios.sh: leads del CRM con attr_ad_id → plan ≤60 d → cuotas)
+    f["leads"] += int(a.get("leads") or 0); f["won"] += int(a.get("won") or 0); f["planes"] += int(a.get("planes") or 0)
+    f["contrato"] += float(a.get("contrato") or 0); f["cash"] += float(a.get("cash") or 0)
 angulos = []
 for key, f in fam.items():
     angulos.append({
@@ -184,13 +189,15 @@ for key, f in fam.items():
         "hook_pct": r2(f["hook_w"] / f["w"]) if f["w"] else None, "hold_pct": r2(f["hold_w"] / f["w"]) if f["w"] else None,
         "compras_pixel": f["compras_pixel"], "valor_pixel": r2(f["valor_pixel"]),
         "cpa_pixel": r2(f["spend"] / f["compras_pixel"]) if f["compras_pixel"] else None,
-        "leads_estimados": r2(f["leads_estimados"]), "cash_estimado": r2(f["cash_estimado"]),
-        "roas_real_estimado": r2(f["cash_estimado"] / f["spend"]) if f["spend"] else None,
+        "leads": f["leads"], "won": f["won"], "planes": f["planes"], "contrato": r2(f["contrato"]), "cash": r2(f["cash"]),
+        "cpl_real": r2(f["spend"] / f["leads"]) if f["leads"] else None,
+        "cac_real": r2(f["spend"] / f["planes"]) if f["planes"] else None,
+        "roas_real": r2(f["cash"] / f["spend"]) if f["spend"] else None,
         "campanas": [k for k, _ in f["campanas"].most_common()],
         "landings": [k for k, _ in f["landings"].most_common()],
         "anuncios": f["anuncios"],
     })
-angulos.sort(key=lambda x: (-(x["cash_estimado"] or 0), -(x["compras_pixel"] or 0), -(x["spend"] or 0)))
+angulos.sort(key=lambda x: (-(x["cash"] or 0), -(x["planes"] or 0), -(x["leads"] or 0), -(x["spend"] or 0)))
 
 # --- landings: a dónde manda la pauta, y qué titular muestra HOY
 lands = collections.OrderedDict()
@@ -226,14 +233,16 @@ tz = zoneinfo.ZoneInfo("America/Bogota")
 out = {
   "meta": {"proyecto": os.environ["PROJ"], "desde": os.environ["D1"], "hasta": os.environ["D2"], "min_spend": float(os.environ["MINSP"]),
            "generado": datetime.datetime.now(tz).strftime("%Y-%m-%d %H:%M"),
-           "regla_atribucion": "leads/planes/caja por utm_campaign = nombre de campaña (CRM custom_fields); sin utm_content no hay caja por anuncio",
-           "regla_estimado": "cash_estimado/leads_estimados de una familia de copy = reparto proporcional al gasto dentro de cada campaña — estimación declarada",
+           "regla_atribucion": "campaña del lead = atribución nativa de GHL (crm_contacts.attr_campaign_id, último toque) con fallback al utm_campaign del formulario; anuncio = attr_ad_id (GHL). Lead = oportunidad del CRM en la ventana; plan ≤60 d; caja = cuotas pagadas",
+           "regla_angulo": "leads/planes/caja de una familia de copy = SUMA de los de sus anuncios (caja real por anuncio desde 2026-08-21, ya no reparto proporcional); un lead cuyo ad no gastó en la ventana no cae en ninguna familia",
            "regla_h1": "el titular vigente se lee en vivo de la landing al generar (curl); si falla, viene null con error",
            "fuente_copy": "caché local data/sqlite/ads_creativos.db (creativos_sync.sh, Graph API)"},
   "totales": {**tot, "cpl_real": r2(float(tot.get("spend_usd") or 0) / tot["leads_atribuidos"]) if tot.get("leads_atribuidos") else None,
               "cac_real": r2(float(tot.get("spend_usd") or 0) / tot["planes"]) if tot.get("planes") else None,
               "roas_real": r2(float(tot.get("cash") or 0) / float(tot["spend_usd"])) if float(tot.get("spend_usd") or 0) else None,
-              "anuncios": len(ads), "anuncios_con_copy": sum(1 for a in ads if a.get("cuerpo")), "anuncios_sin_enlace": sin_enlace},
+              "anuncios": len(ads), "anuncios_con_copy": sum(1 for a in ads if a.get("cuerpo")), "anuncios_sin_enlace": sin_enlace,
+              "leads_con_anuncio": (ads[0].get("cob_leads_con_ad") if ads else None),
+              "leads_anuncio_en_ventana": (ads[0].get("cob_leads_ad_en_ventana") if ads else None)},
   "campanas": camps, "angulos": angulos, "landings": landings,
 }
 print(json.dumps(out, ensure_ascii=False, default=str))
