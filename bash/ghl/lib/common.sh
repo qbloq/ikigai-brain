@@ -17,8 +17,9 @@
 # despite the column name. That means anything able to read the org's Postgres
 # can read them, so this layer is deliberately fenced:
 #
-#   - brain only: refuses to run inside a copilot fork (see the guard below),
-#     because forks inherit this code but must not inherit CRM credentials;
+#   - fenced by ROLE: bash/lib/acceso.sh decides which copilot roles may use
+#     it (ejecutivo = total; the rest refused) — forks inherit this code, but
+#     not the credentials unless their role says so;
 #   - read-only: every call is a GET, and the DB connection is psql_ro;
 #   - the token never reaches argv — it is handed to curl over stdin via
 #     `--config -`, so it cannot be read from the process list.
@@ -31,14 +32,14 @@ GHL_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "$GHL_LIB_DIR/../../lib/common.sh"
 
-# --- Fork guard --------------------------------------------------------------
-# identidad.md: a repo carrying copilot.json is an employee's fork. The brain
-# holds the org's credentials; copilots do not.
-if [[ -f "$REPO_ROOT/copilot.json" ]]; then
-  echo "ghl: este dominio es solo del cerebro — un copiloto no maneja credenciales del CRM." >&2
-  echo "     (bash/ghl/ lee tokens de project_crm_configs; los forks leen el espejo: bash/crm/)" >&2
-  exit 3
-fi
+# --- Cerca por rol -----------------------------------------------------------
+# identidad.md: a repo carrying copilot.json is an employee's fork. Whether a
+# fork may use THIS domain is decided by its role, in ONE place for every
+# credential-bearing domain: bash/lib/acceso.sh (ejecutivo = total; the rest
+# is refused with exit 3 and pointed at the mirror, bash/crm/).
+# shellcheck disable=SC1091
+source "$GHL_LIB_DIR/../../lib/acceso.sh"
+require_acceso ghl
 
 GHL_BASE="${GHL_BASE:-https://services.leadconnectorhq.com}"
 GHL_API_VERSION="${GHL_API_VERSION:-2021-07-28}"

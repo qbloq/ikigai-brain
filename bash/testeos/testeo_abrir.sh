@@ -13,9 +13,10 @@
 # El snapshot inicial no se digita: se corre bash/metrics/embudo.sh al abrir y
 # se congela (kpis + pauta + vsl + crm + ventas, con procedencia). Si el
 # embudo no responde, NO se abre — un testeo sin línea base es lo que la
-# reunión vino a matar. ⚠️ En un FORK (copiloto) el bloque VSL viene con error
-# declarado (bash/vturb se niega fuera del cerebro): una métrica vsl.* abriría
-# con línea base nula, y el script lo avisa.
+# reunión vino a matar. ⚠️ En un FORK de rol sin acceso a bash/vturb (la cerca
+# por rol de bash/lib/acceso.sh; hoy solo cerebro y `ejecutivo` pasan) el bloque
+# VSL viene con error declarado: una métrica vsl.* abriría con línea base nula,
+# y el script lo avisa.
 #
 # `abierto_por` sale del copilot.json del fork ('cerebro' si no hay).
 #

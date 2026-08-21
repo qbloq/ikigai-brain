@@ -421,7 +421,8 @@ mirror against the source** — it is a probe, not a second ingestion path
 (nothing here writes, to GHL or to the DB). Credentials are the org's GHL
 Private Integration Tokens, which live in `project_crm_configs` **in
 plaintext** (despite the column name `api_key_encrypted`), so the layer is
-fenced: it **refuses to run inside a copilot fork**, only GETs, and hands the
+fenced **por rol** (`bash/lib/acceso.sh` — cerebro y `ejecutivo` acceden; el
+resto se niega, exit 3), only GETs, and hands the
 token to curl over stdin so it never reaches `argv`. Moving the credentials
 behind the backend (the `bash/google/` pattern) is the right end state.
 
@@ -453,8 +454,8 @@ pipeline CRM (tablero + donut por estado).
 
 Sonda **read-only** contra el VTurb Analytics API (`analytics.vturb.net`) — el
 proveedor de video de las VSLs. Patrón `bash/ghl/` completo: tokens en la DB en
-claro (`project_vturb_video_configs.api_key_encrypted`), cerca de solo-cerebro
-(guard anti-fork), token por stdin jamás en argv, y «solo consultas» (el API usa
+claro (`project_vturb_video_configs.api_key_encrypted`), **cerca por rol**
+(`bash/lib/acceso.sh`: cerebro y `ejecutivo`; el resto exit 3), token por stdin jamás en argv, y «solo consultas» (el API usa
 POST para leer stats; no expone mutaciones). Contrato de la superficie proxy de
 Marketico: `apis/mkt/vturb-video.openapi.json`.
 
@@ -595,10 +596,11 @@ Vive en **Postgres** (`ikigaigm.testeos`, migración
 porque **los testeos los crean y monitorean los copilotos del rol Ejecutivo**
 (Juan Camilo y Lorenzo) y un histórico compartido no puede vivir en la sqlite
 de una máquina. `abierto_por`/`cerrado_por` salen del `copilot.json` del fork
-(`cerebro` si no hay). ⚠️ **En un fork el bloque VSL del snapshot viene con
-error declarado** (`bash/vturb` se niega fuera del cerebro): los testeos con
-métrica `vsl.*` se abren desde el cerebro hasta que el fallback vía el proxy
-Mkt exista (`apis/mkt/vturb-video.openapi.json` ya expone analytics; ojo al
+(`cerebro` si no hay). ⚠️ **En un fork de rol distinto de `ejecutivo` el
+bloque VSL del snapshot viene con error declarado** (`bash/vturb` se niega por
+rol, `bash/lib/acceso.sh`): los testeos con métrica `vsl.*` se abren desde el
+cerebro o desde un copiloto ejecutivo hasta que el fallback vía el proxy Mkt
+exista (`apis/mkt/vturb-video.openapi.json` ya expone analytics; ojo al
 bug de retención del normalizador de Marketico, ver `bash/vturb/README.md`).
 Las dos disciplinas de la reunión van en el diseño:
 **un solo cambio por testeo** (`--variable` es singular y obligatoria) y

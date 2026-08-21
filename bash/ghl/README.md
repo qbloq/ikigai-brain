@@ -22,9 +22,10 @@ proyecto, en texto plano pese a que la columna se llame `api_key_encrypted`.
 Cualquiera que pueda leer el Postgres de la org puede leerlos. Por eso esta
 capa va cercada:
 
-- **Solo el cerebro.** Si existe `copilot.json` en la raíz, los scripts se
-  niegan a correr. Los forks heredan este código pero no las credenciales del
-  CRM; un copiloto lee el espejo (`bash/crm/`), no la fuente.
+- **Cerca por rol.** La decide `bash/lib/acceso.sh` (`require_acceso ghl`):
+  sin `copilot.json` = cerebro = acceso; con `copilot.json`, solo los roles del
+  mapa (hoy `ejecutivo`); el resto se niega con `exit 3` y va al espejo
+  (`bash/crm/`). Ampliar el mapa es decisión de gobernanza.
 - **Solo GET, con UNA excepción declarada.** La conexión a la base es `psql_ro`.
   La excepción es `POST /contacts/search` (`ghl_api_search` en
   [lib/common.sh](lib/common.sh), detrás de `contacts.sh --query`): GHL expone
