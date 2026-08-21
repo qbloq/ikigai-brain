@@ -342,6 +342,17 @@ todos con el mismo contrato (entra audio, sale texto diarizado `Speaker A: …`
 pasada por fd, nunca argv; cobra por minuto de audio — transcribe UNA vez, sin
 reintentos).
 
+## Video domain — cosas con ffmpeg ([bash/video/](bash/video/))
+
+Piezas locales y sin estado (ni `.env` ni Postgres): entra un archivo, sale un
+archivo; la composición con Drive/DB vive en los dominios que las usan. Hoy:
+`frame.sh <video> --at T [--out F] [--force] [--json]` — UN fotograma en un
+instante (`T` = segundos o `HH:MM:SS[.ms]`), seek preciso (no el keyframe más
+cercano), la extensión de `--out` decide jpg/png/webp, y pedir más allá del
+final es error (ffmpeg calla, el script no). Reglas compartidas con
+`bash/audio/`: `-nostdin` siempre, nunca pisa sin `--force`. Detalle en
+[bash/video/README.md](bash/video/README.md).
+
 ## Ads domain — Meta pauta ([bash/ads/](bash/ads/))
 
 The paid-media view (S3 — the Media Buyer gap the Ejecutivo role absorbs).
@@ -360,6 +371,8 @@ are already in currency units (not cents). Default window: current month
 | `campaigns.sh [--status S] [--active] [--project N] [--account ID] [--from D] [--to D] [--with-spend] [--limit N]` | List campaigns with project, currency, status, daily budget, window spend/purchases/ROAS and `last_data`. Ordered by spend. |
 | `ad_stats.sh [--by campaign\|adset\|ad\|day\|week\|project\|account] [--project N] [--account ID] [--campaign TOK] [--from D] [--to D] [--limit N]` | Aggregate performance: spend, impressions, clicks, CTR, CPC, CPM, LPV, purchases, purchase value, ROAS, CPA. `--campaign` (id prefix or name fragment) pairs with `--by adset`/`--by ad`. |
 | `ad_detail.sh <campaign-id\|prefix\|name> [--from D] [--to D] [--days N]` | One campaign end-to-end: header (account/project/budget), window totals, per-adset breakdown, top-15 ads by spend, daily series (last N days with data, default 14). `--json` = one object `{campaign, totals, adsets[], ads[], daily[]}` (window default: whole life). |
+| `anuncios.sh --project N [--from D] [--to D] [--tipo adquisicion\|marca\|todos] [--campaign TOK] [--min-spend X] [--limit N]` | **Una fila por ANUNCIO** (el creativo como unidad — lo que el equipo mira en la «plataforma de Bala»): campaña/adset/objetivo, `tipo`, estado, spend, impr, clics al link, CTR/CPC/CPM, LPV + tasa, plays y cuartiles, **hook = vistas 25%/plays · hold = 75%/25% · fin = 100%/plays** (⚠️ `video_views` de Meta aquí es autoplay ≈ impresiones, no 3 s: por eso el hook va por cuartil), **compras/valor/ROAS del PIXEL** (no caja: la caja por anuncio espera `utm_content` en el CRM), CPA, y la **miniatura** desde la caché local. `tipo` = marca si el objetivo de campaña es de awareness/engagement/likes/video **o** si LPV ≤ 2% de los clics (≥50): «no llevan tráfico a la landing» medido, no por nombre — así las campañas de seguidores con objetivo TRAFFIC caen en marca. Read-only. Fuente viz `ad_anuncios` → page `anuncios` (UI ejecutivo `anuncios`: tarjetas con creativo + tabla gemela, selector tipo/orden). |
+| `creativos_sync.sh --project N [--from D] [--to D] [--min-spend X] [--dry-run] [--json]` **[WRITE local]** | Llena/refresca la caché de miniaturas `data/sqlite/ads_creativos.db` desde el **Graph API** (`/?ids=…&fields=creative{thumbnail_url,image_url}`, lotes de 50) con el user token de `identities` (provider `facebook*`, el vigente de vencimiento más lejano; por header, jamás argv ni impreso). Existe porque `ads.ad_creative_id` está vacío en toda la tabla. Cerca por rol (`bash/lib/acceso.sh`, dominio `meta`). Las URLs de Meta expiran → cada corrida refresca todos los anuncios de la ventana (110 ads = 3 GETs). Solo GET a Meta; la única escritura es la sqlite local. **En el publicador hay que correrlo allá** (la caché es local a cada máquina). |
 
 Known data caveat: Meta-reported `purchase_value` on the Andrea (COP) account
 has junk magnitudes (~663M COP for 4 purchases in June) — treat COP ROAS as
@@ -484,6 +497,7 @@ estados que ya cambiaron.
 
 | Script | Use it to… |
 |--------|-----------|
+| `cobertura.sh [--json] [--estricto] [--horas N]` | **El chequeo del invariante PM↔cerebro**, escrito una vez. Read-only; se corre DESPUÉS de los dos sync (avisa si algún espejo pasa de `--horas`, default 24). Existe porque este invariante se midió mal tres veces el 2026-08-20 por el mismo motivo: hay **dos vías de enlace** —`tasks.source_external_id` y `cruce.ce_id`— y mirar solo una inventa huecos. Reporta **[A]** abiertas en PM sin nada vivo acá, **clasificadas**: `hueco` (hay que crearla) · `decidida` (su fila del cruce ya está resuelta — enlace en prosa, no hueco) · `muchos-a-uno` (la tarea que la cubre ya tiene otro `source_external_id`: pide tabla de enlaces, no `link_external.sh`). Y **[B]** abiertas acá con su gemela PM cerrada → `complete_task.sh`. ⚠️ Una tarea con **varias** gemelas en PM sigue abierta si **alguna** sigue abierta. `--estricto` sale 1 solo con huecos reales (para cron). |
 | `sync_cerebro.sh [--dry-run] [--no-cruce] [--json]` **[WRITE local]** | El **espejo** del anterior, para el otro lado: refresca `cerebro_tareas` desde Postgres (upsert por prefijo de 8) y con él las copias `ce_titulo`/`ce_estado`/`ce_proyecto` de las filas **no resueltas** de `cruce`. Existe porque al cruce se le había construido refresco a UNA sola mitad: medido el 2026-08-20, **140 de 205 filas mentían** sobre el lado cerebro (94 decían `pending` de tareas ya canceladas), así que la UI ofrecía como candidatas vivas cosas cerradas hacía horas. Solo LEE Postgres (`psql_ro`) — no cierra, no cancela, no crea. Registra la corrida en `cerebro_sync`. ⚠️ **No recalcula el cruce**: veredictos y pares salieron de una pasada semántica hecha una vez; lo nacido después del snapshot sale listado como «sin fila en el cruce», no gana fila solo. Un prefijo de 8 compartido por dos tareas se excluye y se reporta antes que adivinar. |
 | `sync_tareas.sh [--dry-run] [--limit N] [--no-cruce] [--no-snapshot] [--json]` **[WRITE local]** | Refrescar el espejo `tareas` desde el API (upsert por id, una txn) y, con él, las copias denormalizadas `pm_titulo`/`pm_estado`/`pm_asignado` de las filas **no resueltas** de `cruce`. Guarda el JSON crudo en `data/pm-platform/tareas-<fecha>.json` y registra la corrida en `pm_sync`. |
 
@@ -530,6 +544,26 @@ llamadas del día resueltas por closer con la traza CRM de bash/calls/),
 idempotente por `(escenario,ref)` en la sqlite `closers_ops`), y los tres
 `escenario_*.sh` **[WRITE→WhatsApp]** que el cron dispara. Doc completo, con
 plantillas Meta y pendientes: `docs/closers-whatsapp.md` (operador).
+
+## Onboarding domain — primer contacto por WhatsApp ([bash/onboarding/](bash/onboarding/))
+
+El opt-in inicial del equipo al Cerebro por WhatsApp (mismo WABA que
+`bash/closers/`, 690499003502578) — **nunca broadcast**: un destinatario por
+corrida, a quién y cuándo lo decide el humano. `enviar_onboarding.sh --para
+<nombre> [--gancho "…"] [--grupo equipo|closer] [--dry-run] [--json]`
+**[WRITE→WhatsApp]** agrupa por rol (team_members/team_roles): **closer** ya
+tiene ventana abierta con Iki a diario → texto de sesión +
+`--fallback-plantilla onboarding_closer`; **equipo** (primer contacto real,
+nunca les llegó nada de este número) → siempre plantilla `onboarding_equipo`
+(un texto de sesión aquí lo acepta Meta y falla después por webhook, no al
+instante — ver `docs/closers-whatsapp.md`). El gancho (`{{2}}`) es genérico
+por defecto, `--gancho` lo personaliza (p.ej. Juan Camilo: sus dos assets ya
+vivos, dashboard del embudo + testeos VSL/pauta). Idempotente vía
+`bash/closers/enviar.sh` (`escenario=onboarding-cerebro`, `ref=<nombre>`).
+`plantilla_crear.sh --nombre N --categoria UTILITY|MARKETING --cuerpo "…{{1}}…"
+[--ejemplos "a|b"] [--dry-run] [--json]` **[WRITE→Meta]** crea una plantilla
+nueva en el WABA (sin upsert; queda PENDING hasta que Meta la revise, cuenta
+con días).
 
 ## ManyChat domain — Instagram DMs en la fuente ([bash/manychat/](bash/manychat/))
 
