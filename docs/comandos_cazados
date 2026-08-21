@@ -1,0 +1,16 @@
+set -a && source .env >/dev/null 2>&1 && set +a && curl -s -X POST "${EVOLUTION_API_URL}/chat/findChats/${EVOLUTION_API_INSTANCE}" -H "apikey: ${EVOLUTION_API_KEY}" -H "Content-Type: application/json" -d '{}' | python3 -c "
+import json,sys
+chats = json.load(sys.stdin)
+for c in chats:
+    nombre = (c.get('name') or c.get('pushName') or '')
+    if 'closer' in nombre.lower():
+        print(c.get('remoteJid') or c.get('id'), '|', nombre)" 2>&1 | head -5
+
+bash/localdb/dbs.sh 2>/dev/null | grep -i "closer\|only" ; bash/localdb/db_query.sh only_closers "SELECT DISTINCT numero, autor FROM mensajes WHERE autor_norm LIKE '%antonio%' OR autor_norm LIKE '%buelvas%' LIMIT 5" 2>/dev/null || ls data/sqlite/
+
+set -a && source .env >/dev/null 2>&1 && set +a && curl -s "${EVOLUTION_API_URL}/group/participants/${EVOLUTION_API_INSTANCE}?groupJid=120363423242173011@g.us" -H "apikey: ${EVOLUTION_API_KEY}" | python3 -c "
+import json,sys
+d = json.load(sys.stdin)
+parts = d.get('participants') if isinstance(d, dict) else d
+for p in (parts or []):
+    print(p.get('id'), '|', p.get('jid',''), '|', p.get('name') or p.get('pushName') or '')" 2>&1 | head -25

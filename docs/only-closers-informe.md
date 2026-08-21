@@ -403,6 +403,53 @@ cuenta — no es un closer, y esa asignación no habría servido: nuestra
 resolución de closer lee `crm_opportunities.user_id`. Si el equipo corrige
 ownership, tiene que ser sobre la oportunidad.
 
+### 2026-08-20 — Lorena Amado: la venta resucitada de Mateo ✅ EJECUTADA Y VERIFICADA
+
+SQL: [reparaciones-lorena-2026-08-20.sql](reparaciones-lorena-2026-08-20.sql) — una txn.
+
+Mateo cerró a Lorena Amado el 19-ago (~4 pm) por seguimiento de WhatsApp, con
+abono de **$50** («la otra semana paga resto para PA 3 meses»), e
+inmediatamente reportó «no me aparece en mi app». La causa NO fue la hipótesis
+habitual (opportunity asignada a otro closer — verificado: `assignedTo:
+rCOEOZjyW6n3ZuQU8uYL` **es Mateo**, su GHL id vive en `users.integrations`, no
+en `crm_id`). La causa real es un hueco de flujo nuevo:
+
+- **La venta resucitada**: Mateo marcó la opportunity `lost` el 13-ago («solo
+  mirando opciones»); la lead compró 6 días después. La app no muestra
+  opportunities perdidas → el cierre no tiene dónde registrarse. Este es el
+  mecanismo estructural detrás de las ventas perdidas de §8: los cierres por
+  seguimiento tardío son exactamente los que estaban marcados `lost`.
+- Anthony corrigió GHL el 19-ago 17:50 (opp `itgTsHVYJ3DGFIotw4fI` → `won`,
+  $50), pero **el espejo sigue `lost`** (opp `05b39329…`) por el bug #5 del
+  ingestor (no refresca `status`) — la corrección en la fuente no llega a la app.
+
+Lo ejecutado: **plan 492** (Lorena Amado, $700, PA 3 meses, producto
+`prod:pa3`, closer Mateo), en dos partes el mismo día:
+
+- **Cuota 1**: $50, `Paid`, payment_date 19-ago + comisión $5.00 `pending` a
+  Mateo (10%, payout 2313→cuota, patrón idéntico a las reparaciones del 14-ago).
+- **Cuota 2**: el resto (**$650**), `Scheduled` para el **jueves 27-ago** —
+  decisión de Santiago: día elegido para que el recordatorio a Mateo salga unos
+  días antes. El plan quedó de **2 cuotas** («PA 3 meses» es la duración del
+  programa, no el nº de cuotas — precedente: Kevin Delgado, PA 3 meses en 1
+  cuota; montos irregulares: plan 444, 100/317/283).
+
+Para Pablo, dos piezas: (1) la app necesita el camino «registrar venta de
+opportunity perdida» (o reabrirla), y (2) el upsert del ingestor debe refrescar
+`status` — este caso es la demo con ids concretos.
+
+**Desenlace (2026-08-21).** El caso destapó la represa de agosto: el 20-ago
+Mateo registró él mismo, desde la app y con ayuda del equipo, **6 ventas de
+agosto que no estaban reportadas** — planes 497-502 (Vanessa Ospina $3.500 PM
+Lite · Yesid $699 · Sebastián Lopera $699 · Camila Arboleda $1.000 · Sebastián
+Leguízamo $1.000 · Diana Serrano $1.000), fechas reales 03→16-ago, 1 cuota
+pagada cada una, sin duplicados: **$7.898 de caja + $789,80 de comisiones**.
+Mejor desenlace que el de julio (allá fuimos nosotros con SQL; acá el registro
+entró por el camino oficial). Los planes 494-496 «PRUEBA — Lead de prueba
+(borrar)» del mismo día son pruebas del flujo (ya `Cancelled`, comisión
+`rejected`). Tendencia a vigilar: dos meses seguidos con ~$8-10k de Mateo fuera
+del sistema hasta que alguien los persigue.
+
 ## 9. Cómo re-consultar
 
 ```bash
