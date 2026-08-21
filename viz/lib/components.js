@@ -183,7 +183,12 @@ function degradeCard(ui, errors) {
       <p class="text-sm font-semibold text-amber-800 mb-1">Esta UI requiere actualizar el núcleo</p>
       <p class="text-xs text-amber-700 mb-3">«${escape(ui.name)}» no se puede renderizar con los componentes de este fork:</p>
       <ul class="list-disc list-inside text-xs text-amber-700 space-y-0.5">${errors.map((e) => `<li>${escape(e)}</li>`).join("")}</ul>
-      <p class="text-[11px] text-amber-600 mt-3 font-mono">git pull — o corrige la spec (component: «${escape(ui.component || "")}»).</p>
+      <p class="text-xs text-amber-700 mt-3">Casi siempre es una de dos cosas, en este orden:</p>
+      <ol class="list-decimal list-inside text-xs text-amber-700 space-y-0.5 mt-1">
+        <li><span class="font-mono">npm run viz:restart</span> — el viz registra los componentes al arrancar; si el fork ya hizo pull con este proceso corriendo, el spec nuevo se ve pero el componente no.</li>
+        <li><span class="font-mono">git pull</span> y de nuevo <span class="font-mono">npm run viz:restart</span> — si el fork todavía no trae el código (component: «${escape(ui.component || "")}»).</li>
+      </ol>
+      <p class="text-[11px] text-amber-600 mt-2">Si después de eso sigue, la spec apunta a un componente que no existe en este genoma: corrígela o avisa al cerebro.</p>
     </div>
   </section>`;
 }
