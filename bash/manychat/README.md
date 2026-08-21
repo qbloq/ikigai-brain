@@ -33,6 +33,24 @@ Sugerencia de nombres en `.env` (el script lee cualquier `MANYCHAT_TOKEN*`):
 |---|---|
 | `auth_status.sh [--json]` | Qué tokens hay en `.env` y a qué página responde cada uno (nombre, plan, timezone); falla claro si no hay ninguno. |
 
-Siguiente pieza: la sonda de conversaciones/etiquetas para el bloque orgánico de
-`embudo.sh` (hoy el API no lista suscriptores: se llega por tags/flows/growth
-tools y por `findByName`/`findBySystemField` desde el lead del CRM).
+## Lo que el API NO puede dar (medido 2026-08-21, 79 leads orgánicos de agosto)
+
+- **No lista suscriptores** ni da conteos por tag/flow: `getTags`/`getFlows`/
+  `getGrowthTools` devuelven nombres, nunca cantidades. Analytics solo en la UI.
+- **Los suscriptores de Instagram no traen email ni teléfono**:
+  `findBySystemField` por email **0/8**, por teléfono 0/1.
+- **Por nombre (`findByName`) matchea 14/79 (18 %)**, 3 ambiguos, y con falsos
+  positivos probables (un «match» suscrito en 2025-09 para un lead de 2026-08).
+- Los contactos del CRM traen el campo «¿Cuál es tu Instagram?» solo en 5/79.
+
+Conclusión: ManyChat hoy es **mapa, no medida**. `bash/metrics/organico.sh`
+(el bloque orgánico) lo usa solo para `manychat.mapa` (los 22 tags = el
+recorrido nuevo seguidor → quiz → pide asesoría → serie YT módulos → lead
+magnets → grupo VIP) y mide el embudo orgánico desde el CRM + caja.
+
+**Pedido pendiente (la llave):** que el flujo de ManyChat que crea el contacto
+en GHL (los leads de la serie YT llegan con tags `moduloNyt`, así que esa
+integración existe) escriba también `ig_username` y el `subscriber_id` de
+ManyChat en custom fields del contacto. Con eso el join lead ↔ suscriptor es
+exacto y `subscriber/getInfo` da por lead: fecha de suscripción, último
+contacto, tags (qué vio), `last_input_text` — el setter → lead que hoy no se ve.

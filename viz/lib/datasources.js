@@ -430,6 +430,15 @@ const SOURCES = {
     args: { project: "--project", from: "--from", to: "--to", meses: "--meses" },
     cache: 60_000,
   },
+  // El embudo ORGÁNICO: leads sin pauta por canal de entrada, conversión y
+  // caja contra la pauta de marca; ManyChat solo como mapa (sin conteos).
+  embudo_organico: {
+    label: "Embudo orgánico (canales · conversión · vs pauta de marca)",
+    script: "bash/metrics/organico.sh",
+    emits: "object",
+    args: { project: "--project", from: "--from", to: "--to", meses: "--meses" },
+    cache: 60_000,
+  },
   // Commission payouts with review state — the approval queue (pending first).
   comisiones: {
     label: "Comisiones (payouts)",

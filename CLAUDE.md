@@ -650,6 +650,23 @@ punteada con la **misma semántica que `testeo_abrir.sh --metrica`**
 high-ticket infoproductos, alineación DG 2026-08-20), no metas de la org —
 calibrar con la serie propia re-publicando el spec.
 
+`organico.sh --project NAME [--from D] [--to D] [--meses N]` — **EL EMBUDO
+ORGÁNICO** en un objeto (hueco #3 del contraste Kaizen 2026-08-20): los leads
+del CRM **sin pauta** (sin campaña ni en la atribución de GHL ni en el utm del
+form) por **canal de entrada** — regex sobre `ghl_source` primero (el form que
+creó el lead) y los tags después: serie de YouTube (+ `serie_youtube` por
+módulo), lead magnets, survey orgánico, VSL sin pauta, masterclass, low
+ticket, aplicación premium, referido Bala, sin formulario — con sesión de GHL
+(Social media · Referral · Direct), won/planes ≤60 d/contrato/cash, `series`
+mensual orgánico vs pauta, y la **pauta de marca** del mes al lado (misma regla
+`tipo=marca` de `anuncios.sh`) con `roas_vs_marca` **declarado heurístico**.
+`manychat.mapa` = solo los tags del flujo de IG (el API no lista suscriptores
+ni da conteos; por nombre matchea 14/79 — ver `bash/manychat/README.md`), así
+que NO cuenta DMs ni setters y lo dice en `sin_instrumentar`. Agosto DG: 79
+orgánicos (32 %) con tasa a plan 11,4 % contra 7,1 % de los pagados. Read-only
+(+ un GET a ManyChat si hay `MANYCHAT_TOKEN_DG`/`_B`). Fuente viz
+`embudo_organico` → page `organico` (UI ejecutivo `embudo-organico`).
+
 ## Testeos domain — el histórico de testeos del embudo ([bash/testeos/](bash/testeos/))
 
 El registro que la alineación DG 2026-08-19 dejó como acuerdo: cada testeo del
