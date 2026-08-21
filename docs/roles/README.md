@@ -59,10 +59,13 @@ con dos consumidores:
 | Clave | Quién la lee | Significado |
 |---|---|---|
 | `uis` | `viz/lib/store.js` | `"*"` = el viz carga las capas de UI de **todos** los roles (con badge de rol por UI). Sin la clave = solo la capa propia. |
-| `fuentes` | `bash/lib/acceso.sh` (`require_acceso <dominio>`) | `"*"` = todos los dominios con credencial (`bash/ghl/`, `bash/vturb/`); lista = solo esos; sin la clave = negado con `exit 3` y un mensaje que dice a dónde ir (el espejo `bash/crm/` para GHL; el proxy Mkt, pendiente, para VTurb). |
+| `dominios` | `bash/lib/acceso.sh` (`require_acceso <dominio>`) | `"*"` = todos los `bash/` cercados por rol (`bash/ghl/`, `bash/vturb/` — credencial de proveedor — y `bash/users/` — cuentas de Marketico); lista = solo esos; sin la clave = negado con `exit 3` y un mensaje que dice a dónde ir (el espejo `bash/crm/` para GHL; el proxy Mkt, pendiente, para VTurb; el cerebro/skill `crear-usuario` para users). |
 
-Hoy: **`technology` = `{uis:*, fuentes:*}`** (el rol todo-poderoso — Parallelo)
-y **`ejecutivo` = `{fuentes:*}`** (mira el embudo completo con el VSL en vivo).
+Hoy: **`technology` = `{uis:*, dominios:*}`** (el rol todo-poderoso — Parallelo)
+y **`ejecutivo` = `{dominios:*}`** (mira el embudo completo con el VSL en vivo).
+Regla de reparto con el canal: **`EXCLUIR` (forja) es para lo que no debe
+existir en un laptop** (`bash/ops/`, `bash/whatsapp_evo_api/`, `catalog/`,
+`apis/`…); todo lo demás viaja y lo decide `acceso.json`.
 Sin `copilot.json` = cerebro = todo, sin consultar el mapa. Un `copilot.json`
 sin `role` legible, o un mapa ausente, **no hereda nada** (fail-closed en los
 dos consumidores). **Editar el mapa es decisión de gobernanza** y se registra

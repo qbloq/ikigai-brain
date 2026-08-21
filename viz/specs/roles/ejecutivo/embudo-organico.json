@@ -1,0 +1,13 @@
+{
+  "id": "embudo-organico",
+  "name": "Embudo orgánico · DG (mes)",
+  "component": "organico",
+  "source": "embudo_organico",
+  "params": {
+    "project": "David Guerrero",
+    "meses": 6
+  },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-08-21T21:30:00.000Z"
+}
