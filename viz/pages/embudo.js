@@ -238,13 +238,38 @@ function renderEmbudo(ui) {
   );
 
   // --- serie mensual del embudo (benchmarks) ---
+  // Cash vs pauta comparten unidad (USD): la brecha entre las dos líneas ES el
+  // ROAS real visto. Leads/CAC/ROAS viven en otras escalas — van en la tabla
+  // gemela y, el ROAS, en su propio gráfico contra la meta del spec.
   const serieSpec = series.length
     ? {
         kind: "line",
         labels: series.map((r) => r.mes),
-        series: [{ label: "Cash cobrado (USD)", data: series.map((r) => Number(r.cash) || 0) }],
+        series: [
+          { label: "Cash cobrado (USD)", data: series.map((r) => Number(r.cash) || 0) },
+          { label: "Pauta (USD)", data: series.map((r) => Number(r.spend_usd) || 0) },
+        ],
       }
     : null;
+  const roasSpec = series.length
+    ? {
+        kind: "line",
+        labels: series.map((r) => r.mes),
+        series: [
+          { label: "ROAS real", data: series.map((r) => Number(r.roas_real) || 0) },
+          ...(metas.roas_real ? [{ label: `Meta (${metas.roas_real})`, data: series.map(() => Number(metas.roas_real)) }] : []),
+        ],
+      }
+    : null;
+  const tRoas = tbl(
+    ["Mes", "ROAS real", "CAC real", "Meta ROAS"],
+    series.map((r) => [
+      `<span class="tabular-nums font-semibold">${escape(String(r.mes))}</span>`,
+      `<span class="tabular-nums font-semibold" style="color:${metas.roas_real && r.roas_real != null ? (Number(r.roas_real) >= Number(metas.roas_real) ? TONE.pos : TONE.neg) : TONE.brand}">${r.roas_real ?? "—"}</span>`,
+      `<span class="tabular-nums">${usd(r.cac_real)}</span>`,
+      `<span class="tabular-nums" style="color:var(--text-3)">${metas.roas_real ?? "—"}</span>`,
+    ])
+  );
   const tSerie = tbl(
     ["Mes", "Pauta USD", "Leads", "Planes", "Cash", "CAC real", "ROAS real"],
     series.map((r) => [
@@ -324,8 +349,11 @@ function renderEmbudo(ui) {
       «Impago y deserción de cuotas» (la curva completa).
     </p>
 
-    ${section("Serie mensual del embudo", "los benchmarks: cada mes con su CAC y ROAS real — la base para fijar metas")}
-    ${chartCard(serieSpec, "showserie", tSerie)}
+    ${section("Serie mensual del embudo", "los benchmarks: cash vs pauta (la brecha es el ROAS real visto) y el ROAS contra su meta")}
+    <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(22rem,1fr))">
+      ${chartCard(serieSpec, "showserie", tSerie)}
+      ${chartCard(roasSpec, "showroas", tRoas)}
+    </div>
 
     ${section("Sin instrumentar", "los tramos que este cruce todavía no ve — declarados, no inventados")}
     <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))">${sinInstr}</div>
