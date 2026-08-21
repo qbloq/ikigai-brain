@@ -144,7 +144,7 @@ def r2(x): return None if x is None else round(float(x), 2)
 by_camp = collections.defaultdict(list)
 for a in ads: by_camp[a.get("campana")].append(a)
 for c in camps:
-    if c.get("campana") is None: c["campana"] = "— sin atribución (orgánico · directo · sin UTM)"
+    if c.get("campana") is None: c["campana"] = "— sin atribución (orgánico · referral · directo)"
     if c["campana"] == "{{campaign.name}}": c["alerta"] = "macro de UTM sin resolver: un anuncio manda utm_campaign literal"
     c["anuncios"] = sorted(by_camp.get(c["campana"], []), key=lambda a: -float(a.get("spend") or 0))
     c["n_anuncios"] = len(c["anuncios"])
