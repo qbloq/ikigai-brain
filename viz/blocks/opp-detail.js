@@ -46,6 +46,33 @@ function chips(v) {
 // convierte un volcado en información: arriba de dónde vino, abajo qué dijo.
 const ATTR_RE = /^(utm_|fbp$|fbc$|gclid|referrer|source|medium|campaign)/i;
 
+// La atribución NATIVA de GHL (lo que registró el navegador del lead, último
+// toque), persistida en crm_contacts desde 2026-08-21: campaña y ANUNCIO de
+// Meta ya resueltos, ubicación, formulario de entrada, fecha real de alta.
+// Va arriba del bloque de utm_* del formulario porque no depende del form.
+function atribucionGhl(a) {
+  if (!a || typeof a !== "object" || !Object.keys(a).length) return "";
+  const pauta = !!(a.campana || a.anuncio);
+  const head = pauta
+    ? `<span class="badge bg-violet-100 text-violet-700">pauta</span>`
+    : `<span class="badge badge-neutral">${escape(a.sesion || "sin sesión")}</span>`;
+  return section(
+    "Por dónde entró (GHL)",
+    null,
+    `<div class="mb-2">${head}${a.placement ? ` <span class="badge badge-neutral">${escape(a.placement.replace(/_/g, " "))}</span>` : ""}</div>
+    <dl class="text-sm space-y-1">
+      ${a.campana ? row("Campaña", a.campana) : ""}
+      ${a.anuncio ? row("Anuncio", a.anuncio) : ""}
+      ${a.utm_content && a.utm_content !== a.anuncio ? row("utm_content", a.utm_content, true) : ""}
+      ${!pauta && a.sesion ? row("Sesión", a.sesion) : ""}
+      ${a.referrer ? row("Referrer", a.referrer, true) : ""}
+      ${a.formulario ? row("Formulario", a.formulario) : ""}
+      ${a.alta_ghl ? row("Alta en GHL", a.alta_ghl) : ""}
+      ${a.primer_toque_distinto ? row("Primer toque", a.primer_toque_distinto, true) : ""}
+    </dl>`
+  );
+}
+
 function fieldsBlocks(fields) {
   if (!Array.isArray(fields) || !fields.length) return "";
   const attr = fields.filter((f) => ATTR_RE.test(f.campo || ""));
@@ -130,7 +157,7 @@ function renderOppDetail(id) {
     <div class="mt-2">${chips(d.tags)}</div>`
   );
 
-  return panelShell(`<div class="p-5">${header}${ficha}${contacto}${fieldsBlocks(d.campos_personalizados)}</div>`);
+  return panelShell(`<div class="p-5">${header}${ficha}${atribucionGhl(d.atribucion)}${contacto}${fieldsBlocks(d.campos_personalizados)}</div>`);
 }
 
 module.exports = {

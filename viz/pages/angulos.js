@@ -1,5 +1,5 @@
 // angulos page — ÁNGULOS GANADORES → TITULARES, desde el único objeto que emite
-// bash/ads/angulos.sh: campañas por caja (atribución UTM), familias de copy de
+// bash/ads/angulos.sh: campañas por caja (atribución GHL + utm del form), familias de copy de
 // anuncio (el ángulo con que se compró el clic) y las landings del VSL con el
 // H1 que muestran HOY, leído en vivo.
 //
@@ -95,13 +95,13 @@ function landingCard(l, generado) {
 
 // ---------- familias de copy ----------
 function anguloCard(a, i, maxCash) {
-  const share = maxCash > 0 && a.cash_estimado ? Math.round((a.cash_estimado / maxCash) * 100) : 0;
+  const share = maxCash > 0 && a.cash ? Math.round((a.cash / maxCash) * 100) : 0;
   const ads = (a.anuncios || []).slice(0, 12).map((x) => `
     <li class="flex items-center gap-2 py-1" style="border-top:1px solid var(--border-1)">
       ${thumb(x.miniatura, x.anuncio)}
       <div class="min-w-0 flex-1">
         <div class="text-xs truncate" title="${escape(x.anuncio || "")}">${escape(x.anuncio || "")} ${x.estado && x.estado !== "ACTIVE" ? badge(x.estado.toLowerCase()) : ""}</div>
-        <div class="text-[.68rem] tabular-nums" style="color:var(--text-3)">${escape(x.campana || "")} · ${usd(x.spend)} · LPV ${num(x.lpv)} · hook ${pctf(x.hook_pct)} · hold ${pctf(x.hold_pct)} · compras px ${num(x.compras)}</div>
+        <div class="text-[.68rem] tabular-nums" style="color:var(--text-3)">${escape(x.campana || "")} · ${usd(x.spend)} · LPV ${num(x.lpv)} · hook ${pctf(x.hook_pct)} · hold ${pctf(x.hold_pct)} · leads ${num(x.leads)} · planes ${num(x.planes)} · caja <b style="color:${Number(x.cash) > 0 ? TONE.pos : "inherit"}">${usd(x.cash)}</b> · compras px ${num(x.compras)}</div>
       </div></li>`).join("");
   return `<div class="card card-pad" style="display:flex;flex-direction:column;gap:.55rem">
     <div class="flex items-start gap-2">
@@ -115,8 +115,10 @@ function anguloCard(a, i, maxCash) {
       <span>pauta <b>${usd(a.spend)}</b></span><span>aterrizajes <b>${num(a.lpv)}</b></span>
       <span>compras pixel <b>${num(a.compras_pixel)}</b> ${a.cpa_pixel != null ? `(CPA ${usd(a.cpa_pixel)})` : ""}</span>
       <span>hook <b>${pctf(a.hook_pct)}</b> · hold <b>${pctf(a.hold_pct)}</b></span>
-      <span>leads ~<b>${num(a.leads_estimados == null ? null : Math.round(a.leads_estimados))}</b> ${badge("est.")}</span>
-      <span>caja ~<b style="color:${TONE.pos}">${usd(a.cash_estimado)}</b> ${badge("est.")} ${a.roas_real_estimado != null ? `ROAS ~${xf(a.roas_real_estimado)}` : ""}</span>
+      <span>leads <b>${num(a.leads)}</b> ${a.cpl_real != null ? `(CPL ${usd(a.cpl_real)})` : ""}</span>
+      <span>planes <b>${num(a.planes)}</b> ${a.cac_real != null ? `(CAC ${usd(a.cac_real)})` : ""}</span>
+      <span>caja <b style="color:${Number(a.cash) > 0 ? TONE.pos : TONE.muted}">${usd(a.cash)}</b> ${a.contrato ? `<span style="color:var(--text-3)">de ${usd(a.contrato)}</span>` : ""}</span>
+      <span>ROAS real <b style="color:${a.roas_real == null ? TONE.muted : a.roas_real >= 2.5 ? TONE.pos : a.roas_real >= 1 ? TONE.brand : TONE.neg}">${xf(a.roas_real)}</b></span>
     </div>
     <div style="height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden"><div style="width:${share}%;height:100%;background:var(--brand-solid)"></div></div>
     <p class="text-[.68rem]" style="color:var(--text-3)">campañas: ${(a.campanas || []).map((c) => escape(c)).join(" · ") || "—"}</p>
@@ -176,10 +178,10 @@ function renderAngulos(ui) {
   const pctAtr = t.leads ? Math.round((t.leads_atribuidos / t.leads) * 100) : null;
   const kpis = [
     kpi("Pauta (USD)", usd(t.spend_usd), { sub: `${m.desde || ""} → ${m.hasta || ""}` }),
-    kpi("Leads CRM", num(t.leads), { sub: pctAtr == null ? "" : `${num(t.leads_atribuidos)} con UTM (${pctAtr}%)`, tone: pctAtr != null && pctAtr < 60 ? "cau" : "brand" }),
+    kpi("Leads CRM", num(t.leads), { sub: pctAtr == null ? "" : `${num(t.leads_atribuidos)} atribuidos a campaña (${pctAtr}%)`, tone: pctAtr != null && pctAtr < 60 ? "cau" : "brand" }),
     kpi("Planes (de leads de la ventana)", num(t.planes), { sub: `${num(t.ganadas)} won en CRM`, tone: "pos" }),
     kpi("Caja de esos planes", usd(t.cash), { tone: "pos", sub: "installments pagadas a hoy" }),
-    kpi("CPL real", usd(t.cpl_real), { sub: "pauta USD / leads con UTM" }),
+    kpi("CPL real", usd(t.cpl_real), { sub: "pauta USD / leads atribuidos" }),
     kpi("CAC real", usd(t.cac_real), { sub: "pauta USD / planes", tone: t.cac_real != null && t.cac_real > 500 ? "cau" : "brand" }),
     kpi("ROAS real", xf(t.roas_real), { sub: "caja / pauta USD", tone: t.roas_real != null && t.roas_real < 2.5 ? "neg" : "pos" }),
   ].join("");
@@ -188,7 +190,7 @@ function renderAngulos(ui) {
   let rank = 0;
   const campRows = camps.map((c) => {
     const ganadora = !c.sin_atribucion && c.spend && (c.planes > 0 || c.ganadas > 0) && rank++ < 3;
-    const name = `${escape(c.campana)} ${ganadora ? badge("ganadora", "pos") : ""} ${c.sin_atribucion ? badge("sin UTM", "neutral") : ""} ${c.alerta ? `<span title="${escape(c.alerta)}">${badge("UTM roto", "neg")}</span>` : ""}`;
+    const name = `${escape(c.campana)} ${ganadora ? badge("ganadora", "pos") : ""} ${c.sin_atribucion ? badge("sin atribución", "neutral") : ""} ${c.alerta ? `<span title="${escape(c.alerta)}">${badge("UTM roto", "neg")}</span>` : ""}`;
     return [
       name,
       `<span class="tabular-nums">${c.cur === "COP" ? num(c.spend) + " COP" : usd(c.spend)}</span>`,
@@ -204,7 +206,7 @@ function renderAngulos(ui) {
     ];
   });
 
-  const maxCash = Math.max(0, ...angulos.map((a) => a.cash_estimado || 0));
+  const maxCash = Math.max(0, ...angulos.map((a) => a.cash || 0));
   const anguloCards = angulos.slice(0, 8).map((a, i) => anguloCard(a, i, maxCash)).join("");
 
   const titCards = titulares.map((x, i) => titularCard(x, i, { project, metrica })).join("");
@@ -244,13 +246,13 @@ function renderAngulos(ui) {
     ${landings.length ? landings.map((l) => landingCard(l, m.generado)).join("") : `<p class="text-sm italic" style="color:var(--text-3)">Ningún anuncio de la ventana trae enlace en la caché — corre bash/ads/creativos_sync.sh.</p>`}
   </div>
 
-  ${section("Campañas por caja", "atribución por utm_campaign (CRM) → plan del mismo contacto ≤60 d → cuotas pagadas · caja real, no pixel")}
+  ${section("Campañas por caja", "campaña del lead = atribución nativa de GHL (último toque, persistida en el CRM desde 2026-08-21) con fallback al utm_campaign del formulario → plan del mismo contacto ≤60 d → cuotas pagadas · caja real, no pixel")}
   ${tbl(["campaña", "pauta", "leads", "CPL", "won", "planes", "contrato", "caja", "CAC", "ROAS real", "ads"], campRows)}
-  <p class="text-xs mt-1" style="color:var(--text-3)">«sin UTM» = leads cuyo contacto no trae utm_campaign: orgánico, directo o pauta sin etiquetar — su caja NO se puede repartir entre campañas. ${escape(m.regla_atribucion || "")}</p>
+  <p class="text-xs mt-1" style="color:var(--text-3)">«sin atribución» = leads sin campaña ni en GHL ni en el formulario: orgánico, referral o directo — su caja NO se reparte entre campañas. ${t.leads_ghl != null ? `Fuentes: ${num(t.leads_ghl)} leads con campaña por GHL · ${num(t.leads_solo_form)} solo por formulario · ${num(t.leads_con_anuncio)} con anuncio (${num(t.leads_anuncio_en_ventana)} de anuncios con gasto en la ventana).` : ""} ${escape(m.regla_atribucion || "")}</p>
 
-  ${section("Ángulos — familias de copy del anuncio", "agrupadas por el texto del anuncio; el video/hook cambia dentro de cada familia (nombre del anuncio)")}
+  ${section("Ángulos — familias de copy del anuncio", "agrupadas por el texto del anuncio; el video/hook cambia dentro de cada familia (nombre del anuncio) · leads/planes/caja = suma REAL de sus anuncios (atribución por ad de GHL), ya no estimado")}
   <div class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(20rem,1fr))">${anguloCards || `<p class="text-sm italic" style="color:var(--text-3)">Sin copy en caché.</p>`}</div>
-  <p class="text-xs mt-2" style="color:var(--text-3)">${escape(m.regla_estimado || "")} · hook = vistas 25 %/plays · hold = 75 %/25 % (Meta).</p>
+  <p class="text-xs mt-2" style="color:var(--text-3)">${escape(m.regla_angulo || "")} · hook = vistas 25 %/plays · hold = 75 %/25 % (Meta).</p>
 
   ${section("Titulares propuestos", "params del spec — copy curado; se cambia re-publicando. Un titular por testeo, un testeo por step.")}
   ${estadoTesteo}

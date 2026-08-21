@@ -207,7 +207,7 @@ function renderEmbudo(ui) {
   // --- KPIs de la ventana, contra metas si el spec las trae ---
   const cab = `
     ${kpi("Pauta (USD)", usd(k.spend_usd), { sub: pautaCop ? `+ ${num(pautaCop.spend)} COP aparte` : "solo USD entra a los ratios", title: m.regla_monedas || "" })}
-    ${kpi("Leads (CRM)", num(k.leads), { tone: metaTone("leads", k.leads, metas) || "brand", sub: `${num(crm.pagados)} por pauta · ${num(crm.organicos)} orgánicos`, title: m.regla_leads || "" })}
+    ${kpi("Leads (CRM)", num(k.leads), { tone: metaTone("leads", k.leads, metas) || "brand", sub: `${num(crm.pagados)} por pauta (${num(crm.con_anuncio)} con anuncio) · ${num(crm.organicos)} sin atribución`, title: (m.regla_leads || "") + (m.regla_atribucion ? " · " + m.regla_atribucion : "") })}
     ${kpi("CPL real", usd(k.cpl_real), { tone: metaTone("cpl_real", k.cpl_real, metas) || "brand", sub: "pauta USD / leads CRM" })}
     ${kpi("Planes iniciados", num(k.planes_iniciados), { sub: `${num(ventas.primeras_cuotas)} primeras cuotas cobradas` })}
     ${kpi("CAC real", usd(k.cac_real), { tone: metaTone("cac_real", k.cac_real, metas) || "brand", sub: "pauta USD / planes iniciados" })}
@@ -276,10 +276,11 @@ function renderEmbudo(ui) {
 
   // --- atribución por campaña: los ángulos ganadores ---
   const tAtr = tbl(
-    ["Campaña (UTM)", "Leads", "Spend", "CPL real", "Ganadas", "Planes", "Contrato", "Cash"],
+    ["Campaña", "Leads", "GHL · solo form · con ad", "Spend", "CPL real", "Ganadas", "Planes", "Contrato", "Cash"],
     (d.atribucion || []).map((r) => [
       `<span class="font-semibold">${escape(String(r.campana))}</span>`,
       `<span class="tabular-nums">${num(r.leads)}</span>`,
+      `<span class="tabular-nums text-xs" style="color:var(--text-3)" title="leads con campaña por la atribución nativa de GHL · leads que solo la traen por el utm_campaign del formulario · leads con anuncio (attr_ad_id)">${num(r.leads_ghl)} · ${num(r.leads_solo_form)} · ${num(r.leads_con_anuncio)}</span>`,
       `<span class="tabular-nums">${r.spend == null ? "—" : usd(r.spend)}</span>`,
       `<span class="tabular-nums">${r.cpl_real == null ? "—" : usd(r.cpl_real)}</span>`,
       `<span class="tabular-nums font-semibold" style="color:${(r.ganadas || 0) > 0 ? TONE.pos : TONE.muted}">${num(r.ganadas)}</span>`,
