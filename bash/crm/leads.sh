@@ -2,10 +2,14 @@
 # leads.sh — los leads del CRM como FILAS, con su dueño, su procedencia y su
 # contacto al lado. `pipeline.sh` da el tablero agregado; esto da la lista.
 #
-# Lo que lo hace distinto de `pipeline.sh --list` es la ATRIBUCIÓN: resuelve
-# utm_source/utm_campaign desde los custom_fields del contacto contra
-# `crm_custom_fields`, así que cada fila dice si el lead llegó por pauta (y de
-# qué campaña) o por un formulario orgánico.
+# Lo que lo hace distinto de `pipeline.sh --list` es la ATRIBUCIÓN, con dos
+# fuentes (desde 2026-08-21, misma regla que embudo.sh/angulos.sh): la NATIVA
+# de GHL que Marketico persiste en crm_contacts (attr_campaign_id/attr_ad_id,
+# último toque — la que trae el navegador del lead) y, de fallback, el
+# utm_source/utm_campaign del formulario (custom_fields contra
+# `crm_custom_fields`). Cada fila dice si el lead llegó por pauta, de qué
+# campaña y de qué ANUNCIO, o por qué sesión (Social media / Referral / Direct)
+# y formulario entró si no hay pauta.
 #
 # `--dueno sin-dueno` es el caso que le dio origen: `crm_opportunities.user_id`
 # sale de `assigned_to` de GHL, y cuando GHL no trae dueño la oportunidad queda
@@ -35,8 +39,8 @@ Uso: leads.sh [--dueno LISTA] [--project N] [--status S] [--stage FRAG]
   --from / --to    ventana sobre created_date (la fecha real de GHL)
   --dias-min N     solo los que llevan N días o más desde que se crearon
                    (los que ya se enfriaron)
-  --pagado         solo los que traen utm_* (llegaron por pauta)
-  --organico       solo los que NO traen utm_*
+  --pagado         solo los atribuidos a una campaña (GHL o utm del form)
+  --organico       solo los que NO (orgánico, referral, directo)
   --con-contacto   solo los que tienen contacto espejado
   --sin-contacto   solo los que NO lo tienen (el contacto nunca se ingirió)
   --limit N        default 200; 0 = sin tope
@@ -94,8 +98,8 @@ fi
 [[ "$CONTACT" == "no" ]] && where="$where AND c.id IS NULL"
 [[ -n "$STAGE"   ]] && where="$where AND st.name ILIKE '%$(esc "$STAGE")%'"
 [[ -n "$DIASMIN" ]] && where="$where AND (CURRENT_DATE - o.created_date::date) >= $((DIASMIN))"
-[[ "$PAGADO" == "si" ]] && where="$where AND utm.src IS NOT NULL"
-[[ "$PAGADO" == "no" ]] && where="$where AND utm.src IS NULL"
+[[ "$PAGADO" == "si" ]] && where="$where AND coalesce(ca.name, utm.camp) IS NOT NULL"
+[[ "$PAGADO" == "no" ]] && where="$where AND coalesce(ca.name, utm.camp) IS NULL"
 
 lim=""; [[ "$LIMIT" != "0" ]] && lim="LIMIT $((LIMIT))"
 
@@ -111,15 +115,25 @@ SELECT left(o.id::text,8)                                   AS id,
        coalesce(c.email,'—')                                AS email,
        coalesce(c.phone,'—')                                AS telefono,
        coalesce(array_to_string(c.tags,', '),'—')           AS tags,
-       -- Atribución: un lead con utm_* llegó por pauta, o sea que lo PAGAMOS.
-       -- Es la diferencia entre un lead sin dueño y plata quemada, así que
-       -- viaja como dato (origen + campaña), no como bandera.
-       coalesce(utm.src,'—')                                AS origen,
-       coalesce(utm.camp,'—')                               AS campana,
+       -- Atribución: un lead atribuido a una campaña llegó por pauta, o sea
+       -- que lo PAGAMOS. Es la diferencia entre un lead sin dueño y plata
+       -- quemada, así que viaja como dato (origen + campaña + anuncio), no
+       -- como bandera. origen = utm_source del form si lo hay; si no, la
+       -- sesión que registró GHL (pauta sin form → 'fb', o Social media /
+       -- Referral / Direct traffic para lo no pagado).
+       coalesce(utm.src,
+                CASE WHEN ca.name IS NOT NULL THEN 'fb' END,
+                coalesce(c.last_attribution_source, c.attribution_source)->>'sessionSource',
+                '—')                                         AS origen,
+       coalesce(ca.name, utm.camp, '—')                     AS campana,
+       coalesce(ad.name, '—')                               AS anuncio,
+       coalesce(c.ghl_source, '—')                          AS formulario,
        pr.name                                              AS proyecto
 FROM crm_opportunities o
 JOIN projects pr        ON pr.id = o.project_id
 LEFT JOIN crm_contacts c ON c.id = o.contact_id
+LEFT JOIN campaigns ca   ON ca.id = c.attr_campaign_id
+LEFT JOIN ads ad         ON ad.id = c.attr_ad_id AND c.attr_ad_id ~ '^[0-9]+$'
 LEFT JOIN crm_pipelines pl ON pl.id = o.pipeline_id
 LEFT JOIN users u        ON u.id = o.user_id
 LEFT JOIN persons pe     ON pe.person_id = u.person_id

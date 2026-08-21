@@ -3,9 +3,12 @@
 # solo objeto JSON. Es el gemelo de detalle de leads.sh / pipeline.sh --list,
 # pensado para el panel derecho del viz (fuente `crm_opp_detail`).
 #
-# Incluye los custom_fields del contacto tal cual vienen de GHL: ahí es donde
-# suele quedar la huella del formulario de entrada, que es lo que hace falta
-# para entender por dónde llegó un lead que nadie tomó.
+# Incluye los custom_fields del contacto tal cual vienen de GHL (el survey de
+# calificación + utm del formulario) y, desde 2026-08-21, el bloque
+# `atribucion`: la atribución NATIVA de GHL que Marketico persiste en
+# crm_contacts (sesión, campaña y ANUNCIO de Meta resueltos contra
+# campaigns/ads, utm_content, placement, formulario de entrada, fecha real de
+# alta en GHL) — por dónde llegó el lead según su navegador, no según el form.
 #
 # Uso: opp_detail.sh <id|prefijo> [--json]   (siempre emite JSON)
 # Read-only.
@@ -60,6 +63,28 @@ SELECT coalesce(row_to_json(q)::text, '{}') FROM (
               ON cf.ghl_field_id = f->>'id' AND cf.project_id = o.project_id
            WHERE nullif(f->>'value','') IS NOT NULL) AS campos_personalizados,
          to_char(c.created_at,'YYYY-MM-DD')        AS contacto_ingerido,
+         -- Atribución nativa de GHL (último toque; attributionSource como
+         -- fallback), con campaña y anuncio resueltos contra las tablas de Meta.
+         (SELECT jsonb_strip_nulls(jsonb_build_object(
+             'sesion',        a->>'sessionSource',
+             'campana',       ca.name,
+             'campana_id',    nullif(c.attr_campaign_id,''),
+             'anuncio',       ad.name,
+             'anuncio_id',    CASE WHEN c.attr_ad_id ~ '^[0-9]+$' THEN c.attr_ad_id END,
+             'utm_content',   nullif(c.attr_utm_content,''),
+             'utm_source',    a->>'utmSource',
+             'utm_medium',    a->>'utmMedium',
+             'placement',     substring(a->>'url' from '[?&]placement=([^&]+)'),
+             'referrer',      a->>'referrer',
+             'formulario',    c.ghl_source,
+             'alta_ghl',      to_char(c.ghl_date_added,'YYYY-MM-DD HH24:MI'),
+             'primer_toque_distinto', CASE WHEN c.attribution_source IS NOT NULL AND c.last_attribution_source IS NOT NULL
+                                            AND c.attribution_source->>'utmContent' IS DISTINCT FROM c.last_attribution_source->>'utmContent'
+                                           THEN c.attribution_source->>'utmContent' END))
+          FROM (SELECT coalesce(c.last_attribution_source, c.attribution_source) AS a) x
+          LEFT JOIN campaigns ca ON ca.id = c.attr_campaign_id
+          LEFT JOIN ads ad ON ad.id = c.attr_ad_id AND c.attr_ad_id ~ '^[0-9]+$'
+         ) AS atribucion,
          -- ¿este contacto tuvo llamadas agendadas?
          (SELECT count(*) FROM meetings m
            WHERE m.meeting_type='call'
