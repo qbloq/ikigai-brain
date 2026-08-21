@@ -584,7 +584,15 @@ la verdad del dinero es la caja (pixel viaja como `*_pixel`); ratios solo
 contra pauta USD. Nació del meeting `b3f06835` (2026-08-19). Read-only; feeds
 la fuente viz `embudo` (cache 60s por etiqueta con el API externo) y la UI de
 rol ejecutivo `embudo-cruce` (page `embudo`; las **metas** — p.ej. ROAS ≥3.5 —
-van en `params.metas` del spec, no en código).
+van en `params.metas` del spec, no en código). Desde 2026-08-21 el spec lleva
+también **`metas.salud`**: la lista de benchmarks por tasa de paso (`{metrica,
+ruta, bueno, excelente, dir, unidad, escala}`) que la página pinta como bloque
+«Salud del embudo vs benchmarks» (excelente · bueno · mejorable). La `ruta` es
+punteada con la **misma semántica que `testeo_abrir.sh --metrica`**
+(`pauta.0.ctr`, `vsl.total.tasa_play`) y admite un cociente `a / b` con
+`escala` para tasas que el script no emite calculadas. Son referencias (hoy:
+high-ticket infoproductos, alineación DG 2026-08-20), no metas de la org —
+calibrar con la serie propia re-publicando el spec.
 
 ## Testeos domain — el histórico de testeos del embudo ([bash/testeos/](bash/testeos/))
 
