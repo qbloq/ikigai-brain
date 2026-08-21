@@ -172,7 +172,7 @@ function renderOrganico(ui) {
        </div>
        ${section("Serie mensual — orgánico vs pauta", `últimos ${num(m.meses)} meses · la caja de cada mes es la cobrada A HOY de esos leads: los meses recientes siguen cobrando`)}
        ${chartCard(serieSpec, "showserie", tSerie)}
-       ${section("ManyChat — el mapa del flujo de Instagram", "los tags de la cuenta de operación: el recorrido nuevo seguidor → quiz → asesoría → serie YT → lead magnets → grupo VIP · sin conteos (ver nota)")}
+       ${section("ManyChat — el mapa del flujo de Instagram", `${mc.disponible ? `conectado · ${num((mc.mapa || []).length)} tags` : "sin conexión"} · el recorrido nuevo seguidor → quiz → asesoría → serie YT → lead magnets → grupo VIP · el API no da conteos (ver nota)`)}
        ${mcHtml}
        ${(d.sin_instrumentar || []).length ? `<p class="mt-4 text-xs" style="color:var(--text-3)"><b>Sin instrumentar:</b> ${d.sin_instrumentar.map((x) => escape(x)).join(" · ")}</p>` : ""}`;
 
