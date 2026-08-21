@@ -79,6 +79,7 @@ acceso_alternativa() {
   case "$1" in
     ghl)   echo "bash/ghl/ lee tokens de project_crm_configs; el espejo del CRM es bash/crm/ (ingestado, sin credencial)." ;;
     vturb) echo "bash/vturb/ lee tokens de project_vturb_video_configs; el fallback vía proxy Mkt (apis/mkt/vturb-video.openapi.json) está pendiente." ;;
+    meta)  echo "bash/ads/creativos_sync.sh lee el user token de identities (provider facebook*) para el Graph API; las métricas por anuncio (anuncios.sh) salen de la DB sin credencial." ;;
     *)     echo "el dominio '$1' opera con credencial de proveedor." ;;
   esac
 }

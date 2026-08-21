@@ -10,12 +10,21 @@
 # alcance, clics al link, CTR link, CPC, CPM, LPV, tasa LPV, plays (vv) y
 # cuartiles vv25/50/75/100, hook % (vv25/vv), hold % (vv75/vv25), fin %
 # (vv100/vv), compras y valor del PIXEL, ROAS pixel, CPA, primer/último día
-# con datos, miniatura (o null).
+# con datos, miniatura (o null) — y LA CAJA REAL: leads (oportunidades del CRM
+# de la ventana atribuidas al ad por crm_contacts.attr_ad_id), won, planes
+# (≤60 d del lead), contrato, cash, ROAS real (cash/spend, solo USD), CPL real,
+# CAC, más tres columnas de cobertura repetidas en cada fila: cob_leads_total /
+# cob_leads_con_ad / cob_leads_ad_en_ventana (leads del mes, cuántos traen ad,
+# cuántos de esos ads gastaron en la ventana = los que caen en una fila).
 #
 # Reglas:
-#   - ROAS/compras son del PIXEL (lo que Meta atribuye), no caja: la caja por
-#     anuncio no existe todavía porque el CRM no trae utm_content/ad id — hasta
-#     entonces esta vista mide creativos, no dinero cobrado.
+#   - Dos atribuciones lado a lado, declaradas: compras/valor/ROAS del PIXEL
+#     (lo que Meta atribuye) y leads/planes/cash del CRM+caja (lo que entró).
+#     La segunda existe desde 2026-08-21: el ingestor de Marketico persiste la
+#     atribución nativa de GHL (attributionSource → attr_ad_id, último toque,
+#     url.ad_id antes que utmTerm; pedido: docs/marketico-pedido-atribucion-ghl.md).
+#     ~70% de los leads de pauta traen ad; el resto es orgánico/directo y no se
+#     reparte. Un lead de un ad que no gastó en la ventana no cae en ninguna fila.
 #   - `tipo`: marca = objetivo de campaña de awareness/engagement/likes/video,
 #     O BIEN anuncios con clics al link que casi no llegan a la landing
 #     (LPV ≤ 2% de los clics, con ≥50 clics): las campañas de seguidores con
@@ -58,7 +67,7 @@ while [[ $# -gt 0 ]]; do
     --min-spend) min_spend="$2"; shift 2 ;;
     --limit)     limit="$2"; shift 2 ;;
     --json)      FORMAT=json; shift ;;
-    -h|--help)   sed -n '2,31p' "$0"; exit 0 ;;
+    -h|--help)   sed -n '2,45p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -128,8 +137,54 @@ LEFT JOIN campaigns c ON c.id = d.campaign_id
 WHERE d.date_start BETWEEN params.d1 AND params.d2 $where_camp
 GROUP BY d.ad_id, ad.name, c.name, d.campaign_id, s.name, c.objective, ad.status, a.currency
 HAVING sum(d.spend) >= $min_spend
+),
+-- LA CAJA POR ANUNCIO (desde 2026-08-21, cuando el espejo del CRM empezó a
+-- persistir la atribución de GHL: crm_contacts.attr_ad_id = ad de Meta del
+-- último toque). Lead = oportunidad del CRM creada en la ventana, atribuida al
+-- ad de su contacto; plan = el primer payment_plan del contacto creado entre el
+-- lead y +60 d (misma guardia de embudo.sh/conversion_real.sh); cash = cuotas
+-- con payment_date. Un lead cuyo ad no gastó en la ventana no cae en ninguna
+-- fila (el ad ya no corre): cob_* lo declara.
+leads AS (
+  SELECT c.attr_ad_id AS ad_id, o.status, o.created_date::date AS creada, c.ghl_contact_id
+  FROM crm_opportunities o
+  JOIN crm_contacts c ON c.id = o.contact_id
+  JOIN params ON o.project_id = params.pid
+  WHERE o.created_date::date BETWEEN params.d1 AND params.d2
+),
+lc AS (
+  SELECT l.*, v.plan_id, v.original_amount, v.cash
+  FROM leads l
+  LEFT JOIN LATERAL (
+    SELECT pp.plan_id, pp.original_amount,
+           coalesce((SELECT sum(i.paid_amount) FROM installments i
+                     WHERE i.plan_id = pp.plan_id AND i.payment_date IS NOT NULL),0) AS cash
+    FROM payment_plans pp
+    WHERE l.ghl_contact_id IS NOT NULL
+      AND pp.customer_id = l.ghl_contact_id
+      AND pp.created_at::date BETWEEN l.creada AND l.creada + 60
+    ORDER BY pp.created_at LIMIT 1) v ON true
+),
+caja AS (
+  SELECT ad_id, count(*) AS leads, count(*) FILTER (WHERE status = 'won') AS won,
+         count(plan_id) AS planes, coalesce(sum(original_amount),0) AS contrato, coalesce(sum(cash),0) AS cash
+  FROM lc WHERE ad_id ~ '^[0-9]+\$' GROUP BY 1
+),
+cob AS (
+  SELECT count(*) AS leads_total,
+         count(*) FILTER (WHERE ad_id ~ '^[0-9]+\$') AS leads_con_ad,
+         count(*) FILTER (WHERE ad_id IN (SELECT ad_id FROM agg)) AS leads_ad_en_ventana
+  FROM leads
 )
-SELECT * FROM agg $where_tipo ORDER BY spend DESC $lim"
+SELECT agg.*,
+       coalesce(cj.leads,0)  AS leads,  coalesce(cj.won,0)      AS won,
+       coalesce(cj.planes,0) AS planes, coalesce(cj.contrato,0) AS contrato, coalesce(cj.cash,0) AS cash,
+       CASE WHEN agg.cur = 'USD' THEN round(coalesce(cj.cash,0)/nullif(agg.spend,0), 2) END AS roas_real,
+       round(agg.spend/nullif(cj.leads,0), 2)  AS cpl_real,
+       round(agg.spend/nullif(cj.planes,0), 2) AS cac,
+       cob.leads_total AS cob_leads_total, cob.leads_con_ad AS cob_leads_con_ad, cob.leads_ad_en_ventana AS cob_leads_ad_en_ventana
+FROM agg LEFT JOIN caja cj ON cj.ad_id = agg.ad_id CROSS JOIN cob
+$where_tipo ORDER BY spend DESC $lim"
 
 rows="$(psql_ro -t -A -c "SELECT coalesce(json_agg(row_to_json(_q)), '[]'::json) FROM ($SQL) _q;")"
 cache="$(db_path ads_creativos)"
@@ -156,12 +211,13 @@ for r in rows:
     r["titulo"] = t.get("titulo"); r["cuerpo"] = t.get("cuerpo"); r["enlace"] = t.get("enlace")   # copy + landing (solo --json; la tabla no los imprime)
 if os.environ["FORMAT"] == "json":
     print(json.dumps(rows, ensure_ascii=False)); raise SystemExit
-cols = ["anuncio","campana","tipo","estado","cur","spend","impr","clics_link","ctr_link","cpm","lpv","hook_pct","hold_pct","compras","valor_pixel","roas_pixel","cpa","miniatura"]
+cols = ["anuncio","campana","tipo","estado","cur","spend","impr","clics_link","ctr_link","lpv","hook_pct","hold_pct","compras","roas_pixel","leads","planes","contrato","cash","roas_real","cac","miniatura"]
 def f(v):
     if v is None: return "—"
     return str(v)[:44]
 w = {c: max(len(c), *(len(f(r.get(c))) for r in rows)) if rows else len(c) for c in cols}
 print("  ".join(c.ljust(w[c]) for c in cols)); print("  ".join("-"*w[c] for c in cols))
 for r in rows: print("  ".join(f(r.get(c)).ljust(w[c]) for c in cols))
-print(f"({len(rows)} anuncios · miniaturas en caché: {sum(1 for r in rows if r.get('miniatura'))})")
+c0 = rows[0] if rows else {}
+print(f"({len(rows)} anuncios · miniaturas en caché: {sum(1 for r in rows if r.get('miniatura'))} · leads de la ventana: {c0.get('cob_leads_total','—')}, con ad: {c0.get('cob_leads_con_ad','—')}, cuyo ad gastó en la ventana: {c0.get('cob_leads_ad_en_ventana','—')})")
 PY

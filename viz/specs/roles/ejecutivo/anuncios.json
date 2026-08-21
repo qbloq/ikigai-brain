@@ -1,0 +1,10 @@
+{
+  "id": "anuncios",
+  "name": "Anuncios · DG (mes)",
+  "component": "anuncios",
+  "source": "ad_anuncios",
+  "params": { "project": "David Guerrero", "tipo": "adquisicion" },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-08-21T17:30:00.000Z"
+}
