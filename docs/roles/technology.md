@@ -1,6 +1,6 @@
 # Rol: Technology
 
-**Quiénes:** Angelica Ospina (copiloto `angelica-ospina`) · Juan Sebastián Martínez (copiloto `juan-sebastian-martinez`) · Pablo Gaviria (copiloto `pablo-gaviria`)
+**Quiénes:** Pablo Gaviria (copiloto `pablo-gaviria`) — único Technology en el roster (confirmado contra la DB 2026-08-21; Angélica Ospina y Juan Sebastián Martínez ya no hacen parte del equipo — sus forks siguen en la flota con `role: technology`, sin acceso git, pendientes de baja)
 **Capa de rol (viz):** [viz/specs/roles/technology/](../../viz/specs/roles/technology/)
 **Nivel de acceso:** **todo-poderoso** — `acceso.json`: `{uis:*, fuentes:*}` (decisión 2026-08-21). Su viz carga las capas de UI de **todos** los roles (con badge de rol por UI) y `bash/ghl/`+`bash/vturb/` le responden. Es el rol de Parallelo: quien construye y audita el sistema tiene que poder verlo entero.
 **Tareas históricas:** 20 asignadas · 19 etiquetadas con arquetipo · 2 abiertas hoy
