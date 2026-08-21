@@ -1,7 +1,9 @@
 # Control de acceso a fuentes por rol (copilotos)
 
-**Fecha**: 2026-08-20 · **Estado**: diseño acordado en conversación, pendiente
-de su propia sesión (no implementado)
+**Fecha**: 2026-08-20 · **Estado**: implementado 2026-08-21 (plan
+`docs/superpowers/plans/2026-08-21-control-de-acceso-fuentes.md`); preguntas
+abiertas 1-2 resueltas ahí (mapa en código; `director-comercial` sin `ghl`),
+3-4 siguen abiertas
 
 ## Contexto y propósito
 

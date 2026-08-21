@@ -48,6 +48,22 @@ para craftear qué ve y qué opera cada copiloto.
 
 Leyenda: **S1** Narrativa & Oferta · **S2** Producción de Creativos (anuncios) · **S3** Optimización de Pauta · **S4** Contenido Orgánico · **S5** Testimonios / Prueba Social · **S6** Calificación de Leads & Setter Ops · **S7** Funnel / Landing / Checkout · **S8** Métricas & Fuente de Verdad · **S9** Lanzamiento / Masterclass · **S10** Gobernanza de Tareas · **S11** Producto / Plataforma (Paralelo) · **S12** Cierre & Retención (Closers).
 
+## Acceso a fuentes con credencial de proveedor
+
+El acceso a los dominios de `bash/` que operan con **tokens de proveedor**
+(`bash/ghl/`, `bash/vturb/`) lo define **el rol**, no el hecho de ser
+copiloto (decisión 2026-08-20, spec
+`docs/superpowers/specs/2026-08-20-control-de-acceso-fuentes-design.md`).
+El mapa vive en [`bash/lib/acceso.sh`](../../bash/lib/acceso.sh)
+(`require_acceso <dominio>`): sin `copilot.json` = cerebro = acceso total;
+con `copilot.json`, solo los roles del mapa — hoy **`ejecutivo` = total**;
+todo otro rol se niega con `exit 3` y un mensaje que dice a dónde ir (el
+espejo `bash/crm/` para GHL; el proxy Mkt, pendiente, para VTurb). Un
+`copilot.json` sin `role` legible no hereda permisos. **Ampliar el mapa es
+decisión de gobernanza** y se registra en el spec. La cerca es un riel, no un
+muro (un fork con `DATABASE_URL` puede leer el token); el muro es mover las
+credenciales detrás del backend.
+
 ## Hallazgos transversales
 
 - **Media Buyer no existe** — S3 (pauta) no tiene dueño formal; hoy lo absorben Ejecutivo y Estratega. Brecha #1 del discovery, sigue vigente.
