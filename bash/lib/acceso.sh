@@ -25,8 +25,9 @@
 # Independiente de common.sh a propósito: tiene que poder responder en un fork
 # sin .env ni Postgres. No toca red ni base: decide con archivos locales.
 #
-# EL MAPA vive en docs/roles/acceso.json — UNA sola fuente, DOS consumidores:
-# este helper (clave `dominios`: los bash/ cercados por rol) y viz/lib/store.js
+# EL MAPA vive en docs/roles/acceso.json — UNA sola fuente, TRES consumidores:
+# este helper (clave `dominios`: los bash/ cercados por rol), forja/bash/fleet/
+# crear_alta.sh (clave `tablas`: tiers de Postgres del rol LOGIN) y viz/lib/store.js
 # (clave `uis`: qué capas de UI de rol carga el viz). Decisión 2026-08-21
 # (Santiago): technology = {uis:*, dominios:*} — el rol todo-poderoso — y
 # ejecutivo = {dominios:*}. Editarlo es decisión de gobernanza; se registra en

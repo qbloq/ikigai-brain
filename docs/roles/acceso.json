@@ -1,5 +1,5 @@
 {
-  "_doc": "Qué puede cada ROL de copiloto. Una sola fuente, dos consumidores: bash/lib/acceso.sh (`dominios`: los bash/ cercados por rol — ghl, vturb, users, …) y viz/lib/store.js (`uis`: qué capas de UI de rol carga el viz). Sin copilot.json = cerebro = todo. Rol ausente = solo lo suyo. '*' = todo; lista = solo esos. Editar esto es decisión de gobernanza — se registra en docs/superpowers/specs/2026-08-20-control-de-acceso-fuentes-design.md.",
-  "technology": { "uis": "*", "dominios": "*" },
-  "ejecutivo":  { "dominios": "*" }
+  "_doc": "Qué puede cada ROL de copiloto. Una sola fuente, tres consumidores: bash/lib/acceso.sh (`dominios`: los bash/ cercados por rol — ghl, vturb, users, …), viz/lib/store.js (`uis`: qué capas de UI de rol carga el viz) y forja/bash/fleet/crear_alta.sh (`tablas`: qué tiers de Postgres recibe el rol LOGIN del copiloto al darlo de alta — '*' = ikigai_tier_total, TODAS las tablas en lectura, migración 007; lista = tier_<nombre>, p.ej. ['compensacion']; sin la clave = solo copiloto_base). Sin copilot.json = cerebro = todo. Rol ausente = solo lo suyo. '*' = todo; lista = solo esos. Editar esto es decisión de gobernanza — se registra en docs/superpowers/specs/2026-08-20-control-de-acceso-fuentes-design.md.",
+  "technology": { "uis": "*", "dominios": "*", "tablas": "*" },
+  "ejecutivo": { "dominios": "*", "tablas": "*" }
 }
