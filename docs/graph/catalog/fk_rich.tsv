@@ -13,6 +13,9 @@ archetype_outputs	artifact_type_id	f	artifact_types	id	f	a	archetype_outputs_art
 archetype_outputs	io_type_id	f	io_types	id	f	a	archetype_outputs_io_type_id_fkey
 archetype_params	archetype_id	f	activity_archetypes	id	f	c	archetype_params_archetype_id_fkey
 call_meeting_results	meeting_id	t	meetings	id	t	c	call_meeting_results_meeting_id_fkey
+call_report_tiradas	call_report_id	t	call_reports	id	f	c	call_report_tiradas_call_report_id_fkey
+call_reports	meeting_id	t	meetings	id	f	a	call_reports_meeting_id_fkey
+call_reports_gemini	meeting_id	t	meetings	id	t	a	call_reports_gemini_meeting_id_fkey
 campaign_insights_daily	ad_account_id	f	ad_accounts	id	f	a	campaign_insights_daily_ad_account_id_fkey
 campaigns	ad_account_id	f	ad_accounts	id	f	a	campaigns_ad_account_id_fkey
 commission_payouts	commission_rule_id	f	commission_rules	id	f	n	commission_payouts_commission_rule_id_fkey

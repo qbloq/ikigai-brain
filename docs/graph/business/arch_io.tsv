@@ -36,6 +36,9 @@ A12.6	input	message_or_communication	f
 A12.6	output	credentials_access	t
 A12.7	input	contact_info	t
 A12.7	output	system_configuration	t
+A12.8	input	analytics_report	t
+A12.8	input	decision	t
+A12.8	output	analytics_report	t
 A2.1	input	analytics_report	f
 A2.1	input	strategy_document	t
 A2.1	output	strategy_document	t
@@ -88,6 +91,9 @@ A4.2	output	strategy_document	t
 A4.4	input	analytics_report	f
 A4.4	input	strategy_document	t
 A4.4	output	strategy_document	t
+A4.7	input	content_draft	f
+A4.7	input	video_asset	t
+A4.7	output	video_asset	t
 A5.1	input	analytics_report	t
 A5.1	output	contact_info	t
 A5.2	input	documentation	t
@@ -114,6 +120,9 @@ A6.5	output	schedule_event	t
 A6.7	input	analytics_report	t
 A6.7	input	strategy_document	f
 A6.7	output	strategy_document	t
+A6.8	input	analytics_report	t
+A6.8	input	analytics_report	t
+A6.8	output	strategy_document	t
 A7.1	input	content_draft	t
 A7.1	input	strategy_document	t
 A7.1	input	system_configuration	f

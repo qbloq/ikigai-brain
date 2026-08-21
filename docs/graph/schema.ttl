@@ -28,7 +28,7 @@ ent:activity_archetypes a owl:Class ;
     rdfs:subClassOf dom:catalog ;
     rule:primaryKey "id" ;
     rule:unique "slug" ;
-    rdfs:comment "table, ~76 filas, 15 columnas"@es .
+    rdfs:comment "table, ~79 filas, 15 columnas"@es .
 ent:ad_accounts a owl:Class ;
     rdfs:label "ad_accounts" ;
     rdfs:subClassOf dom:ads ;
@@ -38,38 +38,38 @@ ent:ad_insights_daily a owl:Class ;
     rdfs:label "ad_insights_daily" ;
     rdfs:subClassOf dom:ads ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~5994 filas, 36 columnas"@es .
+    rdfs:comment "table, ~7375 filas, 36 columnas"@es .
 ent:ad_sets a owl:Class ;
     rdfs:label "ad_sets" ;
     rdfs:subClassOf dom:ads ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~1375 filas, 17 columnas"@es .
+    rdfs:comment "table, ~1392 filas, 17 columnas"@es .
 ent:ads a owl:Class ;
     rdfs:label "ads" ;
     rdfs:subClassOf dom:ads ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~3715 filas, 9 columnas"@es .
+    rdfs:comment "table, ~3797 filas, 9 columnas"@es .
 ent:archetype_acceptance_criteria a owl:Class ;
     rdfs:label "archetype_acceptance_criteria" ;
     rdfs:subClassOf dom:catalog ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~169 filas, 7 columnas"@es .
+    rdfs:comment "table, ~182 filas, 7 columnas"@es .
 ent:archetype_inputs a owl:Class ;
     rdfs:label "archetype_inputs" ;
     rdfs:subClassOf dom:catalog ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~101 filas, 8 columnas"@es .
+    rdfs:comment "table, ~107 filas, 8 columnas"@es .
 ent:archetype_outputs a owl:Class ;
     rdfs:label "archetype_outputs" ;
     rdfs:subClassOf dom:catalog ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~62 filas, 8 columnas"@es .
+    rdfs:comment "table, ~65 filas, 8 columnas"@es .
 ent:archetype_params a owl:Class ;
     rdfs:label "archetype_params" ;
     rdfs:subClassOf dom:catalog ;
     rule:primaryKey "id" ;
     rule:unique "archetype_id,key" ;
-    rdfs:comment "table, ~118 filas, 8 columnas"@es .
+    rdfs:comment "table, ~120 filas, 8 columnas"@es .
 ent:artifact_binding_backup_inputs a owl:Class ;
     rdfs:label "artifact_binding_backup_inputs" ;
     rdfs:subClassOf dom:tasks ;
@@ -90,22 +90,43 @@ ent:call_meeting_results a owl:Class ;
     rule:primaryKey "id" ;
     rule:unique "meeting_id" ;
     rdfs:comment "table, ~0 filas, 5 columnas"@es .
+ent:call_report_tiradas a owl:Class ;
+    rdfs:label "call_report_tiradas" ;
+    rdfs:subClassOf dom:misc ;
+    rule:primaryKey "id" ;
+    rule:unique "call_report_id,n" ;
+    rdfs:comment "table, ~339 filas, 4 columnas"@es .
+ent:call_report_vigente a owl:Class ;
+    rdfs:label "call_report_vigente" ;
+    rdfs:subClassOf dom:misc ;
+    rdfs:comment "view, ~0 filas, 8 columnas"@es .
+ent:call_reports a owl:Class ;
+    rdfs:label "call_reports" ;
+    rdfs:subClassOf dom:misc ;
+    rule:primaryKey "id" ;
+    rule:unique "meeting_id,generacion" ;
+    rdfs:comment "table, ~121 filas, 23 columnas"@es .
+ent:call_reports_gemini a owl:Class ;
+    rdfs:label "call_reports_gemini" ;
+    rdfs:subClassOf dom:misc ;
+    rule:primaryKey "meeting_id" ;
+    rdfs:comment "table, ~240 filas, 4 columnas"@es .
 ent:campaign_insights_daily a owl:Class ;
     rdfs:label "campaign_insights_daily" ;
     rdfs:subClassOf dom:ads ;
     rule:primaryKey "id" ;
     rule:unique "campaign_id,date_start,date_stop" ;
-    rdfs:comment "table, ~1331 filas, 20 columnas"@es .
+    rdfs:comment "table, ~1718 filas, 20 columnas"@es .
 ent:campaigns a owl:Class ;
     rdfs:label "campaigns" ;
     rdfs:subClassOf dom:ads ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~479 filas, 14 columnas"@es .
+    rdfs:comment "table, ~490 filas, 14 columnas"@es .
 ent:commission_payouts a owl:Class ;
     rdfs:label "commission_payouts" ;
     rdfs:subClassOf dom:finance ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~219 filas, 26 columnas"@es .
+    rdfs:comment "table, ~291 filas, 26 columnas"@es .
 ent:commission_rules a owl:Class ;
     rdfs:label "commission_rules" ;
     rdfs:subClassOf dom:finance ;
@@ -122,19 +143,19 @@ ent:crm_contacts a owl:Class ;
     rdfs:subClassOf dom:crm ;
     rule:primaryKey "id" ;
     rule:unique "project_id,ghl_contact_id" ;
-    rdfs:comment "table, ~1980 filas, 13 columnas"@es .
+    rdfs:comment "table, ~2734 filas, 13 columnas"@es .
 ent:crm_custom_fields a owl:Class ;
     rdfs:label "crm_custom_fields" ;
     rdfs:subClassOf dom:crm ;
     rule:primaryKey "id" ;
     rule:unique "project_id,ghl_field_id" ;
-    rdfs:comment "table, ~110 filas, 17 columnas"@es .
+    rdfs:comment "table, ~112 filas, 17 columnas"@es .
 ent:crm_opportunities a owl:Class ;
     rdfs:label "crm_opportunities" ;
     rdfs:subClassOf dom:crm ;
     rule:primaryKey "id" ;
     rule:unique "project_id,ghl_opportunity_id" ;
-    rdfs:comment "table, ~2054 filas, 16 columnas"@es .
+    rdfs:comment "table, ~2761 filas, 16 columnas"@es .
 ent:crm_pipelines a owl:Class ;
     rdfs:label "crm_pipelines" ;
     rdfs:subClassOf dom:crm ;
@@ -145,7 +166,7 @@ ent:drive_index a owl:Class ;
     rdfs:label "drive_index" ;
     rdfs:subClassOf dom:content ;
     rule:primaryKey "file_id" ;
-    rdfs:comment "table, ~15500 filas, 16 columnas"@es .
+    rdfs:comment "table, ~17952 filas, 16 columnas"@es .
 ent:drive_index_type_stats a owl:Class ;
     rdfs:label "drive_index_type_stats" ;
     rdfs:subClassOf dom:content ;
@@ -154,7 +175,7 @@ ent:economics_ledger a owl:Class ;
     rdfs:label "economics_ledger" ;
     rdfs:subClassOf dom:finance ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~543 filas, 12 columnas"@es .
+    rdfs:comment "table, ~764 filas, 12 columnas"@es .
 ent:expense_categories a owl:Class ;
     rdfs:label "expense_categories" ;
     rdfs:subClassOf dom:finance ;
@@ -176,7 +197,7 @@ ent:funnel_goals a owl:Class ;
     rdfs:subClassOf dom:crm ;
     rule:primaryKey "id" ;
     rule:unique "project_id,metric_symbol" ;
-    rdfs:comment "table, ~0 filas, 7 columnas"@es .
+    rdfs:comment "table, ~16 filas, 7 columnas"@es .
 ent:graph_conversations a owl:Class ;
     rdfs:label "graph_conversations" ;
     rdfs:subClassOf dom:runtime ;
@@ -192,13 +213,13 @@ ent:identities a owl:Class ;
     rdfs:subClassOf dom:people ;
     rule:primaryKey "id" ;
     rule:unique "provider,uid" ;
-    rdfs:comment "table, ~5 filas, 11 columnas"@es .
+    rdfs:comment "table, ~6 filas, 11 columnas"@es .
 ent:installments a owl:Class ;
     rdfs:label "installments" ;
     rdfs:subClassOf dom:finance ;
     rule:primaryKey "installment_id" ;
     rule:unique "plan_id,installment_number" ;
-    rdfs:comment "table, ~1243 filas, 14 columnas"@es .
+    rdfs:comment "table, ~1367 filas, 14 columnas"@es .
 ent:io_types a owl:Class ;
     rdfs:label "io_types" ;
     rdfs:subClassOf dom:catalog ;
@@ -240,24 +261,24 @@ ent:meeting_participants a owl:Class ;
     rdfs:subClassOf dom:meetings ;
     rule:primaryKey "id" ;
     rule:unique "meeting_id,uid" ;
-    rdfs:comment "table, ~863 filas, 11 columnas"@es .
+    rdfs:comment "table, ~1119 filas, 11 columnas"@es .
 ent:meeting_reports a owl:Class ;
     rdfs:label "meeting_reports" ;
     rdfs:subClassOf dom:meetings ;
     rule:primaryKey "id" ;
     rule:unique "meeting_id" ;
-    rdfs:comment "table, ~338 filas, 6 columnas"@es .
+    rdfs:comment "table, ~431 filas, 6 columnas"@es .
 ent:meeting_transcripts a owl:Class ;
     rdfs:label "meeting_transcripts" ;
     rdfs:subClassOf dom:meetings ;
     rule:primaryKey "id" ;
     rule:unique "meeting_id" ;
-    rdfs:comment "table, ~333 filas, 5 columnas"@es .
+    rdfs:comment "table, ~416 filas, 5 columnas"@es .
 ent:meetings a owl:Class ;
     rdfs:label "meetings" ;
     rdfs:subClassOf dom:meetings ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~2226 filas, 20 columnas"@es .
+    rdfs:comment "table, ~2515 filas, 20 columnas"@es .
 ent:meta_capi_events a owl:Class ;
     rdfs:label "meta_capi_events" ;
     rdfs:subClassOf dom:ads ;
@@ -289,7 +310,7 @@ ent:payment_plans a owl:Class ;
     rdfs:label "payment_plans" ;
     rdfs:subClassOf dom:finance ;
     rule:primaryKey "plan_id" ;
-    rdfs:comment "table, ~297 filas, 16 columnas"@es .
+    rdfs:comment "table, ~348 filas, 16 columnas"@es .
 ent:payroll_actuals a owl:Class ;
     rdfs:label "payroll_actuals" ;
     rdfs:subClassOf dom:finance ;
@@ -448,22 +469,22 @@ ent:spaces a owl:Class ;
     rdfs:label "spaces" ;
     rdfs:subClassOf dom:projects ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~1963 filas, 12 columnas"@es .
+    rdfs:comment "table, ~2210 filas, 12 columnas"@es .
 ent:sql_conversations a owl:Class ;
     rdfs:label "sql_conversations" ;
     rdfs:subClassOf dom:runtime ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~42 filas, 5 columnas"@es .
+    rdfs:comment "table, ~69 filas, 5 columnas"@es .
 ent:sql_messages a owl:Class ;
     rdfs:label "sql_messages" ;
     rdfs:subClassOf dom:runtime ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~212 filas, 10 columnas"@es .
+    rdfs:comment "table, ~290 filas, 10 columnas"@es .
 ent:task_acceptance_criteria a owl:Class ;
     rdfs:label "task_acceptance_criteria" ;
     rdfs:subClassOf dom:tasks ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~944 filas, 21 columnas"@es .
+    rdfs:comment "table, ~1450 filas, 21 columnas"@es .
 ent:task_attestations a owl:Class ;
     rdfs:label "task_attestations" ;
     rdfs:subClassOf dom:tasks ;
@@ -478,17 +499,17 @@ ent:task_comments a owl:Class ;
     rdfs:label "task_comments" ;
     rdfs:subClassOf dom:tasks ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~52 filas, 8 columnas"@es .
+    rdfs:comment "table, ~564 filas, 8 columnas"@es .
 ent:task_inputs a owl:Class ;
     rdfs:label "task_inputs" ;
     rdfs:subClassOf dom:tasks ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~534 filas, 15 columnas"@es .
+    rdfs:comment "table, ~739 filas, 15 columnas"@es .
 ent:task_outputs a owl:Class ;
     rdfs:label "task_outputs" ;
     rdfs:subClassOf dom:tasks ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~330 filas, 16 columnas"@es .
+    rdfs:comment "table, ~461 filas, 16 columnas"@es .
 ent:task_todos a owl:Class ;
     rdfs:label "task_todos" ;
     rdfs:subClassOf dom:tasks ;
@@ -498,7 +519,7 @@ ent:tasks a owl:Class ;
     rdfs:label "tasks" ;
     rdfs:subClassOf dom:tasks ;
     rule:primaryKey "id" ;
-    rdfs:comment "table, ~329 filas, 20 columnas"@es .
+    rdfs:comment "table, ~542 filas, 21 columnas"@es .
 ent:team_member_roles a owl:Class ;
     rdfs:label "team_member_roles" ;
     rdfs:subClassOf dom:people ;
@@ -531,7 +552,7 @@ ent:users a owl:Class ;
     rdfs:subClassOf dom:people ;
     rule:primaryKey "id" ;
     rule:unique "email" ;
-    rdfs:comment "table, ~26 filas, 15 columnas"@es .
+    rdfs:comment "table, ~31 filas, 15 columnas"@es .
 ent:verification_templates a owl:Class ;
     rdfs:label "verification_templates" ;
     rdfs:subClassOf dom:catalog ;
@@ -555,8 +576,9 @@ ent:workers a owl:Class ;
     rdfs:comment "table, ~5 filas, 9 columnas"@es .
 
 ### Rules: enumerated value sets (enum types and CHECK-as-enum)
-ent:artifact_types rule:enumerated [ rule:column "resolver_type" ; rule:datatype "check" ; rule:oneOf "table|storage|api|computed|inline|gdrive|sql|notion" ] .
 ent:artifact_types rule:enumerated [ rule:column "category" ; rule:datatype "check" ; rule:oneOf "document|approval|data|resource|decision" ] .
+ent:artifact_types rule:enumerated [ rule:column "resolver_type" ; rule:datatype "check" ; rule:oneOf "table|storage|api|computed|inline|gdrive|sql|notion" ] .
+ent:call_reports rule:constraint "n_tiradas >= 2" .
 ent:commission_payouts rule:enumerated [ rule:column "commission_type" ; rule:datatype "commission_type" ; rule:oneOf "sale|lead|service" ] .
 ent:commission_payouts rule:enumerated [ rule:column "rule_value_type" ; rule:datatype "commission_value_type" ; rule:oneOf "fixed|pct_installment|pct_plan_total" ] .
 ent:commission_payouts rule:enumerated [ rule:column "status" ; rule:datatype "payout_status" ; rule:oneOf "pending|approved|paid|rejected|cancelled" ] .
@@ -586,8 +608,8 @@ ent:runner_runs rule:enumerated [ rule:column "status" ; rule:datatype "check" ;
 ent:runners rule:enumerated [ rule:column "trigger_type" ; rule:datatype "check" ; rule:oneOf "cron|event|manual" ] .
 ent:runners rule:enumerated [ rule:column "status" ; rule:datatype "check" ; rule:oneOf "active|paused|error" ] .
 ent:sql_messages rule:enumerated [ rule:column "role" ; rule:datatype "check" ; rule:oneOf "user|assistant" ] .
-ent:task_acceptance_criteria rule:enumerated [ rule:column "pass_threshold" ; rule:datatype "check" ; rule:oneOf "high|medium|low" ] .
 ent:task_acceptance_criteria rule:enumerated [ rule:column "verification_method" ; rule:datatype "check" ; rule:oneOf "llm|manual|automated|test|attested" ] .
+ent:task_acceptance_criteria rule:enumerated [ rule:column "pass_threshold" ; rule:datatype "check" ; rule:oneOf "high|medium|low" ] .
 ent:task_acceptance_criteria rule:enumerated [ rule:column "confidence" ; rule:datatype "check" ; rule:oneOf "high|medium|low" ] .
 ent:task_attestations rule:enumerated [ rule:column "channel" ; rule:datatype "check" ; rule:oneOf "whatsapp|app|email" ] .
 ent:task_attestations rule:enumerated [ rule:column "status" ; rule:datatype "check" ; rule:oneOf "pending|sent|answered|expired|escalated" ] .
@@ -595,8 +617,8 @@ ent:tasks rule:enumerated [ rule:column "priority" ; rule:datatype "task_priorit
 ent:tasks rule:enumerated [ rule:column "status" ; rule:datatype "task_status" ; rule:oneOf "pending|in_progress|completed|blocked|cancelled" ] .
 ent:teams rule:enumerated [ rule:column "team_type" ; rule:datatype "check" ; rule:oneOf "operations|sales|partners|services" ] .
 ent:worker_runs rule:enumerated [ rule:column "status" ; rule:datatype "check" ; rule:oneOf "pending|running|success|error" ] .
-ent:workers rule:enumerated [ rule:column "status" ; rule:datatype "check" ; rule:oneOf "active|paused|error" ] .
 ent:workers rule:enumerated [ rule:column "worker_type" ; rule:datatype "check" ; rule:oneOf "gemini_structured|ax_llm|graph" ] .
+ent:workers rule:enumerated [ rule:column "status" ; rule:datatype "check" ; rule:oneOf "active|paused|error" ] .
 
 ### Relations (FK = object properties; implicit ones carry evidence)
 rel:activity_archetypes__sop_code__sops a owl:ObjectProperty ;
@@ -735,6 +757,36 @@ rel:call_meeting_results__meeting_id__meetings a owl:ObjectProperty ;
     rule:enforced "true" ;
     rule:onDelete "cascade" ;
     rdfs:comment "foreign key call_meeting_results_meeting_id_fkey"@es .
+rel:call_report_tiradas__call_report_id__call_reports a owl:ObjectProperty ;
+    rdfs:domain ent:call_report_tiradas ;
+    rdfs:range  ent:call_reports ;
+    rdfs:label "call_report_id→id" ;
+    rule:cardinality "N:1" ;
+    rule:participation "obligatoria" ;
+    rule:minCardinality "1" ;
+    rule:enforced "true" ;
+    rule:onDelete "cascade" ;
+    rdfs:comment "foreign key call_report_tiradas_call_report_id_fkey"@es .
+rel:call_reports__meeting_id__meetings a owl:ObjectProperty ;
+    rdfs:domain ent:call_reports ;
+    rdfs:range  ent:meetings ;
+    rdfs:label "meeting_id→id" ;
+    rule:cardinality "N:1" ;
+    rule:participation "obligatoria" ;
+    rule:minCardinality "1" ;
+    rule:enforced "true" ;
+    rule:onDelete "no action" ;
+    rdfs:comment "foreign key call_reports_meeting_id_fkey"@es .
+rel:call_reports_gemini__meeting_id__meetings a owl:ObjectProperty ;
+    rdfs:domain ent:call_reports_gemini ;
+    rdfs:range  ent:meetings ;
+    rdfs:label "meeting_id→id" ;
+    rule:cardinality "1:1" ;
+    rule:participation "obligatoria" ;
+    rdfs:subPropertyOf owl:FunctionalProperty ;
+    rule:enforced "true" ;
+    rule:onDelete "no action" ;
+    rdfs:comment "foreign key call_reports_gemini_meeting_id_fkey"@es .
 rel:campaign_insights_daily__ad_account_id__ad_accounts a owl:ObjectProperty ;
     rdfs:domain ent:campaign_insights_daily ;
     rdfs:range  ent:ad_accounts ;

@@ -9,6 +9,9 @@ archetype_outputs	id
 archetype_params	id
 artifact_types	id
 call_meeting_results	id
+call_report_tiradas	id
+call_reports	id
+call_reports_gemini	meeting_id
 campaign_insights_daily	id
 campaigns	id
 commission_payouts	id

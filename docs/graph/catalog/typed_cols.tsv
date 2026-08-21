@@ -5,6 +5,13 @@ artifact_types	binding_schema	jsonb	b	f
 artifact_types	reference_schema	jsonb	b	f
 artifact_types	resolver_config	jsonb	b	t
 call_meeting_results	results	jsonb	b	t
+call_report_tiradas	report	jsonb	b	t
+call_report_vigente	baja_confianza	_text	b	f
+call_report_vigente	report	jsonb	b	f
+call_reports	arquetipo_votos	jsonb	b	t
+call_reports	baja_confianza	_text	b	t
+call_reports	report	jsonb	b	t
+call_reports_gemini	report	jsonb	b	t
 campaign_insights_daily	conversions	jsonb	b	f
 campaign_insights_daily	cost_per_conversion	jsonb	b	f
 commission_payouts	commission_type	commission_type	e	t
