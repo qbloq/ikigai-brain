@@ -48,21 +48,26 @@ para craftear qué ve y qué opera cada copiloto.
 
 Leyenda: **S1** Narrativa & Oferta · **S2** Producción de Creativos (anuncios) · **S3** Optimización de Pauta · **S4** Contenido Orgánico · **S5** Testimonios / Prueba Social · **S6** Calificación de Leads & Setter Ops · **S7** Funnel / Landing / Checkout · **S8** Métricas & Fuente de Verdad · **S9** Lanzamiento / Masterclass · **S10** Gobernanza de Tareas · **S11** Producto / Plataforma (Paralelo) · **S12** Cierre & Retención (Closers).
 
-## Acceso a fuentes con credencial de proveedor
+## Qué puede cada rol — `acceso.json`
 
-El acceso a los dominios de `bash/` que operan con **tokens de proveedor**
-(`bash/ghl/`, `bash/vturb/`) lo define **el rol**, no el hecho de ser
-copiloto (decisión 2026-08-20, spec
-`docs/superpowers/specs/2026-08-20-control-de-acceso-fuentes-design.md`).
-El mapa vive en [`bash/lib/acceso.sh`](../../bash/lib/acceso.sh)
-(`require_acceso <dominio>`): sin `copilot.json` = cerebro = acceso total;
-con `copilot.json`, solo los roles del mapa — hoy **`ejecutivo` = total**;
-todo otro rol se niega con `exit 3` y un mensaje que dice a dónde ir (el
-espejo `bash/crm/` para GHL; el proxy Mkt, pendiente, para VTurb). Un
-`copilot.json` sin `role` legible no hereda permisos. **Ampliar el mapa es
-decisión de gobernanza** y se registra en el spec. La cerca es un riel, no un
-muro (un fork con `DATABASE_URL` puede leer el token); el muro es mover las
-credenciales detrás del backend.
+Lo que un copiloto puede **ver** (capas de UI) y **consultar** (fuentes con
+credencial de proveedor) lo define **el rol**, no el hecho de ser copiloto
+(spec `docs/superpowers/specs/2026-08-20-control-de-acceso-fuentes-design.md`
++ adenda 2026-08-21). El mapa es UN archivo, [`acceso.json`](acceso.json),
+con dos consumidores:
+
+| Clave | Quién la lee | Significado |
+|---|---|---|
+| `uis` | `viz/lib/store.js` | `"*"` = el viz carga las capas de UI de **todos** los roles (con badge de rol por UI). Sin la clave = solo la capa propia. |
+| `fuentes` | `bash/lib/acceso.sh` (`require_acceso <dominio>`) | `"*"` = todos los dominios con credencial (`bash/ghl/`, `bash/vturb/`); lista = solo esos; sin la clave = negado con `exit 3` y un mensaje que dice a dónde ir (el espejo `bash/crm/` para GHL; el proxy Mkt, pendiente, para VTurb). |
+
+Hoy: **`technology` = `{uis:*, fuentes:*}`** (el rol todo-poderoso — Parallelo)
+y **`ejecutivo` = `{fuentes:*}`** (mira el embudo completo con el VSL en vivo).
+Sin `copilot.json` = cerebro = todo, sin consultar el mapa. Un `copilot.json`
+sin `role` legible, o un mapa ausente, **no hereda nada** (fail-closed en los
+dos consumidores). **Editar el mapa es decisión de gobernanza** y se registra
+en el spec. La cerca es un riel, no un muro (un fork con `DATABASE_URL` puede
+leer el token); el muro es mover las credenciales detrás del backend.
 
 ## Hallazgos transversales
 

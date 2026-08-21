@@ -531,6 +531,26 @@ idempotente por `(escenario,ref)` en la sqlite `closers_ops`), y los tres
 `escenario_*.sh` **[WRITE→WhatsApp]** que el cron dispara. Doc completo, con
 plantillas Meta y pendientes: `docs/closers-whatsapp.md` (operador).
 
+## Onboarding domain — primer contacto por WhatsApp ([bash/onboarding/](bash/onboarding/))
+
+El opt-in inicial del equipo al Cerebro por WhatsApp (mismo WABA que
+`bash/closers/`, 690499003502578) — **nunca broadcast**: un destinatario por
+corrida, a quién y cuándo lo decide el humano. `enviar_onboarding.sh --para
+<nombre> [--gancho "…"] [--grupo equipo|closer] [--dry-run] [--json]`
+**[WRITE→WhatsApp]** agrupa por rol (team_members/team_roles): **closer** ya
+tiene ventana abierta con Iki a diario → texto de sesión +
+`--fallback-plantilla onboarding_closer`; **equipo** (primer contacto real,
+nunca les llegó nada de este número) → siempre plantilla `onboarding_equipo`
+(un texto de sesión aquí lo acepta Meta y falla después por webhook, no al
+instante — ver `docs/closers-whatsapp.md`). El gancho (`{{2}}`) es genérico
+por defecto, `--gancho` lo personaliza (p.ej. Juan Camilo: sus dos assets ya
+vivos, dashboard del embudo + testeos VSL/pauta). Idempotente vía
+`bash/closers/enviar.sh` (`escenario=onboarding-cerebro`, `ref=<nombre>`).
+`plantilla_crear.sh --nombre N --categoria UTILITY|MARKETING --cuerpo "…{{1}}…"
+[--ejemplos "a|b"] [--dry-run] [--json]` **[WRITE→Meta]** crea una plantilla
+nueva en el WABA (sin upsert; queda PENDING hasta que Meta la revise, cuenta
+con días).
+
 ## Notion domain — read-only extraction ([bash/notion/](bash/notion/))
 
 Pull Notion content to local via the HTTP API (curl/python3 stdlib, no npm deps;
@@ -730,8 +750,11 @@ plus its agent-readable twin `identidad.md` (written at birth from
 `plantillas/identidad-copiloto/`; it imports `docs/roles/<rol>.md`). The
 CLAUDE.md stays byte-identical across brain and forks — it composes identity
 via `@identidad.md`, never by assembling a per-fork copy. The viz store loads
-ONLY that role's spec layer and stamps `owner`/`role` on everything created.
-The brain (no copilot.json) sees org + all roles.
+that role's spec layer — or every role's, when `docs/roles/acceso.json` says
+`uis:"*"` for it (today: `technology`) — and stamps `owner`/`role` on
+everything created. The brain (no copilot.json) sees org + all roles. That
+same file's `fuentes` key is what `bash/lib/acceso.sh` reads: **one map, two
+consumers** (`docs/roles/README.md`).
 Everything a copilot writes lands in `viz/specs/local/` and auto-commits —
 git IS the telemetry; structure is observed, content never. Structural
 changes propose themselves by push; governance reviews and, when approved,

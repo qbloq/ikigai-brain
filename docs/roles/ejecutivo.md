@@ -2,7 +2,7 @@
 
 **Quiénes:** Juan Camilo Correa (copiloto `juan-camilo-correa`) · Lorenzo Cadavid (copiloto `lorenzo-cadavid`)
 **Capa de rol (viz):** [viz/specs/roles/ejecutivo/](../../viz/specs/roles/ejecutivo/) — 9 UIs (portafolio, pauta ×2, cobranza ×2, comisiones, cashflow, pipeline ×2) sobre los dominios `bash/ads/` + `bash/finance/` + `bash/crm/`
-**Nivel de acceso a fuentes:** **total** — incluye los dominios con credencial de proveedor (`bash/ghl/`, `bash/vturb/`), vía `bash/lib/acceso.sh` (decisión 2026-08-20; es el rol que mira el embudo completo, `embudo.sh`, con el bloque VSL en vivo).
+**Nivel de acceso a fuentes:** **total** — incluye los dominios con credencial de proveedor (`bash/ghl/`, `bash/vturb/`), vía `acceso.json` → `bash/lib/acceso.sh` (decisión 2026-08-20; es el rol que mira el embudo completo, `embudo.sh`, con el bloque VSL en vivo).
 **Tareas históricas:** 77 asignadas · 76 etiquetadas con arquetipo · 13 abiertas hoy
 
 **Misión.** El generalista de growth: opera y escala paid media (S3), co-desarrolla narrativa y oferta (S1) y monta checkout/funnels (S7). El puente entre estrategia y ejecución de campaña.

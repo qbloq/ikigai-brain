@@ -1,0 +1,5 @@
+{
+  "_doc": "Qué puede cada ROL de copiloto. Una sola fuente, dos consumidores: bash/lib/acceso.sh (fuentes con credencial de proveedor: ghl, vturb, …) y viz/lib/store.js (qué capas de UI de rol carga el viz). Sin copilot.json = cerebro = todo. Rol ausente = solo lo suyo. '*' = todo; lista = solo esos. Editar esto es decisión de gobernanza — se registra en docs/superpowers/specs/2026-08-20-control-de-acceso-fuentes-design.md.",
+  "technology": { "uis": "*", "fuentes": "*" },
+  "ejecutivo":  { "fuentes": "*" }
+}

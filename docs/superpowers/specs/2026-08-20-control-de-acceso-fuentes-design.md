@@ -1,9 +1,11 @@
 # Control de acceso a fuentes por rol (copilotos)
 
 **Fecha**: 2026-08-20 · **Estado**: implementado 2026-08-21 (plan
-`docs/superpowers/plans/2026-08-21-control-de-acceso-fuentes.md`); preguntas
-abiertas 1-2 resueltas ahí (mapa en código; `director-comercial` sin `ghl`),
-3-4 siguen abiertas
+`docs/superpowers/plans/2026-08-21-control-de-acceso-fuentes.md`) + **adenda
+del mismo día** (abajo): el mapa salió a `docs/roles/acceso.json` y cubre
+también las UIs del viz; `technology` = todo-poderoso. Preguntas abiertas:
+1 resuelta (archivo, no código — ver adenda), 2 resuelta
+(`director-comercial` sin `ghl`), 3-4 siguen abiertas
 
 ## Contexto y propósito
 
@@ -149,3 +151,56 @@ al laptop. Nada que desplegar en servidores.
 - Un solo helper para todas las cercas; las dos actuales migran a él; las
   futuras nacen con él.
 - Se retoma en su propia sesión; este spec es el punto de partida.
+
+## Adenda 2026-08-21 — un solo mapa para fuentes Y UIs; `technology` = todo
+
+**Lo que la disparó.** Santiago: «el rol Technology —o sea nosotros— es el
+usuario todo-poderoso; deberíamos poder ver todas las UIs de todos los roles…
+la pregunta es si lo podemos hacer elegantemente». Hasta hoy el viz de un fork
+cargaba ÚNICAMENTE la capa de su rol
+(`viz/lib/store.js`: `roles.filter(r => r.name === COPILOT.role)`), y el mapa
+de fuentes vivía como `case` dentro de `bash/lib/acceso.sh`. Dar a technology
+las UIs con un `Set` en JS habría dejado **dos mapas de poder en dos
+lenguajes**.
+
+**Decisión (Santiago, 2026-08-21).** Un solo archivo declarativo,
+**`docs/roles/acceso.json`**, con dos consumidores:
+
+```json
+{ "technology": { "uis": "*", "fuentes": "*" },
+  "ejecutivo":  { "fuentes": "*" } }
+```
+
+- `bash/lib/acceso.sh` lee `fuentes` (el `case` se fue). Mapa ausente o
+  ilegible → negado (fail-closed) — salvo el cerebro, que nunca consulta el
+  mapa. Sigue sin red ni base, sigue portable a bash 3.2 (parse en python3,
+  como `copilot.json`).
+- `viz/lib/store.js` lee `uis` al boot: `"*"` → carga **todas** las capas de
+  rol; si no, solo la propia. Función pura `rolesVisibles(copilot, acceso,
+  roles)` (test `viz/test/acceso.test.js`). **Cambio de comportamiento
+  alineado**: un `copilot.json` sin `role` ya no ve todo por accidente — ve
+  cero capas de rol (antes, sin filtro = veía todas), la misma regla que el
+  helper: *un fork sin identidad no hereda permisos*.
+- «Todo-poderoso» incluye **las fuentes**, no solo las UIs: ver la UI Embudo
+  del ejecutivo sin `bash/vturb` habría mostrado el bloque VSL en error. Ver
+  una UI es ver sus datos.
+- Cuando un workspace ve más de una capa de rol (cerebro, technology), el panel
+  de UIs muestra un **badge con el rol** de cada UI (`_layer`, que ya existía
+  y no se mostraba). Y el store **avisa en consola** si dos capas de rol
+  comparten un slug (sombreado silencioso; hoy no hay colisiones — es un
+  aviso, no una regla).
+
+**Por qué esto reabre y cierra la pregunta 1.** Se había decidido «código»
+porque había UN consumidor; con dos, la balanza se da vuelta. El registro de
+la decisión sigue siendo este spec; el archivo es el *estado*, el spec es el
+*porqué*.
+
+**Alcance.** Es el viz local del fork (Fase 1, identidad sin auth). El
+publicador (`app.ikigaigm…`) tiene su propio `permiso_ui.sh` por rol/usuario
+y no se toca. Tampoco cambia `actualizar_flota`/canal: `docs/roles/` ya viaja
+a los copilotos, así que el mapa llega solo.
+
+**Verificado.** `bash/lib/test_acceso.sh` 15/15 en bash 5.2 y 3.2.57;
+`npm run test:viz` 38/38; forks simulados: technology carga las 4 capas de
+rol, ejecutivo solo la suya, editor y «sin role» ninguna, cerebro todo.
+
