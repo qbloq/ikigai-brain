@@ -1,0 +1,677 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Marketico Video Provider API (VTurb)",
+        "description": "Endpoints of the Marketico backend for the per-project VIDEO PROVIDER — the VSL analytics source the funnel consumes. Two surfaces:\n\n- **Provider selection** (`/api/projects/{projectId}/video-provider`): which provider is active for a project (`projects.video_provider_key`, default `panda`) and which are connected. Switching requires the target provider to already be connected (409 otherwise).\n- **VTurb integration** (`/api/project-settings/{projectId}/vturb-video/…`): config CRUD, connection test, video catalog, per-project video selections, and analytics (unique plays/views + per-second retention curve).\n\n**Provenance**: authored 2026-08-20 from the Marketico source (`src/routes/projectVturbVideoRoutes.ts`, `src/routes/projectsRoutes.ts`, `src/services/projectVturbVideoService.ts`, `src/services/video/videoProviderRegistry.ts`). Marketico's own generated `docs/openapi.json` is STALE for this surface — it documents only the older `panda-video` twin and has no vturb paths. Panda Video exposes the identical route shape under `/api/project-settings/{projectId}/panda-video/…`.\n\n**Upstream**: Marketico proxies the VTurb Analytics API (`https://analytics.vturb.net`, headers `X-Api-Token`/`X-Api-Version: v1`; `GET /players/list`, `POST /sessions/stats`, `POST /times/user_engagement`) with a 10s fetch timeout per call. Analytics responses are returned in VTurb's RAW shape; normalization to the provider-agnostic funnel shape happens server-side in `vturbVideoProvider.ts` and is not exposed here.\n\n**Known caveats** (from source comments, worth respecting downstream):\n- `GET …/vturb-video` returns the stored API key in `api_key_encrypted` — the column name lies, it is plaintext (same pattern as `project_crm_configs`). Treat responses as credential-bearing.\n- `limit`/`page` on `…/videos` are accepted but IGNORED — VTurb's `/players/list` has no pagination.\n- `grouped_timed` in the retention payload is a STOP-TIME HISTOGRAM (users whose watch ended in each bucket; the bucket at duration+1 equals `total_finished_*`), NOT a viewers-still-watching curve — verified 2026-08-20: the histogram sums to the window's unique plays and reproduces `average_watched_time` exactly. Retention at t = cumulative tail (buckets ≥ t) / total. ⚠️ Marketico's own normalizer (`vturbVideoProvider.normalizeRetention`) reads it as a survival curve — a live bug in its funnel metrics. Also verified: the date window IS respected by `/times/user_engagement` (the source comment fearing all-time data does not hold today).\n- In `…/selections/analytics`, a per-video upstream failure yields a row with `error` instead of failing the whole call — filter rows with `error` before aggregating.\n- All handlers wrap unexpected failures as HTTP 500 with `{success:false, error, message}`.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://ikigaigm.api.parallelo.ai",
+            "description": "Production server"
+        }
+    ],
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "Provider Selection",
+            "description": "Active video provider per project (`projects.video_provider_key`)."
+        },
+        {
+            "name": "VTurb Config",
+            "description": "Per-project VTurb credential + connection state (`project_vturb_video_configs`)."
+        },
+        {
+            "name": "VTurb Videos",
+            "description": "VTurb catalog (players) and the project's curated selections (`project_vturb_video_selections`)."
+        },
+        {
+            "name": "VTurb Analytics",
+            "description": "Raw VTurb analytics proxied per video or for all selected videos."
+        }
+    ],
+    "paths": {
+        "/api/projects/{projectId}/video-provider": {
+            "get": {
+                "tags": ["Provider Selection"],
+                "summary": "Active video provider + per-provider connection state",
+                "description": "Reads `projects.video_provider_key` (falls back to `panda` when unset) and probes each registered provider's config for `connection_status='connected'`.",
+                "operationId": "getVideoProviderState",
+                "parameters": [{ "$ref": "#/components/parameters/projectId" }],
+                "responses": {
+                    "200": {
+                        "description": "Provider state",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "active": {
+                                                            "type": "string",
+                                                            "description": "Active provider key for the project.",
+                                                            "enum": ["panda", "vturb"]
+                                                        },
+                                                        "available": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "key": { "type": "string" },
+                                                                    "connected": { "type": "boolean" }
+                                                                }
+                                                            }
+                                                        },
+                                                        "registered": {
+                                                            "type": "array",
+                                                            "items": { "type": "string" },
+                                                            "description": "All provider keys the backend knows."
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": { "description": "Project not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            },
+            "put": {
+                "tags": ["Provider Selection"],
+                "summary": "Switch the active video provider",
+                "description": "Sets `projects.video_provider_key`. Refused with 409 unless the target provider's config has `connection_status='connected'` for this project. Clears the funnel cache on success.",
+                "operationId": "switchVideoProvider",
+                "parameters": [{ "$ref": "#/components/parameters/projectId" }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["key"],
+                                "properties": {
+                                    "key": { "type": "string", "enum": ["panda", "vturb"] }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Provider switched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": { "active": { "type": "string" } }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": { "description": "Missing/unknown `key`", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+                    "409": { "description": "Target provider not connected for this project", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video": {
+            "get": {
+                "tags": ["VTurb Config"],
+                "summary": "Get the project's VTurb config",
+                "description": "⚠️ Returns the stored API key in `api_key_encrypted` (plaintext despite the name). `data` is `null` when no config exists.",
+                "operationId": "getVturbConfig",
+                "parameters": [{ "$ref": "#/components/parameters/projectId" }],
+                "responses": {
+                    "200": {
+                        "description": "Config (or null)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "nullable": true,
+                                                    "allOf": [{ "$ref": "#/components/schemas/VturbConfig" }]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            },
+            "put": {
+                "tags": ["VTurb Config"],
+                "summary": "Save (upsert) the project's VTurb API key",
+                "operationId": "saveVturbConfig",
+                "parameters": [{ "$ref": "#/components/parameters/projectId" }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "api_key": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "description": "VTurb Analytics API token. Omitting the field leaves the stored key untouched."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Saved config",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": { "data": { "$ref": "#/components/schemas/VturbConfig" } }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video/test": {
+            "post": {
+                "tags": ["VTurb Config"],
+                "summary": "Test the VTurb connection",
+                "description": "Probes VTurb's `GET /players/list` with the given key (or the stored one when the body omits `api_key`). Updates `connection_status`/`last_error` as a side effect: `connected` on success, `error` on failure. Note: the HTTP status is 200 even when the test fails — read `success`.",
+                "operationId": "testVturbConnection",
+                "parameters": [{ "$ref": "#/components/parameters/projectId" }],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": { "api_key": { "type": "string" } }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Test result (success true/false)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "success": { "type": "boolean" },
+                                                        "message": { "type": "string" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video/videos": {
+            "get": {
+                "tags": ["VTurb Videos"],
+                "summary": "List the VTurb catalog (players)",
+                "description": "Proxies VTurb `GET /players/list`. ⚠️ `limit`/`page` are accepted but IGNORED (VTurb has no pagination). VTurb has no thumbnail/status/updated_at, so those come back as neutral defaults (`null`, `available`, `created_at`). A missing API key or upstream failure yields 200 with `success:false` and an empty `videos` array.",
+                "operationId": "listVturbVideos",
+                "parameters": [
+                    { "$ref": "#/components/parameters/projectId" },
+                    { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 }, "description": "Ignored (interface parity)." },
+                    { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 }, "description": "Ignored (interface parity)." }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Catalog",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "videos": {
+                                                            "type": "array",
+                                                            "items": { "$ref": "#/components/schemas/VturbVideo" }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video/selections": {
+            "get": {
+                "tags": ["VTurb Videos"],
+                "summary": "Get the project's selected videos",
+                "description": "Rows of `project_vturb_video_selections`, newest first. `status` is always `selected`.",
+                "operationId": "getVturbSelections",
+                "parameters": [{ "$ref": "#/components/parameters/projectId" }],
+                "responses": {
+                    "200": {
+                        "description": "Selected videos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "videos": {
+                                                            "type": "array",
+                                                            "items": { "$ref": "#/components/schemas/VturbVideo" }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            },
+            "post": {
+                "tags": ["VTurb Videos"],
+                "summary": "Add a video to the project's selections",
+                "description": "Upserts on `(project_id, video_id)` — re-adding the same video is idempotent. `video.duration` matters: the funnel path feeds it to the retention endpoint as `video_duration`.",
+                "operationId": "addVturbSelection",
+                "parameters": [{ "$ref": "#/components/parameters/projectId" }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["video"],
+                                "properties": {
+                                    "video": { "$ref": "#/components/schemas/VturbVideo" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Added", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Envelope" } } } },
+                    "400": { "description": "Missing `video.id`", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video/selections/{videoId}": {
+            "delete": {
+                "tags": ["VTurb Videos"],
+                "summary": "Remove a video from the project's selections",
+                "operationId": "removeVturbSelection",
+                "parameters": [
+                    { "$ref": "#/components/parameters/projectId" },
+                    { "name": "videoId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "The VTurb player id (`external_id`)." }
+                ],
+                "responses": {
+                    "200": { "description": "Removed (also 200 if it wasn't selected)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Envelope" } } } },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video/disconnect": {
+            "post": {
+                "tags": ["VTurb Config"],
+                "summary": "Disconnect VTurb for the project",
+                "description": "Sets `connection_status='disconnected'`. Does NOT delete the stored key or the selections.",
+                "operationId": "disconnectVturb",
+                "parameters": [{ "$ref": "#/components/parameters/projectId" }],
+                "responses": {
+                    "200": {
+                        "description": "Disconnected",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "success": { "type": "boolean" },
+                                                        "message": { "type": "string" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video/videos/{videoId}/analytics/general": {
+            "get": {
+                "tags": ["VTurb Analytics"],
+                "summary": "Unique plays/views of one video (date-ranged)",
+                "description": "Proxies VTurb `POST /sessions/stats`. Raw VTurb shape: `total_started_device_uniq` = unique plays, `total_viewed_device_uniq` = unique views. Dates are converted to VTurb's `YYYY-MM-DD HH:MM:SS` + `timezone: UTC` (pass ISO strings; the UTC wall-clock is preserved). Upstream failures come back as 200 with `success:false`.",
+                "operationId": "getVturbGeneralAnalytics",
+                "parameters": [
+                    { "$ref": "#/components/parameters/projectId" },
+                    { "name": "videoId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "VTurb player id." },
+                    { "$ref": "#/components/parameters/startDate" },
+                    { "$ref": "#/components/parameters/endDate" }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw session stats",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": { "data": { "$ref": "#/components/schemas/VturbGeneralRaw" } }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": { "description": "Missing start_date/end_date", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video/videos/{videoId}/analytics/retentions": {
+            "get": {
+                "tags": ["VTurb Analytics"],
+                "summary": "Per-second retention curve of one video",
+                "description": "Proxies VTurb `POST /times/user_engagement`. Raw shape: `grouped_timed` = `[{timed: seconds, total_users: count}]` — a STOP-TIME HISTOGRAM (where each viewer's watch ended; sums to the window's unique plays), not a still-watching curve; see the info caveats. `video_duration` is a VTurb input the response omits — pass it when known (the funnel path supplies it from the stored selection); it defaults to 0. The response also carries `average_watched_time` and `engagement_rate`. The date window is respected (verified 2026-08-20).",
+                "operationId": "getVturbRetentionAnalytics",
+                "parameters": [
+                    { "$ref": "#/components/parameters/projectId" },
+                    { "name": "videoId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "VTurb player id." },
+                    { "$ref": "#/components/parameters/startDate" },
+                    { "$ref": "#/components/parameters/endDate" },
+                    { "name": "video_duration", "in": "query", "schema": { "type": "integer", "default": 0 }, "description": "Video duration in seconds (VTurb input; defaults to 0 when omitted)." }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw engagement curve",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": { "data": { "$ref": "#/components/schemas/VturbRetentionRaw" } }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": { "description": "Missing start_date/end_date", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        },
+        "/api/project-settings/{projectId}/vturb-video/selections/analytics": {
+            "get": {
+                "tags": ["VTurb Analytics"],
+                "summary": "Analytics for ALL selected videos",
+                "description": "Fans out general + retention concurrently for every selected video (wall time ≈ one 10s timeout window even if VTurb is down). Each array row carries `videoId`/`videoTitle`; retention rows also get `durationSeconds` injected from the stored selection. A per-video failure yields `{videoId, videoTitle, error}` instead of failing the call — filter rows with `error` before aggregating.",
+                "operationId": "getVturbSelectionsAnalytics",
+                "parameters": [
+                    { "$ref": "#/components/parameters/projectId" },
+                    { "$ref": "#/components/parameters/startDate" },
+                    { "$ref": "#/components/parameters/endDate" }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Per-video raw analytics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        { "$ref": "#/components/schemas/Envelope" },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "general": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "oneOf": [
+                                                                    { "$ref": "#/components/schemas/VturbGeneralRaw" },
+                                                                    { "$ref": "#/components/schemas/PerVideoError" }
+                                                                ]
+                                                            }
+                                                        },
+                                                        "retention": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "oneOf": [
+                                                                    { "$ref": "#/components/schemas/VturbRetentionRaw" },
+                                                                    { "$ref": "#/components/schemas/PerVideoError" }
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": { "description": "Missing start_date/end_date", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+                    "500": { "$ref": "#/components/responses/ServerError" }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Marketico JWT (passport `jwt` strategy) — the same token family as MEETICO_JWT_TOKEN."
+            }
+        },
+        "parameters": {
+            "projectId": {
+                "name": "projectId",
+                "in": "path",
+                "required": true,
+                "schema": { "type": "string", "format": "uuid" },
+                "description": "Marketico project id (`projects.id` in the tenant schema)."
+            },
+            "startDate": {
+                "name": "start_date",
+                "in": "query",
+                "required": true,
+                "schema": { "type": "string" },
+                "description": "ISO datetime; the backend slices the UTC wall-clock into VTurb's `YYYY-MM-DD HH:MM:SS` + `timezone: UTC`."
+            },
+            "endDate": {
+                "name": "end_date",
+                "in": "query",
+                "required": true,
+                "schema": { "type": "string" },
+                "description": "ISO datetime (same conversion as start_date)."
+            }
+        },
+        "responses": {
+            "ServerError": {
+                "description": "Unexpected failure",
+                "content": {
+                    "application/json": {
+                        "schema": { "$ref": "#/components/schemas/ErrorEnvelope" }
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "Envelope": {
+                "type": "object",
+                "description": "Every response is wrapped in this envelope. `success` can be false with HTTP 200 on soft failures (missing API key, upstream error) — always read it.",
+                "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                }
+            },
+            "ErrorEnvelope": {
+                "type": "object",
+                "properties": {
+                    "success": { "type": "boolean", "enum": [false] },
+                    "error": { "type": "string" },
+                    "message": { "type": "string" }
+                }
+            },
+            "VturbConfig": {
+                "type": "object",
+                "description": "Row of `project_vturb_video_configs`. ⚠️ `api_key_encrypted` is plaintext despite the name.",
+                "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "project_id": { "type": "string", "format": "uuid" },
+                    "api_key_encrypted": { "type": "string", "nullable": true },
+                    "connection_status": { "type": "string", "enum": ["connected", "disconnected", "error"] },
+                    "last_error": { "type": "string", "nullable": true },
+                    "connected_at": { "type": "string", "format": "date-time", "nullable": true },
+                    "created_at": { "type": "string", "format": "date-time" },
+                    "updated_at": { "type": "string", "format": "date-time" }
+                }
+            },
+            "VturbVideo": {
+                "type": "object",
+                "description": "Normalized video row. From the catalog: `id` = `external_id` = VTurb player id, `title` = player name, `status` = `available`, thumbnail/description always null. From selections: `status` = `selected`.",
+                "required": ["id"],
+                "properties": {
+                    "id": { "type": "string" },
+                    "external_id": { "type": "string" },
+                    "title": { "type": "string" },
+                    "description": { "type": "string", "nullable": true },
+                    "thumbnail_url": { "type": "string", "nullable": true },
+                    "duration": { "type": "integer", "nullable": true, "description": "Seconds. Feeds `video_duration` on the retention endpoint." },
+                    "status": { "type": "string" },
+                    "created_at": { "type": "string" },
+                    "updated_at": { "type": "string" }
+                }
+            },
+            "VturbGeneralRaw": {
+                "type": "object",
+                "description": "Raw VTurb `POST /sessions/stats` payload (passed through). In `selections/analytics` rows, `videoId`/`videoTitle` are injected by the backend.",
+                "properties": {
+                    "videoId": { "type": "string" },
+                    "videoTitle": { "type": "string" },
+                    "total_started_device_uniq": { "type": "integer", "description": "Unique plays (device-unique)." },
+                    "total_viewed_device_uniq": { "type": "integer", "description": "Unique views (device-unique)." }
+                },
+                "additionalProperties": true
+            },
+            "VturbRetentionRaw": {
+                "type": "object",
+                "description": "Raw VTurb `POST /times/user_engagement` payload (passed through). In `selections/analytics` rows, `videoId`/`videoTitle`/`durationSeconds` are injected by the backend.",
+                "properties": {
+                    "videoId": { "type": "string" },
+                    "videoTitle": { "type": "string" },
+                    "durationSeconds": { "type": "integer" },
+                    "grouped_timed": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "timed": { "description": "Second mark (VTurb may emit it as a string). The bucket at duration+1 holds the finishers.", "oneOf": [{ "type": "integer" }, { "type": "string" }] },
+                                "total_users": { "type": "integer", "description": "Users whose watch STOPPED in this bucket (histogram count, not viewers-still-watching)." }
+                            }
+                        }
+                    }
+                },
+                "additionalProperties": true
+            },
+            "PerVideoError": {
+                "type": "object",
+                "description": "Row emitted when one video's upstream fetch failed inside `selections/analytics`.",
+                "properties": {
+                    "videoId": { "type": "string" },
+                    "videoTitle": { "type": "string" },
+                    "error": { "type": "string" }
+                }
+            }
+        }
+    }
+}
