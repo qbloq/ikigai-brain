@@ -68,7 +68,7 @@ vturb_projects() {
 # single project matching the fragment. Errors on no match or ambiguity.
 vturb_resolve_project() {
   local frag="$1" rows n
-  rows="$(vturb_projects | awk -F'\t' -v f="${frag,,}" 'tolower($2) ~ f {print $1 "\t" $2}')"
+  rows="$(vturb_projects | awk -F'\t' -v f="$(printf '%s' "$frag" | tr '[:upper:]' '[:lower:]')" 'tolower($2) ~ f {print $1 "\t" $2}')"
   if [[ -z "$rows" ]]; then
     echo "vturb: ningún proyecto con VTurb configurado coincide con '$frag'." >&2
     echo "Disponibles: $(vturb_projects | cut -f2 | paste -sd', ')" >&2
