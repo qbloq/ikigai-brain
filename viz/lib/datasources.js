@@ -376,6 +376,18 @@ const SOURCES = {
     emits: "object",
     args: { project: "--project", desde: "--desde", corte: "--corte" },
   },
+  // EL CRUCE del embudo completo: Meta → VTurb → CRM → llamadas → caja →
+  // cuotas, cada bloque con su fuente declarada (nació del meeting b3f06835:
+  // el dashboard que no cuadraba). Cache corto NO por ser referencia estática
+  // sino porque cada render pega a un API externo (VTurb) — 60s es etiqueta
+  // con la fuente, y el objeto declara su hora de generación en meta.generado.
+  embudo: {
+    label: "Embudo — el cruce (Meta·VTurb·CRM·caja)",
+    script: "bash/metrics/embudo.sh",
+    emits: "object",
+    args: { project: "--project", from: "--from", to: "--to", meses: "--meses" },
+    cache: 60_000,
+  },
   // Commission payouts with review state — the approval queue (pending first).
   comisiones: {
     label: "Comisiones (payouts)",

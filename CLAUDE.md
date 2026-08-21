@@ -449,6 +449,30 @@ three domains: portafolio, pauta (campañas + line chart de gasto diario),
 cobranza (vencidas + aging), comisiones (cola de aprobación), cashflow y
 pipeline CRM (tablero + donut por estado).
 
+## VTurb domain — el video en la fuente ([bash/vturb/](bash/vturb/))
+
+Sonda **read-only** contra el VTurb Analytics API (`analytics.vturb.net`) — el
+proveedor de video de las VSLs. Patrón `bash/ghl/` completo: tokens en la DB en
+claro (`project_vturb_video_configs.api_key_encrypted`), cerca de solo-cerebro
+(guard anti-fork), token por stdin jamás en argv, y «solo consultas» (el API usa
+POST para leer stats; no expone mutaciones). Contrato de la superficie proxy de
+Marketico: `apis/mkt/vturb-video.openapi.json`.
+
+| Script | Use it to… |
+|--------|-----------|
+| `auth_status.sh` | Qué proyectos tienen VTurb y si el token responde (sonda live + conteo de players). |
+| `videos.sh --project N [--seleccionados]` | Catálogo de players en vivo (con `pitch_time` y columna `sel`); `--seleccionados` = los curados en `project_vturb_video_selections`, desde la DB (ahí vive la duración, insumo de retención). |
+| `analitica.sh --project N [--video ID [--duracion S]] [--from D] [--to D]` | El funnel de video por seleccionado: impresiones → plays (tasa de play) → retención 25/50/75% → % pitch → % terminó → CTA. Default mes actual (Bogotá). `--json` trae histograma completo + `average_watched_time`/`engagement_rate`. |
+
+⚠️ **Semántica verificada 2026-08-20** (detalle en [bash/vturb/README.md](bash/vturb/README.md)):
+`grouped_timed` es **histograma de abandono** (dónde paró cada espectador; el
+bucket duración+1 = los que terminaron), NO curva de supervivencia — la
+retención se calcula como cola acumulada. El normalizador de Marketico
+(`vturbVideoProvider.normalizeRetention`) lo lee como supervivencia: **bug vivo
+en su funnel, reportable**. `total_viewed_*` = impresiones del player (≥ plays =
+`total_started_*`). La ventana de fechas SÍ aplica también al engagement. Los 2
+proyectos configurados comparten una sola cuenta VTurb (mismo catálogo).
+
 ## PM domain — la plataforma de Mari ([bash/pm/](bash/pm/))
 
 El API de project360 (`PM360_BASE`+`PM360_TOKEN` en `.env`, Bearer; superficie:
@@ -545,6 +569,21 @@ a clear «el backend aún no expone …» message. See [bash/google/README.md](b
 `dashboard.sh [--project NAME] [--from D] [--to D] [--json]` — financial KPI set
 for one project/period (cash-collected model: ingresos brutos, venta programas,
 pauta, costos, reparto). Read-only; feeds the viz `dashboard` source (emits one object).
+
+`embudo.sh --project NAME [--from D] [--to D] [--meses N]` — **EL CRUCE** del
+embudo completo en un objeto: pauta (Meta) → VSL (VTurb **en vivo**, agregado +
+por video) → leads/etapas con atribución UTM (CRM) → llamadas (meetings, reloj
+literal) → ventas/cash (payment_plans/installments) → serie mensual de cuotas
+(cobrado/día total y solo n≥2, % de planes pagando, empiezan/dejan) →
+`atribucion` por campaña (spend×leads×cash, guardia temporal +60d) →
+`conciliacion` (handoffs entre fuentes con delta) → `series` mensuales
+(CAC/ROAS real) → `frescura` (lags + alertas, p.ej. ingestor CRM quieto) →
+`sin_instrumentar` (huecos declarados). Reglas: leads del CRM y no de Excel;
+la verdad del dinero es la caja (pixel viaja como `*_pixel`); ratios solo
+contra pauta USD. Nació del meeting `b3f06835` (2026-08-19). Read-only; feeds
+la fuente viz `embudo` (cache 60s por etiqueta con el API externo) y la UI de
+rol ejecutivo `embudo-cruce` (page `embudo`; las **metas** — p.ej. ROAS ≥3.5 —
+van en `params.metas` del spec, no en código).
 
 ## Finance domain — owner's view ([bash/finance/](bash/finance/))
 
