@@ -818,8 +818,10 @@ plus its agent-readable twin `identidad.md` (written at birth from
 CLAUDE.md stays byte-identical across brain and forks — it composes identity
 via `@identidad.md`, never by assembling a per-fork copy. The viz store loads
 that role's spec layer — or every role's, when `docs/roles/acceso.json` says
-`uis:"*"` for it (today: `technology`) — and stamps `owner`/`role` on
-everything created. The brain (no copilot.json) sees org + all roles. That
+`uis:"*"` for it (today: `technology`), or exactly the layers it lists (today:
+`ejecutivo` = `["ejecutivo","director-comercial"]`, so the CEO/COO see the
+sales team's UIs; the map is read at viz start → `viz:restart` after pull) —
+and stamps `owner`/`role` on everything created. The brain (no copilot.json) sees org + all roles. That
 same file's `dominios` key is what `bash/lib/acceso.sh` reads, and its
 `tablas` key is what forja's `crear_alta.sh` turns into Postgres tiers
 (`"*"` → `ikigai_tier_total`, every table read-only — today ejecutivo and
