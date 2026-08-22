@@ -166,6 +166,15 @@ Páginas, por `ui.component`:
   el estado se mueve desde la conversación y el `#n` visible es el handle.
   Nació el 2026-08-21 con las 21 tareas que vencían el 20 de agosto (UI local
   «Qué puede hacer el Cerebro — vencen 20-ago»).
+- **`ventas-precio`** — «Ventas por programa antes y después de los cambios de
+  precio» (entregable de la tarea `332c414a`, pedido de Lorenzo en la
+  alineación DG 2026-08-19) para quien no lee Markdown: KPIs del período
+  vigente contra el anterior, cambios de precio detectados, ritmo por programa
+  (barras), totales, participación en contrato, serie mensual (líneas), y la
+  narrativa curada (pedido · lectura · cautelas) en `params.texto`. Las dos
+  tablas son los artefactos **SQL Results** del contrato de la tarea (output
+  `params.io`, input `params.io_serie`) ejecutados en vivo por `io_query` —
+  la página no trae SQL. Publicada en el publicador para Lorenzo y Luis David.
 - **`notion-tasks`** — tabla read-only filtrable de las tareas BD Avances de un
   proyecto Notion (fetch único — fuente cacheada — filtrado en el navegador).
 - **`tasks`** — lista de tareas con barra de filtros (status/priority/project/
