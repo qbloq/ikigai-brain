@@ -2,6 +2,16 @@
 
 **Para:** Lorenzo Cadavid (Loro) · **Pedido en:** tarea `332c414a` (Luis David Flórez) · **Corte de datos:** 2026-08-21 · **Producido por:** el Cerebro, reproducible desde el contrato de la tarea.
 
+## 0. Lo que se pidió en la reunión (alineación DG, 2026-08-19)
+
+En el debate sobre volver a subir los precios (USD 500 a cada programa, con la venta pública y la nueva escalera 2K / 4K / 6K), **Lucho** sostuvo que *«el último cambio de precios ya mató mucho el programa más grande: en los últimos dos meses se vendieron menos de los grandes y quedaron en 3.500»*, y **Loro** pidió: *«me gustaría que nos dieras los datos exactos, apenas puedas»* — y antes, *«mirar cómo es la distribución del inventario de ventas que tenemos y, con base en eso, cuál es el ROI que nos da cada programa»*. Lucho iba a contarlos en el Excel; este informe los saca de los planes de pago. Tres pedidos → dónde están:
+
+| Pedido de Loro | Dónde se responde |
+|---|---|
+| Los datos exactos de la merma del programa grande tras el último cambio | §2 y §3.2: Mastermind 9,5 → 4,1 planes/mes; del 25 % al 9 % de las ventas. **La afirmación de Lucho se confirma con números.** |
+| La distribución de ventas por programa | §2 (por período) y §5 (por mes) |
+| El ROI por programa | **No se puede producir con honestidad todavía**: exige costo por programa (entrega + adquisición) y el dato no lo tiene; las comisiones registradas arrancan en 2026 y el 70 % sigue pendiente de revisión, así que distorsionarían. Lo que sí hay: caja cobrada por programa (§2) y, como proxy, ticket × ritmo. Queda declarado como hueco. |
+
 ## 1. Qué se midió y cómo
 
 - **Unidad = plan de pago iniciado** (la venta firmada), contado por la fecha de inicio del plan. *Contrato* = valor del plan; *ticket* = contrato promedio por plan; *cobrado* = suma de cuotas pagadas a hoy.
