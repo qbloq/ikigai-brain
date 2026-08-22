@@ -5,7 +5,7 @@
   "source": "localdb_query",
   "params": {
     "db": "adelantar_tareas",
-    "query": "SELECT t.id AS tarea_id, t.titulo, t.prioridad, t.asignado, t.arquetipo, t.output_principal, t.nota AS tarea_nota, a.n, a.orden, a.alcance, a.accion, a.detalle, a.estado, a.nota AS accion_nota FROM tareas t LEFT JOIN acciones a ON a.tarea_id=t.id ORDER BY (t.prioridad=\"High\") DESC, t.id, a.orden",
+    "query": "SELECT t.id AS tarea_id, t.titulo, t.prioridad, t.asignado, t.arquetipo, t.output_principal, t.nota AS tarea_nota, a.n, a.orden, a.alcance, a.accion, a.detalle, a.estado, a.nota AS accion_nota FROM tareas t LEFT JOIN acciones a ON a.tarea_id=t.id ORDER BY (t.prioridad='High') DESC, t.id, a.orden",
     "limit": "500"
   },
   "scope": "personal",
