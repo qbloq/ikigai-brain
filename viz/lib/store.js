@@ -57,14 +57,18 @@ try {
 
 // rolesVisibles(copilot, acceso, roles) → the role-layer names this workspace
 // loads. Pure, so it is testable without a workspace: no copilot → all (the
-// brain); copilot with uis:"*" → all; otherwise only its own role; a
-// copilot.json WITHOUT a role → no role layer at all (fail-closed, the same
-// rule bash/lib/acceso.sh applies: a fork without identity inherits nothing).
+// brain); copilot with uis:"*" → all; uis as a LIST → exactly those layers
+// (the list is written complete, own role included — ejecutivo =
+// ["ejecutivo","director-comercial"] since 2026-08-21, so the CEO/COO see the
+// sales team's UIs); otherwise only its own role; a copilot.json WITHOUT a
+// role → no role layer at all (fail-closed, the same rule bash/lib/acceso.sh
+// applies: a fork without identity inherits nothing).
 function rolesVisibles(copilot, acceso, roles) {
   if (!copilot) return roles;
   if (!copilot.role) return [];
   const uis = acceso && acceso[copilot.role] && acceso[copilot.role].uis;
   if (uis === "*") return roles;
+  if (Array.isArray(uis)) return roles.filter((r) => uis.includes(r));
   return roles.filter((r) => r === copilot.role);
 }
 

@@ -14,8 +14,11 @@ test("cerebro (sin copilot.json) ve todas las capas", () => {
 test("technology (uis:*) ve todas las capas", () => {
   assert.deepStrictEqual(rolesVisibles({ role: "technology" }, ACCESO, ROLES), ROLES);
 });
-test("ejecutivo (solo fuentes:*) ve solo la suya", () => {
-  assert.deepStrictEqual(rolesVisibles({ role: "ejecutivo" }, ACCESO, ROLES), ["ejecutivo"]);
+test("ejecutivo (uis: lista) ve exactamente las capas listadas — la suya + director-comercial", () => {
+  assert.deepStrictEqual(rolesVisibles({ role: "ejecutivo" }, ACCESO, ROLES), ["director-comercial", "ejecutivo"]);
+});
+test("una lista en uis se respeta tal cual (no agrega el propio rol si no está)", () => {
+  assert.deepStrictEqual(rolesVisibles({ role: "x" }, { x: { uis: ["closer"] } }, ROLES), ["closer"]);
 });
 test("rol ausente del mapa ve solo la suya", () => {
   assert.deepStrictEqual(rolesVisibles({ role: "editor" }, ACCESO, ROLES), []);
