@@ -1,0 +1,68 @@
+{
+  "id": "ventas-por-programa-vs-precio-dg",
+  "name": "Ventas por programa vs precio · DG",
+  "component": "ventas-precio",
+  "source": "io_query",
+  "params": {
+    "project": "David Guerrero",
+    "io": "1e7da790-74a4-4762-a2b0-705fb2aa0490",
+    "io_serie": "a14c795e-da99-4354-a433-4ff01cefe441",
+    "texto": {
+      "subtitulo": "Qué se vendió con cada lista de precios: planes de pago iniciados por programa, antes y después de cada cambio de precio. Los datos se recalculan al abrir la página; la lectura es del 21 de agosto de 2026.",
+      "pedido_fuente": "alineación estrategia David Guerrero · 19 de agosto de 2026",
+      "pedido": "En el debate sobre volver a subir los precios (USD 500 a cada programa con la venta pública, y la escalera nueva 2K / 4K / 6K), **Lucho** sostuvo que «el último cambio de precios ya mató mucho el programa más grande: en los últimos dos meses se vendieron menos de los grandes y quedaron en 3.500», y **Loro** pidió «los datos exactos, apenas puedas» — y antes: «mirar cómo es la distribución del inventario de ventas y, con base en eso, cuál es el ROI que nos da cada programa».\n\nEsta página responde los dos primeros pedidos con los planes de pago (no con el Excel). El **ROI por programa no se puede producir todavía con honestidad**: exige costo por programa (entrega + adquisición) y el dato no lo tiene; las comisiones registradas arrancan en 2026 y el 70 % sigue pendiente de revisión. Queda declarado como hueco.",
+      "cambios": [
+        {
+          "fecha": "2026-01-22",
+          "programa": "Premium Mastermind Lite",
+          "antes": "2.500",
+          "despues": "3.000",
+          "nota": "Último plan a 2.500 y primero a 3.000 el mismo 22-ene"
+        },
+        {
+          "fecha": "2026-01-22",
+          "programa": "Premium Mastermind",
+          "antes": "4.000",
+          "despues": "5.000",
+          "nota": "Último a 4.000 el 21-ene (el 5.000 ya aparecía desde el 11-dic)"
+        },
+        {
+          "fecha": "2026-01-22",
+          "programa": "Premium Academy 6 meses",
+          "antes": "499",
+          "despues": "1.000",
+          "nota": "Producto nuevo «6 meses $1k» desde el 22-ene"
+        },
+        {
+          "fecha": "2026-06-22",
+          "programa": "Premium Mastermind",
+          "antes": "5.000",
+          "despues": "5.500",
+          "nota": "Último a 5.000 el 27-may; primero a 5.500 el 22-jun"
+        },
+        {
+          "fecha": "2026-06-22",
+          "programa": "Premium Mastermind Lite",
+          "antes": "3.000",
+          "despues": "3.500",
+          "nota": "Gradual: el 3.500 aparece desde marzo y conviven hasta julio; dominante desde julio"
+        }
+      ],
+      "lectura": [
+        "**La primera subida (22-ene) no frenó nada.** Con Lite +20 % y Mastermind +25 %, el ritmo pasó de 12 a 38 planes/mes y el contrato mensual se triplicó. El ticket se mantuvo (~2.600) porque al mismo tiempo entró Academy 3 meses como tercio del volumen. El salto coincide con el arranque fuerte de pauta y del equipo de cierre de 2026 — no es efecto del precio; lo que sí dice el dato es que el precio nuevo no lo impidió.",
+        "**Tras la segunda subida (22-jun) el Mastermind de 5.500 se vende a menos de la mitad del ritmo** (9,5 → 4,1 planes/mes) y pasa del 25 % al 9 % de las ventas y del 44 % al 23 % del contrato. Lite a 3.500 aguanta. El volumen total sube, pero se va a Academy: la mezcla bajó de escalón, el ticket cae 26 % y el contrato mensual baja 12 % vendiendo más unidades. La afirmación de Lucho se confirma con números.",
+        "**Queda un hueco entre Academy (699–1.000) y Lite (3.500)**, con Mastermind en 5.500: es el rango donde se está diseñando el programa de USD 2.000. Estos números son su línea base.",
+        "**Cobrado a hoy** (% del contrato) no es comparable entre períodos: los planes recientes apenas llevan dos meses de cuotas. No debe leerse como «se cobra peor»; la medición limpia de deserción por número de cuota vive en el instrumento de deserción."
+      ],
+      "cautelas": [
+        "El tercer período son dos meses (y agosto no ha terminado): el orden de magnitud es sólido, el decimal no. Conviene volver a mirar esta página al cierre de septiembre — se recalcula sola.",
+        "Los períodos mezclan otros cambios (pauta, closers, estacionalidad, lanzamientos): lo que se mide es qué se vendió con cada lista de precios, no un experimento de precio aislado.",
+        "Los precios no son perfectamente discretos (hay planes a 3.000 o 4.500 en Mastermind, descuentos puntuales en Academy): se usa el precio dominante de cada programa y período. Para Lite la transición 3.000 → 3.500 fue gradual (marzo–julio); el corte del 22-jun es el de Mastermind.",
+        "Academy 3 meses existe como dos fichas de producto con el mismo nombre y Academy 6 meses como dos (499 y $1k): aquí se consolidan por programa."
+      ]
+    }
+  },
+  "scope": "personal",
+  "created_at": "2026-08-22T04:38:49.058Z",
+  "updated_at": "2026-08-22T04:38:49.058Z"
+}
