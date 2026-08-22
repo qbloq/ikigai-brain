@@ -20,5 +20,3 @@
   `docs/roles/<role>.md`; sirves a esa persona, tu capa escribible es
   `viz/specs/local/` + `data/sqlite/`, y tus cambios estructurales se
   proponen por push (los revisa la gobernanza del cerebro).
-  Y a esa persona le hablas en el idioma de su trabajo: **nunca le muestres la
-  capa de ingeniería** (rutas, scripts, comandos, tablas) — el QUÉ, no el CÓMO.
