@@ -24,7 +24,7 @@ const CANAL = {
   low_ticket: ["Low ticket", "form low ticket / payment_link / tag lt"],
   aplicacion_premium: ["Aplicación premium", "aplicación a Premium Mastermind/Academy, calendario, llamada de claridad, setter"],
   referido_bala: ["Referido (Bala)", "survey «David Bala»"],
-  sin_formulario: ["Sin formulario", "contacto creado sin form de entrada (CRM UI, manual, pago directo)"],
+  sin_formulario: ["Sin formulario", "contacto creado sin form de entrada (CRM UI, manual, pago directo) — es donde cae el DM puro, el que no deja llave. Su cobertura de etiquetado es casi total: puede ser que el confirmador cree el contacto ya etiquetado, así que no se lee como «se trabaja mejor» sin confirmarlo"],
   otro_formulario: ["Otro formulario", "form que el normalizador no reconoce"],
 };
 
@@ -63,6 +63,11 @@ const chartCard = (spec, sig, table) => `
     </div>
   </div>`;
 function tasaTone(v) { if (v == null) return TONE.muted; const n = Number(v); return n >= 10 ? TONE.pos : n >= 5 ? TONE.brand : TONE.muted; }
+// La cobertura de etiquetado NO es una métrica de negocio: es cuánto de la fila
+// se puede leer. Poca cobertura se pinta como precaución (no como «malo»)
+// porque significa que no se sabe, que es distinto de que vaya mal.
+function coberturaColor(v) { if (v == null) return TONE.muted; const n = Number(v); return n >= 70 ? TONE.pos : n >= 30 ? TONE.cau : TONE.neg; }
+function coberturaTone(v) { if (v == null) return "muted"; const n = Number(v); return n >= 70 ? "pos" : n >= 30 ? "cau" : "neg"; }
 
 function renderOrganico(ui) {
   const p = ui.params || {};
@@ -78,6 +83,7 @@ function renderOrganico(ui) {
   // --- KPIs
   const cab = `
     ${kpi("Leads orgánicos", `${num(r.organicos)}<span class="text-sm" style="color:var(--text-3)">/${num(r.leads_total)}</span>`, { sub: `${pct(r.pct_organico)} de los leads del CRM en la ventana · ${num(r.pagados)} por pauta`, title: m.regla_organico || "" })}
+    ${kpi("Trabajados (con etapa)", `${num(r.con_etapa)}<span class="text-sm" style="color:var(--text-3)">/${num(r.organicos)}</span>`, { tone: coberturaTone(r.cobertura_etapa), sub: `cobertura ${pct(r.cobertura_etapa)} · ${num(r.calificados)} calificados · ${num(r.agendo)} agendaron · ${num(r.no_conecto)} no se conectaron`, title: m.regla_etapa || "" })}
     ${kpi("Planes (orgánico)", num(r.planes), { tone: Number(r.planes) > 0 ? "pos" : "brand", sub: `${num(r.won)} won en CRM · tasa a plan ${pct(r.tasa_plan)} (pagados: ${pct(r.tasa_plan_pagados)})`, title: m.regla_dinero || "" })}
     ${kpi("Caja orgánica", usd(r.cash), { tone: Number(r.cash) > 0 ? "pos" : "brand", sub: `contrato ${usd(r.contrato)} · pagados cobraron ${usd(r.cash_pagados)}`, title: "cuotas pagadas de los planes ≤60 d de los leads orgánicos de la ventana (a hoy)" })}
     ${kpi("Pauta de marca", usd(r.marca_usd), { sub: `${num(r.ads_marca)} anuncios de marca (follow-me · seguidores · video)${Number(r.marca_cop) > 0 ? ` · COP ${num(r.marca_cop)} aparte` : ""}`, title: m.regla_marca || "" })}
@@ -85,12 +91,16 @@ function renderOrganico(ui) {
 
   // --- canales
   const tCanales = tbl(
-    ["Canal", "Leads", "Won", "Planes", "Tasa a plan", "Contrato", "Caja", "Sesión (GHL)", "Formularios"],
+    ["Canal", "Leads", "Cobertura", "Calificó", "Agendó", "No conectó", "Won", "Planes", "Tasa a plan", "Contrato", "Caja", "Sesión (GHL)", "Formularios"],
     canales.map((c) => {
       const [nombre, desc] = CANAL[c.canal] || [c.canal, ""];
       return [
         `<span class="font-semibold" title="${escape(desc)}">${escape(nombre)}</span>`,
         `<span class="tabular-nums font-semibold">${num(c.leads)}</span>`,
+        `<span class="tabular-nums font-semibold" style="color:${coberturaColor(c.cobertura_etapa)}" title="${escape(`${num(c.con_etapa)} de ${num(c.leads)} leads del canal tienen alguna etiqueta de calificación. Los conteos de etapa de esta fila solo se leen dentro de esta cobertura.`)}">${pct(c.cobertura_etapa)}</span>`,
+        `<span class="tabular-nums">${num(c.calificados)}${Number(c.no_calificados) > 0 ? `<span class="text-xs" style="color:var(--text-3)"> / ${num(c.no_calificados)} no</span>` : ""}</span>`,
+        `<span class="tabular-nums">${num(c.agendo)}</span>`,
+        `<span class="tabular-nums" style="color:${Number(c.no_conecto) > 0 ? TONE.cau : "inherit"}">${num(c.no_conecto)}</span>`,
         `<span class="tabular-nums">${num(c.won)}</span>`,
         `<span class="tabular-nums font-semibold">${num(c.planes)}</span>`,
         `<span class="tabular-nums font-semibold" style="color:${tasaTone(c.tasa_plan)}">${pct(c.tasa_plan)}</span>`,
@@ -245,9 +255,12 @@ function renderOrganico(ui) {
     <p class="mt-1 text-sm" style="color:var(--text-3)">
       Los leads del CRM que <strong>no</strong> llegaron por pauta (sin campaña ni en la atribución nativa de GHL ni en el utm del formulario), por canal de entrada, con su conversión y caja, al lado de la <strong>pauta de marca</strong> del mismo mes. «Orgánico» = no pagado, no «llegó solo».
     </p>
+    <p class="mt-1 text-sm" style="color:var(--text-3)">
+      El tramo entre el lead y la venta —<strong>calificó · agendó · no se conectó</strong>— sale de las etiquetas del contacto en el CRM. La columna <strong>Cobertura</strong> va al lado porque manda sobre las otras: un canal con muchos leads, poca cobertura y pocas ventas <strong>no es un canal malo, es un canal sin trabajar</strong> (o trabajado sin etiquetar), y son cosas distintas. Ojo con «Sin formulario»: su cobertura altísima puede ser un artefacto —si a esos contactos los crea el confirmador a mano, el etiquetado viene incluido— y hasta confirmarlo no se lee como «el DM se trabaja perfecto».
+    </p>
     ${body}
     <p class="mt-10 text-xs" style="color:var(--text-3)">
-      Fuente: <code>bash/metrics/organico.sh --project "${escape(String(p.project || ""))}"</code> · ${escape(m.regla_canal || "")} · ${escape(m.regla_marca || "")}
+      Fuente: <code>bash/metrics/organico.sh --project "${escape(String(p.project || ""))}"</code> · ${escape(m.regla_canal || "")} · ${escape(m.regla_etapa || "")} · ${escape(m.regla_marca || "")}
     </p>
   </div>
   </section>`;

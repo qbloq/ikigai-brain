@@ -112,7 +112,23 @@ canal AS (
     END AS canal,
     -- el módulo de la serie de YouTube (del form «Form serie YT M5» o del tag moduloNyt): el escalón
     coalesce(substring(b.form from 'serie yt m([0-9]+)'),
-             (SELECT max(substring(t from '^modulo([0-9]+)yt$')) FROM unnest(b.tags) t WHERE t ~ '^modulo[0-9]+yt$')) AS modulo_yt
+             (SELECT max(substring(t from '^modulo([0-9]+)yt$')) FROM unnest(b.tags) t WHERE t ~ '^modulo[0-9]+yt$')) AS modulo_yt,
+    -- La ETAPA comercial, leída de los tags del contacto en GHL. Es el tramo
+    -- entre «entró el lead» y «compró», que esta vista no tenía: sin él, un
+    -- canal con muchos leads y pocas ventas se lee como canal malo cuando
+    -- puede ser un canal que nadie trabajó. `etapa_marcada` va SIEMPRE al lado
+    -- de los conteos por la misma razón: poca etiqueta significa dos cosas
+    -- opuestas —no lo trabajaron, o lo trabajaron sin etiquetar— y sin
+    -- declararlo se confunde una falla de proceso con una conclusión de canal.
+    EXISTS (SELECT 1 FROM unnest(b.tags) t
+            WHERE t IN ('calificado cc','no calificado','descalificado cc')) AS etapa_marcada,
+    'calificado cc' = ANY(b.tags) AS calificado,
+    EXISTS (SELECT 1 FROM unnest(b.tags) t
+            WHERE t IN ('no calificado','descalificado cc')) AS no_calificado,
+    EXISTS (SELECT 1 FROM unnest(b.tags) t
+            WHERE t LIKE 'agenda%' OR t IN ('llamada agendada pm','llamada confirmada','llamada por confirmar')) AS agendo,
+    EXISTS (SELECT 1 FROM unnest(b.tags) t
+            WHERE t IN ('no se conectó','no contesta')) AS no_conecto
   FROM base b
 ),
 -- El dinero de cada lead (misma guardia de embudo.sh: primer plan ≤60 d).
@@ -162,10 +178,18 @@ SELECT json_build_object(
      'regla_organico', 'lead del CRM (created_date en ventana) sin campaña ni en la atribución nativa de GHL (crm_contacts.attr_campaign_id) ni en el utm_campaign del formulario, y sin ad_id de Meta — es «no pagado», no «llegó solo»',
      'regla_canal', 'canal = regex sobre el formulario de entrada (ghl_source) y, si no dice, sobre los tags del contacto (moduloNyt, leadmagnetN, lleno encuesta organico…); la sesión de GHL (Social media · Referral · Direct) va aparte',
      'regla_dinero', 'primer plan del contacto ≤60 d del lead; cash = cuotas pagadas (misma guardia de embudo.sh)',
+     'regla_etapa', 'etapa = tags del contacto en GHL: calificado cc / no calificado+descalificado cc / agenda*+llamada agendada pm / no se conectó+no contesta. cobertura = % de leads del canal con ALGUNA etiqueta de calificación — un canal sin cobertura no es un canal malo, es un canal sin trabajar (o trabajado sin etiquetar): los conteos de etapa solo se leen dentro de su cobertura',
      'regla_marca', 'pauta de marca = anuncios tipo=marca de anuncios.sh (objetivo de marca o LPV ≤2% de los clics); roas_vs_marca = cash orgánico / marca USD del mes — heurístico: el orgánico de hoy viene de seguidores de meses atrás y la marca no es su única causa'),
   'resumen', (SELECT json_build_object(
      'leads_total', count(*),
      'organicos', count(*) FILTER (WHERE NOT pagado),
+     'con_etapa', count(*) FILTER (WHERE NOT pagado AND etapa_marcada),
+     'cobertura_etapa', round(100.0 * count(*) FILTER (WHERE NOT pagado AND etapa_marcada)
+                              / nullif(count(*) FILTER (WHERE NOT pagado),0), 1),
+     'calificados', count(*) FILTER (WHERE NOT pagado AND calificado),
+     'no_calificados', count(*) FILTER (WHERE NOT pagado AND no_calificado),
+     'agendo', count(*) FILTER (WHERE NOT pagado AND agendo),
+     'no_conecto', count(*) FILTER (WHERE NOT pagado AND no_conecto),
      'pagados', count(*) FILTER (WHERE pagado),
      'pct_organico', round(100.0 * count(*) FILTER (WHERE NOT pagado) / nullif(count(*),0), 1),
      'won', count(*) FILTER (WHERE NOT pagado AND status = 'won'),
@@ -183,6 +207,12 @@ SELECT json_build_object(
      SELECT canal, count(*) AS leads,
             count(*) FILTER (WHERE status='won') AS won,
             count(plan_id) AS planes,
+            count(*) FILTER (WHERE etapa_marcada) AS con_etapa,
+            round(100.0 * count(*) FILTER (WHERE etapa_marcada) / nullif(count(*),0), 1) AS cobertura_etapa,
+            count(*) FILTER (WHERE calificado) AS calificados,
+            count(*) FILTER (WHERE no_calificado) AS no_calificados,
+            count(*) FILTER (WHERE agendo) AS agendo,
+            count(*) FILTER (WHERE no_conecto) AS no_conecto,
             round(coalesce(sum(original_amount),0),2) AS contrato,
             round(coalesce(sum(cash),0),2) AS cash,
             round(100.0 * count(plan_id) / nullif(count(*),0), 1) AS tasa_plan,
