@@ -29,7 +29,7 @@ const CANAL = {
 };
 
 function num(v) { if (v == null || v === "") return "—"; const n = Number(v); return Number.isNaN(n) ? escape(String(v)) : n.toLocaleString("es-CO"); }
-function usd(v) { if (v == null || v === "") return "—"; const n = Number(v); return Number.isNaN(n) ? escape(String(v)) : "$" + Math.round(n).toLocaleString("es-CO"); }
+function usd(v) { if (v == null || v === "") return "—"; const n = Number(v); if (Number.isNaN(n)) return escape(String(v)); return "$" + (Math.abs(n) < 10 && n !== 0 ? n.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(n).toLocaleString("es-CO")); }
 function pct(v) { return v == null ? "—" : `${Number(v).toLocaleString("es-CO")}%`; }
 function xf(v) { return v == null ? "—" : `${Number(v).toLocaleString("es-CO")}x`; }
 
@@ -73,6 +73,7 @@ function renderOrganico(ui) {
   } catch (e) { err = e.message; }
   d = d || {};
   const m = d.meta || {}, r = d.resumen || {}, canales = d.canales || [], yt = d.serie_youtube || [], ses = d.sesiones || [], series = d.series || [], mc = d.manychat || {};
+  const fm = d.followme || {}, fmT = fm.totales || {}, fmC = fm.campanas || [], fmS = fm.serie || [], seg = (fm.seguidores || {}), segC = seg.cuentas || [];
 
   // --- KPIs
   const cab = `
@@ -155,6 +156,59 @@ function renderOrganico(ui) {
     ])
   );
 
+  // --- Follow-me ads: lo que Meta sí reporta por anuncio + nuestras fotos de seguidores
+  const DEST = { perfil: "visitas al perfil", dm: "conversaciones DM", video: "reproducciones", otro: "otro" };
+  const fmKpis = fm.disponible ? `
+    ${kpi("Pauta de marca (Meta)", usd(fmT.spend), { sub: `${num(fmT.campanas)} campañas · ${num(fmT.impresiones)} impr. · alcance ${num(fmT.alcance)}`, title: "Graph API, nivel campaña×día, ventana; puede diferir del KPI de arriba (DB) por el rezago del sync de insights" })}
+    ${kpi("Visitas al perfil", num(fmT.visitas_perfil), { tone: "pos", sub: `${usd(fmT.costo_visita)} por visita · campañas con destino perfil de IG`, title: m.regla_visitas || fm.meta?.regla_visitas || "" })}
+    ${kpi("Conversaciones DM", num(fmT.conversaciones_dm), { sub: `${usd(fmT.costo_conversacion)} por conversación iniciada (7 d)` })}
+    ${kpi("Likes / guardados", `${num(fmT.likes)}<span class="text-sm" style="color:var(--text-3)"> / ${num(fmT.guardados)}</span>`, { sub: `${usd(fmT.costo_like)} por like` })}
+    ${kpi("Seguidores hoy", segC.length ? segC.map((c) => `<span title="${escape(c.username || "")}">${num(c.followers_hoy)}</span>`).join(`<span class="text-sm" style="color:var(--text-3)"> + </span>`) : "—", { tone: "brand", sub: segC.length ? `${segC.map((c) => "@" + (c.username || "?")).join(" + ")} · ${segC.every((c) => c.nuevos_en_ventana != null) ? `nuevos en la ventana: ${num(segC.reduce((a, c) => a + (c.nuevos_en_ventana || 0), 0))} · ${seg.costo_por_seguidor != null ? usd(seg.costo_por_seguidor) + " por seguidor" : ""}` : `fotos desde ${segC.map((c) => c.primera_foto).sort()[0]} — la serie de nuevos empieza con la segunda foto`}` : "sin fotos: corre bash/ads/seguidores_snapshot.sh", title: fm.meta?.regla_seguidores || "" })}`
+    : "";
+  const tFm = tbl(
+    ["Campaña", "Destino", "Inversión", "Impr.", "Alcance", "Visitas perfil", "$/visita", "Conv. DM", "$/conv.", "Likes", "$/like", "Guardados", "Video views", "Días"],
+    fmC.map((c) => [
+      `<span class="font-semibold">${escape(String(c.campana))}</span><br><span class="text-xs" style="color:var(--text-3)">${escape(String(c.objetivo || ""))}</span>`,
+      `<span class="badge badge-neutral" style="font-size:.6rem">${escape(DEST[c.destino] || c.destino)}</span>`,
+      `<span class="tabular-nums font-semibold">${usd(c.spend)}</span>`,
+      `<span class="tabular-nums">${num(c.impresiones)}</span>`,
+      `<span class="tabular-nums">${num(c.alcance)}</span>`,
+      `<span class="tabular-nums font-semibold">${c.destino === "perfil" ? num(c.visitas_perfil) : "—"}</span>`,
+      `<span class="tabular-nums">${usd(c.costo_visita)}</span>`,
+      `<span class="tabular-nums">${num(c.conversaciones_dm)}</span>`,
+      `<span class="tabular-nums">${usd(c.costo_conversacion)}</span>`,
+      `<span class="tabular-nums">${num(c.likes)}</span>`,
+      `<span class="tabular-nums">${usd(c.costo_like)}</span>`,
+      `<span class="tabular-nums">${num(c.guardados)}</span>`,
+      `<span class="tabular-nums">${num(c.video_views)}</span>`,
+      `<span class="tabular-nums">${num(c.dias)}</span>`,
+    ]),
+    { empty: "Sin campañas de marca con datos en la ventana." }
+  );
+  const fmSpec = fmS.length > 1
+    ? { kind: "line", labels: fmS.map((x) => x.dia.slice(5)), series: [
+        { label: "Visitas al perfil", data: fmS.map((x) => x.visitas_perfil) },
+        { label: "Conversaciones DM", data: fmS.map((x) => x.conversaciones_dm) },
+        { label: "Inversión (USD)", data: fmS.map((x) => x.spend) },
+      ] }
+    : null;
+  const tFmS = tbl(["Día", "Inversión", "Visitas perfil", "Conv. DM", "Likes", "Video views"],
+    fmS.map((x) => [`<span class="tabular-nums font-semibold">${escape(x.dia)}</span>`, `<span class="tabular-nums">${usd(x.spend)}</span>`, `<span class="tabular-nums">${num(x.visitas_perfil)}</span>`, `<span class="tabular-nums">${num(x.conversaciones_dm)}</span>`, `<span class="tabular-nums">${num(x.likes)}</span>`, `<span class="tabular-nums">${num(x.video_views)}</span>`]));
+  const tSeg = tbl(["Cuenta", "Página", "Seguidores hoy", "Fotos", "Desde", "Nuevos en ventana", "Últimas fotos"],
+    segC.map((c) => [`<span class="font-semibold">@${escape(String(c.username || "?"))}</span>`, `<span class="text-xs">${escape(String(c.page || ""))}</span>`, `<span class="tabular-nums font-semibold">${num(c.followers_hoy)}</span>`, `<span class="tabular-nums">${num(c.fotos)}</span>`, `<span class="tabular-nums text-xs">${escape(String(c.primera_foto || ""))}</span>`, `<span class="tabular-nums">${c.nuevos_en_ventana == null ? "— (falta 2ª foto)" : num(c.nuevos_en_ventana)}</span>`,
+      `<span class="text-xs tabular-nums" style="color:var(--text-3)">${(c.serie || []).slice(-5).map((x) => `${escape(x.fecha.slice(5))} ${num(x.followers)}${x.nuevos != null ? ` (${x.nuevos >= 0 ? "+" : ""}${num(x.nuevos)})` : ""}`).join(" · ")}</span>`]));
+  const fmErr = (fm.meta && fm.meta.errores_meta && fm.meta.errores_meta.length)
+    ? `<p class="text-xs mt-1" style="color:var(--cau-text)">Meta no respondió por ${fm.meta.errores_meta.map((e) => `${escape(e.cuenta)} (${escape(e.error)})`).join(", ")} — si esa cuenta tiene campañas de marca, faltan aquí.</p>` : "";
+  const fmHtml = fm.disponible
+    ? `<div class="grid gap-3 mt-3" style="grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))">${fmKpis}</div>
+       ${fmErr}
+       <div class="mt-4">${tFm}</div>
+       <div class="grid gap-4 mt-4" style="grid-template-columns:repeat(auto-fit,minmax(24rem,1fr))">
+         <div><p class="text-xs mb-2" style="color:var(--text-3)">por día — visitas al perfil y conversaciones contra la inversión</p>${chartCard(fmSpec, "showfm", tFmS)}</div>
+         <div><p class="text-xs mb-2" style="color:var(--text-3)">seguidores — fotos diarias del total (nuestras, no de IG Insights); nuevos = hoy − foto anterior</p>${tSeg}<p class="text-xs mt-1" style="color:var(--text-3)">${escape(seg.nota || "")}</p></div>
+       </div>`
+    : `<div class="alert"><p class="text-sm">Follow-me no disponible: ${escape(fm.error || "—")}</p></div>`;
+
   // --- ManyChat: el mapa del flujo
   const mapa = (mc.mapa || []).map((t) => `<span class="badge badge-neutral mr-1 mb-1 inline-block">${escape(String(t))}</span>`).join("");
   const mcHtml = mc.disponible
@@ -172,6 +226,8 @@ function renderOrganico(ui) {
        </div>
        ${section("Serie mensual — orgánico vs pauta", `últimos ${num(m.meses)} meses · la caja de cada mes es la cobrada A HOY de esos leads: los meses recientes siguen cobrando`)}
        ${chartCard(serieSpec, "showserie", tSerie)}
+       ${section("Follow-me ads — el costo de lo «gratis», antes del lead", "lo que Meta sí reporta por anuncio de marca: visitas al perfil de IG, conversaciones DM, likes — y los seguidores por foto diaria (IG Insights está cerrado por scopes)")}
+       ${fmHtml}
        ${section("ManyChat — el mapa del flujo de Instagram", `${mc.disponible ? `conectado · ${num((mc.mapa || []).length)} tags` : "sin conexión"} · el recorrido nuevo seguidor → quiz → asesoría → serie YT → lead magnets → grupo VIP · el API no da conteos (ver nota)`)}
        ${mcHtml}
        ${(d.sin_instrumentar || []).length ? `<p class="mt-4 text-xs" style="color:var(--text-3)"><b>Sin instrumentar:</b> ${d.sin_instrumentar.map((x) => escape(x)).join(" · ")}</p>` : ""}`;

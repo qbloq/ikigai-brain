@@ -37,7 +37,9 @@
 # Uso: organico.sh --project NAME [--from D] [--to D] [--meses N] [--json]
 #   default: mes en curso (Bogotá); --meses N = serie mensual (default 6).
 #   Siempre emite JSON. Read-only: Postgres (psql_ro) + GET a ManyChat
-#   (solo page/getTags, si hay MANYCHAT_TOKEN_DG o MANYCHAT_TOKEN_B en .env).
+#   (solo page/getTags, si hay MANYCHAT_TOKEN_DG o MANYCHAT_TOKEN_B en .env)
+#   + bash/ads/followme.sh (Graph API, cerca por rol `meta`: si el rol no
+#   puede, `followme.disponible=false` con el motivo — la página lo declara).
 #   Fuente viz `embudo_organico` → page `organico` (UI ejecutivo `embudo-organico`).
 set -euo pipefail
 cd "$(dirname "$0")/../.." || exit 1
@@ -228,9 +230,22 @@ else
   MC_ERR="sin MANYCHAT_TOKEN_DG/MANYCHAT_TOKEN_B en .env"
 fi
 
-OBJ="$OBJ" MC_TAGS="$MC_TAGS" MC_ERR="$MC_ERR" python3 - <<'PY'
+# ---------- Follow-me ads: visitas al perfil, DMs, likes y seguidores (Graph API, cerca por rol) ----------
+FM="$(bash/ads/followme.sh --project "$project" --from "$from" --to "$to" --json 2>/tmp/organico_fm_err.$$ || true)"
+FM_ERR="$(head -c 300 /tmp/organico_fm_err.$$ 2>/dev/null | tr '\n' ' ')"; rm -f /tmp/organico_fm_err.$$
+
+OBJ="$OBJ" MC_TAGS="$MC_TAGS" MC_ERR="$MC_ERR" FM="$FM" FM_ERR="$FM_ERR" python3 - <<'PY'
 import json, os
 obj = json.loads(os.environ["OBJ"])
+try:
+    fm = json.loads(os.environ["FM"]) if os.environ["FM"].strip() else None
+except Exception:
+    fm = None
+if fm is None:
+    fm = {"disponible": False, "error": (os.environ["FM_ERR"] or "followme.sh no respondió").strip()}
+else:
+    fm["disponible"] = True
+obj["followme"] = fm
 tags = json.loads(os.environ["MC_TAGS"]) if os.environ["MC_TAGS"] else None
 r = obj.get("resumen") or {}
 r["roas_vs_marca"] = round(float(r["cash"]) / float(r["marca_usd"]), 2) if r.get("marca_usd") and float(r["marca_usd"]) > 0 else None
@@ -246,7 +261,7 @@ mc_estado = (f"ManyChat CONECTADO ({len(tags)} tags de la cuenta de operación)"
 obj["sin_instrumentar"] = [
     mc_estado + " — pero su API no lista suscriptores ni cuenta DMs/setters, y no hay llave con el CRM (los suscriptores de IG no traen email/teléfono): lo que se ve es el MAPA del flujo, no su volumen. Pedido: que el flujo escriba ig_username/subscriber_id en el contacto de GHL",
     "vistas/suscriptores de YouTube por módulo: la serie se ve solo desde el lead que llega al form",
-    "seguidores nuevos por día (Meta/IG): los follow-me ads se leen por su gasto, no por el seguidor que trajeron",
+    "seguidores por día desde IG Insights (follower_count): el token de Meta no tiene instagram_manage_insights — se reemplaza por fotos diarias del total (seguidores_snapshot.sh), que empiezan el día de la primera foto; pedido: docs/marketico-pedido-instagram-insights.md",
 ]
 print(json.dumps(obj, ensure_ascii=False))
 PY
