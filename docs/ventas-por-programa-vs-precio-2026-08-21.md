@@ -91,3 +91,5 @@ Tres períodos: **P1** hasta el 21-ene (precios viejos) · **P2** 22-ene → 21-
 ## 6. Reproducibilidad
 
 El reporte (tabla §2) y su data de origen (§5) viven como **consultas vinculadas al contrato de la tarea `332c414a`**: el output «Reporte entregado al consumidor» y el input «Data de métricas de origen» son artefactos de tipo *SQL Results* y se vuelven a ejecutar desde el Cerebro con otro corte sin rehacer nada a mano. Parámetros declarados: proyecto David Guerrero · ventana desde 2025-08-14 · cortes 2026-01-22 y 2026-06-22.
+
+**Versión para el equipo:** la misma lectura, con las tablas recalculadas al abrir, está publicada en la app de la org — https://app.ikigaigm.parallelo.ai/ventas-precio-dg (acceso para Lorenzo y Luis David con su usuario de la plataforma).
