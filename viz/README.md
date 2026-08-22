@@ -158,6 +158,14 @@ Páginas, por `ui.component`:
 - **`localdb`** — explorador de SQLite local: izquierda, cada db con tablas +
   counts; derecha, preview ≤200 filas. La selección viaja como `?db=&table=`,
   así toda vista es URL-direccionable (`/u/<id>?db=…`).
+- **`adelantar-tareas`** — «qué puede hacer el Cerebro» por tarea: una tarjeta
+  por tarea con la lista de acciones que el Cerebro puede ejecutar para
+  adelantarla o cerrarla, cada una con **alcance** (cierra · adelanta · insumo)
+  y estado (propuesta → en curso → hecha / descartada). Lee la sqlite local
+  `adelantar_tareas` (`tareas` + `acciones`) por `localdb_query`; solo lectura —
+  el estado se mueve desde la conversación y el `#n` visible es el handle.
+  Nació el 2026-08-21 con las 21 tareas que vencían el 20 de agosto (UI local
+  «Qué puede hacer el Cerebro — vencen 20-ago»).
 - **`notion-tasks`** — tabla read-only filtrable de las tareas BD Avances de un
   proyecto Notion (fetch único — fuente cacheada — filtrado en el navegador).
 - **`tasks`** — lista de tareas con barra de filtros (status/priority/project/
