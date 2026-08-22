@@ -1,0 +1,14 @@
+{
+  "id": "que-puede-hacer-el-cerebro-vencen-20-ago",
+  "name": "Qué puede hacer el Cerebro — vencen 20-ago",
+  "component": "adelantar-tareas",
+  "source": "localdb_query",
+  "params": {
+    "db": "adelantar_tareas",
+    "query": "SELECT t.id AS tarea_id, t.titulo, t.prioridad, t.asignado, t.arquetipo, t.output_principal, t.nota AS tarea_nota, a.n, a.orden, a.alcance, a.accion, a.detalle, a.estado, a.nota AS accion_nota FROM tareas t LEFT JOIN acciones a ON a.tarea_id=t.id ORDER BY (t.prioridad=\"High\") DESC, t.id, a.orden",
+    "limit": "500"
+  },
+  "scope": "personal",
+  "created_at": "2026-08-22T03:58:29.592Z",
+  "updated_at": "2026-08-22T03:58:29.592Z"
+}
