@@ -659,7 +659,11 @@ form) por **canal de entrada** — regex sobre `ghl_source` primero (el form que
 creó el lead) y los tags después: serie de YouTube (+ `serie_youtube` por
 módulo), lead magnets, survey orgánico, VSL sin pauta, masterclass, low
 ticket, aplicación premium, referido Bala, sin formulario — con sesión de GHL
-(Social media · Referral · Direct), won/planes ≤60 d/contrato/cash, `series`
+(Social media · Referral · Direct), won/planes ≤60 d/contrato/cash, **el tramo
+intermedio** (`con_etapa`/`cobertura_etapa`/`calificados`/`no_calificados`/
+`agendo`/`no_conecto`, leídos de los tags del contacto en GHL: `calificado cc` ·
+`no calificado`+`descalificado cc` · `agenda*`+`llamada agendada pm` ·
+`no se conectó`+`no contesta`), `series`
 mensual orgánico vs pauta, y la **pauta de marca** del mes al lado (misma regla
 `tipo=marca` de `anuncios.sh`) con `roas_vs_marca` **declarado heurístico**.
 `followme` = `bash/ads/followme.sh` (visitas al perfil, DMs, likes por dólar
@@ -668,7 +672,15 @@ motivo si el rol no puede usar `meta`). `manychat.mapa` = solo los tags del
 flujo de IG (el API no lista suscriptores ni da conteos; por nombre matchea
 14/79 — ver `bash/manychat/README.md`), así que NO cuenta DMs ni setters y lo
 dice en `sin_instrumentar`. Agosto DG: 79
-orgánicos (32 %) con tasa a plan 11,4 % contra 7,1 % de los pagados. Read-only
+orgánicos (32 %) con tasa a plan 11,4 % contra 7,1 % de los pagados.
+⚠️ **`cobertura_etapa` manda sobre los conteos de etapa de su fila** y por eso
+viaja al lado: poca cobertura significa dos cosas opuestas —no lo trabajaron, o
+lo trabajaron sin etiquetar— y sin declararla una falla de proceso se lee como
+conclusión sobre el canal. Medido jul+ago: la serie de YouTube trae 143 leads
+con **7 % de cobertura** y 3 ganadas, mientras «sin formulario» (el DM puro, el
+que no deja llave) trae 33 con **97 %** y 7 ganadas — el canal de más volumen es
+el que nadie califica. La cobertura del 97 % puede ser artefacto (si el
+confirmador crea el contacto ya etiquetado), y la página lo dice. Read-only
 (+ un GET a ManyChat si hay `MANYCHAT_TOKEN_DG`/`_B`). Fuente viz
 `embudo_organico` → page `organico` (UI ejecutivo `embudo-organico`).
 
