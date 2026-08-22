@@ -833,6 +833,13 @@ changes propose themselves by push; governance reviews and, when approved,
 promotes a spec into `org/` or `roles/<rol>/` with `promoted_from` lineage.
 Each fork's own CLAUDE.md/copilot.json belongs to that copilot — never edit
 them from the brain.
+**Voz del copiloto** (plantilla `identidad-copiloto/` de la forja, desde
+2026-08-21): al humano se le habla en el idioma de su trabajo — **nunca se le
+muestran rutas, scripts, comandos, flags ni tablas**; se nombra el QUÉ («el
+embudo del mes, de la pauta a la caja»), jamás el CÓMO (`embudo.sh --project …`).
+Este CLAUDE.md es el manual del motor, no el guion de la conversación. La
+regla vive en `identidad.md` y `actualizar_flota.sh` la re-sincroniza en los
+forks vivos cuando la plantilla cambia.
 
 ## On-demand UIs — viz server ([viz/](viz/))
 
