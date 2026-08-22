@@ -2737,31 +2737,31 @@
       "verb": "Medir/Analizar",
       "name": "Especificar/entregar reportes requeridos",
       "slots": [
-        "consumidor"
+        "destinatario"
       ],
       "inputs": [
         {
-          "title": "Requerimientos de reporte del consumidor",
-          "description": "Especificación de lo que {consumidor} necesita ver: métricas, cortes, formato y periodicidad del reporte de {proyecto}.",
+          "title": "Requerimientos del reporte",
+          "description": "Qué debe mostrar el reporte de {proyecto}: métricas, cortes, formato y periodicidad, tal como lo pidió {destinatario}. Son los requerimientos del reporte, independientes de quién los haya expresado.",
           "io_type": "documentation",
           "is_required": true
         },
         {
           "title": "Data de métricas de origen",
-          "description": "Datos y métricas de {proyecto} (ventas, pauta, conversión) que alimentan el reporte solicitado por {consumidor}.",
+          "description": "Datos y métricas de {proyecto} (ventas, pauta, conversión) que alimentan el reporte pedido por {destinatario}.",
           "io_type": "analytics_report",
           "is_required": true
         }
       ],
       "outputs": [
         {
-          "title": "Reporte entregado al consumidor",
-          "description": "Reporte de métricas de {proyecto} especificado y entregado a {consumidor} en el formato y periodicidad acordados.",
+          "title": "Reporte entregado a {destinatario}",
+          "description": "Reporte de métricas de {proyecto} producido y entregado a {destinatario} en el formato y periodicidad acordados.",
           "io_type": "analytics_report",
           "is_required": true,
           "criteria": [
             {
-              "criterion": "El reporte incluye todas las métricas y cortes solicitados por {consumidor}.",
+              "criterion": "El reporte incluye todas las métricas y cortes que pidió {destinatario}.",
               "criterion_category": "completeness",
               "verification_method": "manual"
             },
@@ -2771,7 +2771,7 @@
               "verification_method": "manual"
             },
             {
-              "criterion": "Entrega a {consumidor} confirmada.",
+              "criterion": "Entrega a {destinatario} confirmada.",
               "criterion_category": "completeness",
               "verification_method": "attested"
             }
