@@ -600,7 +600,7 @@ linked views that report `data_sources: []`) in [bash/notion/README.md](bash/not
 
 ## Google domain — Drive vía el API mkt ([bash/google/](bash/google/))
 
-**Read-only** access to the org's Drive through the **Meetico backend**
+Access to the org's Drive through the **Meetico backend** (read-only salvo las dos escrituras declaradas: carpeta y Doc)
 (contract: `apis/mkt/drive.openapi.json`) — the
 backend owns the Google identity (token, refresh, index); these scripts never
 see Google credentials and never touch the DB. Mode picked from `.env`:
@@ -615,6 +615,8 @@ a clear «el backend aún no expone …» message. See [bash/google/README.md](b
 | `auth_status.sh` | Mode, base and a live probe against the backend. |
 | `drive_ls.sh [--folder ID\|url\|name] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf] [--limit N]` | List a folder live (`/drive/contents`) or search the whole drive (index). |
 | `drive_recent.sh [--days N] [--from D] [--to D] [--modified] [--docs] [--type T] [--folder FRAG] [--owner FRAG] [--exclude FRAG] [--with-folders] [--by day\|type\|owner\|folder] [--limit N]` | What **entered or changed** lately, newest first — the index has no other way to be asked "what's new". Always prints the index's freshness to stderr and shouts past 48h, because the index is a hand-refreshed cache and a stale one answers "what came in this week?" with silence. Needs the 2026-08-04 backend change (date filters + `sort` + `/drive/index/status`); refuses to run without it. |
+| `drive_mkdir.sh <parent id\|url\|name> --name N [--json]` **[WRITE→Drive]** | Crear una carpeta en el Drive de la org con la identidad de la org (`POST /drive/folders`, desde 2026-08-22). **Idempotente por nombre** dentro del padre: la que ya existe se devuelve (`created:false`), nunca se duplica. Convención para los Docs de contratos de tarea: `1. David Guerrero/Hermetico/<id8> · <título corto>/` — una carpeta por tarea, el id corto en el nombre es el enlace de vuelta al contrato. |
+| `doc_create.sh <parent> --title T --from f.md\|- [--html] [--share email[:reader\|commenter\|writer]]… [--notify] [--dry-run] [--json]` **[WRITE→Drive]** | Crear un **Google Doc** desde un Markdown (pandoc → HTML → importación nativa de Google; conserva títulos, tablas, listas) u HTML (`--html`), en una carpeta, opcionalmente compartido al crear (`POST /drive/files`). No sobreescribe: crear dos veces = dos Docs (re-publicar contenido pide `PUT /drive/files/{id}/content`, pendiente). Primer uso: los «Requerimientos del reporte» de 332c414a. |
 | `drive_sync.sh [--all-drives] [--trashed] [--wait] [--timeout N] [--status]` **[WRITE]** | Refresh the index (`POST /drive/index` → 202, poll `/drive/index/status`; 409 if one is already running). The **only** write in `bash/google/` — and it rewrites our index, not the Drive. Since 2026-08-09 a PM2 `drive-index` job also runs it daily at 10:00 UTC (05:00 Bogotá), so this is for "I need it fresh *now*". |
 | `drive_file.sh <id\|url>` | Metadata of one file. |
 | `doc_read.sh <id\|url> [--out F] [--txt]` | A Google Doc as **Markdown** (`?format=markdown`). `--out` writes a file. |

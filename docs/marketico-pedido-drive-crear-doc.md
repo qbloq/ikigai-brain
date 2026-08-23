@@ -1,5 +1,7 @@
 # Pedido a Marketico — crear Google Docs desde el backend de Drive
 
+> **RESUELTO el 2026-08-22, en casa.** El backend de Drive (`google-meet-express`, commit `19877f6`) ya expone `POST /drive/folders` y `POST /drive/files`; en el Cerebro los usan `bash/google/drive_mkdir.sh` y `bash/google/doc_create.sh`. Queda pendiente solo el reemplazo de contenido (`PUT /drive/files/{id}/content`) para re-publicar reportes. Este documento se conserva como registro del pedido.
+
 **Fecha:** 2026-08-21 · **Quién pide:** Cerebro / Ikigai (Santiago) · **Para:** equipo Marketico
 **Superficie afectada:** el backend Meetico de Drive (`apis/mkt/drive.openapi.json`)
 **Tamaño estimado:** chico — la identidad Google, el token y el refresh ya viven ahí; falta un POST.
