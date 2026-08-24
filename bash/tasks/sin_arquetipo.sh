@@ -9,16 +9,23 @@
 # score 0-100; bajo 25 no se propone nada (sugerido=null) antes que inventar.
 # READ-ONLY. Fuente viz `tareas_sin_arquetipo`.
 #
-# Usage: sin_arquetipo.sh [--project P] [--open] [--json]
+# `--id <prefijo8>` acota la salida a UNA tarea SIN tocar el voto de los
+# vecinos: el universo de tareas ya etiquetadas sigue siendo el completo, así
+# que el score de esa tarea sale idéntico al de la corrida sin filtro. Existe
+# porque el panel de la UI de revisión re-corría el matcher sobre TODAS las
+# tareas sin arquetipo en cada clic de fila (3.6 s medidos).
+#
+# Usage: sin_arquetipo.sh [--project P] [--open] [--id <prefijo8>] [--json]
 set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
-PROJECT=""; OPEN=0
+PROJECT=""; OPEN=0; ID8=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project) PROJECT="$2"; shift 2 ;;
     --open) OPEN=1; shift ;;
+    --id) ID8="$2"; shift 2 ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) echo "Argumento desconocido: $1" >&2; exit 2 ;;
   esac
 done
@@ -26,6 +33,12 @@ esc() { printf '%s' "$1" | sed "s/'/''/g"; }
 w="t.archetype_id IS NULL"
 [[ -n "$PROJECT" ]] && w="$w AND pr.name ILIKE '%$(esc "$PROJECT")%'"
 [[ "$OPEN" == 1 ]] && w="$w AND $OPEN_PRED"
+# El prefijo se valida con forma estricta (8 hex) antes de tocar el SQL: es lo
+# único de esta consulta que llega desde el navegador.
+if [[ -n "$ID8" ]]; then
+  [[ "$ID8" =~ ^[0-9a-f]{8}$ ]] || { echo "--id debe ser un prefijo de 8 hex: $ID8" >&2; exit 2; }
+  w="$w AND t.id::text LIKE '$ID8%'"
+fi
 sinfile="$(mktemp)"; confile="$(mktemp)"
 trap 'rm -f "$sinfile" "$confile"' EXIT
 psql_ro -t -A -c "SELECT coalesce(json_agg(row_to_json(q)),'[]') FROM (

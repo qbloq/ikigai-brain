@@ -13,7 +13,7 @@
 // Spec: docs/superpowers/specs/2026-08-24-revision-propuestas-design.md
 
 const { fetchSource } = require("../lib/datasources");
-const { escape, cell, section, dueFmt, priorityDot } = require("../lib/kit");
+const { escape, cell, section, dueFmt, priorityDot, jsStr } = require("../lib/kit");
 const { tokens, jaccard } = require("../lib/similitud");
 const { parseJson, decisionBadge, seccionBadge } = require("./propuestas-table");
 const catalogo = require("../../catalog/sop-archetypes.json");
@@ -41,10 +41,14 @@ function dt(label, value) {
 // uuid COMPLETO, que es lo que piden los scripts (patrón de pages/cruce.js).
 function idCopiable(idFull, key) {
   const full = String(idFull || "");
-  return `<button data-on:click="navigator.clipboard.writeText('${escape(full)}');$copiado='${escape(key)}'"
+  // `jsStr` y no `escape`: estos dos valores van DENTRO de literales JS, y
+  // escape() no toca el apóstrofo (kit.js) — partiría la expresión.
+  const jf = escape(jsStr(full));
+  const jk = escape(jsStr(key));
+  return `<button data-on:click="navigator.clipboard.writeText(${jf});$copiado=${jk}"
     class="font-mono text-[10px] text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1"
     title="Clic para copiar el id completo">${escape(full.slice(0, 8))}<span aria-hidden="true">⧉</span></button>
-    <span data-show="$copiado=='${escape(key)}'" class="text-[10px] text-emerald-600">✓</span>`;
+    <span data-show="$copiado==${jk}" class="text-[10px] text-emerald-600">✓</span>`;
 }
 
 const ESTADO_BADGE = {
@@ -140,21 +144,36 @@ function bloqueDecision(row) {
     </div>
     <p class="text-[11px] text-slate-400 mt-1">La propuesta quedó congelada: la decisión ya se ejecutó.</p>`;
   }
+  // El nombre de la señal es un IDENTIFICADOR (no admite jsStr), así que se
+  // reduce a dígitos; el mismo valor viaja por la URL como literal escapado.
+  const sig = `_nota_${n.replace(/[^0-9]/g, "")}`;
   const post = (d) =>
-    `@post('/c/propuesta-detail/act/mark?n=${escape(n)}&d=${d}&nota='+encodeURIComponent($_nota_${escape(n)}))`;
+    `@post('/c/propuesta-detail/act/mark?n='+encodeURIComponent(${escape(jsStr(n))})+'&d=${d}&nota='+encodeURIComponent($${sig}))`;
   const quitar = row.decision
     ? `<button class="btn btn-ghost btn-xs" data-on:click="${post("ninguna")}" data-indicator:loading
         title="Borrar la decisión y volver a pendiente">quitar</button>`
     : "";
-  return `<input data-bind="_nota_${escape(n)}" class="input input-sm mb-2" placeholder="nota (opcional)" />
+  // `entra` es UN valor con DOS significados, y el rótulo tiene que decir cuál:
+  // en §A el ejecutor crea la tarea; en §B nunca crea nada (spec §3) — la marca
+  // dice «hay que resolverlo en conversación». Prometer creación en una §B
+  // sería prometer algo que ningún script hará.
+  const esB = row.seccion === "B";
+  const rotulo = esB ? "Se resuelve" : "Entra";
+  const tPrim = esB ? "Marcar: se resuelve en conversación" : "Marcar: se creará en el cerebro";
+  const tSec = esB ? "Marcar: no hay nada que hacer" : "Marcar: no se crea";
+  const ayuda = esB
+    ? `<p class="text-[11px] text-slate-400 mt-1">§B: se resuelve en conversación (comentario, cierre, reasignación); no se crea tarea.</p>`
+    : "";
+  return `<input data-bind="${sig}" class="input input-sm mb-2" placeholder="nota (opcional)" />
     <div class="flex items-center gap-2">
       <button class="btn btn-primary btn-xs" data-on:click="${post("entra")}" data-indicator:loading
-        title="Marcar: se creará en el cerebro">Entra</button>
+        title="${escape(tPrim)}">${escape(rotulo)}</button>
       <button class="btn btn-secondary btn-xs" data-on:click="${post("se_queda")}" data-indicator:loading
-        title="Marcar: no se crea">Se queda</button>
+        title="${escape(tSec)}">Se queda</button>
       ${quitar}
       ${row.decidida_en ? `<span class="text-[11px] text-slate-400 ml-auto">${escape(String(row.decidida_en).slice(0, 16))}</span>` : ""}
     </div>
+    ${ayuda}
     ${row.decision_nota ? `<p class="text-[11px] text-slate-500 mt-1">${escape(row.decision_nota)}</p>` : ""}`;
 }
 
@@ -173,6 +192,11 @@ function panel(n, aviso) {
   const a = row.arquetipo ? ARQ.get(row.arquetipo) : null;
   const slots = parseJson(row.slots, {});
   const asignados = parseJson(row.asignados, []);
+  // Una fila SIN contrato (todas las §B) no tiene vence, ni slots, ni cita: no
+  // es que falten, es que esa fila no describe una tarea creable. Pintar
+  // «Vence —», «sin slots» y «sin cita del transcript» sería ruido que se lee
+  // como carencia. Se muestran solo los campos que de verdad traen algo.
+  const conContrato = !!row.contrato;
   const slotsHtml = Object.keys(slots).length
     ? `<dl class="text-xs space-y-0.5">${Object.entries(slots)
         .map(
@@ -192,7 +216,8 @@ function panel(n, aviso) {
        ${row.accion_sugerida ? `<p class="text-xs text-slate-500 mb-3"><span class="text-slate-400">Acción sugerida:</span> ${escape(row.accion_sugerida)}</p>` : ""}`
     : "";
 
-  const inner = `<div class="p-5" data-signals="${escape(JSON.stringify({ [`_nota_${n}`]: "", copiado: "" }))}">
+  const sigNota = `_nota_${String(n).replace(/[^0-9]/g, "")}`;
+  const inner = `<div class="p-5" data-signals="${escape(JSON.stringify({ [sigNota]: "", copiado: "" }))}">
     ${banner}
     <div class="flex items-start gap-2 mb-1">
       <button data-on:click="$detailOpen=false; $selectedProp=''" class="ml-auto -mr-1 -mt-1 text-slate-400 hover:text-slate-600 text-lg leading-none" title="Cerrar">✕</button>
@@ -207,19 +232,23 @@ function panel(n, aviso) {
     ${invalida}
     ${pregunta}
     <dl class="text-sm space-y-1 mb-5">
-      ${dt("Proyecto", cell(row.proyecto))}
-      ${dt("Vence", row.vence ? `${dueFmt(row.vence)}${row.vence_estimada ? ' <span class="text-[10px] text-slate-400">estimada</span>' : ""}` : cell(null))}
-      ${dt("Dueños", cell(asignados.join(", ")))}
-      ${dt("Arquetipo", a ? `<code class="text-xs text-indigo-600">${escape(a.id)}</code> · ${escape(a.name)}<span class="text-xs text-slate-400"> (${escape(a.sop)})</span>` : cell(row.arquetipo))}
+      ${conContrato || row.proyecto ? dt("Proyecto", cell(row.proyecto)) : ""}
+      ${conContrato || row.vence ? dt("Vence", row.vence ? `${dueFmt(row.vence)}${row.vence_estimada ? ' <span class="text-[10px] text-slate-400">estimada</span>' : ""}` : cell(null)) : ""}
+      ${conContrato || asignados.length ? dt("Dueños", cell(asignados.join(", "))) : ""}
+      ${conContrato || row.arquetipo ? dt("Arquetipo", a ? `<code class="text-xs text-indigo-600">${escape(a.id)}</code> · ${escape(a.name)}<span class="text-xs text-slate-400"> (${escape(a.sop)})</span>` : cell(row.arquetipo)) : ""}
     </dl>
-    ${section("Slots", null, slotsHtml)}
-    ${section(
-      "Evidencia",
-      null,
-      row.evidencia
-        ? `<blockquote class="text-sm border-l-2 pl-3" style="border-color:var(--border-1);color:var(--text-2)">${escape(row.evidencia)}</blockquote>`
-        : '<p class="text-xs text-slate-400 italic">— sin cita del transcript</p>'
-    )}
+    ${conContrato || Object.keys(slots).length ? section("Slots", null, slotsHtml) : ""}
+    ${
+      conContrato || row.evidencia
+        ? section(
+            "Evidencia",
+            null,
+            row.evidencia
+              ? `<blockquote class="text-sm border-l-2 pl-3" style="border-color:var(--border-1);color:var(--text-2)">${escape(row.evidencia)}</blockquote>`
+              : '<p class="text-xs text-slate-400 italic">— sin cita del transcript</p>'
+          )
+        : ""
+    }
     ${row.comentario ? section("Comentario", null, `<p class="text-sm text-slate-700 whitespace-pre-wrap">${escape(row.comentario)}</p>`) : ""}
     ${section("Decisión", null, bloqueDecision(row))}
     ${section("Relacionadas · en este lote", null, bloqueLote(row, todas))}

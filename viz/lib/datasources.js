@@ -726,7 +726,7 @@ const SOURCES = {
     label: "Tareas sin arquetipo + propuesto",
     script: "bash/tasks/sin_arquetipo.sh",
     emits: "rows",
-    args: { project: "--project", open: { flag: "--open", bool: true } },
+    args: { project: "--project", open: { flag: "--open", bool: true }, id: "--id" },
   },
 };
 

@@ -16,7 +16,7 @@
 // Spec: docs/superpowers/specs/2026-08-24-revision-propuestas-design.md
 
 const { fetchSource } = require("../lib/datasources");
-const { escape, cell, dueFmt, priorityDot, selectCtl } = require("../lib/kit");
+const { escape, cell, dueFmt, priorityDot, selectCtl, jsStr } = require("../lib/kit");
 
 const INDICATOR = "loadingprop";
 
@@ -52,7 +52,13 @@ function decisionBadge(r) {
   if (r.creada_id) {
     return `<span class="badge badge-brand" title="Ya creada en el cerebro: ${escape(r.creada_id)}">✓ creada ${escape(String(r.creada_id).slice(0, 8))}</span>`;
   }
-  if (r.decision === "entra") return `<span class="badge badge-pos" title="Entra: se creará en el cerebro">entra</span>`;
+  // `entra` significa dos cosas según la sección, y el rótulo tiene que decir
+  // cuál: en §A el ejecutor CREA la tarea; en §B nunca crea nada — la marca
+  // dice «hay que actuar sobre esto en conversación» (spec §3).
+  if (r.decision === "entra") {
+    const t = r.seccion === "B" ? "Se resuelve en conversación (no se crea tarea)" : "Entra: se creará en el cerebro";
+    return `<span class="badge badge-pos" title="${escape(t)}">${r.seccion === "B" ? "se resuelve" : "entra"}</span>`;
+  }
   if (r.decision === "se_queda") return `<span class="badge badge-neutral" title="Se queda: no se crea">se queda</span>`;
   return `<span class="badge badge-cau" title="Sin decidir">pendiente</span>`;
 }
@@ -73,8 +79,11 @@ function backupCard(b, uiId) {
   } else if (!b.json) {
     accion = `<span class="badge badge-neutral" title="El backup .md no tiene su gemelo .json — no hay contratos que cargar">sin gemelo JSON</span>`;
   } else {
+    // Los valores viajan por `jsStr` (comilla simple escapada) y se codifican en
+    // el navegador: `escape()` no toca el apóstrofo y estos van DENTRO de un
+    // literal JS, no solo de un atributo HTML.
     accion = `<button class="btn btn-primary btn-xs"
-      data-on:click="@post('/c/revision-propuestas/act/cargar?ui=${escape(uiId)}&meeting=${escape(corto)}')"
+      data-on:click="@post('/c/revision-propuestas/act/cargar?ui='+encodeURIComponent(${escape(jsStr(uiId))})+'&meeting='+encodeURIComponent(${escape(jsStr(corto))}))"
       data-indicator:${INDICATOR} title="Cargar este backup a la sqlite local">Cargar</button>`;
   }
   return `<div class="card px-3 py-2 flex items-center gap-2 text-xs">
@@ -146,10 +155,17 @@ const regetQS =
 // `uiId` y `aviso` los inyecta la página (el patrón solo pasa (p, reget)): el
 // botón Cargar necesita el id de la UI para su @post, y el aviso es el error
 // que devolvió la última carga.
+// ⚠️ El universo de opciones sale de las filas SIN FILTRAR, a propósito.
+// Derivarlo de las ya filtradas cierra el filtro sobre sí mismo: `?lote=X`
+// borraría el otro lote del <select> (no se podría saltar entre lotes sin
+// pasar por «todos») y `?seccion=B` vaciaría la lista de proyectos mientras
+// `$pProy` conserva su valor, dejando la tabla en 0 filas con el control
+// diciendo «Proyecto: todos». Es el mismo anti-patrón que el CLAUDE.md raíz
+// declara para crm/facets.sh. Es sqlite local (~50 ms), así que se paga.
 function controls(p, reget, uiId, aviso) {
   let rows = [];
   try {
-    rows = fetchSource("propuestas", { lote: p.lote || "", seccion: p.seccion || "", decision: p.decision || "" }).rows;
+    rows = fetchSource("propuestas", {}).rows;
   } catch {
     /* la tabla ya reporta el error; los selectores se quedan sin opciones */
   }

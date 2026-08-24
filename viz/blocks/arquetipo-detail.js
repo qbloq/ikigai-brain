@@ -13,7 +13,7 @@
 // Spec: docs/superpowers/specs/2026-08-24-revision-propuestas-design.md
 
 const { fetchSource } = require("../lib/datasources");
-const { escape, section } = require("../lib/kit");
+const { escape, section, jsStr } = require("../lib/kit");
 const { renderTaskDetail } = require("./task-detail");
 const { marcaBadge } = require("./arquetipos-table");
 const catalogo = require("../../catalog/sop-archetypes.json");
@@ -52,12 +52,17 @@ function parseJson(v, fallback) {
 
 // El catálogo entero como <select>, agrupado por SOP: es la salida cuando
 // ninguna de las tres alternativas del matcher sirve.
+// La primera opción es VACÍA a propósito: cuando no hay sugerido ni
+// alternativas la señal vale "", y sin ella el navegador mostraría el primer
+// arquetipo del catálogo como si estuviera elegido mientras «Elegir este»
+// postea `a=` — lo que se ve no sería lo que se envía.
 function catalogoSelect(id8, seleccionado) {
   const porSop = new Map();
   for (const a of catalogo.archetypes || []) {
     if (!porSop.has(a.sop)) porSop.set(a.sop, []);
     porSop.get(a.sop).push(a);
   }
+  const vacia = `<option value=""${seleccionado ? "" : " selected"}>— elegir —</option>`;
   const groups = [...porSop.entries()]
     .map(([sop, arqs]) => {
       const opts = arqs
@@ -69,11 +74,13 @@ function catalogoSelect(id8, seleccionado) {
       return `<optgroup label="${escape(sop)} · ${escape(SOP_NAME.get(sop) || "")}">${opts}</optgroup>`;
     })
     .join("");
-  return `<select data-bind="${sig(id8)}" class="select">${groups}</select>`;
+  return `<select data-bind="${sig(id8)}" class="select">${vacia}${groups}</select>`;
 }
 
+// `jsStr` y no `escape`: los valores van DENTRO de un literal JS y escape() no
+// toca el apóstrofo. La codificación de URL la hace el navegador.
 function post(id8, a) {
-  return `@post('/c/arquetipo-detail/act/mark?id=${escape(id8)}&a=${a}')`;
+  return `@post('/c/arquetipo-detail/act/mark?id='+encodeURIComponent(${escape(jsStr(id8))})+'&a='+encodeURIComponent(${escape(jsStr(a))}))`;
 }
 
 function bloqueSugerido(id8, row, marca) {
@@ -92,7 +99,7 @@ function bloqueSugerido(id8, row, marca) {
     ? `<ul class="mt-2 space-y-1">${alternativas
         .map(
           (alt) => `<li class="flex items-start gap-2">
-        ${congelada ? "" : `<button class="btn btn-secondary btn-xs shrink-0" data-on:click="${post(id8, escape(alt.id))}" data-indicator:loading title="Marcar este arquetipo">Aceptar</button>`}
+        ${congelada ? "" : `<button class="btn btn-secondary btn-xs shrink-0" data-on:click="${post(id8, alt.id)}" data-indicator:loading title="Marcar este arquetipo">Aceptar</button>`}
         <div class="min-w-0">
           <p class="text-xs text-slate-700"><code class="text-[11px] text-indigo-600">${escape(alt.id)}</code> ${escape(alt.nombre || "")}</p>
           <p class="text-[10px] text-slate-400">${escape(alt.sop || "")} · score ${Number(alt.score || 0)} · ${escape(alt.motivo || "")}</p>
@@ -108,7 +115,7 @@ function bloqueSugerido(id8, row, marca) {
         <p class="text-[11px] uppercase tracking-wide text-slate-400 mb-1">O elige del catálogo</p>
         ${catalogoSelect(id8, sugerido)}
         <div class="flex items-center gap-2 mt-2">
-          <button class="btn btn-primary btn-xs" data-on:click="@post('/c/arquetipo-detail/act/mark?id=${escape(id8)}&a='+$${sig(id8)})"
+          <button class="btn btn-primary btn-xs" data-on:click="@post('/c/arquetipo-detail/act/mark?id='+encodeURIComponent(${escape(jsStr(id8))})+'&a='+encodeURIComponent($${sig(id8)}))"
             data-indicator:loading title="Marcar el arquetipo elegido">Elegir este</button>
           <button class="btn btn-ghost btn-xs" data-on:click="${post(id8, "ninguno")}" data-indicator:loading
             title="Ninguno de los del catálogo sirve — candidato a arquetipo nuevo">Ninguno</button>
@@ -125,15 +132,37 @@ function bloqueSugerido(id8, row, marca) {
   </div>`;
 }
 
-// El detalle de la tarea, sin la cáscara de task-detail (su id colisiona con
-// el de este panel) y con su botón de cerrar apuntando a NUESTRA señal.
+// El detalle de la tarea, sin la cáscara de task-detail (su id colisiona con el
+// de este panel) y sin su botón de cerrar (el ✕ de este panel es el de arriba,
+// uno solo). Lo que queda de `$selectedTask` apunta a NUESTRA señal.
+//
+// Es cirugía sobre el HTML de otro bloque, así que falla RUIDOSAMENTE: si
+// task-detail cambia su cáscara, esto revienta con un mensaje que dice qué
+// arreglar, en vez de servir un `#task-detail` duplicado y un `</div>` de más
+// que nadie ve hasta que el panel se descuadra.
+const SHELL_ABRE = '<div id="task-detail"';
+// El ✕ heredado y el `-mt-6` que compensa su fila: se van juntos o no se va
+// ninguno (quitar el botón dejando el margen negativo sube el título encima).
+const RE_CERRAR = /<div class="flex items-start gap-2 mb-1">\s*<button data-on:click="\$detailOpen=false; \$selectedTask=''"[\s\S]*?<\/button>\s*<\/div>\s*/;
+
 function detalleTarea(id8) {
-  return String(renderTaskDetail(id8))
-    .replace(/^<div id="task-detail"[^>]*>/, "")
-    .replace(/<\/div>$/, "")
-    .split("$selectedTask=''")
-    .join("$selectedArq=''");
+  const raw = String(renderTaskDetail(id8));
+  if (!raw.startsWith(SHELL_ABRE) || !raw.endsWith("</div>")) {
+    throw new Error("task-detail cambió su cáscara — arquetipo-detail debe actualizarse");
+  }
+  let inner = raw.replace(/^<div id="task-detail"[^>]*>/, "").replace(/<\/div>$/, "");
+  // El estado vacío / de error de task-detail no trae botón de cerrar: quitarlo
+  // es opcional, cambiar la señal no.
+  if (RE_CERRAR.test(inner)) inner = inner.replace(RE_CERRAR, "").replace(' mb-2 -mt-6 pr-6"', ' mb-2 pr-6"');
+  return inner.split("$selectedTask=''").join("$selectedArq=''");
 }
+
+// El ✕ del panel, arriba a la derecha — la convención de la casa (task-detail,
+// task-edit-form, propuesta-detail). Antes el único ✕ era el heredado, que
+// quedaba ~300 px abajo, después de la tarjeta del arquetipo.
+const CERRAR = `<div class="flex items-start gap-2">
+  <button data-on:click="$detailOpen=false; $selectedArq=''" class="ml-auto -mr-1 -mt-1 text-slate-400 hover:text-slate-600 text-lg leading-none" title="Cerrar">✕</button>
+</div>`;
 
 function buscarMarca(id8) {
   try {
@@ -148,7 +177,10 @@ function panel(id8, aviso) {
   let row = null;
   let err = null;
   try {
-    row = fetchSource("tareas_sin_arquetipo").rows.find((r) => String(r.id) === String(id8)) || null;
+    // Acotado por `--id`: sin él esto re-corría el matcher sobre TODAS las
+    // tareas sin arquetipo en cada clic de fila (3.6 s medidos). El score sale
+    // idéntico — el filtro no toca el universo de vecinos que vota.
+    row = fetchSource("tareas_sin_arquetipo", { id: id8 }).rows.find((r) => String(r.id) === String(id8)) || null;
   } catch (e) {
     err = e.message;
   }
@@ -156,6 +188,7 @@ function panel(id8, aviso) {
   const banner = aviso ? `<div class="alert alert-neg mb-3">${escape(aviso)}</div>` : "";
   const fallo = err ? `<div class="alert alert-neg mb-3">${escape(err)}</div>` : "";
   return shell(`<div class="p-5 pb-0">
+      ${CERRAR}
       ${banner}${fallo}
       ${section("Arquetipo propuesto", null, bloqueSugerido(id8, row, marca))}
     </div>
