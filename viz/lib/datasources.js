@@ -407,6 +407,15 @@ const SOURCES = {
   // contacto y closer. `contexto` cambia la salida a una fila por cohorte
   // mensual (alumnos / en mora / %). Entregable de 9f249dbe. Sin cache: es la
   // lista operativa de cobranza.
+  // El reporte semanal por etapa del embudo orgánico (3f8f9914): una fila por
+  // semana con los leads orgánicos que entraron y cuántos llevan cada etiqueta
+  // de etapa en el CRM (+ cobertura y usuario de IG). Reproducible por diseño.
+  etapas_semana: {
+    label: "Embudo orgánico por semana y etapa",
+    script: "bash/metrics/etapas_semana.sh",
+    emits: "rows",
+    args: { project: "--project", desde: "--desde", hasta: "--hasta", incluir_pauta: { flag: "--incluir-pauta", bool: true } },
+  },
   cohorte_mora: {
     label: "Cohorte en mora (por estudiante)",
     script: "bash/finance/cohorte_mora.sh",
