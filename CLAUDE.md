@@ -655,6 +655,18 @@ punteada con la **misma semántica que `testeo_abrir.sh --metrica`**
 high-ticket infoproductos, alineación DG 2026-08-20), no metas de la org —
 calibrar con la serie propia re-publicando el spec.
 
+`etapas_semana.sh --project NAME [--desde D] [--hasta D] [--incluir-pauta]` — **el
+reporte semanal por etapa del embudo orgánico** (entregable de 3f8f9914): una
+fila por semana de entrada con los leads orgánicos, cuántos traen usuario de
+Instagram, la **cobertura** de calificación y los conteos por etapa (calificado
+· no calificado · agendó · no conectó · venta) leídos de los tags del contacto
+en GHL — misma definición de orgánico y de etapa que `organico.sh`. Se mide en
+el CRM y no en ManyChat porque su API no cuenta por etiqueta; la regla es que la
+etiqueta se pone en ManyChat **con el mismo nombre** que en el CRM, viaja al
+contacto y aquí se cuenta (`docs/etapas-etiquetas-embudo-organico.md`, el Doc
+del input). Línea base jul–ago 2026: cobertura 15–35 %, IG 0–13 %. Fuente viz
+`etapas_semana` → UI publicada `etapas-semana-dg` (tabla).
+
 `organico.sh --project NAME [--from D] [--to D] [--meses N]` — **EL EMBUDO
 ORGÁNICO** en un objeto (hueco #3 del contraste Kaizen 2026-08-20): los leads
 del CRM **sin pauta** (sin campaña ni en la atribución de GHL ni en el utm del
