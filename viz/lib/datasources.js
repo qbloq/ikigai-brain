@@ -401,6 +401,18 @@ const SOURCES = {
   // dan respuestas opuestas. Entregable de la tarea fb7a1c26 (arquetipo A12.8):
   // su output está tipado web_url y bindeado a esta UI, así que lo que se ve
   // ES la evidencia del contrato. NO se cachea, por lo mismo que lead_score.
+  // La cohorte en mora: una fila por estudiante (cohorte = start_date del plan)
+  // con al menos una cuota vencida sin pagar, su segmento de reactivación por
+  // reglas declaradas (S1 fresca · S2 reciente · S3 avanzado · S4 temprana),
+  // contacto y closer. `contexto` cambia la salida a una fila por cohorte
+  // mensual (alumnos / en mora / %). Entregable de 9f249dbe. Sin cache: es la
+  // lista operativa de cobranza.
+  cohorte_mora: {
+    label: "Cohorte en mora (por estudiante)",
+    script: "bash/finance/cohorte_mora.sh",
+    emits: "rows",
+    args: { project: "--project", desde: "--desde", hasta: "--hasta", contexto: { flag: "--contexto", bool: true } },
+  },
   desercion: {
     label: "Impago y deserción de cuotas",
     script: "bash/finance/desercion.sh",

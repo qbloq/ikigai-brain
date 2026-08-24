@@ -175,6 +175,12 @@ Páginas, por `ui.component`:
   tablas son los artefactos **SQL Results** del contrato de la tarea (output
   `params.io`, input `params.io_serie`) ejecutados en vivo por `io_query` —
   la página no trae SQL. Publicada en el publicador para Lorenzo y Luis David.
+- **`plan-reactivacion`** — el plan de reactivación de una cohorte en mora,
+  leíble (versión UI del Doc de la tarea `9f249dbe`; el Doc se conserva): KPIs
+  vivos, curva «en qué cuota se frenó», contexto por cohorte, una tarjeta por
+  segmento (S1–S4) con acción/responsable/fecha curados y la lista viva de
+  alumnos con contacto y closer, métricas de éxito, causa raíz y lo que falta.
+  Números de `cohorte_mora` (+ `contexto`); el plan en `params.texto`.
 - **`notion-tasks`** — tabla read-only filtrable de las tareas BD Avances de un
   proyecto Notion (fetch único — fuente cacheada — filtrado en el navegador).
 - **`tasks`** — lista de tareas con barra de filtros (status/priority/project/
