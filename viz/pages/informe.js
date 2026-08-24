@@ -107,7 +107,8 @@ function vivoCargado(s) {
   }
   if (err) return `<div id="${vivoId(s)}" class="mt-4" ${sube}><div class="alert alert-cau text-xs">Los números vivos de esta sección no cargaron ahora mismo (${escape(err.slice(0, 160))}). El texto sigue siendo válido.</div></div>`;
   const rows = Array.isArray(data && data.rows) ? data.rows : [];
-  const obj = data && data.object ? data.object : data;
+  // Toda fuente llega como {rows[]}: una fuente «object» es una lista de UNA fila.
+  const obj = rows.length === 1 && rows[0] && typeof rows[0] === "object" && !Array.isArray(rows[0]) ? rows[0] : {};
   const cs = (v.kpis || []).map((k) => {
     let val = null;
     if (k.agg === "count") val = k.where ? rows.filter((r) => String(r[k.where.campo]) === String(k.where.valor)).length : rows.length;

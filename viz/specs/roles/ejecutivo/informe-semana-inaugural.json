@@ -87,10 +87,6 @@
           "**Priorizar desde que entran.** Bandas propuestas al momento de agendar: A = declara ≥$1.500 y «listo para invertir» → confirmación prioritaria; B = cualquier otra respuesta → flujo normal; C = survey sin responder → confirmar antes de ocupar agenda. **El closer ve el orden de su cola y las respuestas, nunca el número** («un número visible se vuelve profecía»). Falta la firma de Luis David y David Castaño.",
           "Cola accionable hoy sin construir nada: **58 llamadas con BANT ≥81 que nunca cerraron** (Ayrton 22, Carlos 19)."
         ],
-        "cautelas": [
-          "Las muestras son chicas (20 + 20 llamadas en la validación, 70 en flujo real): el orden de magnitud es sólido, el tercer decimal no.",
-          "Solo el 25–40 % de las llamadas que ocurren dejan transcripción usable — por eso esta semana se construyó la recuperación de transcripciones desde los videos grabados en Drive (179 archivos), que amplía la base."
-        ],
         "enlaces": [
           {
             "slug": "dashboard-closer",
