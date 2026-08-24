@@ -1,0 +1,93 @@
+{
+  "id": "plan-de-reactivacion-cohorte-feb-mar-2026",
+  "name": "Plan de reactivación · cohorte feb–mar 2026",
+  "component": "plan-reactivacion",
+  "source": "cohorte_mora",
+  "params": {
+    "project": "David Guerrero",
+    "desde": "2026-02-01",
+    "hasta": "2026-03-31",
+    "texto": {
+      "estado": "BORRADOR — pendiente de la aprobación de Lorenzo (Loro)",
+      "subtitulo": "Quiénes de la cohorte febrero–marzo 2026 no están pagando, dónde se frenaron, y qué se hace con cada segmento. Las cifras se recalculan al abrir; el plan escrito es el del documento del 22 de agosto de 2026.",
+      "hallazgo": "De los estudiantes que ingresaron entre el 1 de febrero y el 31 de marzo, la mitad tiene al menos una cuota vencida sin pagar. **Ninguno dejó de pagar desde el principio**: todos pagaron al menos una cuota y luego se detuvieron. No es fraude ni cobro fallido de entrada — es gente que entró, pagó, y decidió no seguir.\n\nLa caída está concentrada en un punto exacto: la **segunda cuota**, es decir, justo después de recibir el primer mes de producto. Quien se va ahí está evaluando lo que recibió, no teniendo un problema de pago. Eso ubica la causa fuera de cobranza.",
+      "contexto": "Toda cohorte madura vive entre 43 % y 62 % de impago. Febrero–marzo está dentro de ese rango: **recuperar estos alumnos no arregla nada si no se toca lo que pasa entre la cuota 1 y la 2** — por eso el plan tiene dos mitades: recuperación (segmentos) y causa raíz. Julio y agosto aparecen bajos solo porque apenas llegaron a la cuota 1, que paga el 99 %; leerlas como «mejores» sería un error.",
+      "criterio_segmentos": "criterio de corte: días de mora (desde el vencimiento) y proporción del plan pagada — S1 ≤ 30 d · S2 ≤ 90 d · S3 pagó ≥ 50 % · S4 el resto",
+      "segmentos": {
+        "S1": {
+          "nombre": "Mora fresca",
+          "regla": "la cuota vencida más vieja tiene 30 días o menos",
+          "diagnostico": "Pagaron casi todo el plan y se les venció la última cuota hace pocos días. Con altísima probabilidad es un cobro fallido, no una decisión.",
+          "accion": "WhatsApp con link de pago directo. Sin discurso de retención — solo el link.",
+          "responsable": "Tatiana Echeverry",
+          "fecha": "Dentro de las 48 h de aprobado el plan"
+        },
+        "S2": {
+          "nombre": "Mora reciente",
+          "regla": "entre 31 y 90 días de mora",
+          "diagnostico": "Van por la mitad del plan y la relación sigue viva. Aquí todavía manda el vínculo con quien les vendió.",
+          "accion": "Llamada del closer que le vendió (no de cobranza). Objetivo: entender por qué paró y ofrecer reprogramar el plan de pagos.",
+          "responsable": "El closer de cada fila · coordina Tatiana",
+          "fecha": "Semana del 25 al 29 de agosto",
+          "ojo": "Antes de asignar una llamada, revisar la columna **Contacto**: quien no tiene canal en el CRM necesita primero el dato — y en este segmento hay una de las deudas más grandes en esa situación."
+        },
+        "S3": {
+          "nombre": "Avanzado y frenado",
+          "regla": "más de 90 días de mora, pero ya pagó la mitad o más de sus cuotas",
+          "diagnostico": "Consumieron el producto y les falta poco. Es el segmento con mejor pronóstico de recuperación por dólar invertido en gestión: la mayoría debe menos de $1.000 y varios menos de $200 — esos se resuelven con un solo mensaje y link.",
+          "accion": "Llamada 1:1 de retención + oferta de cierre (refinanciar el saldo o descuento por pago único).",
+          "responsable": "Tatiana Echeverry · la oferta de descuento la autoriza Lorenzo",
+          "fecha": "Semana del 1 al 5 de septiembre"
+        },
+        "S4": {
+          "nombre": "Caída temprana",
+          "regla": "más de 90 días de mora y menos de la mitad del plan pagado",
+          "diagnostico": "Aquí está más de la mitad del dinero pendiente y la peor probabilidad de cobro: pagaron una o dos cuotas y desaparecieron. Perseguirlos como cobranza es tirar gestión a un pozo — la única jugada con sentido es diagnóstico primero, decisión después.",
+          "accion": [
+            "**Diagnóstico (no cobro):** mensaje corto preguntando *qué pasó*, con opción explícita de decir «esto no era para mí». Sirve para la causa raíz aunque no recupere un peso.",
+            "**Según respuesta:** reactivar con plan nuevo · bajar a un programa más barato · o declarar incobrable y dejar de gastar gestión."
+          ],
+          "responsable": "Tatiana Echeverry · la decisión de dar de baja la toma Lorenzo",
+          "fecha": "Diagnóstico semana del 8 al 12 de septiembre · decisiones el 19 de septiembre"
+        }
+      },
+      "metricas_nota": "se mide solo sobre estos alumnos y estas cuotas, contra la línea base de hoy (recuperado: $0)",
+      "metricas": [
+        {
+          "metrica": "Monto recuperado",
+          "como": "suma de cuotas de estos alumnos que pasen a pagadas",
+          "corte": "30 y 60 días"
+        },
+        {
+          "metrica": "Planes reactivados",
+          "como": "alumnos que pagan al menos una cuota nueva",
+          "corte": "30 y 60 días"
+        },
+        {
+          "metrica": "Cartera resuelta",
+          "como": "recuperado + dado de baja formalmente (deja de contar como pendiente fantasma)",
+          "corte": "60 días"
+        }
+      ],
+      "metas": [
+        "Fechas de evaluación: **26 de septiembre** (30 d) y **27 de octubre** (60 d). Se leen abriendo esta misma página — se recalcula contra datos vivos.",
+        "S1: 100 % recuperado (es un link).",
+        "S2 + S3: 40 % del monto.",
+        "S4: menos del 15 % recuperado, pero 100 % resuelto — cada uno con destino decidido.",
+        "No salen de un histórico: no hay una campaña previa con la cual comparar."
+      ],
+      "causa_raiz": [
+        "**El punto de fuga es la cuota 2**, o sea el final del primer mes. Ahí hace falta un control de entrega —contacto, revisión de avance, algo— antes de que venza la segunda cuota, no después.",
+        "**Vale la pena mirar por closer.** La tabla de arriba muestra quién vendió a los que están en mora; no es acusación —puede ser volumen— pero hay que cruzarlo contra cuántos vendió cada uno, y este plan no lo responde."
+      ],
+      "falta": [
+        "**Aprobación de Lorenzo (Loro).** Es un criterio de aceptación de la tarea y una atestación humana: nada de lo de arriba debería ejecutarse antes de que quede registrada.",
+        "Dos decisiones suyas: las **metas** y el **margen de descuento** autorizado para S3 y S4.",
+        "Confirmar los responsables: la tarea figura a nombre de «Tati» en la plataforma PM y quedó asignada a Tatiana Echeverry sin dueño confirmado."
+      ]
+    }
+  },
+  "scope": "personal",
+  "created_at": "2026-08-24T01:16:09.022Z",
+  "updated_at": "2026-08-24T01:16:09.022Z"
+}
