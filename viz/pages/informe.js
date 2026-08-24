@@ -128,8 +128,11 @@ function render(ui) {
 
   const indice = secs.length
     ? `<nav class="card card-pad mt-5"><div class="text-[11px] uppercase font-semibold" style="color:var(--text-3)">Contenido</div>
-      <ol class="mt-2 grid gap-x-6 gap-y-1" style="grid-template-columns:repeat(auto-fit,minmax(16rem,1fr))">${secs
-        .map((s) => `<li class="text-sm"><a href="#${escape(s.id || `s${s.n || ""}`)}" style="color:var(--text-brand)"><span class="tabular-nums" style="color:var(--text-3)">${escape(String(s.n != null ? s.n : ""))}</span> ${escape(s.titulo || "")}</a></li>`)
+      <ol class="mt-3 grid gap-2" style="grid-template-columns:repeat(auto-fit,minmax(16rem,1fr))">${secs
+        .map((s) => `<li><a href="#${escape(s.id || `s${s.n || ""}`)}" class="flex items-start gap-3 rounded-lg p-3 h-full transition-colors" style="border:1px solid var(--border-1);background:var(--surface-2);color:var(--text-1)" onmouseover="this.style.borderColor='var(--brand-solid)'" onmouseout="this.style.borderColor='var(--border-1)'">
+          <span class="badge badge-brand shrink-0 tabular-nums">${escape(String(s.n != null ? s.n : "·"))}</span>
+          <span class="text-sm font-medium leading-snug">${escape(s.titulo || "")}</span>
+        </a></li>`)
         .join("")}</ol></nav>`
     : "";
 
