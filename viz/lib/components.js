@@ -242,7 +242,14 @@ function renderPane(ui) {
     return degradeCard(ui, validateSpec(ui).errors);
   }
   const page = PAGES.get(ui.component || "table");
-  return ensurePane(page.render(ui), `página ${ui.component || "table"}`);
+  const out = page.render(ui);
+  // Una página puede contestar un FRAGMENTO en vez del pane completo
+  // (`{fragment: html}`): un solo elemento con id, que el parche SSE morfa en
+  // su sitio sin tocar el resto. Así una página pesada carga su texto al
+  // instante y pide sus bloques vivos aparte (`informe` con `?vivo=<id>`).
+  // Envolverlo en #pane reemplazaría la página entera por el bloque.
+  if (out && typeof out === "object" && typeof out.fragment === "string") return out.fragment;
+  return ensurePane(out, `página ${ui.component || "table"}`);
 }
 
 module.exports = { renderPane, listPages, getComponent, getManifest, overridableFor, dispatch, validateSpec, escape };

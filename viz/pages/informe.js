@@ -75,16 +75,37 @@ function enlaces(es, base) {
 }
 
 // Números vivos: cada KPI se calcula sobre la respuesta de UNA fuente
-// whitelisted. Falla declarada, no silenciosa.
-function vivo(v) {
+// whitelisted. Falla declarada, no silenciosa. El bloque NO se calcula al
+// renderizar la página: sale como marcador (`placeholder`) que al entrar al
+// DOM pide su fragmento (`?vivo=<id de sección>`) por la conexión en vivo, así
+// el texto del informe aparece al instante y los bloques llegan cada uno
+// cuando su fuente responde — en paralelo, no en serie. Cada fragmento que
+// llega suma 1 a `$listos`, la señal que mueve la barra de progreso.
+const vivoId = (s) => `vivo-${String(s.id || `s${s.n || ""}`)}`;
+
+function vivoPlaceholder(s, uiId) {
+  const v = s.vivo;
   if (!v || !v.source) return "";
+  const sid = String(s.id || `s${s.n || ""}`);
+  return `<div id="${vivoId(s)}" class="mt-4" data-init="@get('/ui/${escape(uiId)}?vivo=${encodeURIComponent(sid)}')">
+    <div class="text-[11px] uppercase font-semibold" style="color:var(--text-3)">${escape(v.titulo || "Ahora mismo")} <span class="font-normal normal-case">· cargando…</span></div>
+    <div class="grid gap-3 mt-4" style="grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))">${(v.kpis || [])
+      .map((k) => `<div class="card card-pad kpi" aria-busy="true"><span class="kpi-label">${escape(k.label || "")}</span><span class="kpi-value" style="color:var(--text-3)">…</span></div>`)
+      .join("")}</div>
+  </div>`;
+}
+
+function vivoCargado(s) {
+  const v = s.vivo;
+  const sube = `data-init="$listos = $listos + 1"`;
+  if (!v || !v.source) return `<div id="${vivoId(s)}" ${sube}></div>`;
   let data, err = "";
   try {
     data = fetchSource(v.source, v.args || {});
   } catch (e) {
     err = e.message;
   }
-  if (err) return `<div class="alert alert-cau text-xs mt-4">Los números vivos de esta sección no cargaron ahora mismo (${escape(err.slice(0, 160))}). El texto sigue siendo válido.</div>`;
+  if (err) return `<div id="${vivoId(s)}" class="mt-4" ${sube}><div class="alert alert-cau text-xs">Los números vivos de esta sección no cargaron ahora mismo (${escape(err.slice(0, 160))}). El texto sigue siendo válido.</div></div>`;
   const rows = Array.isArray(data && data.rows) ? data.rows : [];
   const obj = data && data.object ? data.object : data;
   const cs = (v.kpis || []).map((k) => {
@@ -94,10 +115,10 @@ function vivo(v) {
     else if (k.agg === "path") val = getPath(obj, k.path);
     return { label: k.label, valor: formato(val, k.formato), nota: k.nota, tono: k.tono || "base" };
   });
-  return `<div class="mt-4"><div class="text-[11px] uppercase font-semibold" style="color:var(--text-3)">${escape(v.titulo || "Ahora mismo")} <span class="font-normal normal-case">· se recalcula al abrir</span></div>${cifras(cs)}</div>`;
+  return `<div id="${vivoId(s)}" class="mt-4" ${sube}><div class="text-[11px] uppercase font-semibold" style="color:var(--text-3)">${escape(v.titulo || "Ahora mismo")} <span class="font-normal normal-case">· se recalcula al abrir</span></div>${cifras(cs)}</div>`;
 }
 
-function seccion(s, base) {
+function seccion(s, base, uiId) {
   const id = escape(s.id || `s${s.n || ""}`);
   const estado = s.estado ? `<span class="badge ${escape(s.estado_badge || "badge-neutral")}">${escape(s.estado)}</span>` : "";
   return `<article id="${id}" class="card card-pad mt-6" style="scroll-margin-top:1rem">
@@ -112,7 +133,7 @@ function seccion(s, base) {
     ${prosa(s.resumen)}
     ${cifras(s.cifras)}
     ${s.hallazgos && s.hallazgos.length ? `<div class="mt-4"><div class="text-[11px] uppercase font-semibold" style="color:var(--text-3)">${escape(s.hallazgos_titulo || "Qué se hizo y qué se encontró")}</div>${lista(s.hallazgos)}</div>` : ""}
-    ${vivo(s.vivo)}
+    ${vivoPlaceholder(s, uiId)}
     ${s.cautelas && s.cautelas.length ? `<div class="alert alert-cau text-sm mt-4"><b>Con cuidado:</b>${lista(s.cautelas)}</div>` : ""}
     ${s.siguiente && s.siguiente.length ? `<div class="mt-4"><div class="text-[11px] uppercase font-semibold" style="color:var(--text-3)">${escape(s.siguiente_titulo || "Lo que sigue")}</div>${lista(s.siguiente)}</div>` : ""}
     ${enlaces(s.enlaces, base)}
@@ -126,6 +147,24 @@ function render(ui) {
   const cierre = p.cierre || {};
   const base = p.base_publicada || "";
 
+  // Modo fragmento: `?vivo=<id>` → solo el bloque vivo de esa sección, calculado.
+  if (p.vivo) {
+    const s = secs.find((x) => String(x.id || `s${x.n || ""}`) === String(p.vivo));
+    return { fragment: s ? vivoCargado(s) : `<div id="vivo-${escape(String(p.vivo))}" data-init="$listos = $listos + 1"></div>` };
+  }
+  const nVivos = secs.filter((s) => s.vivo && s.vivo.source).length;
+  const barra = nVivos
+    ? `<div data-show="$listos < ${nVivos}" class="sticky top-0 z-10 -mx-6 -mt-6 mb-4 px-6 py-2" style="background:var(--surface-1);border-bottom:1px solid var(--border-1)">
+        <div class="flex items-center justify-between text-xs" style="color:var(--text-3)">
+          <span>Cargando cifras vivas · <span data-text="$listos"></span> de ${nVivos}</span>
+          <span>el texto ya está completo</span>
+        </div>
+        <div class="mt-1.5 h-1.5 rounded-full overflow-hidden" style="background:var(--surface-3)">
+          <div class="h-full rounded-full" style="background:var(--brand-solid);width:0%;transition:width .4s ease" data-style:width="Math.round($listos / ${nVivos} * 100) + '%'"></div>
+        </div>
+      </div>`
+    : "";
+
   const indice = secs.length
     ? `<nav class="card card-pad mt-5"><div class="text-[11px] uppercase font-semibold" style="color:var(--text-3)">Contenido</div>
       <ol class="mt-3 grid gap-2" style="grid-template-columns:repeat(auto-fit,minmax(16rem,1fr))">${secs
@@ -136,7 +175,8 @@ function render(ui) {
         .join("")}</ol></nav>`
     : "";
 
-  return `<section id="pane" class="flex-1 p-6 overflow-auto">
+  return `<section id="pane" class="flex-1 p-6 overflow-auto" data-signals="{listos:0}">
+  ${barra}
   <div class="max-w-4xl mx-auto">
     <div class="flex items-baseline gap-3 flex-wrap">
       <h1 class="text-2xl font-bold" style="color:var(--text-1)">${escape(ui.name)}</h1>
@@ -149,7 +189,7 @@ function render(ui) {
     ${portada.intro ? `<div class="card card-pad mt-5" style="border-left:3px solid var(--brand-solid)">${prosa(portada.intro)}</div>` : ""}
     ${cifras(portada.cifras)}
     ${indice}
-    ${secs.map((s) => seccion(s, base)).join("")}
+    ${secs.map((s) => seccion(s, base, ui.id)).join("")}
     ${cierre.titulo || cierre.prosa || (cierre.lista && cierre.lista.length) ? `<article class="card card-pad mt-8" style="border-left:3px solid var(--brand-solid)">
       ${cierre.titulo ? `<h2 class="text-lg font-bold" style="color:var(--text-1)">${escape(cierre.titulo)}</h2>` : ""}
       ${prosa(cierre.prosa)}
@@ -162,6 +202,8 @@ function render(ui) {
 
 module.exports = {
   id: "informe",
-  manifest: { overridable: [] },
+  // `vivo` es el único param que el navegador puede pedir: el id de la sección
+  // cuyo bloque vivo quiere (modo fragmento). Todo lo demás viene del spec.
+  manifest: { overridable: ["vivo"] },
   render,
 };
