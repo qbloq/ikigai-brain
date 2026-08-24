@@ -13,6 +13,7 @@
 set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 source "$(dirname "$0")/../lib/sqlite.sh"
+cd "$REPO_ROOT"
 TASK=""; DRY=0; JSON=0
 while [[ $# -gt 0 ]]; do
   case "$1" in

@@ -10,12 +10,12 @@ source "$(dirname "$0")/../lib/sqlite.sh"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
     *) echo "Argumento desconocido: $1" >&2; exit 2 ;;
   esac
 done
 DBP="$(db_path propuestas_reuniones)"
 [[ -f "$DBP" ]] || { [[ "$FORMAT" == json ]] && echo "[]" || echo "Sin marcas todavía"; exit 0; }
 SQL="SELECT task_id, decision, decision_nota, decidida_en, aplicado_en FROM arquetipos ORDER BY decidida_en DESC"
-if [[ "$FORMAT" == json ]]; then out="$(sqlite_ro "$DBP" -json "$SQL;")"; printf '%s\n' "${out:-[]}"
+if [[ "$FORMAT" == json ]]; then out="$(sqlite_ro "$DBP" -json "$SQL;")"; json_or_empty "$out"
 else sqlite_ro "$DBP" -header -column "SELECT substr(task_id,1,8) task, decision, coalesce(decision_nota,'') nota, decidida_en, coalesce(aplicado_en,'—') aplicado FROM arquetipos ORDER BY decidida_en DESC;"; fi

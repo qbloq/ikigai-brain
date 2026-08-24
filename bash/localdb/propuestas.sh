@@ -14,7 +14,7 @@ while [[ $# -gt 0 ]]; do
     --seccion) SEC="$2"; shift 2 ;;
     --decision) DEC="$2"; shift 2 ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
     *) echo "Argumento desconocido: $1" >&2; exit 2 ;;
   esac
 done
@@ -31,5 +31,5 @@ w="1=1"
 SQL="SELECT p.*, l.nombre AS lote_nombre, l.fecha AS lote_fecha, l.meeting_corto
      FROM propuestas p JOIN lotes l ON l.meeting_id=p.meeting_id
      WHERE $w ORDER BY l.fecha DESC, p.seccion, CAST(substr(p.ref,2) AS INTEGER)"
-if [[ "$FORMAT" == json ]]; then out="$(sqlite_ro "$DBP" -json "$SQL;")"; printf '%s\n' "${out:-[]}"
+if [[ "$FORMAT" == json ]]; then out="$(sqlite_ro "$DBP" -json "$SQL;")"; json_or_empty "$out"
 else sqlite_ro "$DBP" -header -column "SELECT p.n, l.meeting_corto lote, p.ref, p.seccion s, substr(p.titulo,1,60) titulo, p.proyecto, p.prioridad, p.vence, coalesce(p.decision,'—') decision, substr(coalesce(p.creada_id,''),1,8) creada FROM propuestas p JOIN lotes l ON l.meeting_id=p.meeting_id WHERE $w ORDER BY l.fecha DESC, p.seccion, CAST(substr(p.ref,2) AS INTEGER);"; fi

@@ -10,6 +10,7 @@
 set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 source "$(dirname "$0")/../lib/sqlite.sh"
+cd "$REPO_ROOT"
 LOTE=""; NL=""; DRY=0; JSON=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -33,7 +34,7 @@ while IFS= read -r row; do
   out="$(jq -r .contrato <<<"$row" | bash bash/tasks/create_task.sh - $([[ "$DRY" == 1 ]] && echo --dry-run) 2>&1)" || { echo "n=$n $ref: create_task.sh falló: $out" >&2; saltadas=$((saltadas+1)); continue; }
   id="$(grep -oE '^ *[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' <<<"$out" | tr -d ' ' | head -1 || true)"
   if [[ "$DRY" == 0 ]]; then
-    [[ -n "$id" ]] || { echo "n=$n $ref: no pude leer el id creado de la salida" >&2; exit 1; }
+    [[ -n "$id" ]] || { echo "n=$n $ref: no pude leer el id creado de la salida, pero create_task.sh SÍ hizo commit — la tarea existe en Postgres. Sellar a mano: bash/localdb/db_exec.sh propuestas_reuniones \"UPDATE propuestas SET creada_id='<uuid>', creada_en=datetime('now') WHERE n=$n;\"" >&2; exit 1; }
     sqlite_rw "$DBP" "UPDATE propuestas SET creada_id=$(sql_str "$id"), creada_en=datetime('now') WHERE n=$n;"
   fi
   creadas=$((creadas+1))

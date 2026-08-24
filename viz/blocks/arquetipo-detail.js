@@ -86,7 +86,7 @@ function post(id8, a) {
 function bloqueSugerido(id8, row, marca) {
   const congelada = !!(marca && marca.aplicado_en);
   const alternativas = row ? parseJson(row.alternativas, []) : [];
-  const sugerido = (row && row.sugerido) || (alternativas[0] && alternativas[0].id) || "";
+  const sugerido = (row && row.sugerido) || "";
 
   const cabeza = !row
     ? `<p class="text-xs text-slate-400 italic">— esta tarea no está en la cola sin arquetipo</p>`

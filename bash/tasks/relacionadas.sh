@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Tareas del cerebro relacionadas con UNA propuesta (o con cualquier título):
-# cada fila trae `score` (0-100) y `motivo` declarado. Señales, sumadas:
+# cada fila trae `score` (señales SUMADAS: puede pasar de 100) y `motivo`
+# declarado. Señales, sumadas:
 #   citada (id en --ids)                      100
 #   mismo arquetipo + mismo proyecto           40
 #   mismo dueño (algún asignado coincide)      20
 #   palabras del título (Jaccard, tokens ≥4 letras sin stopwords) ×40
 # Abiertas antes que cerradas a igual score. READ-ONLY. Fuente viz
 # `tareas_relacionadas` (el bloque «Relacionadas» del panel de la UI).
+# Sin `--project` ni `--ids` el universo son las tareas ABIERTAS de todos los
+# proyectos (con `--project` es todas las del proyecto, abiertas y cerradas).
 #
 # Usage: relacionadas.sh --titulo T [--project P] [--archetype A] [--assignee "N, M"] [--ids a,b] [--limit N] [--json]
 #   --ids     prefijos (8) citados en la propuesta: entran con score 100 aunque sean de otro proyecto
@@ -23,7 +26,7 @@ while [[ $# -gt 0 ]]; do
     --ids) IDS="$2"; shift 2 ;;
     --limit) LIMIT="$2"; shift 2 ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "Argumento desconocido: $1" >&2; exit 2 ;;
   esac
 done
@@ -32,7 +35,8 @@ done
 [[ -z "$IDS" || "$IDS" =~ ^[0-9a-f]{8}(,[0-9a-f]{8})*$ ]] || { echo "--ids: prefijos de 8 separados por coma" >&2; exit 2; }
 esc() { printf '%s' "$1" | sed "s/'/''/g"; }
 # Candidatas: todas las del proyecto (abiertas y cerradas) + las citadas.
-w="false"
+# Sin --project ni --ids el universo son las tareas ABIERTAS de todos los proyectos.
+w="$OPEN_PRED"
 [[ -n "$PROJECT" ]] && w="pr.name ILIKE '%$(esc "$PROJECT")%'"
 [[ -n "$IDS" ]] && w="$w OR t.id::text ~ '^($(echo "$IDS" | sed 's/,/|/g'))'"
 candfile="$(mktemp)"

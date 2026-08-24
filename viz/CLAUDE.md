@@ -20,6 +20,10 @@ narrative (file map, routes, composition tower, component catalog) lives in
   (`_`-prefixed → excluded by Datastar's default `filterSignals`) so large SQL
   never rides along on other requests; "Guardar SQL" ships it explicitly as the
   `@post` payload.
+- **Excepción declarada (2026-08-24)**: los bloques de la UI de revisión leen
+  `catalog/sop-archetypes.json` con `require` — referencia estática del repo
+  (el catálogo de arquetipos), no dato de la org; queda cacheado hasta
+  `viz:restart`.
 
 ## Gotchas
 

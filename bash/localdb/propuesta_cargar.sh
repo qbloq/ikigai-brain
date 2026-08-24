@@ -17,7 +17,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) DRY=1; shift ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
     -*) echo "Argumento desconocido: $1" >&2; exit 2 ;;
     *) ID="$1"; shift ;;
   esac

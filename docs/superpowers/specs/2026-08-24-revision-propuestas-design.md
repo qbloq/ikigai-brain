@@ -73,10 +73,12 @@ propuestas  n PK · meeting_id FK · ref · seccion A|B · titulo · proyecto ·
             · contrato (json) · valida 0|1 · error_validacion
             · decision NULL|entra|se_queda · decision_nota · decidida_en
             · creada_id (uuid, sellado por el ejecutor) · creada_en
-arquetipos  task_id PK · titulo · proyecto · sugerido · score · alternativas (json)
-            · decision (id de arquetipo | 'ninguno') · decision_nota · decidida_en
-            · aplicado_en
+arquetipos  task_id PK · decision (id de arquetipo | 'ninguno') · decision_nota
+            · decidida_en · aplicado_en
 ```
+
+La sugerencia (`sugerido`/`score`/`alternativas`) no se persiste: la recalcula
+`sin_arquetipo.sh` en cada lectura.
 
 `lotes.meeting_id` es la llave de idempotencia: **un backup cargado no se vuelve
 a ofrecer**. Las filas con `decision` se pueden cambiar mientras no tengan

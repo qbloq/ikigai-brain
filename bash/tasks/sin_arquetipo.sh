@@ -39,21 +39,22 @@ if [[ -n "$ID8" ]]; then
   [[ "$ID8" =~ ^[0-9a-f]{8}$ ]] || { echo "--id debe ser un prefijo de 8 hex: $ID8" >&2; exit 2; }
   w="$w AND t.id::text LIKE '$ID8%'"
 fi
-sinfile="$(mktemp)"; confile="$(mktemp)"
-trap 'rm -f "$sinfile" "$confile"' EXIT
-psql_ro -t -A -c "SELECT coalesce(json_agg(row_to_json(q)),'[]') FROM (
-  SELECT t.id::text AS id_full, t.title, t.status::text AS status, t.priority::text AS priority,
-         to_char(t.due_date,'YYYY-MM-DD') AS due, pr.name AS project, $ASSIGNEES_SQL AS assignees
-  FROM tasks t LEFT JOIN projects pr ON pr.id=t.project_id WHERE $w
-  ORDER BY t.due_date NULLS LAST) q;" > "$sinfile"
-psql_ro -t -A -c "SELECT coalesce(json_agg(row_to_json(q)),'[]') FROM (
-  SELECT t.title, t.archetype_id AS archetype FROM tasks t WHERE t.archetype_id IS NOT NULL) q;" > "$confile"
-python3 - "$REPO_ROOT/catalog/sop-archetypes.json" "$FORMAT" "$sinfile" "$confile" <<'PY'
+outfile="$(mktemp)"
+trap 'rm -f "$outfile"' EXIT
+psql_ro -t -A -c "SELECT json_build_object(
+  'sin', (SELECT coalesce(json_agg(row_to_json(q)),'[]') FROM (
+    SELECT t.id::text AS id_full, t.title, t.status::text AS status, t.priority::text AS priority,
+           to_char(t.due_date,'YYYY-MM-DD') AS due, pr.name AS project, $ASSIGNEES_SQL AS assignees
+    FROM tasks t LEFT JOIN projects pr ON pr.id=t.project_id WHERE $w
+    ORDER BY t.due_date NULLS LAST) q),
+  'con', (SELECT coalesce(json_agg(row_to_json(r)),'[]') FROM (
+    SELECT t.title, t.archetype_id AS archetype FROM tasks t WHERE t.archetype_id IS NOT NULL) r));" > "$outfile"
+python3 - "$REPO_ROOT/catalog/sop-archetypes.json" "$FORMAT" "$outfile" <<'PY'
 import sys, json, re, unicodedata
 from collections import defaultdict
 cat = json.load(open(sys.argv[1])); fmt = sys.argv[2]
-with open(sys.argv[3], encoding="utf-8") as f: sin = json.load(f)
-with open(sys.argv[4], encoding="utf-8") as f: con = json.load(f)
+d = json.load(open(sys.argv[3]))
+sin, con = d["sin"], d["con"]
 sops = {s["code"]: s["name"] for s in cat["sops"]}
 STOP = set("para con como esta este esto ese esa del los las una unos unas por que sobre desde hasta entre hacer crear tarea tareas".split())
 def norm(s):
