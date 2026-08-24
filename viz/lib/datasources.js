@@ -261,11 +261,16 @@ const SOURCES = {
     emits: "object",
     args: {},
   },
+  // Determinística (semilla fija, cohortes históricas ya cerradas) pero
+  // CARA: el p-valor por permutación cae al camino Monte Carlo (200k
+  // iteraciones en Python puro) x10 llamadas (promedio + 4 ítems x 2
+  // puntajes) — 1-3 min por corrida. Cachear no sacrifica frescura real.
   validacion_plata: {
     label: "Validación del puntaje contra plata (AUC v2 vs producción)",
     script: "bash/calls/validacion_plata.sh",
     emits: "object",
     args: {},
+    cache: 600_000,
   },
   // Per-closer/result/program/project/week effectiveness aggregates.
   call_stats: {
