@@ -127,6 +127,17 @@ settled on:
   question. Close with a **Notes carried from Stage 1** block (owner-resolution
   caveats, archetype gaps worth adding to the catalog tail).
 
+**And its structured twin.** Alongside the `.md`, write
+`backups/meeting-tasks/<meeting-id8>.json` — the same proposal as data, which
+is what the viz «Revisión de propuestas» UI loads (`propuesta_cargar.sh`):
+`{meeting, meeting_corto, fecha, nombre, md, propuestas[]}` where each §A entry
+is `{ref, seccion:"A", contrato:{…exact create_task.sh shape…}, vence_estimada,
+evidencia, comentario, relacionadas:[id8…], depende_de:[ref…]}` and each §B
+entry is `{ref, seccion:"B", contrato:null, titulo, pregunta, accion_sugerida,
+relacionadas, depende_de}`. The `.md` is for the human; the `.json` is the
+contract — validate every §A `contrato` with `create_task.sh - --dry-run`
+before saving. The two files must agree (same refs, same count).
+
 Wait for approval; apply edits.
 
 ### 5. Write the approved contracts

@@ -194,6 +194,16 @@ Páginas, por `ui.component`:
   (resumen/objetivos/decisiones/blockers, view-only, fuente `meeting_detail`).
 - **`task-editor`** — el gemelo **editable** de `tasks` (sembrado como la UI
   "Editor de IO"); ver abajo.
+- **`revision-propuestas`** — UI de rol technology, dos colas de curaduría sobre
+  master-detail: «Propuestas de reuniones» (los backups `.json` de
+  `meeting-to-tasks` cargados a una sqlite local — botón **Cargar** una sola vez
+  por lote — con relacionadas en dos capas: del mismo lote y, contra el
+  cerebro, `tareas_relacionadas` con motivo+score) y «Sin arquetipo» (tareas
+  `archetype_id IS NULL` con arquetipo propuesto por `tareas_sin_arquetipo`,
+  detalle reutilizando `renderTaskDetail`). La UI solo marca decisiones en la
+  sqlite local (`propuestas_backups`/`propuestas`/`arquetipo_marcas`); ejecutar
+  en Postgres es `bash/tasks/crear_de_propuestas.sh` /
+  `aplicar_arquetipos.sh`, corridos desde la conversación — viz es el visor.
 
 `tasks` y `task-editor` son instancias delgadas de
 [`patterns/master-detail.js`](patterns/master-detail.js): mismo master
