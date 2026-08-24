@@ -921,7 +921,11 @@ npm run viz:restart         # REQUIRED after editing viz/ (Node caches modules)
   pages (one per `ui.component`); a saved spec can also be v2 pattern-addressed.
   Components: `table`, `dashboard`, `chart` (bar/donut), `sop-tree`, `localdb`,
   `notion-tasks`, `tasks`, `meetings`, `task-editor` (the IO editor — the viz's
-  only write path).
+  only write path), `informe` (un informe narrativo publicable por secciones —
+  todo el contenido es copy curado en `params` {portada, secciones[], cierre} y
+  cada sección puede llevar números vivos `vivo:{source,args,kpis[]}` sobre una
+  fuente whitelisted; nació 2026-08-24 con el informe de la semana inaugural del
+  rol Ejecutivo, spec `roles/ejecutivo/informe-semana-inaugural.json`).
 - **viz is the VIEWER; the editor is the conversation with the brain.** The IO
   editor's write path predates that rule and stays, but nothing new gets one:
   when a view needs to become editable, the write goes into a `bash/` script and
