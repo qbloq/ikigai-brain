@@ -450,6 +450,50 @@ entró por el camino oficial). Los planes 494-496 «PRUEBA — Lead de prueba
 `rejected`). Tendencia a vigilar: dos meses seguidos con ~$8-10k de Mateo fuera
 del sistema hasta que alguien los persigue.
 
+### 2026-08-22 — Juan Manuel Bedoya: la fila del espejo sin dueño ✅ EJECUTADA Y VERIFICADA
+
+SQL: [reparaciones-juan-manuel-2026-08-22.sql](reparaciones-juan-manuel-2026-08-22.sql) — una txn con antes/después.
+
+Antonio pidió ayuda el 21-ago («este lead no me sale en la app de reporte de
+pagos»), insistió el 22 y Santiago respondió «ya mismo». Es la **«Juan Manuel»
+de julio del §4.3**: venta **del propio Antonio** — opportunity GHL
+`DlbJDQn7vGLO23u4UmDj` `won` $700 desde el **21-jun**, `assignedTo
+yyKZjv1fCTnj15bAGQmX` = Cristian Buelvas (su GHL id vive en
+`users.integrations`). La reportó en el grupo el 17-jul con el bloque de datos
+del cliente y nunca se registró: sin plan de pagos, sin llamada en el sistema.
+
+**El cerrojo, verificado**: la app filtra los leads por **dueño en el espejo**
+— las 6 ventas que Mateo registró el 20-ago tienen closer=Mateo en
+`crm_opportunities` (incluso una `open`); la de Juan Manuel (`f7111470…`)
+tenía `user_id` NULL, `open`, sin valor. Sin dueño, invisible. (Con Lorena el
+cerrojo fue el `status=lost`; son dos caras del mismo problema: la app confía
+en un espejo que el ingestor no refresca.)
+
+Lo ejecutado en dos partes:
+
+1. **22-ago** — `UPDATE` de la fila del espejo para alinearla con la fuente
+   (`user_id`=Cristian Buelvas, `status`=`won`, `monetary_value`=700). Aun así
+   la app siguió sin mostrárselo («nada, aún no me sale», 24-ago).
+2. **24-ago** — **el $700 no era el total: era la reserva de un Premium
+   Mastermind full de $5.500.** La pista estaba en el grupo desde el 17-jul
+   («este es PM y el otro PA» — el PA era Kevin Delgado, plan 480) y la
+   destapó la pregunta de Santiago «¿21 de junio?». Antonio dio la estructura
+   completa y la confirmó: venta 19-jun, reserva $700 + 5 cuotas de $960 los
+   19 de cada mes. **Plan 510**: 6 cuotas — jun $700 / jul $960 / ago $960
+   `Paid` (las dos últimas cobradas y **nunca registradas**), sep / oct / nov
+   $960 `Scheduled`. 700 + 5×960 = 5.500 ✓; pagado $2.620, pendiente $2.880.
+   Comisión 10 % por cuota pagada → $262 `pending` a Cristian Buelvas (payouts
+   sobre las cuotas 2344-2346). Supuesto declarado: jul y ago pagadas el 19
+   exacto (Antonio: «paga cuota los 19»; no corrigió la fecha al confirmar).
+
+Es la venta más grande de las reparaciones y la más vieja: dos meses de PM
+cobrándose por fuera del sistema — cobranza no veía las 3 cuotas futuras
+($2.880) ni el atraso si alguna fallaba.
+
+Tercer caso en una semana que confirma el mismo pedido para Pablo: el upsert
+del ingestor debe refrescar `status` Y `user_id` (la asignación a Cristian
+existía desde junio y nunca bajó).
+
 ## 9. Cómo re-consultar
 
 ```bash
