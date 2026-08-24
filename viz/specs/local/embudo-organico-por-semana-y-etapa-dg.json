@@ -1,0 +1,14 @@
+{
+  "id": "embudo-organico-por-semana-y-etapa-dg",
+  "name": "Embudo orgánico por semana y etapa · DG",
+  "component": "table",
+  "source": "etapas_semana",
+  "params": {
+    "project": "David Guerrero",
+    "desde": "2026-07-01",
+    "incluir_pauta": true
+  },
+  "scope": "personal",
+  "created_at": "2026-08-24T01:31:34.179Z",
+  "updated_at": "2026-08-24T01:31:34.179Z"
+}
