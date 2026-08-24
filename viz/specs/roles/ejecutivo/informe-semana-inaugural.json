@@ -266,10 +266,6 @@
           "**Reagendas que no bajan.** La verificación independiente de agenda (base propia contra el calendario del CRM, cada hora) encontró una cita reagendada en el CRM que nunca llegó a la base; se reparó a mano y quedó documentado el porqué.",
           "**Bienvenida.** El 24 de agosto Iki se presentó formalmente a los seis closers, uno por uno, nunca en difusión."
         ],
-        "cautelas": [
-          "El coaching automático de vuelta al closer después de cada reporte de llamada está programado pero **aún no ha enviado ningún mensaje** — se generan los reportes, falta que el mensaje salga. Y los resultados que los closers responden por chat todavía no aterrizan en el registro que lee el cierre de las 20:00 (por eso ese mensaje dice «no tengo resultados registrados»): desconexión verificada, en reparación.",
-          "La verificación de grabación es hoy una acción de Iki en la conversación, no un chequeo automático que corra solo — automatizarlo es el siguiente paso natural, ahora que existe el inventario de videos de Drive."
-        ],
         "enlaces": [
           {
             "slug": "dashboard-closer",
@@ -319,11 +315,6 @@
           "**Mateo, julio.** Reportó 7 «clientes perdidos» desde junio. Cada uno se cruzó contra el CRM (7.336 oportunidades), contra los planes de pago por identidad de cliente (no por nombre) y contra los 16.000 mensajes del grupo: **6 eran reales y 1 no tenía sustento**. El delator: 35 días seguidos sin un solo plan a su nombre. Los 6 planes ($10.398) se registraron con sus cuotas pagadas y sus comisiones ($1.040), y julio subió a $84.106 cobrados. También se eliminó su ficha duplicada de empleado, la única de la tabla.",
           "**Mateo, agosto — la pantalla hecha para él.** Para que registrara rápido sus ventas del mes, el Cerebro le construyó una pantalla propia: sus leads de agosto ya cruzados con el CRM y las llamadas, un recorrido de tres pasos (resultado → producto → plan, donde la cuota 1 es el abono y las siguientes se acomodan solas) y comprobante. **La usó él solo**: 6 planes creados el 20 de agosto entre las 14:13 y las 14:42 ($7.898 de caja, $790 de comisión), sesiones el 20, 21, 22 y 24.",
           "**Lo que cambia para el closer:** nada en su costumbre — sigue escribiendo el resultado en el grupo. Lo que cambia para la empresa: la venta deja de vivir en un chat y pasa a ser un plan con cuotas, fechas y comisión, el mismo día."
-        ],
-        "cautelas": [
-          "El acuerdo de pago hay que escribirlo en texto: el canal descarta audios.",
-          "La confirmación por chat directo funcionó en los casos reales, pero el registro estructurado de esas confirmaciones (el que alimenta el cierre de las 20:00 y el tablero) todavía no se llena solo — es la misma desconexión del bloque 5.",
-          "Dos hallazgos de la plataforma que siguen abiertos: una oportunidad marcada «perdida» que luego compra no reaparece en la app, y actualizar un contacto no re-procesa su cita (solo guardar la cita lo hace)."
         ],
         "enlaces": [
           {
