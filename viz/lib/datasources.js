@@ -693,6 +693,41 @@ const SOURCES = {
     emits: "rows",
     args: { historia: { flag: "--historia", bool: true } },
   },
+  // --- Revisión de propuestas (UI de rol technology) -----------------------
+  // Los backups de propuestas de tareas (backups/meeting-tasks/) con su gemelo
+  // JSON y la marca «cargado» en la sqlite local; sin cache (la barra debe
+  // reflejar la carga recién hecha).
+  propuestas_backups: {
+    label: "Propuestas — backups cargables",
+    script: "bash/localdb/propuestas_backups.sh",
+    emits: "rows",
+    args: { desde: "--desde" },
+  },
+  propuestas: {
+    label: "Propuestas de tareas (sqlite local)",
+    script: "bash/localdb/propuestas.sh",
+    emits: "rows",
+    args: { lote: "--lote", seccion: "--seccion", decision: "--decision" },
+  },
+  arquetipo_marcas: {
+    label: "Marcas de arquetipo (sqlite local)",
+    script: "bash/localdb/arquetipo_marcas.sh",
+    emits: "rows",
+    args: {},
+  },
+  // Postgres, read-only: relacionadas de una propuesta y la cola sin arquetipo.
+  tareas_relacionadas: {
+    label: "Tareas relacionadas (score + motivo)",
+    script: "bash/tasks/relacionadas.sh",
+    emits: "rows",
+    args: { titulo: "--titulo", project: "--project", archetype: "--archetype", assignee: "--assignee", ids: "--ids", limit: "--limit" },
+  },
+  tareas_sin_arquetipo: {
+    label: "Tareas sin arquetipo + propuesto",
+    script: "bash/tasks/sin_arquetipo.sh",
+    emits: "rows",
+    args: { project: "--project", open: { flag: "--open", bool: true } },
+  },
 };
 
 function listSources() {
