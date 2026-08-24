@@ -282,8 +282,8 @@
         "tags": [
           "Live Drive"
         ],
-        "summary": "Rename a file",
-        "description": "Renames a Drive file by id via `files.update`. Only the `name` field is changed; the file's content, location, and sharing are untouched. Returns the updated file resource.",
+        "summary": "Rename and/or move a file",
+        "description": "Renames (`name`) and/or moves (`parentId`) a Drive file by id via `files.update`. Moving replaces ALL current parents with `parentId` (addParents/removeParents). At least one of the two is required. Content and sharing are untouched; the id and URL survive a move. Move added 2026-08-22.",
         "operationId": "renameDriveFile",
         "security": [
           {
@@ -309,11 +309,12 @@
                     "type": "string",
                     "description": "The new file name.",
                     "example": "Kickoff call — 2026-05-01.mp4"
+                  },
+                  "parentId": {
+                    "type": "string",
+                    "description": "Destination folder id — moves the file there (replacing its current parents)."
                   }
-                },
-                "required": [
-                  "name"
-                ]
+                }
               }
             }
           }

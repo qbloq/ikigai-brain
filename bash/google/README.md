@@ -26,6 +26,7 @@ el backend es el dueño de la identidad Google de la org (la refresca solo).
 | `drive_recent.sh [--days N] [--from D] [--to D] [--modified] [--docs] [--type T] [--folder FRAG] [--owner FRAG] [--exclude FRAG] [--with-folders] [--by day\|type\|owner\|folder] [--limit N] [--json]` | Lo último que **entró o cambió**, por fecha. Imprime siempre la frescura del índice a stderr. |
 | `drive_mkdir.sh <parent id\|url\|name> --name N [--json]` **[WRITE→Drive]** | Crear una carpeta (idempotente por nombre dentro del padre: la existente se devuelve, nunca se duplica). `POST /drive/folders`. |
 | `doc_create.sh <parent> --title T --from f.md\|- [--html] [--share email[:rol]]… [--notify] [--dry-run] [--json]` **[WRITE→Drive]** | Crear un Google Doc desde Markdown (pandoc → HTML → importación nativa) u HTML. `POST /drive/files`. No sobreescribe: dos llamadas = dos Docs. |
+| `drive_mv.sh <file id\|url> --to <folder id\|url\|name> [--json]` **[WRITE→Drive]** | Mover un archivo/carpeta a otra carpeta (reemplaza todos sus padres; id y URL no cambian). `PATCH /drive/files/{id}` con `parentId`. |
 | `drive_sync.sh [--all-drives] [--trashed] [--wait] [--timeout N] [--status]` **[WRITE]** | Refrescar el índice (`POST /drive/index`). La única que escribe en toda la capa. `--status` solo consulta. |
 | `drive_file.sh <id\|url> [--json]` | Metadata de un archivo. |
 | `doc_read.sh <id\|url> [--out F] [--txt] [--json]` | Un Google Doc como **Markdown** (`?format=markdown`). |
