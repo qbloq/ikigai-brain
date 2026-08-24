@@ -5,9 +5,9 @@
 # Agrupa por rol contra team_members/team_roles:
 #   - closer  → ya tiene ventana abierta con Iki a diario (agenda/recordatorio/
 #     cierre), así que viaja como texto de sesión con --fallback-plantilla
-#     onboarding_closer por si la ventana está cerrada.
+#     bienvenida_iki_closer por si la ventana está cerrada.
 #   - equipo  → primer contacto real (nunca les llegó nada de este número):
-#     SIEMPRE plantilla (onboarding_equipo) — un texto de sesión aquí sería
+#     SIEMPRE plantilla (bienvenida_iki_equipo) — un texto de sesión aquí sería
 #     ACEPTADO por Meta y fallaría después por webhook, no al instante (ver
 #     docs/closers-whatsapp.md "Aprendizajes del estreno").
 #
@@ -66,12 +66,12 @@ fi
 REF="${NOMBRE// /_}"
 
 if [[ "$GRUPO" == "closer" ]]; then
-  TEXTO="Hola ${PRIMER} 👋 Ya me conoces por tu agenda y tus llamadas del día. ${GANCHO} ¿Seguimos por aquí para más que eso? Responde SI."
+  TEXTO="Hola ${PRIMER} 👋 Soy Iki, la asistente IA de Ikigai. Ya me conoces por tu agenda y tus llamadas del día. ${GANCHO} ¿Seguimos por aquí para más que eso? Responde SI."
   exec bash bash/closers/enviar.sh --para "$NOMBRE" --texto "$TEXTO" \
-    --fallback-plantilla onboarding_closer \
+    --fallback-plantilla bienvenida_iki_closer \
     --escenario onboarding-cerebro --ref "$REF" "${DRY[@]}" "${JSON[@]}"
 else
   exec bash bash/closers/enviar.sh --para "$NOMBRE" \
-    --plantilla onboarding_equipo --vars "${PRIMER}|${GANCHO}" \
+    --plantilla bienvenida_iki_equipo --vars "${PRIMER}|${GANCHO}" \
     --escenario onboarding-cerebro --ref "$REF" "${DRY[@]}" "${JSON[@]}"
 fi

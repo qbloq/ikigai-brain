@@ -564,10 +564,12 @@ corrida, a quién y cuándo lo decide el humano. `enviar_onboarding.sh --para
 <nombre> [--gancho "…"] [--grupo equipo|closer] [--dry-run] [--json]`
 **[WRITE→WhatsApp]** agrupa por rol (team_members/team_roles): **closer** ya
 tiene ventana abierta con Iki a diario → texto de sesión +
-`--fallback-plantilla onboarding_closer`; **equipo** (primer contacto real,
-nunca les llegó nada de este número) → siempre plantilla `onboarding_equipo`
+`--fallback-plantilla bienvenida_iki_closer`; **equipo** (primer contacto real,
+nunca les llegó nada de este número) → siempre plantilla `bienvenida_iki_equipo`
 (un texto de sesión aquí lo acepta Meta y falla después por webhook, no al
-instante — ver `docs/closers-whatsapp.md`). El gancho (`{{2}}`) es genérico
+instante — ver `docs/closers-whatsapp.md`). Ambas plantillas se presentan como
+**Iki, la asistente IA de Ikigai** (no "el Cerebro" — ese es el nombre interno
+del sistema, cara al equipo es Iki). El gancho (`{{2}}`) es genérico
 por defecto, `--gancho` lo personaliza (p.ej. Juan Camilo: sus dos assets ya
 vivos, dashboard del embudo + testeos VSL/pauta). Idempotente vía
 `bash/closers/enviar.sh` (`escenario=onboarding-cerebro`, `ref=<nombre>`).
