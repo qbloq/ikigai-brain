@@ -34,6 +34,14 @@ while IFS= read -r row; do
     sqlite_rw "$DBP" "UPDATE arquetipos SET aplicado_en=datetime('now') WHERE task_id=$(sql_str "$task_id");"
   fi
   aplicadas=$((aplicadas+1))
-  [[ "$JSON" == 1 ]] && jq -cn --arg id "$task_id" --arg a "$decision" --argjson dry "$DRY" '{task_id:$id, arquetipo:$a, dry_run:($dry==1)}' || echo "${task_id:0:8} → $decision"
+  if [[ "$JSON" == 1 ]]; then
+    jq -cn --arg id "$task_id" --arg a "$decision" --argjson dry "$DRY" '{task_id:$id, arquetipo:$a, dry_run:($dry==1)}'
+  else
+    echo "${task_id:0:8} → $decision"
+  fi
 done < <(sqlite_ro "$DBP" -json "SELECT task_id, decision FROM arquetipos WHERE $w ORDER BY decidida_en;" | jq -c '.[]?')
-[[ "$JSON" == 1 ]] && jq -cn --argjson a "$aplicadas" --argjson s "$saltadas" --argjson dry "$DRY" '{ok:true, aplicadas:$a, saltadas:$s, dry_run:($dry==1)}' || echo "aplicadas=$aplicadas saltadas=$saltadas$([[ "$DRY" == 1 ]] && echo ' (dry-run)')"
+if [[ "$JSON" == 1 ]]; then
+  jq -cn --argjson a "$aplicadas" --argjson s "$saltadas" --argjson dry "$DRY" '{ok:true, aplicadas:$a, saltadas:$s, dry_run:($dry==1)}'
+else
+  echo "aplicadas=$aplicadas saltadas=$saltadas$([[ "$DRY" == 1 ]] && echo ' (dry-run)')"
+fi

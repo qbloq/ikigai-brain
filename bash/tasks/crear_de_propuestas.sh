@@ -31,13 +31,21 @@ while IFS= read -r row; do
   n="$(jq -r .n <<<"$row")"; ref="$(jq -r .ref <<<"$row")"; valida="$(jq -r .valida <<<"$row")"
   if [[ "$valida" != 1 ]]; then echo "n=$n $ref: contrato inválido — saltada ($(jq -r .error_validacion <<<"$row"))" >&2; saltadas=$((saltadas+1)); continue; fi
   out="$(jq -r .contrato <<<"$row" | bash bash/tasks/create_task.sh - $([[ "$DRY" == 1 ]] && echo --dry-run) 2>&1)" || { echo "n=$n $ref: create_task.sh falló: $out" >&2; saltadas=$((saltadas+1)); continue; }
-  id="$(grep -oE '^ *[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' <<<"$out" | tr -d ' ' | head -1)"
+  id="$(grep -oE '^ *[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' <<<"$out" | tr -d ' ' | head -1 || true)"
   if [[ "$DRY" == 0 ]]; then
     [[ -n "$id" ]] || { echo "n=$n $ref: no pude leer el id creado de la salida" >&2; exit 1; }
     sqlite_rw "$DBP" "UPDATE propuestas SET creada_id=$(sql_str "$id"), creada_en=datetime('now') WHERE n=$n;"
   fi
   creadas=$((creadas+1))
-  [[ "$JSON" == 1 ]] && jq -cn --argjson n "$n" --arg ref "$ref" --arg id "${id:-}" --argjson dry "$DRY" '{n:$n, ref:$ref, task_id:$id, dry_run:($dry==1)}' || echo "n=$n $ref → ${id:-(dry-run)}"
+  if [[ "$JSON" == 1 ]]; then
+    jq -cn --argjson n "$n" --arg ref "$ref" --arg id "${id:-}" --argjson dry "$DRY" '{n:$n, ref:$ref, task_id:$id, dry_run:($dry==1)}'
+  else
+    echo "n=$n $ref → ${id:-(dry-run)}"
+  fi
 done < <(sqlite_ro "$DBP" -json "SELECT n, ref, valida, error_validacion, contrato FROM propuestas WHERE $w ORDER BY n;" | jq -c '.[]?')
 pendB="$(sqlite_ro "$DBP" "SELECT count(*) FROM propuestas WHERE seccion='B' AND decision='entra';")"
-[[ "$JSON" == 1 ]] && jq -cn --argjson c "$creadas" --argjson s "$saltadas" --argjson b "$pendB" --argjson dry "$DRY" '{ok:true, creadas:$c, saltadas:$s, seccion_b_pendientes:$b, dry_run:($dry==1)}' || echo "creadas=$creadas saltadas=$saltadas · §B marcadas «entra» pendientes de conversación: $pendB$([[ "$DRY" == 1 ]] && echo ' (dry-run)')"
+if [[ "$JSON" == 1 ]]; then
+  jq -cn --argjson c "$creadas" --argjson s "$saltadas" --argjson b "$pendB" --argjson dry "$DRY" '{ok:true, creadas:$c, saltadas:$s, seccion_b_pendientes:$b, dry_run:($dry==1)}'
+else
+  echo "creadas=$creadas saltadas=$saltadas · §B marcadas «entra» pendientes de conversación: $pendB$([[ "$DRY" == 1 ]] && echo ' (dry-run)')"
+fi
