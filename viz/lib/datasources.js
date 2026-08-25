@@ -261,11 +261,16 @@ const SOURCES = {
     emits: "object",
     args: {},
   },
+  // Determinística (semilla fija, cohortes históricas ya cerradas) pero
+  // CARA: el p-valor por permutación cae al camino Monte Carlo (200k
+  // iteraciones en Python puro) x10 llamadas (promedio + 4 ítems x 2
+  // puntajes) — 1-3 min por corrida. Cachear no sacrifica frescura real.
   validacion_plata: {
     label: "Validación del puntaje contra plata (AUC v2 vs producción)",
     script: "bash/calls/validacion_plata.sh",
     emits: "object",
     args: {},
+    cache: 600_000,
   },
   // Per-closer/result/program/project/week effectiveness aggregates.
   call_stats: {
@@ -401,6 +406,27 @@ const SOURCES = {
   // dan respuestas opuestas. Entregable de la tarea fb7a1c26 (arquetipo A12.8):
   // su output está tipado web_url y bindeado a esta UI, así que lo que se ve
   // ES la evidencia del contrato. NO se cachea, por lo mismo que lead_score.
+  // La cohorte en mora: una fila por estudiante (cohorte = start_date del plan)
+  // con al menos una cuota vencida sin pagar, su segmento de reactivación por
+  // reglas declaradas (S1 fresca · S2 reciente · S3 avanzado · S4 temprana),
+  // contacto y closer. `contexto` cambia la salida a una fila por cohorte
+  // mensual (alumnos / en mora / %). Entregable de 9f249dbe. Sin cache: es la
+  // lista operativa de cobranza.
+  // El reporte semanal por etapa del embudo orgánico (3f8f9914): una fila por
+  // semana con los leads orgánicos que entraron y cuántos llevan cada etiqueta
+  // de etapa en el CRM (+ cobertura y usuario de IG). Reproducible por diseño.
+  etapas_semana: {
+    label: "Embudo orgánico por semana y etapa",
+    script: "bash/metrics/etapas_semana.sh",
+    emits: "rows",
+    args: { project: "--project", desde: "--desde", hasta: "--hasta", incluir_pauta: { flag: "--incluir-pauta", bool: true } },
+  },
+  cohorte_mora: {
+    label: "Cohorte en mora (por estudiante)",
+    script: "bash/finance/cohorte_mora.sh",
+    emits: "rows",
+    args: { project: "--project", desde: "--desde", hasta: "--hasta", contexto: { flag: "--contexto", bool: true } },
+  },
   desercion: {
     label: "Impago y deserción de cuotas",
     script: "bash/finance/desercion.sh",
@@ -666,6 +692,41 @@ const SOURCES = {
     script: "bash/intercepciones/drift.sh",
     emits: "rows",
     args: { historia: { flag: "--historia", bool: true } },
+  },
+  // --- Revisión de propuestas (UI de rol technology) -----------------------
+  // Los backups de propuestas de tareas (backups/meeting-tasks/) con su gemelo
+  // JSON y la marca «cargado» en la sqlite local; sin cache (la barra debe
+  // reflejar la carga recién hecha).
+  propuestas_backups: {
+    label: "Propuestas — backups cargables",
+    script: "bash/localdb/propuestas_backups.sh",
+    emits: "rows",
+    args: { desde: "--desde" },
+  },
+  propuestas: {
+    label: "Propuestas de tareas (sqlite local)",
+    script: "bash/localdb/propuestas.sh",
+    emits: "rows",
+    args: { lote: "--lote", seccion: "--seccion", decision: "--decision" },
+  },
+  arquetipo_marcas: {
+    label: "Marcas de arquetipo (sqlite local)",
+    script: "bash/localdb/arquetipo_marcas.sh",
+    emits: "rows",
+    args: {},
+  },
+  // Postgres, read-only: relacionadas de una propuesta y la cola sin arquetipo.
+  tareas_relacionadas: {
+    label: "Tareas relacionadas (score + motivo)",
+    script: "bash/tasks/relacionadas.sh",
+    emits: "rows",
+    args: { titulo: "--titulo", project: "--project", archetype: "--archetype", assignee: "--assignee", ids: "--ids", limit: "--limit" },
+  },
+  tareas_sin_arquetipo: {
+    label: "Tareas sin arquetipo + propuesto",
+    script: "bash/tasks/sin_arquetipo.sh",
+    emits: "rows",
+    args: { project: "--project", open: { flag: "--open", bool: true }, id: "--id" },
   },
 };
 

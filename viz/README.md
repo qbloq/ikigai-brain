@@ -158,6 +158,29 @@ Páginas, por `ui.component`:
 - **`localdb`** — explorador de SQLite local: izquierda, cada db con tablas +
   counts; derecha, preview ≤200 filas. La selección viaja como `?db=&table=`,
   así toda vista es URL-direccionable (`/u/<id>?db=…`).
+- **`adelantar-tareas`** — «qué puede hacer el Cerebro» por tarea: una tarjeta
+  por tarea con la lista de acciones que el Cerebro puede ejecutar para
+  adelantarla o cerrarla, cada una con **alcance** (cierra · adelanta · insumo)
+  y estado (propuesta → en curso → hecha / descartada). Lee la sqlite local
+  `adelantar_tareas` (`tareas` + `acciones`) por `localdb_query`; solo lectura —
+  el estado se mueve desde la conversación y el `#n` visible es el handle.
+  Nació el 2026-08-21 con las 21 tareas que vencían el 20 de agosto (UI local
+  «Qué puede hacer el Cerebro — vencen 20-ago»).
+- **`ventas-precio`** — «Ventas por programa antes y después de los cambios de
+  precio» (entregable de la tarea `332c414a`, pedido de Lorenzo en la
+  alineación DG 2026-08-19) para quien no lee Markdown: KPIs del período
+  vigente contra el anterior, cambios de precio detectados, ritmo por programa
+  (barras), totales, participación en contrato, serie mensual (líneas), y la
+  narrativa curada (pedido · lectura · cautelas) en `params.texto`. Las dos
+  tablas son los artefactos **SQL Results** del contrato de la tarea (output
+  `params.io`, input `params.io_serie`) ejecutados en vivo por `io_query` —
+  la página no trae SQL. Publicada en el publicador para Lorenzo y Luis David.
+- **`plan-reactivacion`** — el plan de reactivación de una cohorte en mora,
+  leíble (versión UI del Doc de la tarea `9f249dbe`; el Doc se conserva): KPIs
+  vivos, curva «en qué cuota se frenó», contexto por cohorte, una tarjeta por
+  segmento (S1–S4) con acción/responsable/fecha curados y la lista viva de
+  alumnos con contacto y closer, métricas de éxito, causa raíz y lo que falta.
+  Números de `cohorte_mora` (+ `contexto`); el plan en `params.texto`.
 - **`notion-tasks`** — tabla read-only filtrable de las tareas BD Avances de un
   proyecto Notion (fetch único — fuente cacheada — filtrado en el navegador).
 - **`tasks`** — lista de tareas con barra de filtros (status/priority/project/
@@ -171,6 +194,16 @@ Páginas, por `ui.component`:
   (resumen/objetivos/decisiones/blockers, view-only, fuente `meeting_detail`).
 - **`task-editor`** — el gemelo **editable** de `tasks` (sembrado como la UI
   "Editor de IO"); ver abajo.
+- **`revision-propuestas`** — UI de rol technology, dos colas de curaduría sobre
+  master-detail: «Propuestas de reuniones» (los backups `.json` de
+  `meeting-to-tasks` cargados a una sqlite local — botón **Cargar** una sola vez
+  por lote — con relacionadas en dos capas: del mismo lote y, contra el
+  cerebro, `tareas_relacionadas` con motivo+score) y «Sin arquetipo» (tareas
+  `archetype_id IS NULL` con arquetipo propuesto por `tareas_sin_arquetipo`,
+  detalle reutilizando `renderTaskDetail`). La UI solo marca decisiones en la
+  sqlite local (`propuestas_backups`/`propuestas`/`arquetipo_marcas`); ejecutar
+  en Postgres es `bash/tasks/crear_de_propuestas.sh` /
+  `aplicar_arquetipos.sh`, corridos desde la conversación — viz es el visor.
 
 `tasks` y `task-editor` son instancias delgadas de
 [`patterns/master-detail.js`](patterns/master-detail.js): mismo master

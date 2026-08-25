@@ -22,6 +22,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n "$id" ]] || { echo "Usage: call_show.sh <id|prefix> [--json]" >&2; exit 2; }
 
+id_sql="${id//\'/}"   # bash 3.2: un \' dentro de un heredoc en $( ) rompe el parser — se escapa fuera
 json="$(psql_ro -t -A <<SQL
 SELECT jsonb_build_object(
   'id', m.id,
@@ -52,7 +53,7 @@ LEFT JOIN LATERAL (
   ORDER BY (o.project_id = m.project_id) DESC, o.created_date DESC NULLS LAST
   LIMIT 1
 ) cl ON true
-WHERE m.meeting_type='call' AND m.id::text LIKE '${id//\'/}%'
+WHERE m.meeting_type='call' AND m.id::text LIKE '${id_sql}%'
 ORDER BY m.scheduled_start_time DESC
 LIMIT 1
 SQL

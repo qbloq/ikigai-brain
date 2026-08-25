@@ -22,7 +22,9 @@
 # transcribe UNA vez y solo toca la DB si el resultado es usable.
 #
 # Uso: procesar_video.sh <meeting-id|prefix> [--file-id ID] [--min-chars N]
-#                        [--force] [--keep] [--dry-run] [--json]
+#                        [--tipo call|team] [--force] [--keep] [--dry-run] [--json]
+#   --tipo T       tipo de meeting (default call); `team` = reunión de equipo
+#                  dada de alta con bash/meetings/ingest_meeting.sh
 #   --file-id ID   video concreto del Drive (default: meetings.drive_file_id,
 #                  o el archivo más grande cruzado en la sqlite closer_calls)
 #   --min-chars N  umbral de transcript usable (default 2000, el del pipeline)
@@ -34,20 +36,22 @@ source "$here/../google/lib/common.sh"   # MKT_BASE + MKT_BEARER (descarga)
 source "$here/../lib/sqlite.sh"          # cruce local closer_calls (fallback)
 
 FORMAT="${FORMAT:-table}"
-ref="" file_id="" min_chars=2000 force=0 keep=0 dry=0
+ref="" file_id="" tipo="call" min_chars=2000 force=0 keep=0 dry=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --file-id) file_id="$2"; shift 2 ;;
+    --tipo) tipo="$2"; shift 2 ;;
     --min-chars) min_chars="$2"; shift 2 ;;
     --force) force=1; shift ;;
     --keep) keep=1; shift ;;
     --dry-run) dry=1; shift ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,31p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
     -*) echo "Unknown arg: $1" >&2; exit 2 ;;
     *) ref="$1"; shift ;;
   esac
 done
+[[ "$tipo" == call || "$tipo" == team ]] || { echo "--tipo: call|team" >&2; exit 2; }
 [[ -n "$ref" ]] || { echo "Uso: procesar_video.sh <meeting-id|prefix> [--file-id ID] …" >&2; exit 2; }
 
 # ── resolver el meeting (prefijo de uuid; ambiguo = error)
@@ -55,11 +59,11 @@ row="$(psql_ro -t -A -F'|' -c "
 SELECT m.id, m.name, m.status, coalesce(m.drive_file_id,''),
        coalesce(length(mt.transcript),0)
 FROM meetings m LEFT JOIN meeting_transcripts mt ON mt.meeting_id=m.id
-WHERE m.meeting_type='call' AND m.id::text LIKE '$(printf '%s' "$ref" | tr -cd 'a-f0-9-')%';")"
+WHERE m.meeting_type='$tipo' AND m.id::text LIKE '$(printf '%s' "$ref" | tr -cd 'a-f0-9-')%';")"
 n="$(grep -c . <<<"${row:-}")" || true
 [[ "$n" == 1 ]] || { echo "meeting '$ref': $n coincidencias (se necesita exactamente 1)" >&2; exit 1; }
 IFS='|' read -r mid mname mstatus m_fid tr_chars <<<"$row"
-echo "llamada: $mname [$mstatus] — transcript actual: $tr_chars chars" >&2
+echo "$tipo: $mname [$mstatus] — transcript actual: $tr_chars chars" >&2
 
 if (( tr_chars >= min_chars && force == 0 )); then
   echo "Ya tiene transcript usable ($tr_chars ≥ $min_chars) — esa llamada va por el pipeline normal (generar_pendientes.sh). --force para pisarlo." >&2

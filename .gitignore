@@ -50,3 +50,6 @@ data/tmp/
 # Datos crudos de reuniones (transcripciones, frames, reportes generados) — datos, no código
 data/transcripts/
 data/meeting-reports-gemini/
+
+# worktrees locales (superpowers)
+.worktrees/

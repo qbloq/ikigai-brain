@@ -16,7 +16,10 @@ function firstLocator(r) {
   return null;
 }
 
-const resolvedTitle = (r) => (r && r._resolved && r._resolved.title) || null;
+// The instance's human name: the title cached by the viz bind path (`_resolved`),
+// else the `title` the binding itself declares (bindings written from the
+// conversation — doc_create.sh, ref-merge — carry one and never a `_resolved`).
+const resolvedTitle = (r) => (r && ((r._resolved && r._resolved.title) || (typeof r.title === "string" && r.title))) || null;
 const resolvedUrl = (r) => (r && r._resolved && r._resolved.url) || null;
 
 // First `-- comment` line of a SQL query, as its human title.

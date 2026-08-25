@@ -1,0 +1,513 @@
+{
+  "id": "informe-semana-inaugural",
+  "name": "Semana inaugural del Cerebro · 16–24 de agosto de 2026",
+  "component": "informe",
+  "source": "testeos",
+  "params": {
+    "limit": 0,
+    "base_publicada": "https://app.ikigaigm.parallelo.ai",
+    "portada": {
+      "periodo": "16 → 24 de agosto de 2026",
+      "audiencia": "Dirección · Lorenzo y Juan Camilo",
+      "subtitulo": "Qué construyó el Cerebro de Ikigai en su primera semana operando con el equipo, qué encontró en los datos y qué queda en manos de quién.",
+      "intro": "Esta fue la semana en la que el Cerebro dejó de ser un prototipo y empezó a trabajar con el equipo: la reunión de alineación del 19 de agosto y la de servicio del 20 marcaron la agenda, y casi todo lo que sigue nace de ahí. La regla que atraviesa los diez frentes es la misma: **los números salen de las fuentes reales** (CRM, Meta, el video, la caja) y **los criterios se declaran** — cuando un dato no existe, se dice que no existe en vez de inventarlo.\n\nCada bloque cierra con enlaces a las páginas ya publicadas, que se recalculan al abrirlas. Las cifras marcadas «ahora mismo» son vivas; el resto son las del cierre de la semana.",
+      "cifras": [
+        {
+          "label": "Entregas registradas",
+          "valor": "151",
+          "nota": "cambios versionados en la semana",
+          "tono": "brand"
+        },
+        {
+          "label": "Páginas publicadas",
+          "valor": "13",
+          "nota": "con datos vivos, acceso por rol",
+          "tono": "brand"
+        },
+        {
+          "label": "Instrumentos nuevos",
+          "valor": "48",
+          "nota": "consultas y automatizaciones nacidas esta semana",
+          "tono": "brand"
+        },
+        {
+          "label": "Documentos",
+          "valor": "22",
+          "nota": "informes, briefs y decisiones escritas",
+          "tono": "brand"
+        }
+      ]
+    },
+    "secciones": [
+      {
+        "n": 1,
+        "id": "bant",
+        "titulo": "Calificación de leads: el BANT que sí predice la plata",
+        "kicker": "Tres corridas de experimento, un cambio en producción, y un puente hacia los estudiantes que dejaron de pagar.",
+        "estado": "En producción desde el 13 de agosto",
+        "estado_badge": "badge-pos",
+        "resumen": "Cada llamada de ventas produce un reporte con un puntaje BANT (presupuesto, necesidad, autoridad, tiempo) del lead. El reporte que venía usando la plataforma daba **90 o más a casi todo el mundo** — el 60 % de los puntajes caían entre 90 y 100, y en «necesidad» 17 de 18 leads recibían ≥90. Un puntaje que no distingue no sirve para priorizar.\n\nSe rediseñó el criterio de puntuación y se validó con el rigor de un experimento: primero contra sí mismo (¿es reproducible?), después contra el dinero (¿predice quién paga?), y luego **se replicó en una segunda muestra independiente** antes de creerlo. Desde el 13 de agosto el reporte que ve la plataforma es el del Cerebro; el anterior quedó congelado como grupo de control.",
+        "cifras": [
+          {
+            "label": "Capacidad de predecir quién paga",
+            "valor": "0,80",
+            "nota": "AUC sobre 40 llamadas (0,5 = azar, 1 = perfecto) · el reporte anterior: 0,66",
+            "tono": "pos"
+          },
+          {
+            "label": "Si el criterio es «cumplió ≥50 % del plan»",
+            "valor": "0,95",
+            "nota": "el puntaje distingue al que va a cumplir del que solo firma",
+            "tono": "pos"
+          },
+          {
+            "label": "Reproducibilidad",
+            "valor": "0,88–0,95",
+            "nota": "consistencia entre 5 corridas de la misma llamada: es un instrumento, no una ruleta",
+            "tono": "brand"
+          },
+          {
+            "label": "Leads con puntaje ≤50",
+            "valor": "0 de 8",
+            "nota": "convirtieron en flujo real — el filtro más barato del sistema",
+            "tono": "cau"
+          }
+        ],
+        "hallazgos": [
+          "**El techo era del criterio, no de la inteligencia artificial.** Con el criterio nuevo, la «necesidad» pasó de 81 a 60 puntos promedio y dejó de dar ≥90 a todo el mundo (bajó en 7 de 8 llamadas, no subió en ninguna). Los otros tres ítems, que no se tocaron, se movieron como ruido — ese era el grupo de control.",
+          "**Cada reporte se genera tres veces en contextos independientes y se toma la mediana.** Eso reduce el ruido ~2,5 veces y, cuando las tres lecturas difieren mucho en un ítem, el reporte lo marca como «baja confianza» en vez de esconderlo.",
+          "**Arquetipos de cliente normalizados.** El analizador anterior había inventado 47 etiquetas distintas («Emotional Trader / Novice Trader», «Inexperienced Person (Emotionally Blocked by Past Losses)»…) para lo que son **cuatro rasgos**: Novato · Emocional · Inexperto · Experimentado. Ahora la lista es cerrada, y el rasgo primario coincidió en 30 de 30 corridas.",
+          "**El rasgo Emocional vende.** Sobre 171 llamadas, los leads emocionales convierten 54 % contra 31 %; los «novatos» convierten peor (31 % vs 49 %). Traducido a marketing: **el dolor que paga es emocional (miedo, pérdidas, disciplina), no educativo** — el mensaje «aprende trading» compra el segmento débil.",
+          "**El survey de agendamiento lo confirma sin ninguna IA de por medio.** Censo sobre 2.673 contactos: quien declara «inestabilidad emocional» como desafío convierte 13,4 % contra 5,4 % de quien declara «falta de educación financiera». Las preguntas que más discriminan son desafíos, presupuesto declarado, horas dispuestas y tiempo operando; **la pregunta de presupuesto más respondida está 86 % plana** (casi todos contestan lo mismo) — el mismo defecto del BANT viejo, en versión formulario.",
+          "**Hay dos momentos para calificar, no uno.** Antes de la llamada (el survey, existe para el 82 % de los contactos) sirve para decidir **a quién llamar y con quién**; después de la llamada (el BANT) sirve para decidir **a quién perseguir**. Confundirlos fue el error de origen de la tarea de «asignar los leads 8+ al mejor closer»."
+        ],
+        "hallazgos_titulo": "Qué se encontró",
+        "siguiente": [
+          "**Recuperar estudiantes que dejaron de pagar.** Los dos «no convertidos» que el puntaje nuevo mandó al fondo habían firmado planes de $450 y $1.000, pagado el depósito y parado: **son morosos, no no-clientes**. El mismo umbral que mejor predice (cumplir ≥50 % del plan) es el que define el segmento S3 del plan de reactivación (bloque 8). El puente existe; falta escribirlo como regla: usar el BANT de la llamada original como señal de a quién vale la pena reactivar.",
+          "**Priorizar desde que entran.** Bandas propuestas al momento de agendar: A = declara ≥$1.500 y «listo para invertir» → confirmación prioritaria; B = cualquier otra respuesta → flujo normal; C = survey sin responder → confirmar antes de ocupar agenda. **El closer ve el orden de su cola y las respuestas, nunca el número** («un número visible se vuelve profecía»). Falta la firma de Luis David y David Castaño.",
+          "Cola accionable hoy sin construir nada: **58 llamadas con BANT ≥81 que nunca cerraron** (Ayrton 22, Carlos 19)."
+        ],
+        "enlaces": [
+          {
+            "slug": "dashboard-closer",
+            "texto": "Tablero por closer (cola BANT ≥70)"
+          },
+          {
+            "slug": "reporte-llamada",
+            "texto": "Reporte de una llamada"
+          },
+          {
+            "slug": "llamadas-closer",
+            "texto": "Llamadas por closer"
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "id": "embudo",
+        "titulo": "El embudo completo, de la pauta a la caja — y el orgánico al lado",
+        "kicker": "Nació de la alineación del 19 de agosto: el dashboard no cuadraba porque cada peldaño venía de una fuente distinta. La respuesta fue un solo cruce con la procedencia declarada en cada bloque.",
+        "estado": "Publicado · 5 páginas",
+        "estado_badge": "badge-pos",
+        "resumen": "Un solo objeto une pauta (Meta) → video (VTurb, en vivo) → leads y etapas (CRM) → llamadas → ventas y caja → cuotas, con las **conciliaciones entre fuentes** explícitas y los huecos declarados como «sin instrumentar». Reglas que lo hacen confiable: los leads salen del CRM y no de ningún Excel; la verdad del dinero es la caja cobrada (lo que Meta se atribuye viaja aparte como «pixel»); los ratios solo se calculan contra pauta en dólares, nunca sumando monedas.\n\nEl hallazgo de portada: **el retorno real de la pauta de agosto (caja cobrada / inversión) es 3,79×, casi el doble del 2,11× que reporta el pixel de Meta**. El criterio que la reunión fijó para escalar era ≥3,5 — medido con la caja, agosto ya lo cumple. Y el cuello está en un solo sitio: de 19.189 clics pagados solo 4.780 llegan a cargar la página (**24,9 %, la mitad del mínimo de referencia**) — velocidad de carga, no mensaje.",
+        "vivo": {
+          "source": "embudo",
+          "args": {
+            "project": "David Guerrero"
+          },
+          "titulo": "Agosto, David Guerrero — ahora mismo",
+          "kpis": [
+            {
+              "label": "Pauta (USD)",
+              "agg": "path",
+              "path": "kpis.spend_usd",
+              "formato": "usd",
+              "tono": "base"
+            },
+            {
+              "label": "Leads (CRM)",
+              "agg": "path",
+              "path": "kpis.leads",
+              "formato": "num",
+              "tono": "base"
+            },
+            {
+              "label": "Costo por lead real",
+              "agg": "path",
+              "path": "kpis.cpl_real",
+              "formato": "usd",
+              "tono": "base"
+            },
+            {
+              "label": "Planes iniciados",
+              "agg": "path",
+              "path": "kpis.planes_iniciados",
+              "formato": "num",
+              "tono": "base"
+            },
+            {
+              "label": "Caja cobrada",
+              "agg": "path",
+              "path": "kpis.cash_total",
+              "formato": "usd",
+              "tono": "pos"
+            },
+            {
+              "label": "ROAS real",
+              "agg": "path",
+              "path": "kpis.roas_real",
+              "formato": "num2",
+              "tono": "pos",
+              "nota": "caja / pauta USD"
+            },
+            {
+              "label": "ROAS pixel (Meta)",
+              "agg": "path",
+              "path": "kpis.roas_pixel",
+              "formato": "num2",
+              "tono": "muted",
+              "nota": "lo que Meta se atribuye"
+            }
+          ]
+        },
+        "hallazgos": [
+          "**Atribución nativa del CRM desde el 21 de agosto.** A pedido nuestro, la plataforma empezó a guardar con qué campaña y con qué **anuncio** llegó cada lead (último toque, desde el navegador del lead, no desde el formulario). Cubre 175 de 277 leads de agosto (63 %) — un 19 % más que el formulario — y permite que la caja se atribuya **por anuncio real**, no repartida proporcional al gasto.",
+          "**Anuncios como unidad.** Una página por creativo con gancho (hook), retención y cierre del video, compras según el pixel **y al lado la caja real** del CRM. El anuncio con más caja del mes («Hobby o pasatiempo»: $1.794 de pauta, 29 leads, 3 planes, $2.398 cobrados) tiene un hook de 10,6 %, el doble del resto.",
+          "**Ángulos ganadores → titulares.** Se puso junto el ángulo con el que se compra el clic y el titular que la landing muestra hoy, leído en vivo. Quiebre encontrado: **el titular vigente («el trading está manipulado / fondeo en 6 meses») no aparece en ningún anuncio ganador de agosto**; el clic se compra con «¿vida con el trading o entreteniendo tu ego?». Cinco titulares propuestos el 21 de agosto, cada uno con su evidencia de caja, para que Loro y Jhonatan los critiquen.",
+          "**El orgánico, medido.** Los leads sin pauta por canal de entrada (serie de YouTube, lead magnets, survey orgánico, VSL sin pauta, referidos, DM puro) con su caja, y al lado la **pauta de marca** del mes para leer el costo de lo «gratis». Agosto: 101 orgánicos de 277 (36,5 %); cuestan ~3× menos que el pagado ($14 vs $44 por lead) y el canal que mejor convierte es el survey orgánico (15,8 % a plan). La serie de YouTube trae el volumen (38 leads) pero convierte al 5,3 %.",
+          "**Salud del embudo contra referencias.** Diez tasas de paso comparadas con benchmarks de high-ticket (declarados como referencia, no como meta): conversión final 11,2 % (excelente), ROAS real (excelente), CPL $44 (bueno)… y **aterrizaje 24,9 % (mejorable, el único rojo)**.",
+          "**Ventas diarias.** La serie día a día de caja vs pauta (ritmo, no atribución) — el hueco #1 del contraste con el dashboard comercial: el Cerebro solo tenía series mensuales."
+        ],
+        "cautelas": [
+          "El pixel de Meta sobre-atribuye ~45 % (45 compras reportadas vs 31 planes reales).",
+          "Solo el 24,8 % de los leads orgánicos tiene etiqueta de calificación: un canal sin cobertura no es un canal malo, es un canal sin trabajar (ver bloque 8).",
+          "**El frente crítico sigue siendo el cobro de cuotas**: el porcentaje de planes que paga cayó de 72 % (marzo) a 51 % (agosto), y el cobro diario de cuotas de $1.289 (mayo) a $683."
+        ],
+        "enlaces": [
+          {
+            "slug": "embudo",
+            "texto": "Embudo · el cruce"
+          },
+          {
+            "slug": "organico",
+            "texto": "Embudo orgánico"
+          },
+          {
+            "slug": "anuncios",
+            "texto": "Anuncios (creativo por creativo)"
+          },
+          {
+            "slug": "angulos",
+            "texto": "Ángulos → titulares"
+          },
+          {
+            "slug": "ventas-diarias",
+            "texto": "Ventas diarias"
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "id": "whatsapp",
+        "titulo": "WhatsApp: el canal que se quema, y la plataforma de agentes que ya lo resuelve",
+        "kicker": "Tres bloqueos de la línea de los closers en doce días de agosto. El equipo lleva un mes resolviendo capacidad multiplicando números — y la plataforma castiga exactamente eso.",
+        "estado": "Diagnóstico listo · decisión pendiente",
+        "estado_badge": "badge-cau",
+        "resumen": "**Qué pasó.** El 24 de julio el equipo declaró en reunión que «estamos fundidos, ya todas las cuentas de WhatsApp disponibles»: el CRM no envía mensajes de WhatsApp y los closers contestan desde WhatsApp Web. El 12 de agosto el riesgo quedó registrado como crítico: **3 bloqueos de número en 12 días**. La causa la diagnosticó el propio equipo: **el mismo número usado a la vez por una persona desde el teléfono y por un sistema conectado por la vía no oficial** (la que emula WhatsApp Web) — Meta detecta el patrón y bloquea. Las respuestas acordadas (rotación de números 50-50, SIMs nuevas, verificación paga, «Coexistencia» con la herramienta de llamadas) son todas más números o más dispositivos; **las 11 tareas del tema están vencidas y ninguna avanzó**, y dos de los supuestos que sostienen el plan (que la verificación paga sube el tope de 4 dispositivos; qué cambia exactamente Meta el 1 de octubre) no están verificados.\n\n**Qué tiene el Cerebro.** Una línea de WhatsApp **oficial** (API de Meta), con plantillas aprobadas, que lleva semanas enviando a los closers sin un solo bloqueo — porque por esa vía no hay nada que bloquear. Y sobre esa línea, una **plataforma de agentes**: programas conversacionales con identidad, memoria y reglas propias, que reciben mensajes, consultan los datos reales del negocio, actúan en lo que tienen permitido y **le preguntan a un humano antes de cualquier cosa que comprometa**. Iki, la asistente que hoy acompaña a los closers (bloques 5 y 6), es el primer agente de esa plataforma.",
+        "hallazgos": [
+          "**Web o API oficial: el mismo agente, distinta puerta.** La plataforma se conecta a WhatsApp de las dos formas — por la vía oficial de Meta (número de negocio, plantillas, sin tope de dispositivos) o vinculando una cuenta común como WhatsApp Web (código QR). Se cambia la puerta, no el agente: misma personalidad, misma memoria, mismas reglas. La regla de negocio que hay que sostener: **nunca el mismo número en las dos vías a la vez** — eso es literalmente lo que causó los bloqueos.",
+          "**Un agente, muchos canales.** La misma plataforma habla por WhatsApp, Telegram, Slack, Discord, correo, voz/telefonía y chat embebido en una página web propia; y por webhook se conecta a cualquier sistema que sepa enviar un mensaje. Instagram no es hoy un canal nativo: entra por el puente de ManyChat, que es donde ya vive la operación de setters.",
+          "**Cambia la pregunta.** Hoy el equipo pregunta «¿cuántas personas caben en un número?» (4 dispositivos → SIMs, rotación). Con un agente sobre la vía oficial la pregunta pasa a «¿cuántas conversaciones aguanta un número?», y ahí no hay tope: el agente recibe, califica, agenda y entrega el contacto al closer que corresponda. La rotación de números deja de hacer falta porque desaparece el recurso escaso.",
+          "**Es lo que el equipo pidió el 24 de julio** («un CRM que permita a los closers contestar WhatsApp») y lleva un mes sin moverse. Si en octubre los números llegan encriptados, quien conserva el hilo de la conversación es quien está dentro de la vía oficial.",
+          "El brief completo del canal, rastreado desde las actas, está escrito y es la lectura previa a cualquier decisión sobre números, verificación paga o Coexistencia."
+        ],
+        "siguiente": [
+          "Verificar los dos supuestos no confirmados (verificación paga y cambios de octubre) **antes de gastar un peso**.",
+          "Sentarse con Roberto (montó la herramienta de llamadas y tiene el diagnóstico más fino): su tarea decide si Coexistencia suma o repite el error.",
+          "Decidir entre las dos vías: rotación de números (todo vencido) o un número con agente (la infraestructura ya lo permite). No cancelar todavía las tareas de rotación; decidirlo con el punto 1 resuelto.",
+          "Desde el 19 de agosto entran leads por WhatsApp y nadie mide cuántos entran ni qué pasa con ellos: instrumentarlo."
+        ]
+      },
+      {
+        "n": 4,
+        "id": "gamificacion",
+        "titulo": "Andrea Torres: el embudo gamificado y la sesión de preguntas hacia Aura",
+        "kicker": "Lo que existe sobre «gamificación» de Andrea es un quiz de diagnóstico para captar leads, no un sistema de puntos — y su historia explica por qué hoy está apagado.",
+        "estado": "Revisado · sin decisión nueva",
+        "estado_badge": "badge-neutral",
+        "resumen": "Se rastreó todo el material: vive en el Drive de la org (carpeta «Embudo de gamificación», marzo–mayo de 2026). Es un **diagnóstico energético de 7 preguntas** envuelto en la narrativa de un personaje («La Guardiana»): anuncio → video de 55–65 s que no vende nada, solo abre → quiz → resultado en uno de **5 arquetipos** («La mujer que no se permite recibir», «La mujer que frena justo antes»…) con medidores animados, confeti y un audio de Andrea → CTA al VSL gratuito. Objetivo: captar y segmentar mujeres con bloqueo financiero hacia el low ticket «La Ciencia de la Abundancia» (no hacia Aura).\n\n**Estado real:** el guion se escribió, la hoja de respuestas tiene **51 filas (~30 personas)** — una muestra, no una campaña — y la única tarea del tema (el video del funnel) se **canceló el 20 de agosto** como backlog heredado sin par en la plataforma de Mari. En algún momento se decidió apagar las campañas que lo alimentaban. La gamificación con rangos, puntos y strikes que sí está viva **es del Mastermind de David Guerrero** (autoría de Tatiana), no de Andrea.",
+        "hallazgos": [
+          "**La sesión de Q&A es la jugada vigente**, y es de monetización, no de captación: compradores de «La Ciencia de la Abundancia» → upsell a **Aura** ($397 comunidad Skool · $597 VIP con comunidad WhatsApp, 6 meses). Decisión de la alineación del 6 de agosto: formulario previo para recoger preguntas, respuestas preparadas que creen la «brecha» y el «puente» hacia Aura, y preguntas estratégicas plantadas en vivo por gente del equipo.",
+          "**El puente entre ambas piezas es metodológico**: el quiz y el Q&A usan la misma técnica — una pregunta que revela un bloqueo y abre el siguiente paso. La audiencia también es la misma: quien entró por el quiz es quien hoy está en el grupo del Q&A.",
+          "Las 6 tareas de preparación del Q&A (formulario, narrativa, guion del BSL, preparar a Andrea) figuran cerradas por Mari el 20 de agosto. Quedan abiertas las de logística (presentación, recursos QR, estructura de la masterclass) y la de preparar a Andrea para el upsell.",
+          "El formulario y sus respuestas están en Drive y en el sistema de tareas; el Cerebro puede leerlos y preparar el guion de «brecha y puente» por pregunta cuando se pida."
+        ],
+        "siguiente": [
+          "Si se quiere revivir el quiz como captación, la decisión es de negocio (campañas apagadas, tarea cancelada), no técnica: el material está completo salvo el video.",
+          "Cruzar las ~30 respuestas del quiz contra el CRM para saber cuántas de esas personas compraron el low ticket — es una consulta, no un proyecto."
+        ]
+      },
+      {
+        "n": 5,
+        "id": "closers",
+        "titulo": "Iki en el grupo de closers: agenda, recordatorios, planes y agendas resueltas por WhatsApp",
+        "kicker": "Desde el 13 de agosto, una asistente del Cerebro acompaña a los closers por WhatsApp. En once días: 95 mensajes automáticos, cero bloqueos, y varios problemas de agenda y de CRM resueltos en el grupo antes de que costaran una venta.",
+        "estado": "En operación desde el 13 de agosto",
+        "estado_badge": "badge-pos",
+        "resumen": "**Iki** (así se presenta ante el equipo) vive en la línea oficial de WhatsApp del Cerebro y está en el grupo de closers y en los chats directos de cada uno. Tiene dos capas: **lo programado**, que sale solo a la hora que toca, y **lo conversado**, que responde a lo que los closers escriben.\n\n**Lo programado.** Saludo de las 7:00 con la agenda del día (hora, lead, link de la reunión); **recordatorio 45 minutos antes de cada llamada con el enlace de Meet**; pregunta de resultado al terminar cada llamada (*Venta / Seguimiento / No califica / No show*, y si fue venta, el acuerdo de pago); y cierre a las 20:00 con las cuotas que vencen mañana. Cada mensaje queda registrado y **nunca se envía dos veces**. Entre el 13 y el 24 de agosto: 95 envíos, 100 % entregados (33 cierres, 28 preguntas post-llamada, 26 recordatorios, 6 bienvenidas), a Carlos, Mateo, Ayrton, Cristian y Luis David.\n\n**Lo conversado.** Iki consulta los datos reales (llamadas, planes, cuotas, pipeline) por una puerta de solo lectura, identifica a cada persona **por su número de teléfono, no por lo que diga ser**, y todo mensaje hacia afuera del equipo pasa antes por una mesa donde un humano aprueba.",
+        "hallazgos": [
+          "**Grabaciones.** Cuando una llamada figura realizada pero no dejó grabación, Iki lo detecta y **le pregunta al closer qué pasó**, para separar «falla del sistema» de «no se grabó por algo puntual». Caso del 19 de agosto con Ayrton: la llamada de Samuel figuraba hecha y sin grabación; Iki preguntó, cerró el lazo el mismo día con la causa (la cita estuvo sin link oficial hasta la víspera por un enredo de correo — el bot solo graba cuando la llamada pasa por el Meet oficial de la cita) y ubicó un segundo caso (Lindzay, sábado 9:00, análisis «sin data») que escaló como bug con logs. Fondo del problema, medido: **de 459 llamadas agendadas entre el 11 de julio y el 12 de agosto solo 41 dejaron transcripción (9 %)** — por eso esta semana se construyó la recuperación desde los videos de Drive.",
+          "**Agendas y CRM.** Iki detectó una cita confirmada sin correo en el contacto (sin correo el sistema no crea la llamada ni el link de Meet) y **un correo con error de tipeo** («hoymail» por hotmail) en otra cita; le pidió a Antonio corregirlos en el CRM y **verificó tres veces que el cambio quedó hecho**: el correo guardado pese al mensaje de error, la llamada creada con su evento de calendario, y la fusión del contacto duplicado con el clon desaparecido. Todo el 18 de agosto, en el grupo.",
+          "**Dueños de oportunidad.** Una llamada etiquetada a Carlos tenía la oportunidad sin dueño en el CRM; se corrigió en la fuente en minutos y quedó la regla para el equipo: asignar el contacto no asigna la oportunidad. El 19 Iki listó las llamadas del día sin closer para que se asignaran antes de la hora.",
+          "**Reagendas que no bajan.** La verificación independiente de agenda (base propia contra el calendario del CRM, cada hora) encontró una cita reagendada en el CRM que nunca llegó a la base; se reparó a mano y quedó documentado el porqué.",
+          "**Bienvenida.** El 24 de agosto Iki se presentó formalmente a los seis closers, uno por uno, nunca en difusión."
+        ],
+        "enlaces": [
+          {
+            "slug": "dashboard-closer",
+            "texto": "Tablero por closer"
+          },
+          {
+            "slug": "llamadas-closer",
+            "texto": "Llamadas por closer"
+          }
+        ]
+      },
+      {
+        "n": 6,
+        "id": "planes",
+        "titulo": "Del mensaje en el grupo al plan de pagos en el sistema",
+        "kicker": "El closer reporta la venta como siempre lo ha hecho — escribiendo en el grupo — y el plan queda registrado. Esta semana ese camino se recorrió de punta a punta, y recuperó ~$19.000 de caja que estaba fuera del sistema.",
+        "estado": "En operación · casos cerrados",
+        "estado_badge": "badge-pos",
+        "resumen": "El flujo es: el closer escribe el resultado en el grupo → Iki interpreta el acuerdo (total, número de cuotas, fechas) → se lo devuelve reformulado, por chat directo, para que confirme con un «sí» → el plan queda en el sistema con sus cuotas y su comisión. Si algo es ambiguo, Iki hace **una sola pregunta**. Esto reemplaza lo que hoy se hace en la pantalla de reportar ventas de la app, aunque esa pantalla sigue existiendo.\n\n**Caso completo: Juan Manuel Bedoya (21–24 de agosto).** Antonio escribió que un lead «no me sale en la app de reporte de pagos». Iki encontró que la oportunidad estaba ganada en el CRM desde el 21 de junio pero la copia en la base no tenía dueño, y al revisar el propio grupo descubrió que **los $700 no eran el total sino la reserva de un Premium Mastermind de $5.500**, dos meses cobrándose fuera del sistema. Confirmó la tabla de cuotas con el closer antes de escribir nada (reserva $700 · 2 cuotas de $960 pagadas · 3 pendientes sep/oct/nov) y el plan quedó registrado con su comisión. **Caso Lorena Amado (19–21 de agosto):** Mateo cerró con un abono de $50 y «no le aparecía en la app»; la causa real era que él mismo había marcado la oportunidad como perdida seis días antes y la app no muestra perdidas. Se corrigió en el CRM, el plan quedó con la segunda cuota para el jueves 27, y el 24 Iki le recordó a Mateo escribirle antes.",
+        "cifras": [
+          {
+            "label": "Mateo · julio",
+            "valor": "6 ventas",
+            "nota": "perdidas del sistema, reconstruidas y reparadas · $10.398",
+            "tono": "pos"
+          },
+          {
+            "label": "Mateo · agosto",
+            "valor": "6 planes",
+            "nota": "registrados por él mismo en su pantalla, el 20 de agosto · $7.898",
+            "tono": "pos"
+          },
+          {
+            "label": "Caja recuperada",
+            "valor": "~$19.000",
+            "nota": "13 planes de Mateo + Juan Manuel ($5.500) · comisiones al día",
+            "tono": "pos"
+          },
+          {
+            "label": "Mensajes automáticos",
+            "valor": "95",
+            "nota": "13–24 ago · 100 % entregados · 0 bloqueos",
+            "tono": "brand"
+          }
+        ],
+        "hallazgos": [
+          "**Mateo, julio.** Reportó 7 «clientes perdidos» desde junio. Cada uno se cruzó contra el CRM (7.336 oportunidades), contra los planes de pago por identidad de cliente (no por nombre) y contra los 16.000 mensajes del grupo: **6 eran reales y 1 no tenía sustento**. El delator: 35 días seguidos sin un solo plan a su nombre. Los 6 planes ($10.398) se registraron con sus cuotas pagadas y sus comisiones ($1.040), y julio subió a $84.106 cobrados. También se eliminó su ficha duplicada de empleado, la única de la tabla.",
+          "**Mateo, agosto — la pantalla hecha para él.** Para que registrara rápido sus ventas del mes, el Cerebro le construyó una pantalla propia: sus leads de agosto ya cruzados con el CRM y las llamadas, un recorrido de tres pasos (resultado → producto → plan, donde la cuota 1 es el abono y las siguientes se acomodan solas) y comprobante. **La usó él solo**: 6 planes creados el 20 de agosto entre las 14:13 y las 14:42 ($7.898 de caja, $790 de comisión), sesiones el 20, 21, 22 y 24.",
+          "**Lo que cambia para el closer:** nada en su costumbre — sigue escribiendo el resultado en el grupo. Lo que cambia para la empresa: la venta deja de vivir en un chat y pasa a ser un plan con cuotas, fechas y comisión, el mismo día."
+        ],
+        "enlaces": [
+          {
+            "slug": "resolver-ventas",
+            "texto": "Reportar una venta (la pantalla de Mateo)"
+          },
+          {
+            "slug": "dashboard-closer",
+            "texto": "Tablero por closer"
+          }
+        ]
+      },
+      {
+        "n": 7,
+        "id": "pm",
+        "titulo": "Integración con la plataforma de tareas de Mari",
+        "kicker": "Dos sistemas llevan el mismo trabajo. Se cuadró el cruce y se diseñó cómo van a conversar de ahora en adelante — agente con agente, cada uno con su humano al lado.",
+        "estado": "Cruce cuadrado · protocolo diseñado, no ejecutado",
+        "estado_badge": "badge-cau",
+        "resumen": "La plataforma PM de Mari y el Cerebro registran las mismas tareas. Esta semana se terminó de reconciliar: **256 tareas del lado PM contra 574 del Cerebro**, 260 pares evaluados, 29 fusionados, 100 tareas del Cerebro con su identidad en PM guardada (35 de ellas vinculadas a mano esta semana). Resultado: **de 84 tareas abiertas en PM, 1 sola no tiene representación viva acá**. Además se puso contrato de trabajo (qué entra, qué se entrega, cómo se verifica) a las **52 tareas que habían entrado desde PM sin ninguno**.\n\nLo que no existe es la vuelta: Mari no ve nada de eso, porque el flujo es de una sola vía y a mano. De ahí el **protocolo de conversación entre agentes**, diseñado el 21 y planificado hoy 24.",
+        "hallazgos": [
+          "**La idea.** Mari habilitó un buzón que hoy solo guarda lo que llega. Al otro lado hay un operador (una IA manejando su plataforma). A un operador no se le manda un formato: **se le habla**. Cada mensaje es un sobre con remitente, hilo, tipo (carta · petición · pregunta · respuesta · hecho · no hecho · aviso), un texto en prosa que explica *por qué* y datos estructurados que dicen *qué* — para que el día que haya un programa al otro lado no haya que volver a acordar nada.",
+          "**Humanos a bordo.** Cada agente actúa solo en lo reversible (leer, comparar, proponer, enlazar). Crear, cancelar, fusionar, reasignar o cambiar un estado **se le pregunta al humano** en el hilo: el nuestro a Santiago, el de Mari a Mari.",
+          "**Turnos, no chat.** Quien no tiene nada que decir no contesta («dos agentes corteses son un bucle infinito»). Toda petición cierra en «hecho» o «no hecho», y un «hecho» de crear tarea trae el identificador del otro lado — sin eso el enlace se pierde.",
+          "**La conversación es el canal; la reconciliación es la verdad.** El chequeo del cruce sigue corriendo como red de seguridad: un hueco que la conversación no cerró se convierte en un turno nuevo, no se da por cerrado «porque se habló».",
+          "**Fases.** F0: la primera carta a Mari, enviada a mano y coordinada por WhatsApp (quiénes somos, cómo leer el sobre, los enlaces, qué cerramos acá que sigue abierto allá, cinco preguntas de vuelta). F1: nuestro buzón + un vigilante que cada hora lee la bandeja, actúa en lo reversible y deja en «esperando humano» lo que compromete. F2 (que cada tarea creada o cerrada acá le llegue sola a PM) queda fuera de este plan."
+        ],
+        "cautelas": [
+          "El plan tiene 9 tareas y 0 ejecutadas: el diseño está aprobado en conversación; la primera carta no se ha enviado.",
+          "Dos cosas a cerrar con Mari: que el token del buzón viaje en cabecera y no en la URL, y quién manda en cada campo (asignados, contrato y proyecto los manda el Cerebro; título, fecha y prioridad el último que escribe; el estado quien cierra).",
+          "Hallazgos del backfill que alimentan la conversación: 6 tareas sin dueño real («Tati», «expert», «Speaker A»), contenido de Andrea archivado bajo David Guerrero, y 5 tareas que son instrumentos que el Cerebro ya tiene (histórico de testeos, distribución de ventas por precio, cohorte en mora)."
+        ]
+      },
+      {
+        "n": 8,
+        "id": "organico-mora",
+        "titulo": "Etiquetas de ManyChat, deserción de cohortes y el plan de reactivación",
+        "kicker": "Tres piezas de un mismo problema: no se ve el medio del embudo orgánico, y la mitad de cada cohorte deja de pagar en la segunda cuota.",
+        "estado": "Plan en borrador · pendiente de Lorenzo",
+        "estado_badge": "badge-cau",
+        "resumen": "**Etiquetas.** El embudo orgánico se veía por los extremos (cuántos entran sin pauta, cuántos compran) pero no por el medio: qué pasó en la conversación por DM. Sin etiqueta no se distingue «no lo trabajaron» de «lo trabajaron sin marcarlo». Se definió el sistema: 7 etapas (entró → consumió → conversación con setter → calificado/no → agendó → conectó/no → venta), **6 etiquetas nuevas que el setter pone a mano, con el mismo nombre en ManyChat y en el CRM**, y la llave que hoy falta — el usuario de Instagram del lead (lo traen 20 de 319 leads orgánicos, 6 %; meta ≥80 %). Se mide en el CRM y no en ManyChat porque ManyChat no cuenta por etiqueta: «es mapa, no medida».\n\n**Deserción.** El reporte para Lorenzo muestra dónde ocurre: **la cuota 1 la paga el 99 %; la cuota 2, el 69,5 %; la cuota 3, el 57,5 %**. Justo después de recibir el primer mes de producto. No es cobranza: es el cliente decidiendo que no sigue. Total vencido desde diciembre: 322 cuotas de 151 planes, **$206.075**.",
+        "vivo": {
+          "source": "cohorte_mora",
+          "args": {
+            "project": "David Guerrero",
+            "desde": "2026-02-01",
+            "hasta": "2026-03-31"
+          },
+          "titulo": "Cohorte febrero–marzo, David Guerrero — ahora mismo",
+          "kpis": [
+            {
+              "label": "Alumnos en mora",
+              "agg": "count",
+              "formato": "num",
+              "tono": "neg"
+            },
+            {
+              "label": "Pendiente vencido",
+              "agg": "sum",
+              "campo": "pendiente",
+              "formato": "usd",
+              "tono": "neg"
+            },
+            {
+              "label": "Ya cobrado a esos mismos",
+              "agg": "sum",
+              "campo": "cobrado",
+              "formato": "usd",
+              "tono": "pos",
+              "nota": "ninguno dejó de pagar desde el principio"
+            },
+            {
+              "label": "S4 · caída temprana",
+              "agg": "count",
+              "where": {
+                "campo": "segmento",
+                "valor": "S4"
+              },
+              "formato": "num",
+              "tono": "cau",
+              "nota": "más de la mitad del dinero, la peor probabilidad de cobro"
+            }
+          ]
+        },
+        "hallazgos": [
+          "**Plan de reactivación feb–mar (35 alumnos, ~$50.600 pendientes).** Cuatro segmentos por reglas declaradas: **S1** mora ≤30 días (2 alumnos, $738) → link de pago por WhatsApp en 48 h; **S2** 31–90 días (7, $10.020) → llamada **del closer que le vendió**, semana del 25 al 29 de agosto; **S3** más de 90 días pero ya pagó ≥50 % (12, $10.947) → retención 1:1 con oferta de cierre, semana del 1 al 5 de septiembre — el mejor pronóstico por dólar de gestión; **S4** más de 90 días y menos de la mitad pagada (14, $28.912) → **diagnóstico primero, decisión después**: reactivar, bajar de programa o declarar incobrable y dejar de gastar gestión. Responsable: Tatiana Echeverry; el descuento y la baja los decide Lorenzo.",
+          "**Contexto que cambia la lectura:** toda cohorte madura vive entre 43 % y 62 % de impago; feb–mar (46 % / 52 %) es una cohorte normal, no una cohorte mala. Recuperarla no arregla nada si no se toca lo que pasa entre la cuota 1 y la 2: **hace falta un control de entrega antes de que venza la segunda cuota**.",
+          "**Cobertura de etiquetado medida** semana a semana desde julio: 15–35 % de los leads orgánicos con alguna etiqueta de calificación; el canal de más volumen (serie de YouTube, 38 leads en agosto) es el que nadie califica (13 %). La regla de lectura que gobierna el reporte: **la cobertura manda sobre los conteos** — una semana con 20 % de cobertura no dice que el canal convierta mal, dice que no se etiquetó.",
+          "**Cortes de evaluación del plan:** 26 de septiembre (30 días) y 27 de octubre (60 días), leídos abriendo la misma página. Metas propuestas: S1 100 %; S2+S3 40 % del monto; S4 <15 % recuperado pero 100 % resuelto (cada uno con destino decidido)."
+        ],
+        "cautelas": [
+          "Nada del plan debería ejecutarse antes de la aprobación registrada de Lorenzo: es criterio de aceptación de la tarea y una atestación humana. Sus dos decisiones: las metas y el margen de descuento para S3 y S4.",
+          "Las etiquetas requieren lo humano: Santiago Ruiz configura ManyChat, los setters etiquetan una semana de prueba (criterio: ≥90 % de conversaciones nuevas con etapa) y aprueban setters + Lorenzo. Hasta entonces, 0 de 6 criterios cumplidos.",
+          "En la tabla del plan hay alumnos sin correo ni teléfono en el CRM: tener fila no es tener canal. Revisar antes de asignar llamadas."
+        ],
+        "enlaces": [
+          {
+            "slug": "plan-reactivacion-feb-mar",
+            "texto": "Plan de reactivación feb–mar"
+          },
+          {
+            "slug": "etapas-semana-dg",
+            "texto": "Orgánico por semana y etapa"
+          },
+          {
+            "slug": "organico",
+            "texto": "Embudo orgánico"
+          }
+        ]
+      },
+      {
+        "n": 9,
+        "id": "vsl",
+        "titulo": "VSL: el video medido de punta a punta, y un error en las métricas de la plataforma",
+        "kicker": "Se conectó el proveedor del video en vivo al embudo y, al verificar los datos, apareció que la retención que muestra la plataforma está mal calculada.",
+        "estado": "Instrumentado · testeo de titulares sin arrancar",
+        "estado_badge": "badge-cau",
+        "resumen": "Por cada video seleccionado se mide en vivo el funnel completo: **impresiones → plays → retención al 25/50/75 % → llegaron al pitch → terminaron → clic al botón**, y ese bloque entra en el cruce del embudo (si el proveedor falla, se declara, no se inventa). Agosto, video principal: 8.207 impresiones → 3.193 plays (38,9 %) → 21,9 % retenidos al 75 % → 23,4 % llegan al pitch → 442 clics al botón; se ve en promedio 205 s de 775.\n\n**El hallazgo técnico.** El proveedor entrega un **histograma de abandono** (cuántos pararon en cada segundo), no una curva de «cuántos siguen viendo». La plataforma lo lee como si fuera lo segundo, así que **las métricas de retención del funnel que ve el equipo están rotas**: usan como base a los que rebotaron en el segundo 0 y llaman «viendo» a los que pararon exactamente ahí. Verificado con dos pruebas independientes contra los datos reales (la suma del histograma reproduce los plays únicos, 3.123 vs 3.127; y el promedio reconstruido reproduce exactamente el tiempo promedio visto que devuelve el proveedor). Es reportable a la plataforma.",
+        "hallazgos": [
+          "**El VSL del embudo directo a WhatsApp retiene la mitad** que el principal (12,3 % vs 21,9 % al 75 %) y llega al pitch a menos de la mitad (11,8 % vs 23,4 %); el 46 % de sus espectadores abandona en el segundo 0. Eso **valida a posteriori la decisión del 19 de agosto de matar ese embudo** y girar a remarketing sobre quienes vieron más del 75 % del video.",
+          "**Titulares.** Los cinco titulares propuestos (bloque 2) son el insumo del primer testeo del VSL, que la reunión del 19 ordenó así: servidor propio para fijar la velocidad en 80 %, después titulares (para subir play y retención), después hooks hablándole a los ángulos ganadores — un testeo por paso.",
+          "Otra confusión detectada en la plataforma: lo que etiqueta como «vistas únicas» son impresiones del reproductor, no reproducciones."
+        ],
+        "cautelas": [
+          "El plan de testeos del VSL está **bloqueado por tracking**: hay que configurar el proveedor para marcar conversiones antes de cualquier testeo, y eso cae sobre Juan Camilo, que concentra 13 pendientes (todo el plan de testeos más el bloque completo de la App Ikigai). Robert tiene el servidor privado, prerrequisito del test de titulares."
+        ],
+        "enlaces": [
+          {
+            "slug": "embudo",
+            "texto": "Embudo · el cruce (bloque VSL)"
+          },
+          {
+            "slug": "angulos",
+            "texto": "Ángulos → titulares"
+          }
+        ]
+      },
+      {
+        "n": 10,
+        "id": "testeos",
+        "titulo": "Framework de testeo del embudo: un cambio por vez, con la línea base congelada",
+        "kicker": "El acuerdo del 19 de agosto («registrar cada testeo con sus métricas iniciales y finales») quedó construido al día siguiente. Está listo y esperando el primer testeo real.",
+        "estado": "Operativo · 0 testeos reales",
+        "estado_badge": "badge-cau",
+        "resumen": "Un testeo se **abre** declarando el proyecto, el paso del embudo (titular · hook del VSL · survey · página · pauta · remarketing) y **una sola variable**; en ese instante el sistema congela el embudo completo como línea base, con la procedencia de cada número. Se **cierra** declarando el resultado (ganó · perdió · inconcluso) y el sistema congela el embudo otra vez y calcula el cambio en la métrica objetivo. Un cierre no se reescribe.\n\nLas dos disciplinas de la reunión están en el diseño, no en la memoria de nadie: **un solo cambio por testeo** (la variable es singular y obligatoria — si hacen falta dos frases, son dos testeos) y **un testeo por paso** (se niega a abrir uno si ya hay otro en curso en el mismo paso; existe una excepción consciente para casos con atribución separada).",
+        "vivo": {
+          "source": "testeos",
+          "args": {
+            "limit": 0
+          },
+          "titulo": "Histórico — ahora mismo",
+          "kpis": [
+            {
+              "label": "Testeos registrados",
+              "agg": "count",
+              "formato": "num",
+              "tono": "base",
+              "nota": "incluye la prueba de instalación, abortada"
+            },
+            {
+              "label": "En curso",
+              "agg": "count",
+              "where": {
+                "campo": "estado",
+                "valor": "en_curso"
+              },
+              "formato": "num",
+              "tono": "brand"
+            }
+          ]
+        },
+        "hallazgos": [
+          "**Qué está automatizado:** congelar la línea base y el cierre desde las fuentes reales (cero digitación), el guardarraíl de un-testeo-por-paso, el cálculo del cambio, y el histórico compartido que ve el rol Ejecutivo.",
+          "**Qué no lo está, por diseño:** el veredicto — lo declara el humano, porque una métrica puede moverse por razones ajenas al cambio y esa lectura es de quien corrió el testeo. Y el arranque del cambio en la plataforma (cambiar el titular, configurar el proveedor del video): eso es operación.",
+          "**El ciclo agéntico.** Los testeos los abren y cierran Juan Camilo y Lorenzo **desde sus copilotos**, conversando; cada testeo queda firmado por quién lo abrió y quién lo cerró. Los benchmarks de salud del embudo (bloque 2) y las métricas de testeo hablan el mismo idioma: el copiloto lee «aterrizaje 24,9 % = mejorable», abre un testeo sobre esa misma métrica, y al cerrarlo el cambio se calcula contra el mismo número que pintó la alerta. **Diagnóstico y experimento son la misma coordenada.** Lo que aún no hace el ciclo solo: proponer el siguiente testeo a partir del resultado del anterior — eso hoy lo conversa el copiloto con el humano.",
+          "Por eso el histórico vive en la base compartida y no en la máquina de nadie: nació local y se graduó el mismo día al descubrir que dos historias paralelas es lo contrario de *el* histórico."
+        ],
+        "cautelas": [
+          "El histórico está vacío: un solo registro, la prueba de instalación (abortada). El framework lleva cuatro días esperando — el estado del frente de optimización, en una línea.",
+          "La velocidad de carga de la página sigue sin fuente automática (se mide a mano) y es justo la métrica del primer cuello."
+        ]
+      }
+    ],
+    "cierre": {
+      "titulo": "Lo que queda en manos de la dirección",
+      "prosa": "De los diez frentes, siete están construidos y publicados; los otros tres están diseñados y esperan una decisión o una acción humana. Este es el orden que sugiere el Cerebro:",
+      "lista": [
+        "**Aprobar el plan de reactivación feb–mar** (metas y margen de descuento para S3/S4) — S2 arranca la semana del 25 de agosto si hay luz verde. (Lorenzo)",
+        "**Decidir la vía de WhatsApp**: rotación de números o un número con agente sobre la API oficial. Antes, verificar los dos supuestos no confirmados. (Lorenzo, Roberto)",
+        "**Destrabar el primer testeo del VSL**: el tracking de conversiones del video y el servidor propio. Juan Camilo no puede cargar solo el plan de testeos y la App Ikigai. (Juan Camilo, Robert)",
+        "**Reportar a la plataforma el error de retención del video** — con la evidencia ya escrita. (Santiago)",
+        "**Enviar la primera carta a Mari** para arrancar la conversación entre sistemas. (Santiago, Mari)",
+        "**Firmar la política de priorización de leads** (bandas A/B/C y qué ve el closer). (Luis David, David Castaño)"
+      ]
+    }
+  },
+  "scope": "role",
+  "role": "ejecutivo",
+  "created_at": "2026-08-24T14:00:00.000Z"
+}

@@ -58,7 +58,7 @@ tok="$(psql_ro -t -A -c "SELECT access_token FROM identities
 [[ -n "$tok" ]] || { echo "Sin token de Meta vigente en identities (provider facebook*) — renovar la identidad." >&2; exit 1; }
 
 # ── 2. anuncios con gasto en la ventana
-mapfile -t ids < <(psql_ro -t -A -c "SELECT d.ad_id FROM ad_insights_daily d
+ids=(); while IFS= read -r l; do [[ -n "$l" ]] && ids+=("$l"); done < <(psql_ro -t -A -c "SELECT d.ad_id FROM ad_insights_daily d
   JOIN project_ad_account_mappings map ON map.ad_account_id = d.ad_account_id
   WHERE map.project_id = '$pid' AND d.date_start BETWEEN '$from' AND '$to'
   GROUP BY d.ad_id HAVING sum(d.spend) >= $min_spend ORDER BY sum(d.spend) DESC")

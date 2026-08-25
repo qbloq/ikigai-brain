@@ -11,11 +11,16 @@ source "$(dirname "$0")/lib.sh"
 usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -7; exit "${1:-0}"; }
 
 SPEC_ID="" SLUG="" DRY=0 JSON=0 ARCHIVAR=0 FORZAR=0
-declare -A IDENT=() FIJAR=()
+# Mapas clave→valor de --identidad/--fijar (bash 3.2: sin arrays asociativos —
+# arrays paralelos + búsqueda lineal; una clave repetida pisa el valor anterior).
+IDENT_K=(); IDENT_V=()
+ident_set() { local i; for i in "${!IDENT_K[@]}"; do [[ "${IDENT_K[$i]}" == "$1" ]] && { IDENT_V[$i]="$2"; return; }; done; IDENT_K+=("$1"); IDENT_V+=("$2"); }
+FIJAR_K=(); FIJAR_V=()
+fijar_set() { local i; for i in "${!FIJAR_K[@]}"; do [[ "${FIJAR_K[$i]}" == "$1" ]] && { FIJAR_V[$i]="$2"; return; }; done; FIJAR_K+=("$1"); FIJAR_V+=("$2"); }
 while [[ $# -gt 0 ]]; do case "$1" in
   --slug) SLUG="$2"; shift 2;;
-  --identidad) k="${2%%=*}"; IDENT[$k]="${2#*=}"; shift 2;;
-  --fijar) k="${2%%=*}"; FIJAR[$k]="${2#*=}"; shift 2;;
+  --identidad) k="${2%%=*}"; ident_set "$k" "${2#*=}"; shift 2;;
+  --fijar) k="${2%%=*}"; fijar_set "$k" "${2#*=}"; shift 2;;
   --archivar) ARCHIVAR=1; shift;;
   --forzar) FORZAR=1; shift;;
   --dry-run) DRY=1; shift;;
@@ -53,8 +58,8 @@ fi
 # --- guarda 2 (M5): las variables de identidad son un set cerrado -----------
 # Un '$closer' mal escrito no explota: resolverIdentidad lo trata como literal
 # y fuerza la cadena "$closer" como filtro. Se detecta AQUÍ, no en producción.
-for k in "${!IDENT[@]}"; do
-  v="${IDENT[$k]}"
+for i in "${!IDENT_K[@]}"; do
+  k="${IDENT_K[$i]}"; v="${IDENT_V[$i]}"
   if [[ "$v" == \$* && "$v" != "\$name" && "$v" != "\$email" && "$v" != "\$user_id" ]]; then
     echo "ERROR: identidad '$k=$v': variable desconocida. Solo existen \$name, \$email, \$user_id." >&2
     echo "       (un literal que empiece por '\$' no es representable — usá otro valor)" >&2
@@ -66,8 +71,8 @@ done
 to_json() { node -e '
   const out = {}; for (const kv of process.argv.slice(1)) { const i = kv.indexOf("=");
     out[kv.slice(0, i)] = kv.slice(i + 1); } console.log(JSON.stringify(out));' "$@"; }
-IDENT_ARGS=(); for k in "${!IDENT[@]}"; do IDENT_ARGS+=("$k=${IDENT[$k]}"); done
-FIJAR_ARGS=(); for k in "${!FIJAR[@]}"; do FIJAR_ARGS+=("$k=${FIJAR[$k]}"); done
+IDENT_ARGS=(); for i in "${!IDENT_K[@]}"; do IDENT_ARGS+=("${IDENT_K[$i]}=${IDENT_V[$i]}"); done
+FIJAR_ARGS=(); for i in "${!FIJAR_K[@]}"; do FIJAR_ARGS+=("${FIJAR_K[$i]}=${FIJAR_V[$i]}"); done
 IDENT_JSON="$([[ ${#IDENT_ARGS[@]} -gt 0 ]] && to_json "${IDENT_ARGS[@]}" || echo "")"
 FIJAR_JSON="$([[ ${#FIJAR_ARGS[@]} -gt 0 ]] && to_json "${FIJAR_ARGS[@]}" || echo "{}")"
 

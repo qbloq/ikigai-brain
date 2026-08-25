@@ -129,6 +129,11 @@ Rules of the road:
   one level down: deleting a **criterion that already has attestations** is
   blocked without `--cascade`, because cascading erases the evidence a human
   gave — never pass it without spelling that out first.
+- **Binding a Doc/archivo desde la conversación** (`--ref-merge`): incluí
+  siempre `title` (el nombre humano) además de `url`/`file_id`. El visor muestra
+  `_resolved.title` → `title` → id crudo; el viz solo cachea `_resolved` cuando
+  se vincula desde su botón, así que un binding sin `title` sale como un id de
+  Drive (pasó con 386e9036, 2026-08-24).
 - **`--dry-run` when unsure.** Deletes and anything the user phrased tentatively
   ("¿y si…?") get a dry-run first; plain field edits can go direct — the script
   prints before/after and nothing else is touched.

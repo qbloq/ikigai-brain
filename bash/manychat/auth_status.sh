@@ -27,7 +27,7 @@ for a in "$@"; do
 done
 
 MC_BASE="${MANYCHAT_BASE:-https://api.manychat.com}"
-mapfile -t vars < <(compgen -v | grep -E '^MANYCHAT_TOKEN' | sort)
+vars=(); while IFS= read -r l; do [[ -n "$l" ]] && vars+=("$l"); done < <(compgen -v | grep -E '^MANYCHAT_TOKEN' | sort)
 if (( ${#vars[@]} == 0 )); then
   echo "Sin tokens: agrega MANYCHAT_TOKEN_A=… (y _B, …) a $REPO_ROOT/.env — nunca por chat ni argv." >&2
   exit 1

@@ -44,6 +44,10 @@ turns a member reference into a `team_members.id`, erroring on ambiguous names.
 | `run_io_query.sh <io_id\|prefix> [--limit N] [--json]` | Execute the SQL persisted in one IO row's binding (`reference.query`) and print the result — the concrete data of a `sql_query` artifact (its sql resolver). Read-only + `statement_timeout=10s` + row cap (default 500). Only runs SQL with provenance (already persisted in the DB row); accepts nothing inline. Feeds the viz `io_query` source. |
 | `create_task.sh <contract.json\|-> [--dry-run]` **[WRITE]** | Insert a full task "work contract" (task + inputs + outputs + acceptance criteria) from JSON. Pre-validates project/assignees/io_types; one transaction. Tags `archetype` (→SOP). **Template instantiation:** pass `archetype`+`slots` with no inputs/outputs to pull the archetype's template contract and substitute `{slots}`. **Provenance:** `source_meeting` (id/prefix→FK), `source_url`/`source_external_id` (Notion), `source_type` (auto-inferred) populate the tasks provenance columns. See `-h`. |
 | `apply_contract.sh <id\|prefix> <contract.json\|-> [--dry-run] [--json]` **[WRITE]** | Aplicar un contrato IO (inputs + outputs + criterios + tag de arquetipo) a una tarea que **ya existe y no tiene ninguno** — el gemelo de `create_task.sh` para las tareas nacidas sin contrato (hoy: las 53 que entraron desde la plataforma PM, `source_type='other'` + `source_external_id`). Misma forma de contrato que `create_task.sh` sin la cabecera; `archetype`+`slots` sin inputs/outputs instancia la plantilla del arquetipo, y un `{slot}` sin valor queda **literal** (nombra lo que falta; el «pendiente» de `materialize_io.sh` lo pierde — brief de slots §6.2). `{proyecto}` se llena solo con el proyecto de la tarea. Se niega si la tarea ya tiene IO (rellena el hueco, nunca reescribe: eso es `materialize_io.sh --replace`). Una txn, before/after, deja comentario de rastro. Nació 2026-08-21 para el backfill de las tareas PM (`docs/io-backfill-pm-2026-08-21.md`). |
+| `relacionadas.sh --titulo T [--project P] [--archetype A] [--assignee N] [--ids a,b] [--limit N] [--json]` | Tareas del cerebro relacionadas con una propuesta (o cualquier título), cada fila con `priority`, `motivo` y `score` — señales **sumadas** (puede pasar de 100): citada en `--ids` (100) · mismo arquetipo+proyecto (+40) · mismo dueño (+20) · palabras del título (Jaccard ×40). Abiertas antes que cerradas. Sin `--project` ni `--ids` el universo son las tareas ABIERTAS de todos los proyectos. Read-only. Fuente viz `tareas_relacionadas` (bloque «Relacionadas» de la UI Revisión de propuestas). |
+| `sin_arquetipo.sh [--project P] [--open] [--id <prefijo8>] [--json]` | Tareas con `archetype_id IS NULL` + arquetipo **propuesto** (top-3): heurística léxica contra el catálogo (verbo/nombre/SOP) sumada al voto de las tareas vecinas ya etiquetadas (Jaccard sobre el título). `score` 0-100; bajo 25 declara `sugerido=null` antes que inventar. `--id` acota la salida a UNA tarea sin tocar el universo de vecinos (mismo score que la corrida completa). Read-only. Fuente viz `tareas_sin_arquetipo`. |
+| `crear_de_propuestas.sh [--lote M] [--n LIST] [--dry-run] [--json]` **[WRITE]** | Gemelo de `merge_from_cruce.sh` para las propuestas de reuniones: por cada fila §A marcada `entra` en la sqlite local `propuestas_reuniones` (sin `creada_id`), corre `create_task.sh` con el contrato guardado y sella `creada_id`/`creada_en`. Las `se_queda` no se tocan; las §B quedan listadas como pendientes de conversación (nunca se crean). |
+| `aplicar_arquetipos.sh [--task ID\|prefijo8] [--dry-run] [--json]` **[WRITE]** | Gemelo de `crear_de_propuestas.sh` para las marcas de arquetipo: por cada fila de `arquetipos` (sqlite local) con decisión ≠ `ninguno` y sin `aplicado_en`, corre `set_archetype.sh <task> <A> --method human` y sella `aplicado_en`. ⚠️ Mueve el puntero, no reescribe el contrato IO. |
 | `set_archetype.sh <id> <archetype-id> [--method m] [--confidence X]` / `<id> --clear` **[WRITE]** | (Re)tag a task's activity archetype (the human/correction path; `create_task.sh` tags at birth). Validates the archetype; SOP/macro follow via the join. `--dry-run` to preview. ⚠️ **Re-tagging moves the pointer, it does NOT rewrite the task's IO contract** — the inputs/outputs/criteria stay exactly as the OLD template left them, so a re-tagged task keeps criteria describing a different activity until its contract is re-instantiated. |
 | `link_external.sh <id> --external <id-ext> [--url URL] [--sistema N] [--nota "…"] [--dry-run] [--json]` **[WRITE]** | **Vincular sin fusionar** — el tercer desenlace que le faltaba al cruce. Escribe `source_external_id` (+`source_url`) sobre una tarea que YA existe: dos tareas que describen el mismo trabajo, cada una nacida en su sistema, donde no hay nada que fusionar porque la del cerebro ya está completa. Hasta 2026-08-20 eso solo cabía en prosa (`cruce.resolucion` o un comentario), y la prosa no la lee ningún chequeo: **13 tareas abiertas en PM figuraban como «sin representación»** estando todas cubiertas. ⚠️ **No toca `source_type`**: eso dice dónde NACIÓ la tarea, no con qué sistema sincroniza — una nacida de un acta y emparejada con PM sigue siendo `meeting`. Se niega si la tarea ya tiene otro id externo (una columna no es una lista: el caso muchos-a-uno pide tabla de enlaces) o si el id ya está en otra tarea **viva** (una cancelada lo conserva como procedencia y no bloquea). Re-vincular al mismo valor es idempotente. |
 | `cancel_task.sh <id> [--into <id>] [--reason "…"]` **[WRITE]** | Cancel a task (`status='cancelled'`), optionally recording a merge into another (`--into`) with an auditable comment trail on both. Nothing is deleted. `--dry-run` to preview. Use for dedup/merges (e.g. cross-project duplicates the per-project dedup misses). |
@@ -93,6 +97,7 @@ and a `meeting_reports` row (structured jsonb, in Spanish).
 | `meeting_show.sh <id\|prefix>` | Full detail: header + participants + report (summary, objectives, decisions, action items, blockers, next steps). `--json` dumps the raw report jsonb. |
 | `meeting_transcript.sh <id\|prefix>` | Print the raw transcript text. |
 | `meeting_action_items.sh [--since D] [--priority P] [--assignee NAME] [--limit N]` | Flatten action items across team-meeting reports (coordination view). |
+| `ingest_meeting.sh <drive-file-id\|url> --project N [--space ID] [--name N] [--description T] [--status S] [--dry-run] [--json]` **[WRITE pg]** | **Dar de alta una reunión de equipo desde su grabación en el Drive** («Meet Recordings»). Existe porque las reuniones que no pasan por el calendario de Marketico (ad-hoc, agendadas desde una cuenta personal) quedan solo como mp4: sin fila, sin transcript, sin acta, sin tareas. Crea la fila `meetings` (`team`, nombre = el del archivo, `actual_end` = createdTime del mp4 y `actual_start` = end − duración — la convención verificada en las filas que ingiere Marketico —, `drive_file_id`). Idempotente por `drive_file_id`. **No genera el transcript**: eso es `bash/calls/procesar_video.sh <id> --tipo team` (STT desde el video; el «plain» que Meet deja al lado del mp4 es el CHAT, no el transcript), y después el ciclo normal: skill `transcript-to-report` → `meeting-to-tasks`. Nació 2026-08-23 con la reunión de servicio del 20-ago (`2ea7176d`). |
 
 ### Meetings data model
 - **meetings** — `meeting_type` is `team` (166) or `call` (1731); `status`: scheduled/completed/ended/cancelled/processing/… `scheduled_start_time`/`actual_start_time`, `project_id`→projects, `space_id`→spaces. `meeting_type` matters: `team` = coordination, `call` = sales calls.
@@ -130,7 +135,7 @@ Resolves ~83% of reported calls; the rest is the S8.2 data-hygiene queue.
 | `generar_pendientes.sh [--limit N] [--desde N] [--model M] [--timeout S] [--dry-run]` **[WRITE pg + local]** | **El runner**: por cada llamada de la cola corre el skill `generar-reporte-llamada` en una sesión headless (`claude -p`) — la generación son N subagentes, no un script. Cuenta intentos en `closers_ops.reportes_intentos` y para a los 2 fallos (sin eso, un transcript roto se reintenta para siempre). La verdad de si funcionó no es el exit code: es si quedó la fila en `call_reports`. |
 | `reportes_a_pg.sh [--variante V] [--sin-escaparate] [--dry-run]` **[WRITE pg]** | Promueve a Postgres los reportes que el pipeline ya tenía en la sqlite local (los 63 de la etapa prototipo). Idempotente por meeting: lo ya promovido se salta. |
 | `drive_snapshot.sh [--folder N] [--db N] [--dry-run] [--json]` **[WRITE local]** | Snapshot de la carpeta «Closer Calls» del Drive (vía el ÍNDICE de bash/google/, no el listado live que topa en 100 y sin fechas) cruzada contra los call meetings → sqlite `closer_calls.archivos` (tamaño, creado, meeting+status, contacto CRM, resultado, callStatus del reporte vigente) + log `corridas`. Cascada de match declarada por fila (`drive_file_id`→`meet_code`→nombre→prefijo+fecha). Recalcular = volver a correr; reconstruye la tabla entera (las vistas `no_completadas` —ciclo abierto, sin vacías <10 MB— y `confirmadas` se derivan solas). Si el índice está viejo, antes `drive_sync.sh --wait`. |
-| `procesar_video.sh <meeting-id> [--file-id ID] [--min-chars N] [--force] [--keep] [--dry-run]` **[WRITE pg]** | Recuperar el transcript de una llamada desde su VIDEO en Drive (la cola de `no_completadas`): descarga (backend mkt) → audio (`bash/audio/`) → STT (AssemblyAI) → upsert `meeting_transcripts` + `meetings.status='completed'` en una txn → borra la descarga. Dos guardas simétricas: no pisa un transcript ya usable (≥2000 chars) sin `--force`, y no persiste NADA (ni el status) si el STT devuelve <2000 — un transcript basura con status completed es justo el hueco que repara. Tras esto, la llamada cae sola en la cola del pipeline de reportes. |
+| `procesar_video.sh <meeting-id> [--file-id ID] [--tipo call\|team] [--min-chars N] [--force] [--keep] [--dry-run]` **[WRITE pg]** | Recuperar el transcript de una llamada desde su VIDEO en Drive (la cola de `no_completadas`): descarga (backend mkt) → audio (`bash/audio/`) → STT (AssemblyAI) → upsert `meeting_transcripts` + `meetings.status='completed'` en una txn → borra la descarga. Dos guardas simétricas: no pisa un transcript ya usable (≥2000 chars) sin `--force`, y no persiste NADA (ni el status) si el STT devuelve <2000 — un transcript basura con status completed es justo el hueco que repara. Tras esto, la llamada cae sola en la cola del pipeline de reportes. `--tipo team` (2026-08-23) hace lo mismo para una reunión de equipo dada de alta con `bash/meetings/ingest_meeting.sh`. |
 
 ⚠️ **Three normalizations that `lead_profile.sh` declares and the rest of the
 calls domain does not** — they are not cosmetic, each moves the numbers:
@@ -563,10 +568,12 @@ corrida, a quién y cuándo lo decide el humano. `enviar_onboarding.sh --para
 <nombre> [--gancho "…"] [--grupo equipo|closer] [--dry-run] [--json]`
 **[WRITE→WhatsApp]** agrupa por rol (team_members/team_roles): **closer** ya
 tiene ventana abierta con Iki a diario → texto de sesión +
-`--fallback-plantilla onboarding_closer`; **equipo** (primer contacto real,
-nunca les llegó nada de este número) → siempre plantilla `onboarding_equipo`
+`--fallback-plantilla bienvenida_iki_closer`; **equipo** (primer contacto real,
+nunca les llegó nada de este número) → siempre plantilla `bienvenida_iki_equipo`
 (un texto de sesión aquí lo acepta Meta y falla después por webhook, no al
-instante — ver `docs/closers-whatsapp.md`). El gancho (`{{2}}`) es genérico
+instante — ver `docs/closers-whatsapp.md`). Ambas plantillas se presentan como
+**Iki, la asistente IA de Ikigai** (no "el Cerebro" — ese es el nombre interno
+del sistema, cara al equipo es Iki). El gancho (`{{2}}`) es genérico
 por defecto, `--gancho` lo personaliza (p.ej. Juan Camilo: sus dos assets ya
 vivos, dashboard del embudo + testeos VSL/pauta). Idempotente vía
 `bash/closers/enviar.sh` (`escenario=onboarding-cerebro`, `ref=<nombre>`).
@@ -600,7 +607,7 @@ linked views that report `data_sources: []`) in [bash/notion/README.md](bash/not
 
 ## Google domain — Drive vía el API mkt ([bash/google/](bash/google/))
 
-**Read-only** access to the org's Drive through the **Meetico backend**
+Access to the org's Drive through the **Meetico backend** (read-only salvo las tres escrituras declaradas: carpeta, Doc y mover)
 (contract: `apis/mkt/drive.openapi.json`) — the
 backend owns the Google identity (token, refresh, index); these scripts never
 see Google credentials and never touch the DB. Mode picked from `.env`:
@@ -615,6 +622,9 @@ a clear «el backend aún no expone …» message. See [bash/google/README.md](b
 | `auth_status.sh` | Mode, base and a live probe against the backend. |
 | `drive_ls.sh [--folder ID\|url\|name] [--q FRAG] [--type doc\|sheet\|slide\|folder\|pdf] [--limit N]` | List a folder live (`/drive/contents`) or search the whole drive (index). |
 | `drive_recent.sh [--days N] [--from D] [--to D] [--modified] [--docs] [--type T] [--folder FRAG] [--owner FRAG] [--exclude FRAG] [--with-folders] [--by day\|type\|owner\|folder] [--limit N]` | What **entered or changed** lately, newest first — the index has no other way to be asked "what's new". Always prints the index's freshness to stderr and shouts past 48h, because the index is a hand-refreshed cache and a stale one answers "what came in this week?" with silence. Needs the 2026-08-04 backend change (date filters + `sort` + `/drive/index/status`); refuses to run without it. |
+| `drive_mkdir.sh <parent id\|url\|name> --name N [--json]` **[WRITE→Drive]** | Crear una carpeta en el Drive de la org con la identidad de la org (`POST /drive/folders`, desde 2026-08-22). **Idempotente por nombre** dentro del padre: la que ya existe se devuelve (`created:false`), nunca se duplica. Convención para los Docs de contratos de tarea: `1. David Guerrero/Hermetico/<id8> · <título corto>/` — una carpeta por tarea, el id corto en el nombre es el enlace de vuelta al contrato. |
+| `doc_create.sh <parent> --title T --from f.md\|- [--html] [--share email[:reader\|commenter\|writer]]… [--notify] [--dry-run] [--json]` **[WRITE→Drive]** | Crear un **Google Doc** desde un Markdown (pandoc → HTML → importación nativa de Google; conserva títulos, tablas, listas) u HTML (`--html`), en una carpeta, opcionalmente compartido al crear (`POST /drive/files`). No sobreescribe: crear dos veces = dos Docs (re-publicar contenido pide `PUT /drive/files/{id}/content`, pendiente). Primer uso: los «Requerimientos del reporte» de 332c414a. |
+| `drive_mv.sh <file id\|url> --to <folder id\|url\|name> [--json]` **[WRITE→Drive]** | Mover un archivo o carpeta a otra carpeta del Drive de la org (`PATCH /drive/files/{id}` con `parentId`, desde 2026-08-22). Reemplaza **todos** los padres por el destino; el id y la URL no cambian, así que los enlaces de los contratos sobreviven al orden. Si ya está ahí, no toca nada. Con `drive_mkdir.sh` y `doc_create.sh` cierra el trío carpeta · Doc · mover; lo único que falta es reemplazar contenido. |
 | `drive_sync.sh [--all-drives] [--trashed] [--wait] [--timeout N] [--status]` **[WRITE]** | Refresh the index (`POST /drive/index` → 202, poll `/drive/index/status`; 409 if one is already running). The **only** write in `bash/google/` — and it rewrites our index, not the Drive. Since 2026-08-09 a PM2 `drive-index` job also runs it daily at 10:00 UTC (05:00 Bogotá), so this is for "I need it fresh *now*". |
 | `drive_file.sh <id\|url>` | Metadata of one file. |
 | `doc_read.sh <id\|url> [--out F] [--txt]` | A Google Doc as **Markdown** (`?format=markdown`). `--out` writes a file. |
@@ -651,6 +661,18 @@ punteada con la **misma semántica que `testeo_abrir.sh --metrica`**
 `escala` para tasas que el script no emite calculadas. Son referencias (hoy:
 high-ticket infoproductos, alineación DG 2026-08-20), no metas de la org —
 calibrar con la serie propia re-publicando el spec.
+
+`etapas_semana.sh --project NAME [--desde D] [--hasta D] [--incluir-pauta]` — **el
+reporte semanal por etapa del embudo orgánico** (entregable de 3f8f9914): una
+fila por semana de entrada con los leads orgánicos, cuántos traen usuario de
+Instagram, la **cobertura** de calificación y los conteos por etapa (calificado
+· no calificado · agendó · no conectó · venta) leídos de los tags del contacto
+en GHL — misma definición de orgánico y de etapa que `organico.sh`. Se mide en
+el CRM y no en ManyChat porque su API no cuenta por etiqueta; la regla es que la
+etiqueta se pone en ManyChat **con el mismo nombre** que en el CRM, viaja al
+contacto y aquí se cuenta (`docs/etapas-etiquetas-embudo-organico.md`, el Doc
+del input). Línea base jul–ago 2026: cobertura 15–35 %, IG 0–13 %. Fuente viz
+`etapas_semana` → UI publicada `etapas-semana-dg` (tabla).
 
 `organico.sh --project NAME [--from D] [--to D] [--meses N]` — **EL EMBUDO
 ORGÁNICO** en un objeto (hueco #3 del contraste Kaizen 2026-08-20): los leads
@@ -725,6 +747,7 @@ mirror `bash/metrics/dashboard.sh` (the verified cash-collected KPI model).
 | `cobranza.sh [--overdue] [--upcoming N] [--project N] [--customer FRAG] [--summary] [--all] [--limit N]` | Uncollected installments (Scheduled/Partial/Overdue) with days overdue + aging bucket, computed from `due_date` (the `Overdue` status flag is NOT maintained). `--summary` = aging buckets per project (counts + amounts). |
 | `comisiones.sh [--status S] [--person FRAG] [--project N] [--from D] [--to D] [--by status\|person\|project\|month] [--limit N]` | Commission payouts with person resolved (user→persons, contractor fallback) and review state — the approval queue (pending→approved→paid). Row list puts pending first; `--by` aggregates with pending counts/amounts. |
 | `cashflow.sh [--by month\|type\|month-type] [--project N] [--from D] [--to D]` | Economics ledger: entradas (revenue) vs opex/comisiones/reparto and neto, by month (default), type, or month×type. |
+| `cohorte_mora.sh --project N [--desde D] [--hasta D] [--contexto]` | **La cohorte en mora, por estudiante**: planes iniciados en la ventana (cohorte = `start_date`, default feb–mar 2026) con al menos una cuota vencida sin pagar — pendiente, cobrado, en qué cuota se frenó, días de mora **desde `due_date`** (el status jamás escribe Overdue), contacto del CRM (correo/teléfono: tener fila no es tener canal), closer, y el **segmento de reactivación por reglas declaradas** (S1 ≤30 d · S2 ≤90 d · S3 pagó ≥50 % · S4 el resto — verificadas contra el plan de 9f249dbe: 2/7/12/14). `--contexto` = una fila por cohorte mensual (alumnos, en mora, %) para leer la cohorte en su contexto: toda cohorte madura vive en 43–62 % de impago. Entregable de la tarea 9f249dbe. Fuente viz `cohorte_mora` → page `plan-reactivacion` (UI publicada `plan-reactivacion-feb-mar`). |
 | `ventas_diarias.sh --project N [--from D] [--to D]` | **La serie diaria**: una fila por día (termina HOY, no inventa días) con caja (nuevas = cuota 1 / cuotas n≥2, por `payment_date` día Bogotá), pauta **solo USD** del día, `roas_dia` = cash/pauta del MISMO día (ritmo, no atribución), leads y ganadas CRM, planes iniciados + contrato. Default mes en curso. Nació del hueco #1 del contraste con el dashboard comercial (2026-08-21): el Cerebro solo tenía series mensuales. Feeds la fuente viz `ventas_diarias` → page `ventas-diarias` (UI ejecutivo `ventas-diarias`: KPIs mejor día / promedio / por día de la semana + cash vs pauta diario). |
 
 Data caveats: ~46 unpaid installments hang off plans with NULL `project_id`
@@ -815,6 +838,21 @@ WRITE scripts, one whitelisted dir, scripts take db *names*, never paths.
 | `db_exec.sh <db> [SQL\|-] [--create] [--dry-run]` **[WRITE]** | DDL/DML in ONE transaction — how a local db is created, filled and evolved, and the hook for external syncs (pipe INSERTs in). Local only; cannot touch Postgres. |
 | `db_import.sh <db> <file.csv> [--table T] [--replace] [--create] [--dry-run]` **[WRITE]** | CSV → table: new table from the header row, append to an existing one, `--replace` drops it first. One txn. |
 | `cruce_mark.sh <n> [--merge 0\|1] [--resuelta 0\|1] [--resolucion T]` **[WRITE]** | Curation marks on ONE row of `pm_platform.cruce` (the PM↔cerebro reconciliation). The only write behind the viz `cruce` UI's Merge button; guardrail: merge only on `igual`+`alta` unresolved rows. The marked set is what `bash/tasks/merge_from_cruce.sh` executes. |
+| `propuestas_backups.sh [--desde D] [--json]` | Read-only. Recorre los `.md` de `backups/meeting-tasks/` desde `--desde` (default 2026-08-21) y marca cuáles tienen gemelo `.json`, más la marca `cargado` (ya tiene lote en la sqlite). Fuente viz `propuestas_backups` (barra superior de la UI Revisión de propuestas). |
+| `propuesta_cargar.sh <meeting-id\|prefijo> [--dry-run] [--json]` **[WRITE]** | Cargar un backup: lee el gemelo `.json`, valida cada contrato §A con `create_task.sh --dry-run`, inserta lote+filas en una txn. Se niega si el lote ya existe — un backup se carga una sola vez. |
+| `propuestas.sh [--lote M] [--seccion A\|B] [--decision D] [--json]` | Read-only. Las propuestas cargadas como filas (todas las columnas). Fuente viz `propuestas`. |
+| `propuesta_mark.sh <n> --decision entra\|se_queda\|ninguna [--nota "…"] [--json]` **[WRITE]** | La decisión sobre una propuesta. Guardrail: se niega sobre filas ya creadas (`creada_id`) — se congelan. |
+| `arquetipo_mark.sh <task-id> --arquetipo A_.__\|ninguno [--nota "…"] [--json]` **[WRITE]** | La decisión de arquetipo de la vista «Sin arquetipo» (upsert, valida el id contra el catálogo). Guardrail: se niega si ya tiene `aplicado_en`. |
+| `arquetipo_marcas.sh [--json]` | Read-only. Las marcas de arquetipo tomadas, con su `aplicado_en` si `aplicar_arquetipos.sh` ya las llevó a Postgres. Fuente viz `arquetipo_marcas`. |
+
+`propuestas_reuniones` — las dos colas de curaduría de la UI de rol technology
+«Revisión de propuestas» (`viz/specs/roles/technology/revision-propuestas.json`,
+componente `revision-propuestas`): la UI marca (`propuesta_mark.sh`/
+`arquetipo_mark.sh`), `crear_de_propuestas.sh`/`aplicar_arquetipos.sh` ejecutan
+en Postgres desde la conversación — nunca desde el navegador. Un backup se
+carga una sola vez (`propuesta_cargar.sh`); el gemelo JSON que carga lo escribe
+`meeting-to-tasks` (skill). `backups/` está en `.gitignore`, así que los
+gemelos `.json` viven junto a los `.md` sin entrar a git.
 
 The viz `localdb` page (seeded as «Bases locales») is the explorer: left,
 every db with its tables + counts; right, a ≤200-row preview. The selection
@@ -902,7 +940,15 @@ npm run viz:restart         # REQUIRED after editing viz/ (Node caches modules)
   pages (one per `ui.component`); a saved spec can also be v2 pattern-addressed.
   Components: `table`, `dashboard`, `chart` (bar/donut), `sop-tree`, `localdb`,
   `notion-tasks`, `tasks`, `meetings`, `task-editor` (the IO editor — the viz's
-  only write path).
+  only write path), `informe` (un informe narrativo publicable por secciones —
+  todo el contenido es copy curado en `params` {portada, secciones[], cierre} y
+  cada sección puede llevar números vivos `vivo:{source,args,kpis[]}` sobre una
+  fuente whitelisted; nació 2026-08-24 con el informe de la semana inaugural del
+  rol Ejecutivo, spec `roles/ejecutivo/informe-semana-inaugural.json`),
+  `revision-propuestas` (rol technology: dos colas de curaduría — propuestas de
+  tareas de reuniones y tareas sin arquetipo — sobre las fuentes
+  `propuestas_backups`, `propuestas`, `arquetipo_marcas`, `tareas_relacionadas`,
+  `tareas_sin_arquetipo`; ver dominios Tasks/Localdb arriba).
 - **viz is the VIEWER; the editor is the conversation with the brain.** The IO
   editor's write path predates that rule and stays, but nothing new gets one:
   when a view needs to become editable, the write goes into a `bash/` script and
