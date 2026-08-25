@@ -29,7 +29,10 @@ done
 
 COND="slug=$(sql_lit "$SLUG")"
 if [[ -n "$DESDE" ]]; then COND+=" AND ts >= $(sql_lit "$DESDE")"; else COND+=" AND ts >= datetime('now','-48 hours')"; fi
-[[ -n "$UFRAG" ]] && COND+=" AND lower(coalesce(email,'')) LIKE $(sql_lit "%${UFRAG,,}%")"
+if [[ -n "$UFRAG" ]]; then
+  ufrag_lc="$(printf '%s' "$UFRAG" | tr '[:upper:]' '[:lower:]')"
+  COND+=" AND lower(coalesce(email,'')) LIKE $(sql_lit "%${ufrag_lc}%")"
+fi
 
 ROWS="$(printf 'SELECT ts, email, ruta FROM visitas WHERE %s ORDER BY ts DESC LIMIT %s;' "$COND" "$LIMIT" | remote_sql -json | tr -d '\n')"
 [[ -z "$ROWS" ]] && ROWS='[]'

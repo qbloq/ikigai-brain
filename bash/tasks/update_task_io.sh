@@ -26,7 +26,8 @@ set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 
 io="" task="" add="" del="" cascade="" dry=""
-declare -A set_provided=()
+provided=""   # banderas separadas por espacio (bash 3.2: sin arrays asociativos)
+has() { [[ " $provided " == *" $1 "* ]]; }
 title="" iotype="" artifact="" required="" refmerge=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -35,12 +36,12 @@ while [[ $# -gt 0 ]]; do
     --add)      add="$2"; shift 2 ;;
     --delete)   del=1; shift ;;
     --cascade)  cascade=1; shift ;;
-    --title)    title="$2"; set_provided[title]=1; shift 2 ;;
-    --io-type)  iotype="$2"; set_provided[iotype]=1; shift 2 ;;
-    --artifact) artifact="$2"; set_provided[artifact]=1; shift 2 ;;
-    --required) required="$2"; set_provided[required]=1; shift 2 ;;
-    --ref-clear) set_provided[refclear]=1; shift ;;
-    --ref-merge) refmerge="$2"; set_provided[refmerge]=1; shift 2 ;;
+    --title)    title="$2"; provided="$provided title"; shift 2 ;;
+    --io-type)  iotype="$2"; provided="$provided iotype"; shift 2 ;;
+    --artifact) artifact="$2"; provided="$provided artifact"; shift 2 ;;
+    --required) required="$2"; provided="$provided required"; shift 2 ;;
+    --ref-clear) provided="$provided refclear"; shift ;;
+    --ref-merge) refmerge="$2"; provided="$provided refmerge"; shift 2 ;;
     --dry-run)  dry=1; shift ;;
     --json)     FORMAT=json; shift ;;
     -h|--help)  sed -n '2,33p' "$0"; exit 0 ;;
@@ -135,15 +136,15 @@ SQL
 fi
 
 # ── UPDATE ───────────────────────────────────────────────────────────────────
-[[ ${#set_provided[@]} -gt 0 ]] || fail "nothing to update; pass --title/--io-type/--artifact/--required"
+[[ -n "$provided" ]] || fail "nothing to update; pass --title/--io-type/--artifact/--required"
 
 # Build SET clause + psql vars. Names/columns are controlled; values go via -v.
 sets=(); declare -a vargs=()
-if [[ -n "${set_provided[title]:-}" ]]; then
+if has title; then
   [[ -n "$title" ]] || fail "title cannot be empty"
   sets+=("title = :'v_title'"); vargs+=(-v "v_title=$title")
 fi
-if [[ -n "${set_provided[iotype]:-}" ]]; then
+if has iotype; then
   if [[ -z "$iotype" ]]; then sets+=("io_type_id = NULL")
   else
     iotid="$(resolve_type io_types "$iotype")"
@@ -151,7 +152,7 @@ if [[ -n "${set_provided[iotype]:-}" ]]; then
     sets+=("io_type_id = :'v_iot'"); vargs+=(-v "v_iot=$iotid")
   fi
 fi
-if [[ -n "${set_provided[artifact]:-}" ]]; then
+if has artifact; then
   if [[ -z "$artifact" ]]; then sets+=("artifact_type_id = NULL")
   else
     atid="$(resolve_type artifact_types "$artifact")"
@@ -159,17 +160,17 @@ if [[ -n "${set_provided[artifact]:-}" ]]; then
     sets+=("artifact_type_id = :'v_at'"); vargs+=(-v "v_at=$atid")
   fi
 fi
-if [[ -n "${set_provided[required]:-}" ]]; then
+if has required; then
   case "$required" in
     true|false) sets+=("is_required = $required") ;;
     *) fail "--required must be true or false" ;;
   esac
 fi
-if [[ -n "${set_provided[refclear]:-}" ]]; then
+if has refclear; then
   # Clear the binding locator (the reference jsonb), column depends on kind.
   [[ "$kind" == "output" ]] && sets+=("deliverable_reference = '{}'::jsonb") || sets+=("artifact_reference = '{}'::jsonb")
 fi
-if [[ -n "${set_provided[refmerge]:-}" ]]; then
+if has refmerge; then
   # Shallow-merge a JSON object into the reference jsonb (e.g. a `_resolved`
   # cache of the resolved title/url), preserving the parser-written locator.
   node -e 'const o=JSON.parse(process.argv[1]);if(!o||typeof o!=="object"||Array.isArray(o))process.exit(1)' "$refmerge" 2>/dev/null || fail "--ref-merge must be a JSON object"
@@ -185,7 +186,7 @@ detail="SELECT i.id, i.title, it.display_name AS io_type, at.display_name AS art
   LEFT JOIN artifact_types at ON at.id=i.artifact_type_id
   WHERE i.id=:'io'"
 
-rw "${vargs[@]}" -v io="$io" <<SQL
+rw ${vargs[@]+"${vargs[@]}"} -v io="$io" <<SQL
 BEGIN;
 \echo '--- before ---'
 $detail;

@@ -17,11 +17,14 @@ source "$REPO_ROOT/bash/lib/common.sh"   # psql_ro para resolver email → users
 usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//' | head -12; exit "${1:-0}"; }
 
 SLUG="" ROL="" EMAIL="" REVOCAR=0 LISTAR=0 VISITAS=0 SIN_IDENT=0 DRY=0 JSON=0
-declare -A IDENT=()
+# Mapa clave→valor de --identidad (bash 3.2: sin arrays asociativos — arrays
+# paralelos + búsqueda lineal; una clave repetida pisa el valor anterior).
+IDENT_K=(); IDENT_V=()
+ident_set() { local i; for i in "${!IDENT_K[@]}"; do [[ "${IDENT_K[$i]}" == "$1" ]] && { IDENT_V[$i]="$2"; return; }; done; IDENT_K+=("$1"); IDENT_V+=("$2"); }
 while [[ $# -gt 0 ]]; do case "$1" in
   --rol) ROL="$2"; shift 2;;
   --user) EMAIL="$2"; shift 2;;
-  --identidad) k="${2%%=*}"; IDENT[$k]="${2#*=}"; shift 2;;
+  --identidad) k="${2%%=*}"; ident_set "$k" "${2#*=}"; shift 2;;
   --sin-identidad) SIN_IDENT=1; shift;;
   --revocar) REVOCAR=1; shift;;
   --listar) LISTAR=1; shift;;
@@ -67,9 +70,9 @@ if [[ $REVOCAR -eq 1 ]]; then
   SQL="UPDATE permisos SET revocado_at=datetime('now') WHERE slug=$(sql_lit "$SLUG") AND $SUJETO_SQL AND revocado_at IS NULL;"
 else
   [[ $SIN_IDENT -eq 1 ]] && { IDENT_MODE="vacio"; IDENT_JSON_TXT="{}"; }
-  if [[ ${#IDENT[@]} -gt 0 ]]; then
+  if [[ ${#IDENT_K[@]} -gt 0 ]]; then
     IDENT_MODE="explicito"
-    PARES=(); for k in "${!IDENT[@]}"; do PARES+=("$k=${IDENT[$k]}"); done
+    PARES=(); for i in "${!IDENT_K[@]}"; do PARES+=("${IDENT_K[$i]}=${IDENT_V[$i]}"); done
     IDENT_JSON_TXT="$(node -e '
       const out = {}; for (const kv of process.argv.slice(1)) { const i = kv.indexOf("=");
         out[kv.slice(0, i)] = kv.slice(i + 1); } console.log(JSON.stringify(out));' "${PARES[@]}")"

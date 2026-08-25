@@ -68,6 +68,8 @@ case "$by" in ''|day|dia|día|type|tipo|owner|folder|carpeta) ;;
   *) echo "drive_recent: --by desconocido: '$by' (day|type|owner|folder)" >&2; exit 1 ;;
 esac
 
+type_lc="$(printf '%s' "$type" | tr '[:upper:]' '[:lower:]')"
+
 field="created"; [[ "$modified" == 1 ]] && field="modified"
 
 # --- Ventana, en la zona de la org (el backend compara timestamptz) ---------
@@ -134,7 +136,7 @@ tmpf="$(mktemp)"; trap 'rm -f "$tmpf"' EXIT
 # Solo las etiquetas exactas se filtran en el servidor; los atajos por familia
 # (video/image/audio) no son etiquetas y se resuelven local, sobre mime_type.
 label=""
-case "${type,,}" in
+case "$type_lc" in
   doc|docs)     label="Google Doc" ;;
   sheet|sheets) label="Google Sheet" ;;
   slide|slides) label="Google Slides" ;;
@@ -146,7 +148,7 @@ case "${type,,}" in
 esac
 
 folder_flag="&isFolder=false"
-{ [[ "$with_folders" == 1 ]] || [[ "${type,,}" == "folder" ]]; } && folder_flag=""
+{ [[ "$with_folders" == 1 ]] || [[ "$type_lc" == "folder" ]]; } && folder_flag=""
 
 q="${field}After=$(urlenc "$after")&${field}Before=$(urlenc "$before")"
 q="$q&sort=${field}_time:desc&limit=$PAGE${folder_flag}${label:+&type=$(urlenc "$label")}"
@@ -169,7 +171,7 @@ done
 (( truncated )) && echo "⚠  ventana recortada a $((MAX_PAGES * PAGE)) items — acótala con --from/--to o --type." >&2
 
 # --- Filtrar, agregar y renderizar ------------------------------------------
-python3 - "$FORMAT" "$tmpf" "$by" "$limit" "$docs" "${type,,}" "$folder" "$owner" \
+python3 - "$FORMAT" "$tmpf" "$by" "$limit" "$docs" "$type_lc" "$folder" "$owner" \
          "$exclude" "$with_folders" "${field}_time" "${BRAIN_TZ:-America/Bogota}" \
          "$excl_folders" <<'PY'
 import json, sys

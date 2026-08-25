@@ -40,12 +40,16 @@ fi
 # campo se extrae con `jq -r`/`jq -c` dentro del bucle — más lento que @tsv
 # pero sin sus escapes de tabs/newlines, que corromperían el JSON del
 # contrato (backslashes duplicados) al insertarlo.
-declare -A ERR
+# Mapa ref→error de validación (bash 3.2: sin arrays asociativos — arrays
+# paralelos + búsqueda lineal).
+ERR_K=(); ERR_V=()
+err_set() { local i; for i in "${!ERR_K[@]}"; do [[ "${ERR_K[$i]}" == "$1" ]] && { ERR_V[$i]="$2"; return; }; done; ERR_K+=("$1"); ERR_V+=("$2"); }
+err_get() { local i; for i in "${!ERR_K[@]}"; do [[ "${ERR_K[$i]}" == "$1" ]] && { printf '%s' "${ERR_V[$i]}"; return 0; }; done; return 1; }
 while IFS= read -r linea; do
   ref="$(jq -r '.ref' <<<"$linea")"
   contrato="$(jq -c '.contrato' <<<"$linea")"
   if ! msg="$(printf '%s' "$contrato" | bash bash/tasks/create_task.sh - --dry-run 2>&1 >/dev/null)"; then
-    ERR["$ref"]="$(printf '%s' "$msg" | tail -5 | tr '\n' ' ')"
+    err_set "$ref" "$(printf '%s' "$msg" | tail -5 | tr '\n' ' ')"
   fi
 done < <(jq -c '.propuestas[]|select(.seccion=="A")' "$JS")
 
@@ -76,7 +80,7 @@ while IFS= read -r linea; do
   dep="$(jq -c '(.depende_de // [])' <<<"$linea")"
   contrato="$(jq -c '.contrato' <<<"$linea")"
 
-  err="${ERR[$ref]:-}"; valida=1; [[ -n "$err" ]] && valida=0
+  err="$(err_get "$ref" || true)"; valida=1; [[ -n "$err" ]] && valida=0
   sql+="INSERT INTO propuestas (meeting_id, ref, seccion, titulo, proyecto, prioridad, vence, vence_estimada, asignados, arquetipo, slots, evidencia, comentario, pregunta, accion_sugerida, relacionadas, depende_de, contrato, valida, error_validacion) VALUES (
     $(sql_str "$meeting"), $(sql_str "$ref"), $(sql_str "$seccion"), $(sql_str "$titulo"), $(sql_str "$proyecto"), $(sql_str "$prioridad"), $(sql_str "$vence"), $vest,
     $(sql_str "$asign"), $(sql_str "$arq"), $(sql_str "$slots"), $(sql_str "$evid"), $(sql_str "$com"), $(sql_str "$preg"), $(sql_str "$accs"),
@@ -86,7 +90,7 @@ done < <(jq -c '.propuestas[]' "$JS")
 sql+=$([[ "$DRY" == 1 ]] && echo "ROLLBACK;" || echo "COMMIT;")
 sqlite_rw "$DBP" "$sql"
 
-refs="$(printf '%s\n' "${!ERR[@]}" 2>/dev/null)"
+refs="$(printf '%s\n' ${ERR_K[@]+"${ERR_K[@]}"} 2>/dev/null)"
 if [[ -z "$refs" ]]; then inval="[]"; else inval="$(printf '%s\n' "$refs" | jq -R . | jq -sc .)"; fi
 if [[ "$FORMAT" == json ]]; then
   jq -cn --arg m "$meeting" --argjson na "$(jq '[.propuestas[]|select(.seccion=="A")]|length' "$JS")" --argjson nb "$(jq '[.propuestas[]|select(.seccion=="B")]|length' "$JS")" --argjson inv "${inval:-[]}" --argjson dry "$DRY" '{ok:true, meeting_id:$m, n_a:$na, n_b:$nb, invalidas:$inv, dry_run:($dry==1)}'

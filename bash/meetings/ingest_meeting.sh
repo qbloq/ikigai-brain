@@ -49,6 +49,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n "$ref" && -n "$project" ]] || { echo "Uso: ingest_meeting.sh <drive-file-id|url> --project N […]; ver -h" >&2; exit 2; }
 file_id="$(gid "$ref")"
+file_id_sql="${file_id//\'/\'\'}"   # bash 3.2: un \' dentro de un heredoc en $( ) rompe el parser — se escapa fuera
 
 # ── proyecto (exactamente uno)
 pesc="${project//\'/\'\'}"
@@ -57,7 +58,7 @@ prow="$(psql_ro -t -A -F'|' -c "SELECT id, name FROM projects WHERE name ILIKE '
 IFS='|' read -r project_id project_name <<<"$prow"
 
 # ── ya existe?
-existing="$(psql_ro -t -A -c "SELECT id FROM meetings WHERE drive_file_id='${file_id//\'/\'\'}' LIMIT 1")"
+existing="$(psql_ro -t -A -c "SELECT id FROM meetings WHERE drive_file_id='${file_id_sql}' LIMIT 1")"
 if [[ -n "$existing" ]]; then
   echo "ya existe una reunión con ese video: $existing (nada que crear)" >&2
   [[ "$FORMAT" == json ]] && printf '{"meeting_id":"%s","created":false}\n' "$existing"
@@ -94,13 +95,14 @@ echo "proyecto : $project_name ($project_id)" >&2
 echo "video    : $file_id — $d_name ($(( ${d_dur:-0} / 60000 )) min)" >&2
 echo "nombre   : $name" >&2
 
+name_sql="${name//\'/\'\'}"; status_sql="${status//\'/\'\'}"   # bash 3.2: escapar antes del heredoc
 sql="$(cat <<SQL
 BEGIN;
 INSERT INTO meetings (space_id, project_id, name, description, scheduled_start_time, scheduled_end_time,
                       actual_start_time, actual_end_time, status, drive_file_id, meeting_type)
-VALUES (${space_sql}, '${project_id}', '${name//\'/\'\'}', ${desc_sql},
+VALUES (${space_sql}, '${project_id}', '${name_sql}', ${desc_sql},
         ${start_sql}, ${end_sql}, ${start_sql}, ${end_sql},
-        '${status//\'/\'\'}', '${file_id//\'/\'\'}', 'team')
+        '${status_sql}', '${file_id_sql}', 'team')
 RETURNING id, name, status, actual_start_time, actual_end_time;
 $( ((dry)) && echo ROLLBACK\; || echo COMMIT\; )
 SQL

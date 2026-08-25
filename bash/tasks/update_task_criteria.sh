@@ -39,7 +39,8 @@ source "$(dirname "$0")/../lib/common.sh"
 METHODS="llm manual automated test attested"
 
 crit="" output="" add="" del="" cascade="" dry=""
-declare -A set_provided=()
+provided=""   # banderas separadas por espacio (bash 3.2: sin arrays asociativos)
+has() { [[ " $provided " == *" $1 "* ]]; }
 text="" method="" required="" category=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -48,10 +49,10 @@ while [[ $# -gt 0 ]]; do
     --add)      add=1; shift ;;
     --delete)   del=1; shift ;;
     --cascade)  cascade=1; shift ;;
-    --text)     text="$2"; set_provided[text]=1; shift 2 ;;
-    --method)   method="$2"; set_provided[method]=1; shift 2 ;;
-    --required) required="$2"; set_provided[required]=1; shift 2 ;;
-    --category) category="$2"; set_provided[category]=1; shift 2 ;;
+    --text)     text="$2"; provided="$provided text"; shift 2 ;;
+    --method)   method="$2"; provided="$provided method"; shift 2 ;;
+    --required) required="$2"; provided="$provided required"; shift 2 ;;
+    --category) category="$2"; provided="$provided category"; shift 2 ;;
     --dry-run)  dry=1; shift ;;
     --json)     FORMAT=json; shift ;;
     -h|--help)  sed -n '2,34p' "$0"; exit 0 ;;
@@ -110,7 +111,7 @@ if [[ -n "$add" ]]; then
   [[ -n "$text" ]] || fail "--add requires --text \"the criterion\""
   oid="$(resolve_id task_outputs "$output" output)"
   tid="$(task_of_output "$oid")"
-  if [[ -n "${set_provided[method]:-}" ]]; then check_method "$method"; else method="manual"; fi
+  if has method; then check_method "$method"; else method="manual"; fi
   req=true
   case "${required:-true}" in
     true) req=true ;;
@@ -167,31 +168,31 @@ SQL
 fi
 
 # ── UPDATE ───────────────────────────────────────────────────────────────────
-[[ ${#set_provided[@]} -gt 0 ]] || fail "nothing to update; pass --text/--method/--required/--category"
+[[ -n "$provided" ]] || fail "nothing to update; pass --text/--method/--required/--category"
 
 # Build SET clause + psql vars. Columns are controlled; values go via -v.
 sets=(); declare -a vargs=()
-if [[ -n "${set_provided[text]:-}" ]]; then
+if has text; then
   [[ -n "$text" ]] || fail "criterion text cannot be empty"
   sets+=("criterion = :'v_text'"); vargs+=(-v "v_text=$text")
 fi
-if [[ -n "${set_provided[method]:-}" ]]; then
+if has method; then
   check_method "$method"
   sets+=("verification_method = :'v_method'"); vargs+=(-v "v_method=$method")
 fi
-if [[ -n "${set_provided[required]:-}" ]]; then
+if has required; then
   case "$required" in
     true|false) sets+=("is_required = $required") ;;
     *) fail "--required must be true or false" ;;
   esac
 fi
-if [[ -n "${set_provided[category]:-}" ]]; then
+if has category; then
   # Free text, no catalog behind it: '' clears.
   sets+=("criterion_category = nullif(:'v_cat','')"); vargs+=(-v "v_cat=$category")
 fi
 
 setclause="$(IFS=,; echo "${sets[*]}")"
-rw "${vargs[@]}" -v cid="$cid" <<SQL
+rw ${vargs[@]+"${vargs[@]}"} -v cid="$cid" <<SQL
 BEGIN;
 \echo '--- before ---'
 $(detail_sql cid);
