@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
     --ref-merge) refmerge="$2"; provided="$provided refmerge"; shift 2 ;;
     --dry-run)  dry=1; shift ;;
     --json)     FORMAT=json; shift ;;
-    -h|--help)  sed -n '2,33p' "$0"; exit 0 ;;
+    -h|--help)  sed -n '2,24p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
 done
