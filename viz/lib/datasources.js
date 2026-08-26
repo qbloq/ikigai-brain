@@ -317,6 +317,14 @@ const SOURCES = {
     // fuerza por plantilla: el nombre de pila del JWT no identifica a nadie.
     args: { closer: "--closer", closer_id: "--closer-id", project: "--project", from: "--from", to: "--to" },
   },
+  // La agenda del setter — GHL manda, Postgres enriquece. Vista operativa:
+  // sin caché (cada render vuelve a GHL; ~30 GETs en semana, en tandas).
+  agenda_setter: {
+    label: "Agenda del setter",
+    script: "bash/setters/agenda.sh",
+    emits: "object",
+    args: { project: "--project", fecha: "--fecha", vista: "--vista" },
+  },
   // Objections flattened across call reports — the narrative feedback loop.
   call_objections: {
     label: "Objeciones (llamadas)",
