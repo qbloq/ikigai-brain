@@ -133,3 +133,7 @@ embebe email y teléfono del contacto, así que **buscar oportunidades por
 contacto en vez de por nombre** es lo correcto y detecta el caso «la ficha está
 con otro nombre». Toda auditoría futura debe cruzar por ahí — y contra
 `payment_plans.customer_id`, que guarda justamente el id de contacto de GHL.
+
+## Escritura — `calendar_members.sh` [WRITE→GHL]
+
+La primera escritura del Cerebro en GHL (2026-08-26): listar / `--add USER` / `--remove USER` los miembros de UN calendario. `PUT /calendars/{id}` **reemplaza** la lista entera, así que el script lee la actual, la modifica y manda todo; imprime antes/después, `--dry-run`, verifica contra GHL tras aplicar. Primer uso: Mateo Restrepo → «Aplicación a Premium Mastermind». Cerca: dominio `ghl`; pasará a `escrituras: ghl-agenda` cuando exista la llave (spec Marketico Port §4.4). Ojo: `/users/` responde 401 «Command timed out» de forma intermitente — reintentar, no es el token.
