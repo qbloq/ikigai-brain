@@ -582,6 +582,30 @@ vivos, dashboard del embudo + testeos VSL/pauta). Idempotente vía
 nueva en el WABA (sin upsert; queda PENDING hasta que Meta la revise, cuenta
 con días).
 
+## Setters domain — la agenda del setter ([bash/setters/](bash/setters/))
+
+El primer dominio del rol **Setter** (Antonio = Cristian Buelvas, Anthony
+Velásquez — los únicos, con la IA, que tocan el CRM desde el 2026-08-25).
+`agenda.sh [--project N] [--fecha D] [--vista dia|semana]` emite UN objeto: las
+citas del **calendario oficial de GHL** (GHL manda; Postgres solo enriquece) con
+el lead leído **en vivo** (el recién agendado existe en GHL antes que en el
+espejo), closer asignado (`assignedUserId` → `users.integrations`; si es un
+miembro del calendario = setter → `sin_closer`), link de Meet vía meeting
+(`event_id` = cita; sin meeting → `sin_meet`: no pasó por el webhook), etapa del
+tablero, **banda pre-llamada A/B/C** (`docs/lead-score.md` §5, solo entrantes;
+lee la pregunta validada y, si no está, la del survey vigente en rangos por su
+cota inferior; el score 0-100 sigue sin validar) y, para las pasadas, el
+**estado por capas**: `cancelada` · `venta` (plan Active desde la cita) ·
+`analizada` (reporte vigente + BANT) · `ocurrio_sin_analisis`
+(transcript/grabación) · `sin_rastro`. `anunciada` (lo que el closer dijo en
+ONLY CLOSERS) es `null` en v1 — lo llena el detector de anuncios de
+`docs/rutina-registro-only-closers-brief.md`. Alertas: `solo_en_sistema`
+(drift `sobra_en_db`). GHL caído ≠ agenda vacía; sin Postgres no hay agenda
+(las credenciales viven ahí). Read-only. Fuente viz `agenda_setter` → page
+`agenda-setter` (spec de rol `viz/specs/roles/setter/agenda-setter.json`,
+publicada por usuario a los setters y al DC). Spec:
+`docs/superpowers/specs/2026-08-26-agenda-setter-design.md`.
+
 ## ManyChat domain — Instagram DMs en la fuente ([bash/manychat/](bash/manychat/))
 
 Sonda **read-only** contra `api.manychat.com` (patrón `bash/vturb/`: token por
