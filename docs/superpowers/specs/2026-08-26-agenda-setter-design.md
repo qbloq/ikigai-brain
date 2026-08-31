@@ -288,3 +288,28 @@ estándar en la re-consulta (cambio de fecha/vista).
    informe ONLY CLOSERS).
 3. Score pre 0-100 con las preguntas del censo, validado contra plata.
 4. Rol `setter` en `acceso.json` + fork cuando haya copiloto.
+
+---
+
+## Addendum 2026-08-31 — dos calendarios (corrección de Santiago)
+
+El diseño original leía UN calendario. La operación real usa **dos**: el del
+**funnel** («Calendario Premium Mastermind», `crm_calendars` activo — el widget
+agenda ahí y la llamada la toma un SETTER, round-robin entre los miembros
+Cristian/Anthony) y el de **closers** («Aplicación a Premium Mastermind»,
+`rmiAFkJKOZ2QZ1yEr8dn`, miembros Luis David/Carlos/Ayrton/Diego/Mateo — la
+agenda que el setter cuadra). Cambios aplicados:
+
+- `agenda.sh` lee ambos: funnel desde `crm_calendars`; closers por
+  `--calendar-closers` o descubrimiento en vivo (activo, nombre «aplicación…»,
+  no personal). Para el cruce trae además los 7 días siguientes del calendario
+  de closers (`eventos_cruce`, no listados).
+- Cada cita lleva `calendario: funnel|closers`. **Semántica corregida**:
+  `sin_closer` solo en closers (cita en manos de un setter o de nadie); en el
+  funnel el asignado ES el setter y la alerta es `sin_asignar`. Nuevo
+  `cita_closer` en el funnel: la cita de closer más próxima del mismo contacto
+  (la etapa «agendó» del embudo, visible por fila y como KPI `agendo_closer`).
+- KPIs por carril (`kpis.closers` / `kpis.funnel`, con `leads` = personas
+  distintas). La página pinta dos carriles con Por venir / Ya pasaron cada uno
+  y agrupa los duplicados del mismo lead en una fila ×N (detalle con las otras
+  horas).
