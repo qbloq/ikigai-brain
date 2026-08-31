@@ -71,6 +71,16 @@ test("aviso cuando GHL falla y agenda vacía", () => {
   assert.ok(!h.includes("Ana Pérez"));
 });
 
+test("webhook inhabilitado → banner de migración y «Meet pendiente»", () => {
+  const d = { ...D, fuente: { ...D.fuente, webhook: "inhabilitado" } };
+  const h = page.renderObjeto(UI, d);
+  assert.ok(h.includes("Agendamiento en migración"));
+  assert.ok(h.includes("Meet pendiente") && !h.includes(">sin Meet<"));
+  // sin la señal (fixture base) el badge sigue siendo la anomalía por cita
+  const h0 = page.renderObjeto(UI, D);
+  assert.ok(h0.includes("sin Meet") && !h0.includes("Agendamiento en migración"));
+});
+
 test("vista semana agrupa por día", () => {
   const d = { ...D, ventana: { ...D.ventana, vista: "semana", desde: "2026-08-24", hasta: "2026-08-30" } };
   const h = page.renderObjeto(UI, d);

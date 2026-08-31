@@ -95,7 +95,7 @@ function detalle(c, sig, otras) {
     </div></td></tr>`;
 }
 
-function fila(c, sig, esClosers, otras) {
+function fila(c, sig, esClosers, otras, migracion) {
   const cancel = c.estado_ghl === "cancelled";
   const dim = cancel ? ` style="color:var(--text-3)"` : "";
   const quien = c.asignado.nombre ? escape(c.asignado.nombre) : "—";
@@ -104,7 +104,9 @@ function fila(c, sig, esClosers, otras) {
     : (c.sin_asignar ? badge("sin asignar", "cau", "GHL no tiene a nadie asignado a esta cita") : quien);
   const meet = c.meeting && c.meeting.meet_url
     ? `<a class="underline" href="${escape(c.meeting.meet_url)}" target="_blank" rel="noopener">Meet</a>`
-    : c.sin_meet ? badge("sin Meet", "neg", "no pasó por el webhook: no habrá grabación ni análisis") : "—";
+    : !c.sin_meet ? "—"
+    : migracion ? badge("Meet pendiente", "cau", "agendamiento en migración: desde el 26-ago Marketico no crea Meets; el Cerebro los pedirá a demanda")
+    : badge("sin Meet", "neg", "no pasó por el webhook: no habrá grabación ni análisis");
   const [estTxt, estTone] = ES_ESTADO[c.estado] || [c.estado, "muted"];
   const ocurrio = c.pasada ? [c.ocurrio.transcript ? "transcript" : null, c.ocurrio.grabacion ? "grabación" : null].filter(Boolean).join(" · ") || "—" : "";
   const bandaCell = !c.pasada && c.banda ? badge(c.banda.letra, BANDA_TONE[c.banda.letra], `${c.banda.presupuesto || "sin presupuesto"} · ${c.banda.disposicion || "sin disposición"}`) : "";
@@ -141,37 +143,37 @@ function agrupar(citas) {
   return orden.map((k) => { const g = grupos.get(k); return { rep: g[0], otras: g.slice(1) }; });
 }
 
-function tabla(citas, sig, esClosers, pasadas, vacio) {
+function tabla(citas, sig, esClosers, pasadas, vacio, opts = {}) {
   if (!citas.length) return `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">${escape(vacio)}</p>`;
   const col6 = esClosers ? "Etapa CRM" : "Cita closer";
   const quien = esClosers ? "Closer" : "Setter";
   const th = pasadas
     ? ["Hora", "Lead", quien, "Meet", "Estado", col6, "Ocurrió", "BANT", "Venta", "Anunciada"]
     : ["Hora", "Lead", quien, "Meet", "Estado", col6, "Banda", "", "", ""];
-  const filas = agrupar(citas).map((g) => fila(g.rep, sig, esClosers, g.otras)).join("");
+  const filas = agrupar(citas).map((g) => fila(g.rep, sig, esClosers, g.otras, opts.migracion)).join("");
   return `<div class="table-wrap"><div class="table-scroll"><table class="tbl">
     <thead><tr>${th.map((h) => `<th>${escape(h)}</th>`).join("")}</tr></thead>
     <tbody>${filas}</tbody></table></div></div>`;
 }
 
-function bloqueDia(citas, sig, esClosers, conTitulo) {
+function bloqueDia(citas, sig, esClosers, conTitulo, opts = {}) {
   const prox = citas.filter((c) => !c.pasada);
   const pas = citas.filter((c) => c.pasada).slice().reverse();
   const head = conTitulo ? section(diaLabel(citas[0].fecha), `${citas.length} citas`, true) : "";
   return `${head}
     ${section("Por venir", prox.length ? `${prox.length} citas` : "", true)}
-    ${tabla(prox, sig, esClosers, false, "Nada por venir.")}
+    ${tabla(prox, sig, esClosers, false, "Nada por venir.", opts)}
     ${section("Ya pasaron", pas.length ? `${pas.length} citas · la más reciente primero` : "", true)}
-    ${tabla(pas, sig, esClosers, true, "Ninguna todavía.")}`;
+    ${tabla(pas, sig, esClosers, true, "Ninguna todavía.", opts)}`;
 }
 
-function carril(titulo, hint, citas, k, sig, esClosers, semana) {
+function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
   const kpisDefs = esClosers
     ? [
       { key: "citas", label: "Citas", fmt: "int", tone: "brand" },
       { key: "confirmadas", label: "Confirmadas", fmt: "int", tone: "pos" },
       { key: "sin_closer", label: "Sin closer", fmt: "int", tone: k.sin_closer ? "cau" : "muted", title: "en manos de un setter o de nadie — asignar el closer en GHL" },
-      { key: "sin_meet", label: "Sin Meet", fmt: "int", tone: k.sin_meet ? "neg" : "muted", title: "no pasaron por el webhook: no habrá grabación ni análisis" },
+      { key: "sin_meet", label: opts.migracion ? "Meet pendiente" : "Sin Meet", fmt: "int", tone: k.sin_meet ? (opts.migracion ? "cau" : "neg") : "muted", title: opts.migracion ? "agendamiento en migración: Marketico no crea Meets desde el 26-ago" : "no pasaron por el webhook: no habrá grabación ni análisis" },
       { key: "analizadas", label: "Analizadas", fmt: "int", tone: "pos", title: "pasadas con reporte BANT vigente" },
       { key: "ventas", label: "Ventas", fmt: "int", tone: "pos", title: "plan de pago activo creado desde la cita" },
       { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
@@ -183,7 +185,7 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana) {
       { key: "banda_a", label: "Banda A", fmt: "int", tone: "pos", title: "declara ≥ $1.500 y está listo para tomar acción — se confirma primero" },
       { key: "agendo_closer", label: "Agendó closer", fmt: "int", tone: "pos", title: "leads del funnel que ya tienen cita en la agenda de closers" },
       { key: "sin_asignar", label: "Sin asignar", fmt: "int", tone: k.sin_asignar ? "cau" : "muted", title: "GHL no tiene a nadie asignado" },
-      { key: "sin_meet", label: "Sin Meet", fmt: "int", tone: k.sin_meet ? "neg" : "muted", title: "no pasaron por el webhook" },
+      { key: "sin_meet", label: opts.migracion ? "Meet pendiente" : "Sin Meet", fmt: "int", tone: k.sin_meet ? (opts.migracion ? "cau" : "neg") : "muted", title: opts.migracion ? "agendamiento en migración: Marketico no crea Meets desde el 26-ago" : "no pasaron por el webhook" },
       { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
       { key: "ventas", label: "Ventas", fmt: "int", tone: "pos" },
     ];
@@ -191,14 +193,14 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana) {
   if (!citas.length) {
     cuerpo = `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">Sin citas en la ventana.</p>`;
   } else if (!semana) {
-    cuerpo = bloqueDia(citas, sig, esClosers, false);
+    cuerpo = bloqueDia(citas, sig, esClosers, false, opts);
   } else {
     const porDia = new Map();
     for (const c of citas) {
       if (!porDia.has(c.fecha)) porDia.set(c.fecha, []);
       porDia.get(c.fecha).push(c);
     }
-    cuerpo = [...porDia.keys()].sort().map((f) => bloqueDia(porDia.get(f), sig, esClosers, true)).join("");
+    cuerpo = [...porDia.keys()].sort().map((f) => bloqueDia(porDia.get(f), sig, esClosers, true, opts)).join("");
   }
   return `${section(titulo, hint)}
     ${cards(kpisDefs, k, { cols: 8 })}
@@ -220,7 +222,9 @@ function renderObjeto(ui, d) {
     <span class="text-sm" style="color:var(--text-3)">${escape(d.proyecto || "")} · ${semana ? `${escape(diaLabel(v.desde))} → ${escape(diaLabel(v.hasta))}` : escape(diaLabel(v.fecha))} · ahora ${escape(v.ahora.slice(11))}</span>
   </div>`;
 
+  const migracion = d.fuente.webhook === "inhabilitado";
   const avisos = [];
+  if (migracion) avisos.push(`<div class="alert alert-cau mt-3"><b>Agendamiento en migración.</b> Desde el 26-ago Marketico no crea Meets (webhook en modo ack): las citas nuevas no tendrán Meet, grabación ni análisis hasta que el Cerebro los pida a demanda. El registro de lo que GHL dispara sigue completo en intercepciones.</div>`);
   if (d.fuente.ghl !== "ok") avisos.push(`<div class="alert alert-neg mt-3">GHL no respondió — la agenda no se puede listar desde la base (GHL manda). ${escape(d.fuente.detalle || "")}</div>`);
   if (d.fuente.db === "error") avisos.push(`<div class="alert alert-cau mt-3">La base no respondió: las citas salen sin Meet, BANT ni plan.</div>`);
   const cals = (d.calendarios || []).map((c) => `${c.tipo === "closers" ? "closers" : "funnel"}: ${escape(c.nombre || c.id)} (${escape((c.miembros || []).join(", ") || "—")})`).join(" · ");
@@ -229,8 +233,9 @@ function renderObjeto(ui, d) {
   const closers = d.citas.filter((c) => c.calendario === "closers");
   const funnel = d.citas.filter((c) => c.calendario !== "closers");
   const hayClosers = (d.calendarios || []).some((c) => c.tipo === "closers");
+  const opts = { migracion };
   const carrilClosers = hayClosers
-    ? carril("Agenda de closers", "la que cuadra el setter — «Aplicación»", closers, d.kpis.closers, sig, true, semana)
+    ? carril("Agenda de closers", "la que cuadra el setter — «Aplicación»", closers, d.kpis.closers, sig, true, semana, opts)
     : `${section("Agenda de closers", "")}<div class="alert alert-cau">No se encontró el calendario de closers («Aplicación…») en GHL.</div>`;
 
   const solo = d.solo_en_sistema.length
@@ -249,7 +254,7 @@ function renderObjeto(ui, d) {
       ${nav}${meta}
       ${avisos.join("")}
       ${carrilClosers}
-      ${carril("Funnel — llamadas del setter", "el widget agenda aquí; las toma un setter", funnel, d.kpis.funnel, sig, false, semana)}
+      ${carril("Funnel — llamadas del setter", "el widget agenda aquí; las toma un setter", funnel, d.kpis.funnel, sig, false, semana, opts)}
       ${section("En el sistema, no en GHL", "llamadas agendadas en la base que los calendarios oficiales no tienen — para corregir la agenda")}
       ${solo}
       <ul class="text-xs mt-8 list-disc pl-5" style="color:var(--text-3)">${d.sin_instrumentar.map((s) => `<li>${escape(s)}</li>`).join("")}</ul>

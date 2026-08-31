@@ -238,7 +238,24 @@ SELECT json_build_object(
 );" 2>"$TMP/dberr")" || { DB_ESTADO=error; DB_JSON="{}"; echo "agenda: la consulta de enriquecimiento falló: $(head -c 300 "$TMP/dberr")" >&2; }
 printf '%s' "$DB_JSON" >"$TMP/db.json"
 
-python3 -c 'import json,sys; json.dump({"ghl": sys.argv[1], "detalle": sys.argv[2] or None, "db": sys.argv[3]}, open(sys.argv[4],"w"))' \
-  "$GHL_ESTADO" "$GHL_DETALLE" "$DB_ESTADO" "$TMP/fuente.json"
+# --- ¿el webhook de agendamiento está creando Meets? -------------------------
+# Desde el 26-ago /webhooks/crm corre en modo ack (Marketico Port): acusa recibo
+# y NO crea Meet/meeting. El último reporte del log de intercepciones lo dice
+# (`resultado.detalle: inhabilitado`); con esa señal la página deja de pintar
+# «sin Meet» como anomalía por cita y lo declara como estado del sistema.
+WEBHOOK_MODO="desconocido"
+if wout="$(timeout 20 "$HERE/../intercepciones/log.sh" --limit 1 --json 2>/dev/null)"; then
+  WEBHOOK_MODO="$(python3 -c '
+import json, sys
+try:
+    rows = json.load(sys.stdin)
+    r = json.loads(rows[0].get("resultado") or "{}") if rows else {}
+    print("inhabilitado" if r.get("detalle") == "inhabilitado" else "activo" if rows else "desconocido")
+except Exception:
+    print("desconocido")' <<<"$wout")"
+fi
+
+python3 -c 'import json,sys; json.dump({"ghl": sys.argv[1], "detalle": sys.argv[2] or None, "db": sys.argv[3], "webhook": sys.argv[4]}, open(sys.argv[5],"w"))' \
+  "$GHL_ESTADO" "$GHL_DETALLE" "$DB_ESTADO" "$WEBHOOK_MODO" "$TMP/fuente.json"
 
 python3 "$HERE/lib/agenda_lib.py" --dir "$TMP" --proyecto "$PNAME" --fecha "$FECHA" --vista "$VISTA" --ahora "$AHORA"
