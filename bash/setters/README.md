@@ -9,7 +9,7 @@ tocan el CRM. Spec: `docs/superpowers/specs/2026-08-26-agenda-setter-design.md`.
 
 | Script | Para qué |
 |--------|----------|
-| `agenda.sh [--project N] [--fecha D] [--vista dia\|semana] [--json]` | La agenda del día o de la semana (lunes–domingo) como UN objeto: citas del calendario oficial de GHL, cada una con lead (contacto **en vivo**), closer asignado, link de Meet, etapa del tablero, **banda pre-llamada A/B/C** (entrantes) y **estado por capas** ocurrió · analizada (BANT) · venta (pasadas). Alertas: `sin_closer`, `sin_meet`, `solo_en_sistema` (drift). Read-only. Fuente viz `agenda_setter`. |
+| `agenda.sh [--project N] [--fecha D] [--vista dia\|semana] [--calendar-closers ID] [--json]` | La agenda del día o de la semana (lunes–domingo) como UN objeto, con los **dos calendarios oficiales**: el del **funnel** (el widget agenda ahí; la toma un setter) y el de **closers** («Aplicación…», la agenda que cuadra el setter — descubierto en vivo o fijado por flag). Cada cita con `calendario`, lead (contacto **en vivo**), asignado, link de Meet, **banda A/B/C** (entrantes), **estado por capas** (pasadas) y el cruce `cita_closer` (funnel→«ya agendó con closer», mirando 7 días adelante). Alertas: `sin_closer` (solo closers), `sin_asignar` (funnel), `sin_meet`, `solo_en_sistema` (drift). Read-only. Fuente viz `agenda_setter`. |
 | `test.sh` | Tests puros de `lib/agenda_lib.py` (bandas, montos, ventana, estado, ensamblado). |
 
 ## Reglas
@@ -30,8 +30,12 @@ tocan el CRM. Spec: `docs/superpowers/specs/2026-08-26-agenda-setter-design.md`.
   no la vigente, tomando la **cota inferior** del rango (conservador: «entre
   1000 y 2000» → B). El corte ≥1500 sobre la pregunta nueva no está validado
   contra plata todavía — es la misma regla aplicada al instrumento nuevo.
-- `sin_closer` = la cita está asignada a un miembro del calendario (los
-  setters, leídos en vivo de `GET /calendars/{id}`) o a nadie.
+- **Semántica por carril**: en el calendario del funnel el asignado ES el
+  setter que toma la llamada (round-robin entre los miembros) — la alerta ahí
+  es `sin_asignar`. `sin_closer` existe solo en el carril de closers: la cita
+  quedó en manos de un setter (miembro del funnel) o de nadie cuando debía
+  tener un closer dueño. Los miembros de cada calendario se leen en vivo
+  (`GET /calendars/{id}`).
 - `anunciada` es `null` hasta que exista el detector de anuncios del grupo
   ONLY CLOSERS (rutina de registro, pieza 1).
 - Solo GET a GHL, `psql_ro` en Postgres, cerca por rol de `bash/ghl/`.

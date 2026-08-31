@@ -1,13 +1,18 @@
 // agenda-setter page — la agenda del setter (día / semana) desde el único
 // objeto que emite bash/setters/agenda.sh. GHL manda: lo que se lista son las
-// citas del calendario oficial; la base solo enriquece (Meet, BANT, plan).
+// citas de los DOS calendarios oficiales; la base solo enriquece.
 //
-// Dos secciones deliberadas, cortadas por la hora actual:
-//   Por venir   cronológica, con la BANDA pre-llamada (A/B/C) — la capa de
-//               operación de docs/lead-score.md §5, que el setter SÍ ve.
-//   Ya pasaron  la más reciente primero, con el ESTADO POR CAPAS (ocurrió ·
-//               analizada + BANT · venta) y «anunciada» en gris: promesa
-//               visible, no medible aún (detector de anuncios, v2).
+// Dos CARRILES (corrección de Santiago, 2026-08-26):
+//   Agenda de closers («Aplicación…»)  la que el setter cuadra — pocas citas,
+//       con closer dueño; «sin closer» solo existe aquí (cita en manos de un
+//       setter o de nadie cuando debía tener closer).
+//   Funnel (llamadas del setter)       el volumen del widget — el asignado ES
+//       el setter que la toma; el cruce «→ closer» muestra si el lead ya tiene
+//       su cita en el carril de arriba (la etapa «agendó» del embudo), y los
+//       duplicados del mismo lead se agrupan en una fila ×N.
+// Cada carril con Por venir / Ya pasaron (cortadas por la hora actual) y sus
+// KPIs. «Anunciada» va en gris: promesa visible, no medible aún (detector de
+// anuncios de ONLY CLOSERS, v2).
 // Autosuficiente: sin /c/ (el publicador v1 no lo monta) — el detalle del lead
 // viaja en el HTML y se despliega con una señal por fila (data-show).
 const { fetchSource } = require("../lib/datasources");
@@ -37,9 +42,10 @@ function sumarDias(iso, n) {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
-function section(title, hint) {
-  return `<div class="flex items-baseline gap-3 mt-8 mb-3 flex-wrap">
-    <h2 class="text-sm font-bold uppercase tracking-wider" style="color:var(--text-2);letter-spacing:var(--tr-micro)">${escape(title)}</h2>
+function section(title, hint, sub) {
+  const tag = sub ? "h3" : "h2";
+  return `<div class="flex items-baseline gap-3 ${sub ? "mt-5" : "mt-8"} mb-3 flex-wrap">
+    <${tag} class="${sub ? "text-xs" : "text-sm"} font-bold uppercase tracking-wider" style="color:var(--text-2);letter-spacing:var(--tr-micro)">${escape(title)}</${tag}>
     ${hint ? `<span class="text-xs" style="color:var(--text-3)">${escape(hint)}</span>` : ""}
   </div>`;
 }
@@ -53,7 +59,13 @@ function bantCell(r) {
     ${r.arquetipo ? `<span class="text-xs ml-1" style="color:var(--text-3)">${escape(r.arquetipo)}</span>` : ""}`;
 }
 
-function detalle(c, sig) {
+function cruceCell(c) {
+  if (!c.cita_closer) return `<span style="color:var(--text-3)">—</span>`;
+  const x = c.cita_closer;
+  return `<span style="color:${TONE.pos}">→ ${escape(x.fecha)} ${escape(x.hora)}${x.closer ? " · " + escape(x.closer) : ""}</span>`;
+}
+
+function detalle(c, sig, otras) {
   const kv = (k, v) => `<div class="flex gap-2 text-sm"><span style="color:var(--text-3);min-width:9rem">${escape(k)}</span><span>${v}</span></div>`;
   const l = c.lead;
   const survey = c.survey.length
@@ -68,64 +80,129 @@ function detalle(c, sig) {
   const hist = c.historial.llamadas_previas
     ? kv("llamadas previas", `${c.historial.llamadas_previas} · última ${escape(c.historial.ultima || "—")}${c.historial.bant_previo != null ? ` · BANT ${escape(String(c.historial.bant_previo))}` : ""}`)
     : kv("llamadas previas", "ninguna");
+  const dup = otras && otras.length
+    ? kv("otras citas del lead", escape(otras.map((o) => `${o.fecha === c.fecha ? "" : o.fecha + " "}${o.hora} (${ES_GHL[o.estado_ghl] || o.estado_ghl})`).join(" · ")))
+    : "";
   return `<tr data-show="$${sig}=='${escape(c.appointment_id)}'" style="display:none"><td colspan="10" style="background:var(--surface-2)">
     <div class="grid gap-6 p-3" style="grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))">
       <div>${kv("correo", escape(l.email || "—"))}${kv("teléfono", escape(l.telefono || "—"))}${kv("formulario", escape(l.formulario || "—"))}
            ${kv("origen", escape([l.sesion, l.campana].filter(Boolean).join(" · ") || "—"))}${kv("tags", escape((l.tags || []).join(", ") || "—"))}
            ${kv("datos del lead", escape(FUENTE_LEAD[l.fuente] || l.fuente || "—"))}
-           ${hist}${kv("cita GHL", escape(c.appointment_id))}${c.meeting ? kv("llamada", escape(c.meeting.id8)) : ""}</div>
+           ${kv("etapa CRM", escape(c.etapa_crm || "— (espejo)"))}
+           ${hist}${dup}${kv("cita GHL", escape(c.appointment_id))}${c.meeting ? kv("llamada", escape(c.meeting.id8)) : ""}</div>
       <div><p class="text-xs font-bold uppercase mb-1" style="color:var(--text-2)">Survey</p>${survey}</div>
       <div><p class="text-xs font-bold uppercase mb-1" style="color:var(--text-2)">Reporte de la llamada</p>${rep}${venta}</div>
     </div></td></tr>`;
 }
 
-function fila(c, sig) {
+function fila(c, sig, esClosers, otras) {
   const cancel = c.estado_ghl === "cancelled";
   const dim = cancel ? ` style="color:var(--text-3)"` : "";
-  const closer = c.closer.nombre ? escape(c.closer.nombre) : "—";
-  const closerCell = c.sin_closer ? `${closer} ${badge("sin closer", "cau", "la cita está asignada a un setter o a nadie")}` : closer;
+  const quien = c.asignado.nombre ? escape(c.asignado.nombre) : "—";
+  const quienCell = esClosers
+    ? (c.sin_closer ? `${quien} ${badge("sin closer", "cau", "la cita quedó en manos de un setter o de nadie — asignar el closer en GHL")}` : quien)
+    : (c.sin_asignar ? badge("sin asignar", "cau", "GHL no tiene a nadie asignado a esta cita") : quien);
   const meet = c.meeting && c.meeting.meet_url
     ? `<a class="underline" href="${escape(c.meeting.meet_url)}" target="_blank" rel="noopener">Meet</a>`
     : c.sin_meet ? badge("sin Meet", "neg", "no pasó por el webhook: no habrá grabación ni análisis") : "—";
-  const etapa = c.etapa_crm ? `${escape(c.etapa_crm)}${c.etapa_no_confirmada ? " " + badge("≠ confirmada", "cau") : ""}` : `<span style="color:var(--text-3)">— (espejo)</span>`;
   const [estTxt, estTone] = ES_ESTADO[c.estado] || [c.estado, "muted"];
   const ocurrio = c.pasada ? [c.ocurrio.transcript ? "transcript" : null, c.ocurrio.grabacion ? "grabación" : null].filter(Boolean).join(" · ") || "—" : "";
   const bandaCell = !c.pasada && c.banda ? badge(c.banda.letra, BANDA_TONE[c.banda.letra], `${c.banda.presupuesto || "sin presupuesto"} · ${c.banda.disposicion || "sin disposición"}`) : "";
   const anunciada = c.pasada ? `<span style="color:var(--text-3)" title="pendiente de conectar al grupo ONLY CLOSERS">—</span>` : "";
+  const col6 = esClosers
+    ? `<td class="text-xs">${c.etapa_crm ? escape(c.etapa_crm) : `<span style="color:var(--text-3)">— (espejo)</span>`}</td>`
+    : `<td class="text-xs">${cruceCell(c)}</td>`;
   const ultimas = c.pasada
     ? `<td>${escape(ocurrio)}</td><td>${bantCell(c.reporte)}</td><td>${c.venta ? badge("venta", "pos") : "—"}</td><td>${anunciada}</td>`
     : `<td>${bandaCell}</td><td colspan="3"></td>`;
   const id = escape(c.appointment_id);
+  const dup = otras && otras.length ? ` <span class="badge" style="color:${TONE.muted}" title="el mismo lead tiene ${otras.length + 1} citas — ver detalle">×${otras.length + 1}</span>` : "";
   return `<tr${dim} class="cursor-pointer" data-on:click="$${sig} = $${sig}=='${id}' ? '' : '${id}'">
     <td class="tabular-nums whitespace-nowrap">${escape(c.hora)}</td>
-    <td class="font-medium">${escape(c.lead.nombre || "—")}</td>
-    <td>${closerCell}</td>
+    <td class="font-medium">${escape(c.lead.nombre || "—")}${dup}</td>
+    <td>${quienCell}</td>
     <td>${meet}</td>
     <td>${badge(ES_GHL[c.estado_ghl] || c.estado_ghl || "—", cancel ? "muted" : "brand")} ${badge(estTxt, estTone)}</td>
-    <td class="text-xs">${etapa}</td>
+    ${col6}
     ${ultimas}
-  </tr>${detalle(c, sig)}`;
+  </tr>${detalle(c, sig, otras)}`;
 }
 
-function tabla(citas, sig, pasadas, vacio) {
+// Duplicados del mismo lead (funnel: el widget deja re-agendas): una fila por
+// lead con ×N; las demás citas del grupo viajan al detalle.
+function agrupar(citas) {
+  const grupos = new Map();
+  const orden = [];
+  for (const c of citas) {
+    const clave = c.contact_id || c.appointment_id;
+    if (!grupos.has(clave)) { grupos.set(clave, []); orden.push(clave); }
+    grupos.get(clave).push(c);
+  }
+  return orden.map((k) => { const g = grupos.get(k); return { rep: g[0], otras: g.slice(1) }; });
+}
+
+function tabla(citas, sig, esClosers, pasadas, vacio) {
   if (!citas.length) return `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">${escape(vacio)}</p>`;
+  const col6 = esClosers ? "Etapa CRM" : "Cita closer";
+  const quien = esClosers ? "Closer" : "Setter";
   const th = pasadas
-    ? ["Hora", "Lead", "Closer", "Meet", "Estado", "Etapa CRM", "Ocurrió", "BANT", "Venta", "Anunciada"]
-    : ["Hora", "Lead", "Closer", "Meet", "Estado", "Etapa CRM", "Banda", "", "", ""];
+    ? ["Hora", "Lead", quien, "Meet", "Estado", col6, "Ocurrió", "BANT", "Venta", "Anunciada"]
+    : ["Hora", "Lead", quien, "Meet", "Estado", col6, "Banda", "", "", ""];
+  const filas = agrupar(citas).map((g) => fila(g.rep, sig, esClosers, g.otras)).join("");
   return `<div class="table-wrap"><div class="table-scroll"><table class="tbl">
     <thead><tr>${th.map((h) => `<th>${escape(h)}</th>`).join("")}</tr></thead>
-    <tbody>${citas.map((c) => fila(c, sig)).join("")}</tbody></table></div></div>`;
+    <tbody>${filas}</tbody></table></div></div>`;
 }
 
-function bloqueDia(citas, sig, conTitulo) {
+function bloqueDia(citas, sig, esClosers, conTitulo) {
   const prox = citas.filter((c) => !c.pasada);
   const pas = citas.filter((c) => c.pasada).slice().reverse();
-  const head = conTitulo ? section(diaLabel(citas[0].fecha), `${citas.length} citas`) : "";
+  const head = conTitulo ? section(diaLabel(citas[0].fecha), `${citas.length} citas`, true) : "";
   return `${head}
-    ${section("Por venir", prox.length ? `${prox.length} citas` : "")}
-    ${tabla(prox, sig, false, "Nada por venir.")}
-    ${section("Ya pasaron", pas.length ? `${pas.length} citas · la más reciente primero` : "")}
-    ${tabla(pas, sig, true, "Ninguna todavía.")}`;
+    ${section("Por venir", prox.length ? `${prox.length} citas` : "", true)}
+    ${tabla(prox, sig, esClosers, false, "Nada por venir.")}
+    ${section("Ya pasaron", pas.length ? `${pas.length} citas · la más reciente primero` : "", true)}
+    ${tabla(pas, sig, esClosers, true, "Ninguna todavía.")}`;
+}
+
+function carril(titulo, hint, citas, k, sig, esClosers, semana) {
+  const kpisDefs = esClosers
+    ? [
+      { key: "citas", label: "Citas", fmt: "int", tone: "brand" },
+      { key: "confirmadas", label: "Confirmadas", fmt: "int", tone: "pos" },
+      { key: "sin_closer", label: "Sin closer", fmt: "int", tone: k.sin_closer ? "cau" : "muted", title: "en manos de un setter o de nadie — asignar el closer en GHL" },
+      { key: "sin_meet", label: "Sin Meet", fmt: "int", tone: k.sin_meet ? "neg" : "muted", title: "no pasaron por el webhook: no habrá grabación ni análisis" },
+      { key: "analizadas", label: "Analizadas", fmt: "int", tone: "pos", title: "pasadas con reporte BANT vigente" },
+      { key: "ventas", label: "Ventas", fmt: "int", tone: "pos", title: "plan de pago activo creado desde la cita" },
+      { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
+      { label: "Anunciadas", fmt: "int", value: null, muted: true, title: "pendiente de conectar al grupo ONLY CLOSERS" },
+    ]
+    : [
+      { key: "citas", label: "Citas", fmt: "int", tone: "brand", title: "citas del widget, todos los estados (re-agendas incluidas)" },
+      { key: "leads", label: "Leads", fmt: "int", tone: "brand", title: "personas distintas (las re-agendas se agrupan)" },
+      { key: "banda_a", label: "Banda A", fmt: "int", tone: "pos", title: "declara ≥ $1.500 y está listo para tomar acción — se confirma primero" },
+      { key: "agendo_closer", label: "Agendó closer", fmt: "int", tone: "pos", title: "leads del funnel que ya tienen cita en la agenda de closers" },
+      { key: "sin_asignar", label: "Sin asignar", fmt: "int", tone: k.sin_asignar ? "cau" : "muted", title: "GHL no tiene a nadie asignado" },
+      { key: "sin_meet", label: "Sin Meet", fmt: "int", tone: k.sin_meet ? "neg" : "muted", title: "no pasaron por el webhook" },
+      { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
+      { key: "ventas", label: "Ventas", fmt: "int", tone: "pos" },
+    ];
+  let cuerpo;
+  if (!citas.length) {
+    cuerpo = `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">Sin citas en la ventana.</p>`;
+  } else if (!semana) {
+    cuerpo = bloqueDia(citas, sig, esClosers, false);
+  } else {
+    const porDia = new Map();
+    for (const c of citas) {
+      if (!porDia.has(c.fecha)) porDia.set(c.fecha, []);
+      porDia.get(c.fecha).push(c);
+    }
+    cuerpo = [...porDia.keys()].sort().map((f) => bloqueDia(porDia.get(f), sig, esClosers, true)).join("");
+  }
+  return `${section(titulo, hint)}
+    ${cards(kpisDefs, k, { cols: 8 })}
+    ${cuerpo}`;
 }
 
 function renderObjeto(ui, d) {
@@ -146,40 +223,15 @@ function renderObjeto(ui, d) {
   const avisos = [];
   if (d.fuente.ghl !== "ok") avisos.push(`<div class="alert alert-neg mt-3">GHL no respondió — la agenda no se puede listar desde la base (GHL manda). ${escape(d.fuente.detalle || "")}</div>`);
   if (d.fuente.db === "error") avisos.push(`<div class="alert alert-cau mt-3">La base no respondió: las citas salen sin Meet, BANT ni plan.</div>`);
-  const cals = (d.calendarios || []).map((c) => `${escape(c.nombre || c.id)} — setters: ${escape((c.setters || []).join(", ") || "—")}`).join(" · ");
+  const cals = (d.calendarios || []).map((c) => `${c.tipo === "closers" ? "closers" : "funnel"}: ${escape(c.nombre || c.id)} (${escape((c.miembros || []).join(", ") || "—")})`).join(" · ");
   const meta = `<p class="text-xs mt-2" style="color:var(--text-3)">${cals} · contactos en vivo ${d.fuente.contactos_en_vivo ?? 0} / espejo ${d.fuente.contactos_espejo ?? 0}</p>`;
 
-  const k = d.kpis;
-  const kpisProx = cards([
-    { key: "citas", label: "Citas", fmt: "int", tone: "brand", title: "citas en GHL en la ventana, todos los estados" },
-    { key: "confirmadas", label: "Confirmadas", fmt: "int", tone: "pos" },
-    { key: "banda_a", label: "Banda A", fmt: "int", tone: "pos", title: "declara ≥ $1.500 y está listo para tomar acción — se confirma primero" },
-    { key: "sin_closer", label: "Sin closer", fmt: "int", tone: k.sin_closer ? "cau" : "muted", title: "asignadas a un setter o a nadie" },
-    { key: "sin_meet", label: "Sin Meet", fmt: "int", tone: k.sin_meet ? "neg" : "muted", title: "no pasaron por el webhook: no habrá grabación ni análisis" },
-    { key: "canceladas", label: "Canceladas", fmt: "int", tone: "muted" },
-  ], k);
-  const kpisPas = cards([
-    { key: "pasadas", label: "Pasadas", fmt: "int", tone: "brand" },
-    { key: "ocurrieron", label: "Ocurrieron", fmt: "int", tone: "pos", title: "transcript usable o grabación" },
-    { key: "analizadas", label: "Analizadas", fmt: "int", tone: "pos", title: "con reporte BANT vigente" },
-    { key: "ventas", label: "Ventas", fmt: "int", tone: "pos", title: "plan de pago activo creado desde la cita" },
-    { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "ni grabación, ni transcript, ni plan — ¿qué pasó?" },
-    { label: "Anunciadas", fmt: "int", value: null, muted: true, title: "pendiente de conectar al grupo ONLY CLOSERS" },
-  ], k);
-
-  let cuerpo;
-  if (!d.citas.length) {
-    cuerpo = `<p class="text-sm italic px-1 py-4" style="color:var(--text-3)">Sin citas en la ventana.</p>`;
-  } else if (!semana) {
-    cuerpo = bloqueDia(d.citas, sig, false);
-  } else {
-    const porDia = new Map();
-    for (const c of d.citas) {
-      if (!porDia.has(c.fecha)) porDia.set(c.fecha, []);
-      porDia.get(c.fecha).push(c);
-    }
-    cuerpo = [...porDia.keys()].sort().map((f) => bloqueDia(porDia.get(f), sig, true)).join("");
-  }
+  const closers = d.citas.filter((c) => c.calendario === "closers");
+  const funnel = d.citas.filter((c) => c.calendario !== "closers");
+  const hayClosers = (d.calendarios || []).some((c) => c.tipo === "closers");
+  const carrilClosers = hayClosers
+    ? carril("Agenda de closers", "la que cuadra el setter — «Aplicación»", closers, d.kpis.closers, sig, true, semana)
+    : `${section("Agenda de closers", "")}<div class="alert alert-cau">No se encontró el calendario de closers («Aplicación…») en GHL.</div>`;
 
   const solo = d.solo_en_sistema.length
     ? `<div class="table-wrap"><div class="table-scroll"><table class="tbl"><thead><tr><th>Fecha</th><th>Hora</th><th>Lead</th><th>Closer</th><th>Llamada</th></tr></thead><tbody>
@@ -196,10 +248,9 @@ function renderObjeto(ui, d) {
     <div class="max-w-6xl mx-auto">
       ${nav}${meta}
       ${avisos.join("")}
-      <div class="mt-6">${kpisProx}</div>
-      ${kpisPas}
-      ${cuerpo}
-      ${section("En el sistema, no en GHL", "llamadas agendadas en la base que el calendario oficial no tiene — para corregir la agenda")}
+      ${carrilClosers}
+      ${carril("Funnel — llamadas del setter", "el widget agenda aquí; las toma un setter", funnel, d.kpis.funnel, sig, false, semana)}
+      ${section("En el sistema, no en GHL", "llamadas agendadas en la base que los calendarios oficiales no tienen — para corregir la agenda")}
       ${solo}
       <ul class="text-xs mt-8 list-disc pl-5" style="color:var(--text-3)">${d.sin_instrumentar.map((s) => `<li>${escape(s)}</li>`).join("")}</ul>
     </div>
@@ -208,7 +259,7 @@ function renderObjeto(ui, d) {
 
 function render(ui) {
   const p = Object.assign({}, ui.params || {});
-  const params = { project: p.project, fecha: p.fecha, vista: p.vista };
+  const params = { project: p.project, fecha: p.fecha, vista: p.vista, calendar_closers: p.calendar_closers };
   let d, err;
   try {
     d = fetchSource(ui.source || "agenda_setter", params).rows[0];

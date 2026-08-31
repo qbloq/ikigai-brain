@@ -323,7 +323,7 @@ const SOURCES = {
     label: "Agenda del setter",
     script: "bash/setters/agenda.sh",
     emits: "object",
-    args: { project: "--project", fecha: "--fecha", vista: "--vista" },
+    args: { project: "--project", fecha: "--fecha", vista: "--vista", calendar_closers: "--calendar-closers" },
   },
   // Objections flattened across call reports — the narrative feedback loop.
   call_objections: {

@@ -80,20 +80,35 @@ class Estado(unittest.TestCase):
 CTX = {
     "proyecto": "David Guerrero", "fecha": "2026-08-26", "vista": "dia", "ahora": "2026-08-26T09:00",
     "fuente": {"ghl": "ok", "detalle": None, "db": "ok"},
-    "calendarios": [{"id": "CAL1", "nombre": "Calendario Premium Mastermind", "setters": ["SET1", "SET2"]}],
+    "calendarios": [{"id": "CAL1", "nombre": "Calendario Premium Mastermind", "tipo": "funnel", "miembros": ["SET1", "SET2"]},
+                    {"id": "CAL2", "nombre": "Aplicación a Premium Mastermind", "tipo": "closers", "miembros": ["CLO1"]}],
     "eventos": [
         {"id": "AP1", "appointmentStatus": "confirmed", "title": "Ana Pérez - Premium Mastermind",
          "startTime": "2026-08-26T09:20:00-05:00", "endTime": "2026-08-26T09:40:00-05:00",
-         "contactId": "C1", "assignedUserId": "CLO1", "calendarId": "CAL1", "createdBy": {"source": "booking_widget"}},
+         "contactId": "C1", "assignedUserId": "SET1", "calendarId": "CAL1", "createdBy": {"source": "booking_widget"}},
         {"id": "AP2", "appointmentStatus": "confirmed", "title": "Luis Gil - Premium Mastermind",
          "startTime": "2026-08-26T15:00:00-05:00", "endTime": "2026-08-26T15:20:00-05:00",
          "contactId": "C2", "assignedUserId": "SET1", "calendarId": "CAL1", "createdBy": {"source": "booking_widget"}},
         {"id": "AP3", "appointmentStatus": "cancelled", "title": "Eva Ruiz - Premium Mastermind",
          "startTime": "2026-08-26T08:00:00-05:00", "endTime": "2026-08-26T08:20:00-05:00",
-         "contactId": "C3", "assignedUserId": "CLO1", "calendarId": "CAL1", "createdBy": {"source": "booking_widget"}},
+         "contactId": "C3", "assignedUserId": "CLO1", "calendarId": "CAL2", "createdBy": {"source": "booking_widget"}},
         {"id": "AP_FUERA", "appointmentStatus": "confirmed", "title": "Fuera - PM",
          "startTime": "2026-08-27T09:00:00-05:00", "endTime": "2026-08-27T09:20:00-05:00",
-         "contactId": "C9", "assignedUserId": "CLO1", "calendarId": "CAL1", "createdBy": {}},
+         "contactId": "C9", "assignedUserId": "CLO1", "calendarId": "CAL2", "createdBy": {}},
+        {"id": "AP4", "appointmentStatus": "confirmed", "title": "Ana Pérez - Premium Mastermind",
+         "startTime": "2026-08-26T16:00:00-05:00", "endTime": "2026-08-26T16:20:00-05:00",
+         "contactId": "C1", "assignedUserId": "CLO1", "calendarId": "CAL2", "createdBy": {"source": "calendar_page"}},
+        {"id": "AP5", "appointmentStatus": "confirmed", "title": "Zoe Mal - Premium Mastermind",
+         "startTime": "2026-08-26T17:00:00-05:00", "endTime": "2026-08-26T17:20:00-05:00",
+         "contactId": "C5", "assignedUserId": "SET2", "calendarId": "CAL2", "createdBy": {"source": "calendar_page"}},
+    ],
+    "eventos_cruce": [
+        {"id": "APX", "appointmentStatus": "confirmed", "title": "Luis Gil - Premium Mastermind",
+         "startTime": "2026-08-28T10:00:00-05:00", "endTime": "2026-08-28T10:20:00-05:00",
+         "contactId": "C2", "assignedUserId": "CLO1", "calendarId": "CAL2", "createdBy": {}},
+        {"id": "APY", "appointmentStatus": "cancelled", "title": "Eva Ruiz - Premium Mastermind",
+         "startTime": "2026-08-27T10:00:00-05:00", "endTime": "2026-08-27T10:20:00-05:00",
+         "contactId": "C3", "assignedUserId": "CLO1", "calendarId": "CAL2", "createdBy": {}},
     ],
     "contactos": {
         "C1": {"id": "C1", "firstName": "Ana", "lastName": "Pérez", "email": "ana@x.co", "phone": "+57 300",
@@ -103,6 +118,7 @@ CTX = {
                                 {"id": "F_OTRO", "value": "Colombia"}]},
         "C2": None,
         "C3": {"id": "C3", "firstName": "Eva", "lastName": "Ruiz", "customFields": []},
+        "C5": None,
     },
     "db": {
         "catalogo": [{"ghl_field_id": "F_PRES", "name": "¿Tienes al menos $1.500 USD para invertir?", "position": 1},
@@ -130,7 +146,9 @@ class Armar(unittest.TestCase):
         self.por_id = {c["appointment_id"]: c for c in self.out["citas"]}
 
     def test_ventana_filtra_y_ordena(self):
-        self.assertEqual([c["appointment_id"] for c in self.out["citas"]], ["AP3", "AP1", "AP2"])
+        self.assertEqual([c["appointment_id"] for c in self.out["citas"]], ["AP3", "AP1", "AP2", "AP4", "AP5"])
+        self.assertEqual({c["appointment_id"]: c["calendario"] for c in self.out["citas"]},
+                         {"AP3": "closers", "AP1": "funnel", "AP2": "funnel", "AP4": "closers", "AP5": "closers"})
         self.assertEqual(self.out["ventana"], {"vista": "dia", "fecha": "2026-08-26", "desde": "2026-08-26", "hasta": "2026-08-26", "ahora": "2026-08-26T09:00"})
 
     def test_lead_en_vivo_banda_y_survey(self):
@@ -139,18 +157,27 @@ class Armar(unittest.TestCase):
         self.assertEqual(c["lead"]["campana"], "Fly_test"); self.assertEqual(c["lead"]["sesion"], "Social media")
         self.assertEqual(c["banda"], {"letra": "A", "presupuesto": "$1.500", "disposicion": "Estoy listo para tomar acción e invertir"})
         self.assertEqual([s["campo"] for s in c["survey"]], ["¿Tienes al menos $1.500 USD para invertir?", "¿En qué situación te encuentras actualmente?", "País"])
-        self.assertEqual(c["closer"]["nombre"], "Carlos González"); self.assertFalse(c["sin_closer"])
+        self.assertEqual(c["asignado"]["nombre"], "Cristian Buelvas"); self.assertFalse(c["sin_closer"]); self.assertFalse(c["sin_asignar"])
+        self.assertEqual(c["cita_closer"], {"fecha": "2026-08-26", "hora": "16:00", "closer": "Carlos González"})
         self.assertEqual(c["etapa_crm"], "LLAMADA CONFIRMADA"); self.assertFalse(c["etapa_no_confirmada"])
         self.assertEqual(c["historial"], {"llamadas_previas": 1, "ultima": "2026-07-01", "bant_previo": 55})
         self.assertIsNone(c["meeting"]); self.assertTrue(c["sin_meet"])
         self.assertFalse(c["pasada"]); self.assertEqual(c["estado"], "proxima"); self.assertIsNone(c["anunciada"])
 
-    def test_lead_desde_espejo_y_setter_asignado(self):
+    def test_lead_desde_espejo_y_cruce_fuera_de_ventana(self):
         c = self.por_id["AP2"]
         self.assertEqual(c["lead"]["fuente"], "espejo"); self.assertEqual(c["lead"]["nombre"], "Luis Gil")
         self.assertEqual(c["banda"]["letra"], "B")
-        self.assertEqual(c["closer"]["nombre"], "Cristian Buelvas"); self.assertTrue(c["sin_closer"])
+        self.assertFalse(c["sin_closer"])  # funnel: asignado a setter es lo normal
+        self.assertEqual(c["cita_closer"], {"fecha": "2026-08-28", "hora": "10:00", "closer": "Carlos González"})
         self.assertIsNone(c["etapa_crm"]); self.assertTrue(c["etapa_no_confirmada"])
+
+    def test_closers_sin_closer_y_cancelada_no_cruza(self):
+        c = self.por_id["AP5"]  # cita de closers asignada a un setter
+        self.assertEqual(c["calendario"], "closers"); self.assertTrue(c["sin_closer"]); self.assertFalse(c["sin_asignar"])
+        self.assertIsNone(c["cita_closer"])  # el cruce es solo del funnel
+        # la cita cancelada APY no cuenta como «agendó con closer» para C3
+        self.assertIsNone(self.por_id["AP3"]["cita_closer"])
 
     def test_pasada_cancelada_con_reporte(self):
         c = self.por_id["AP3"]
@@ -162,14 +189,15 @@ class Armar(unittest.TestCase):
         self.assertIsNone(c["banda"])  # pasadas no llevan banda
 
     def test_kpis_y_alertas(self):
-        k = self.out["kpis"]
-        self.assertEqual((k["citas"], k["confirmadas"], k["canceladas"]), (3, 2, 1))
-        self.assertEqual((k["banda_a"], k["sin_closer"], k["sin_meet"]), (1, 1, 2))
-        self.assertEqual((k["pasadas"], k["ocurrieron"], k["analizadas"], k["ventas"], k["sin_rastro"]), (0, 0, 0, 0, 0))
+        kf, kc = self.out["kpis"]["funnel"], self.out["kpis"]["closers"]
+        self.assertEqual((kf["citas"], kf["confirmadas"], kf["canceladas"]), (2, 2, 0))
+        self.assertEqual((kf["banda_a"], kf["sin_asignar"], kf["sin_closer"], kf["agendo_closer"], kf["leads"]), (1, 0, 0, 2, 2))
+        self.assertEqual((kc["citas"], kc["canceladas"], kc["sin_closer"], kc["pasadas"]), (3, 1, 1, 0))
         self.assertEqual(self.out["solo_en_sistema"][0]["lead"], "Javier Gutierrez")
         self.assertEqual(self.out["fuente"]["contactos_en_vivo"], 2); self.assertEqual(self.out["fuente"]["contactos_espejo"], 1)
         self.assertEqual(len(self.out["sin_instrumentar"]), 2)
-        self.assertEqual(self.out["calendarios"][0]["setters"], ["Cristian Buelvas", "Anthony Velásquez"])
+        self.assertEqual(self.out["calendarios"][0]["miembros"], ["Cristian Buelvas", "Anthony Velásquez"])
+        self.assertEqual(self.out["calendarios"][1]["tipo"], "closers")
 
     def test_prefiere_la_pregunta_validada_sobre_la_vigente(self):
         ctx = json.loads(json.dumps(CTX))
@@ -195,7 +223,8 @@ class Armar(unittest.TestCase):
     def test_ghl_error_deja_citas_vacias(self):
         ctx = json.loads(json.dumps(CTX)); ctx["fuente"] = {"ghl": "error", "detalle": "HTTP 500", "db": "ok"}; ctx["eventos"] = []
         out = L.armar(ctx)
-        self.assertEqual(out["citas"], []); self.assertEqual(out["fuente"]["ghl"], "error"); self.assertEqual(out["kpis"]["citas"], 0)
+        self.assertEqual(out["citas"], []); self.assertEqual(out["fuente"]["ghl"], "error")
+        self.assertEqual(out["kpis"]["funnel"]["citas"], 0); self.assertEqual(out["kpis"]["closers"]["citas"], 0)
 
 
 if __name__ == "__main__":

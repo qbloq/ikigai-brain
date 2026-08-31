@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """agenda_lib — el ensamblado PURO de la agenda del setter (spec
-docs/superpowers/specs/2026-08-26-agenda-setter-design.md).
+docs/superpowers/specs/2026-08-26-agenda-setter-design.md + ajuste 2 calendarios).
 
-Sin red ni base: recibe lo que agenda.sh ya trajo (citas de GHL, contactos en
-vivo, una consulta a Postgres) y emite el objeto de la fuente `agenda_setter`.
-Todo lo que se puede probar sin credenciales vive aquí (test_agenda_lib.py).
+DOS CALENDARIOS (corrección de Santiago, 2026-08-26): el del FUNNEL (los leads
+del widget caen ahí y los atiende un setter — el asignado ES el setter, no una
+alerta) y el de CLOSERS («Aplicación…», la agenda que el setter cuadra — ahí el
+asignado debe ser un closer). Cada cita sale etiquetada `calendario`.
+
+Sin red ni base: recibe lo que agenda.sh ya trajo (citas de GHL de ambos
+calendarios, contactos en vivo, una consulta a Postgres) y emite el objeto de
+la fuente `agenda_setter`. Todo lo testeable sin credenciales vive aquí.
 """
 import argparse, json, os, re, sys
 from datetime import date, datetime, timedelta, timezone
@@ -159,6 +164,26 @@ def _reporte(m):
             "arquetipo": m.get("arquetipo"), "meeting_id8": m.get("id8")}
 
 
+def _kpis(citas):
+    vivas = [c for c in citas if c["estado_ghl"] != "cancelled"]
+    prox = [c for c in vivas if not c["pasada"]]
+    pas = [c for c in vivas if c["pasada"]]
+    return {
+        "citas": len(citas), "leads": len({c["contact_id"] for c in vivas if c["contact_id"]}),
+        "confirmadas": sum(1 for c in citas if c["estado_ghl"] == "confirmed"),
+        "canceladas": sum(1 for c in citas if c["estado_ghl"] == "cancelled"),
+        "banda_a": sum(1 for c in prox if (c["banda"] or {}).get("letra") == "A"),
+        "sin_closer": sum(1 for c in vivas if c["sin_closer"]),
+        "sin_asignar": sum(1 for c in vivas if c["sin_asignar"]),
+        "sin_meet": sum(1 for c in vivas if c["sin_meet"]),
+        "agendo_closer": len({c["contact_id"] for c in vivas if c["cita_closer"]}),
+        "pasadas": len(pas),
+        "ocurrieron": sum(1 for c in pas if c["ocurrio"]["transcript"] or c["ocurrio"]["grabacion"]),
+        "analizadas": sum(1 for c in pas if c["reporte"]), "ventas": sum(1 for c in pas if c["venta"]),
+        "sin_rastro": sum(1 for c in pas if c["estado"] == "sin_rastro"),
+    }
+
+
 def armar(ctx):
     fecha = date.fromisoformat(ctx["fecha"])
     desde, hasta = ventana(fecha, ctx["vista"])
@@ -173,22 +198,42 @@ def armar(ctx):
     for p in db.get("planes") or []:
         planes.setdefault(p["customer_id"], []).append(p)
     catalogo = db.get("catalogo") or []
-    setters = set()
-    calendarios = []
+
+    tipo_de_cal, setters_ids, closers_ids, calendarios = {}, set(), set(), []
     for cal in ctx.get("calendarios") or []:
-        ids = cal.get("setters") or []
-        setters.update(ids)
-        calendarios.append({"id": cal["id"], "nombre": cal.get("nombre"),
-                            "setters": [usuarios.get(i, {}).get("nombre") or i for i in ids]})
+        tipo = cal.get("tipo") or "funnel"
+        tipo_de_cal[cal["id"]] = tipo
+        ids = cal.get("miembros") or []
+        (setters_ids if tipo == "funnel" else closers_ids).update(ids)
+        calendarios.append({"id": cal["id"], "nombre": cal.get("nombre"), "tipo": tipo,
+                            "miembros": [usuarios.get(i, {}).get("nombre") or i for i in ids]})
     contactos = ctx.get("contactos") or {}
     en_vivo = sum(1 for v in contactos.values() if v)
     espejo_usados = 0
 
+    # índice del cruce funnel→closers: contactId → cita de closer más próxima
+    # (citas de closers de la ventana + las de los días siguientes que
+    # agenda.sh trae solo para esto, en eventos_cruce).
+    cruce = {}
+    eventos = list(ctx.get("eventos") or [])
+    for ev in eventos + list(ctx.get("eventos_cruce") or []):
+        if tipo_de_cal.get(ev.get("calendarId")) != "closers" or ev.get("appointmentStatus") == "cancelled":
+            continue
+        cid = ev.get("contactId")
+        if not cid:
+            continue
+        f, h = hora_bogota(ev["startTime"])
+        u = usuarios.get(ev.get("assignedUserId"))
+        entrada = {"fecha": f, "hora": h, "closer": (u or {}).get("nombre")}
+        if cid not in cruce or (f, h) < (cruce[cid]["fecha"], cruce[cid]["hora"]):
+            cruce[cid] = entrada
+
     citas = []
-    for ev in ctx.get("eventos") or []:
+    for ev in eventos:
         f, h = hora_bogota(ev["startTime"])
         if not (desde.isoformat() <= f <= hasta.isoformat()):
             continue
+        calendario = tipo_de_cal.get(ev.get("calendarId")) or "funnel"
         fin = hora_bogota(ev["endTime"])[1] if ev.get("endTime") else None
         cid = ev.get("contactId")
         cont = contactos.get(cid)
@@ -197,10 +242,13 @@ def armar(ctx):
             espejo_usados += 1
         lead, survey, bnd = _lead(ev, cont, esp, catalogo)
         pasada = f"{f}T{h}" < ahora
-        u = usuarios.get(ev.get("assignedUserId"))
-        closer = {"nombre": u["nombre"], "user_id": u["user_id"], "ghl_user_id": ev.get("assignedUserId")} if u \
-            else {"nombre": None, "user_id": None, "ghl_user_id": ev.get("assignedUserId")}
-        sin_closer = (u is None) or (ev.get("assignedUserId") in setters)
+        uid = ev.get("assignedUserId")
+        u = usuarios.get(uid)
+        asignado = {"nombre": (u or {}).get("nombre"), "user_id": (u or {}).get("user_id"), "ghl_user_id": uid}
+        sin_asignar = not uid or u is None
+        # `sin_closer` SOLO en el carril de closers: la cita quedó en manos de
+        # un setter (o de nadie resoluble) cuando debía tener un closer dueño.
+        sin_closer = calendario == "closers" and (sin_asignar or uid in setters_ids)
         m = meetings.get(ev["id"])
         meeting = {"id8": m["id8"], "meet_url": m.get("meet_url"), "status": m.get("status")} if m else None
         etapa = (opps.get(cid) or {}).get("etapa")
@@ -211,11 +259,13 @@ def armar(ctx):
                 break
         hc = hist.get(cid)
         cita = {
-            "appointment_id": ev["id"], "fecha": f, "hora": h, "fin": fin,
+            "appointment_id": ev["id"], "calendario": calendario, "contact_id": cid,
+            "fecha": f, "hora": h, "fin": fin,
             "estado_ghl": ev.get("appointmentStatus"), "titulo": ev.get("title"),
             "creada_por": (ev.get("createdBy") or {}).get("source"),
             "pasada": pasada, "estado": None,
-            "lead": lead, "closer": closer, "sin_closer": sin_closer,
+            "lead": lead, "asignado": asignado, "sin_asignar": sin_asignar, "sin_closer": sin_closer,
+            "cita_closer": cruce.get(cid) if calendario == "funnel" else None,
             "meeting": meeting, "sin_meet": meeting is None,
             "etapa_crm": etapa, "etapa_no_confirmada": (etapa or "").strip().lower() != "llamada confirmada",
             "banda": None if pasada else bnd, "survey": survey,
@@ -228,24 +278,15 @@ def armar(ctx):
         citas.append(cita)
     citas.sort(key=lambda c: (c["fecha"], c["hora"]))
 
-    vivas = [c for c in citas if c["estado_ghl"] != "cancelled"]
-    prox = [c for c in vivas if not c["pasada"]]
-    pas = [c for c in vivas if c["pasada"]]
-    kpis = {
-        "citas": len(citas), "confirmadas": sum(1 for c in citas if c["estado_ghl"] == "confirmed"),
-        "canceladas": sum(1 for c in citas if c["estado_ghl"] == "cancelled"),
-        "banda_a": sum(1 for c in prox if (c["banda"] or {}).get("letra") == "A"),
-        "sin_closer": sum(1 for c in vivas if c["sin_closer"]), "sin_meet": sum(1 for c in vivas if c["sin_meet"]),
-        "pasadas": len(pas), "ocurrieron": sum(1 for c in pas if c["ocurrio"]["transcript"] or c["ocurrio"]["grabacion"]),
-        "analizadas": sum(1 for c in pas if c["reporte"]), "ventas": sum(1 for c in pas if c["venta"]),
-        "sin_rastro": sum(1 for c in pas if c["estado"] == "sin_rastro"),
-    }
     fuente = dict(ctx.get("fuente") or {})
     fuente.update({"contactos_en_vivo": en_vivo, "contactos_espejo": espejo_usados})
     return {
         "proyecto": ctx.get("proyecto"), "calendarios": calendarios,
         "ventana": {"vista": ctx["vista"], "fecha": ctx["fecha"], "desde": desde.isoformat(), "hasta": hasta.isoformat(), "ahora": ahora},
-        "fuente": fuente, "kpis": kpis, "citas": citas,
+        "fuente": fuente,
+        "kpis": {"closers": _kpis([c for c in citas if c["calendario"] == "closers"]),
+                 "funnel": _kpis([c for c in citas if c["calendario"] == "funnel"])},
+        "citas": citas,
         "solo_en_sistema": db.get("solo_en_sistema") or [],
         "sin_instrumentar": list(SIN_INSTRUMENTAR),
     }
@@ -277,6 +318,7 @@ def main(argv=None):
            "fuente": _leer(os.path.join(d, "fuente.json"), {"ghl": "error", "detalle": "sin fuente.json", "db": "error"}),
            "calendarios": _leer(os.path.join(d, "calendarios.json"), []),
            "eventos": _leer(os.path.join(d, "eventos.json"), []),
+           "eventos_cruce": _leer(os.path.join(d, "eventos_cruce.json"), []),
            "contactos": contactos, "db": _leer(os.path.join(d, "db.json"), {})}
     json.dump(armar(ctx), sys.stdout, ensure_ascii=False)
 

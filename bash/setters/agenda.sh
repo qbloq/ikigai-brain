@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
-# agenda.sh — LA AGENDA DEL SETTER como un solo objeto JSON: las citas del
-# calendario oficial de GHL (día o semana) enriquecidas con lo que el Cerebro
-# sabe de cada lead. Spec: docs/superpowers/specs/2026-08-26-agenda-setter-design.md
+# agenda.sh — LA AGENDA DEL SETTER como un solo objeto JSON: las citas de los
+# DOS calendarios oficiales de GHL (día o semana) enriquecidas con lo que el
+# Cerebro sabe de cada lead. Spec: docs/superpowers/specs/2026-08-26-agenda-setter-design.md
+# (+ ajuste dos calendarios, decisión de Santiago 2026-08-26).
+#
+#   DOS CALENDARIOS: el del FUNNEL (crm_calendars activo; el widget agenda ahí
+#   y la llamada la toma un SETTER — round-robin entre ellos) y el de CLOSERS
+#   («Aplicación…», donde el setter cuadra la agenda de los closers). Cada cita
+#   sale con `calendario: funnel|closers`; `sin_closer` solo aplica en closers.
+#   El de closers se fija con --calendar-closers o se descubre en vivo (activo,
+#   nombre «aplicación…», no personal). Para el cruce funnel→«ya agendó con
+#   closer» se traen además las citas de closers de los 7 días siguientes.
 #
 #   GHL MANDA. La lista de citas es la de GHL; Postgres solo enriquece (Meet,
 #   transcript/grabación, reporte BANT, plan de pago, etapa del tablero,
 #   historial). Si GHL falla, fuente.ghl='error' y citas=[] — jamás se rellena
-#   la agenda desde la base (una llamada que GHL no tiene no existe para el
-#   webhook, y por tanto tampoco tendrá grabación ni análisis).
+#   la agenda desde la base.
 #
 #   Por cita: contacto EN VIVO (GET /contacts/{id}) — el lead recién agendado
 #   existe en GHL antes que en el espejo; si el GET falla, cae al espejo y la
@@ -21,7 +29,8 @@
 # ⚠️ Sin Postgres no hay agenda: las credenciales de GHL viven en la base.
 # ⚠️ bash 3.2: las lecturas de contacto van en tandas de 4 subshells + wait.
 #
-# Uso: agenda.sh [--project N] [--fecha YYYY-MM-DD] [--vista dia|semana] [--json]
+# Uso: agenda.sh [--project N] [--fecha YYYY-MM-DD] [--vista dia|semana]
+#                [--calendar-closers ID] [--json]
 #   --project  fragmento del nombre (default: David Guerrero)
 #   --fecha    día de referencia, Bogotá (default hoy)
 #   --vista    dia (default) · semana = lunes–domingo que contiene --fecha
@@ -32,13 +41,14 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HERE/../ghl/lib/common.sh"
 export GHL_API_VERSION=2021-04-15   # calendars/* viven en esta versión
 
-PROJECT="David Guerrero"; FECHA=""; VISTA="dia"
-usage() { sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+PROJECT="David Guerrero"; FECHA=""; VISTA="dia"; CAL_CLOSERS=""
+usage() { sed -n '2,37p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project) PROJECT="${2:?}"; shift 2 ;;
     --fecha)   FECHA="${2:?}"; shift 2 ;;
     --vista)   VISTA="${2:?}"; shift 2 ;;
+    --calendar-closers) CAL_CLOSERS="${2:?}"; shift 2 ;;
     --json)    shift ;;
     -h|--help) usage ;;
     *) echo "flag desconocido: $1" >&2; usage 1 ;;
@@ -59,7 +69,7 @@ ghl_load_creds "$PID"
 PID_ESC="${PID//\'/\'\'}"
 
 # --- ventana Bogotá → epoch millis (GHL filtra grueso; el python re-filtra) --
-read -r DESDE HASTA DESDE_MS HASTA_MS < <(python3 - "$FECHA" "$VISTA" "$HERE/lib" <<'PY'
+read -r DESDE HASTA DESDE_MS HASTA_MS HASTA_CRUCE_MS < <(python3 - "$FECHA" "$VISTA" "$HERE/lib" <<'PY'
 import sys
 from datetime import date, datetime, timedelta, timezone
 sys.path.insert(0, sys.argv[3])
@@ -67,43 +77,78 @@ import agenda_lib as L
 f = date.fromisoformat(sys.argv[1]); d, h = L.ventana(f, sys.argv[2])
 tz = timezone(timedelta(hours=-5))
 ms = lambda x: int(datetime(x.year, x.month, x.day, tzinfo=tz).timestamp() * 1000)
-print(d.isoformat(), h.isoformat(), ms(d), ms(h + timedelta(days=1)))
+print(d.isoformat(), h.isoformat(), ms(d), ms(h + timedelta(days=1)), ms(h + timedelta(days=8)))
 PY
 )
 
-# --- calendarios activos + sus miembros (= los setters) -----------------------
+# --- los dos calendarios ------------------------------------------------------
+# funnel: los activos del espejo crm_calendars (el oficial del widget).
 CALS="$(psql_ro -t -A -F$'\t' -c "SELECT ghl_calendar_id, coalesce(nullif(custom_name,''), ghl_calendar_name, '')
   FROM crm_calendars WHERE project_id='$PID_ESC' AND is_active ORDER BY created_at;")" || { DB_ESTADO=error; CALS=""; }
 [[ -z "$CALS" ]] && { GHL_ESTADO=error; GHL_DETALLE="el proyecto no tiene calendario activo en crm_calendars"; }
+FUNNEL_IDS="$(cut -f1 <<<"$CALS" | paste -sd, -)"
 
-echo '[]' >"$TMP/calendarios.json"; echo '[]' >"$TMP/eventos.json"
-while IFS=$'\t' read -r cal_id cal_nombre; do
+# closers: --calendar-closers manda; si no, descubrimiento en vivo (activo,
+# nombre «aplicación…», no personal, distinto del funnel).
+CLOSERS_LINEA=""
+ALLCALS="$(ghl_api "/calendars/?locationId=$GHL_LOCATION" 2>"$TMP/err" || true)"
+[[ -z "$ALLCALS" ]] && ALLCALS='{}'
+printf '%s' "$ALLCALS" >"$TMP/allcals.json"
+CLOSERS_LINEA="$(python3 - "$TMP/allcals.json" "$CAL_CLOSERS" "$FUNNEL_IDS" <<'PY'
+import json, sys, unicodedata
+cals = (json.load(open(sys.argv[1])) or {}).get("calendars") or []
+quiere, funnel = sys.argv[2], set(filter(None, sys.argv[3].split(",")))
+def plano(s):
+    return unicodedata.normalize("NFD", s or "").encode("ascii", "ignore").decode().lower()
+elegido = None
+for c in cals:
+    if quiere and c.get("id") == quiere:
+        elegido = c; break
+    if not quiere and c.get("isActive") and c.get("id") not in funnel \
+       and "aplicacion" in plano(c.get("name")) and "personal" not in plano(c.get("name")):
+        elegido = elegido or c
+if elegido:
+    print("%s\t%s" % (elegido["id"], elegido.get("name") or ""))
+PY
+)"
+
+{ while IFS=$'\t' read -r cid cnom; do [[ -n "$cid" ]] && printf '%s\t%s\t%s\n' "$cid" "$cnom" funnel; done <<<"$CALS"
+  [[ -n "$CLOSERS_LINEA" ]] && printf '%s\t%s\n' "$CLOSERS_LINEA" closers; } >"$TMP/cals.tsv"
+
+echo '[]' >"$TMP/calendarios.json"; echo '[]' >"$TMP/eventos.json"; echo '[]' >"$TMP/eventos_cruce.json"
+while IFS=$'\t' read -r cal_id cal_nombre cal_tipo; do
   [[ -z "$cal_id" ]] && continue
   miembros="[]"
   if out="$(ghl_api "/calendars/$cal_id" 2>"$TMP/err")"; then
     miembros="$(python3 -c 'import json,sys; d=json.load(sys.stdin); c=d.get("calendar") or d
 print(json.dumps([m.get("userId") for m in (c.get("teamMembers") or []) if m.get("userId")]))' <<<"$out")"
   fi
-  python3 - "$TMP/calendarios.json" "$cal_id" "$cal_nombre" "$miembros" <<'PY'
+  python3 - "$TMP/calendarios.json" "$cal_id" "$cal_nombre" "$cal_tipo" "$miembros" <<'PY'
 import json, sys
-p, cid, nom, mem = sys.argv[1:5]
-arr = json.load(open(p)); arr.append({"id": cid, "nombre": nom, "setters": json.loads(mem)})
+p, cid, nom, tipo, mem = sys.argv[1:6]
+arr = json.load(open(p)); arr.append({"id": cid, "nombre": nom, "tipo": tipo, "miembros": json.loads(mem)})
 json.dump(arr, open(p, "w"), ensure_ascii=False)
 PY
-  if out="$(ghl_api "/calendars/events$(ghl_qs locationId "$GHL_LOCATION" calendarId "$cal_id" startTime "$DESDE_MS" endTime "$HASTA_MS")" 2>"$TMP/err")"; then
+  fin_ms="$HASTA_MS"; [[ "$cal_tipo" == "closers" ]] && fin_ms="$HASTA_CRUCE_MS"
+  if out="$(ghl_api "/calendars/events$(ghl_qs locationId "$GHL_LOCATION" calendarId "$cal_id" startTime "$DESDE_MS" endTime "$fin_ms")" 2>"$TMP/err")"; then
     printf '%s' "$out" >"$TMP/ev_raw.json"
-    python3 -c '
-import json, sys
-p = sys.argv[1]; nuevo = json.load(open(sys.argv[2])).get("events") or []
-arr = json.load(open(p)); vistos = {e.get("id") for e in arr}
-arr += [e for e in nuevo if e.get("id") not in vistos]
-json.dump(arr, open(p, "w"), ensure_ascii=False)' "$TMP/eventos.json" "$TMP/ev_raw.json"
+    python3 - "$TMP" "$cal_id" "$HASTA" <<'PY'
+import json, sys, os
+tmp, cal_id, hasta = sys.argv[1:4]
+nuevo = json.load(open(os.path.join(tmp, "ev_raw.json"))).get("events") or []
+for destino, pred in (("eventos.json", lambda e: e.get("startTime", "")[:10] <= hasta),
+                      ("eventos_cruce.json", lambda e: e.get("startTime", "")[:10] > hasta)):
+    p = os.path.join(tmp, destino)
+    arr = json.load(open(p)); vistos = {e.get("id") for e in arr}
+    arr += [e for e in nuevo if e.get("calendarId") == cal_id and e.get("id") not in vistos and pred(e)]
+    json.dump(arr, open(p, "w"), ensure_ascii=False)
+PY
   else
     GHL_ESTADO=error; GHL_DETALLE="$(head -c 300 "$TMP/err" | tr '\n' ' ')"
   fi
-done <<<"$CALS"
+done <"$TMP/cals.tsv"
 
-# --- contactos en vivo, en tandas de 4 (bash 3.2: sin wait -n) ---------------
+# --- contactos en vivo (solo los de la ventana), en tandas de 4 ---------------
 IDS="$(python3 -c '
 import json, sys
 print("\n".join(sorted({e.get("contactId") for e in json.load(open(sys.argv[1])) if e.get("contactId")})))' "$TMP/eventos.json")"
