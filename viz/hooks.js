@@ -13,7 +13,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { execFileSync } = require("node:child_process");
+const { execFileSync, spawn } = require("node:child_process");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORT) || 4319;
@@ -103,6 +103,27 @@ const server = http.createServer(async (req, res) => {
         return fin(500);
       }
       return fin(204);
+    }
+    // El agendamiento ENTRANTE de GHL (reenviado por Marketico en modo
+    // forward, o directo cuando el workflow apunte acá). Validar y delegar:
+    // la decisión vive en bash/agenda/entrante.sh, que registra TODO en la
+    // tabla `entrantes` — incluido su propio error. 202 al instante: el que
+    // reenvía no debe esperar a Marketico.
+    if (url.pathname === "/hooks/crm" && req.method === "POST") {
+      if (!tokenValido(req.headers.authorization)) return fin(401);
+      const raw = await readBody(req);
+      if (raw == null) return fin(400, "cuerpo demasiado grande");
+      try { JSON.parse(raw); } catch { return fin(400, "JSON inválido"); }
+      try {
+        const p = spawn("bash", [path.join(REPO_ROOT, "bash", "agenda", "entrante.sh")],
+          { cwd: REPO_ROOT, detached: true, stdio: ["pipe", "ignore", "ignore"] });
+        p.on("error", (e) => console.error(`[hooks] entrante.sh no arrancó: ${e.message}; payload: ${raw.slice(0, 2000)}`));
+        p.stdin.write(raw); p.stdin.end(); p.unref();
+      } catch (e) {
+        console.error(`[hooks] entrante spawn falló (${e.message}); payload: ${raw.slice(0, 2000)}`);
+        return fin(500);
+      }
+      return fin(202, "aceptado");
     }
     return fin(404, "No encontrado");
   } catch (e) {
