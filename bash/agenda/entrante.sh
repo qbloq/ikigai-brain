@@ -19,6 +19,8 @@
 # el POST a Marketico.
 #
 # uso: entrante.sh [--dry-run] [--json] < payload.json
+#   --json: aceptado por homogeneidad con el resto de bash/ — la salida es
+#           siempre una línea JSON, con o sin la flag.
 # Spec: docs/superpowers/specs/2026-08-26-marketico-port-ux-llamadas-design.md
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -60,17 +62,32 @@ registrar() { # accion resultado error
   # journal_mode=WAL;` en schema.sql IMPRIME "wal" a stdout, que rompería el
   # contrato de una sola línea JSON de salida.
   sqlite3 "$db" < bash/intercepciones/schema.sql >/dev/null
-  ACCION="$1" RES="${2:-}" ERR="${3:-}" DUR="$dur" DB="$db" \
+
+  # RAW (el payload completo) y resultado (puede ser la respuesta cruda de
+  # Marketico) NUNCA van por variable de entorno ni argv: un payload grande
+  # (~1 MB+) revienta exec() con E2BIG y la fila no se llega a escribir.
+  # Van por archivo temporal, leídos desde python; se borran al terminar.
+  local raw_f res_f
+  raw_f="$(mktemp)"; res_f="$(mktemp)"
+  printf '%s' "$RAW" > "$raw_f"
+  printf '%s' "${2:-}" > "$res_f"
+
+  ACCION="$1" ERR="${3:-}" DUR="$dur" DB="$db" \
   APPT="${APPT:-}" CAL="${CAL:-}" ROL="${ROL:-}" ESTADO="${ESTADO:-}" NOMBRE="${NOMBRE:-}" \
-  EMAIL="${EMAIL:-}" INICIO="${INICIO:-}" RAW="$RAW" SIN="$SIN" python3 - <<'PYEOF'
+  EMAIL="${EMAIL:-}" INICIO="${INICIO:-}" SIN="$SIN" RAW_F="$raw_f" RES_F="$res_f" python3 - <<'PYEOF'
 import os, sqlite3
 e = os.environ; n = lambda k: (None if e.get(k, "") in ("", e["SIN"]) else e[k])
+with open(e["RAW_F"], "r", encoding="utf-8") as f:
+    raw = f.read()
+with open(e["RES_F"], "r", encoding="utf-8") as f:
+    res = f.read()
 con = sqlite3.connect(e["DB"], timeout=5)
 con.execute("INSERT INTO entrantes (appointment_id, calendar_id, rol, estado_cita, contacto, email, start_time, accion, resultado, error, duracion_ms, payload) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
   (n("APPT"), n("CAL"), n("ROL"), n("ESTADO"), n("NOMBRE"), n("EMAIL"), n("INICIO"),
-   e["ACCION"], n("RES"), n("ERR"), int(e["DUR"]), e["RAW"]))
+   e["ACCION"], (res or None), n("ERR"), int(e["DUR"]), raw))
 con.commit()
 PYEOF
+  rm -f "$raw_f" "$res_f"
 }
 
 salida() { # accion detalle
@@ -100,7 +117,10 @@ fi
 ROL="$(psql_ro -t -A -c "SELECT coalesce(rol,'') FROM crm_calendars WHERE ghl_calendar_id='${CAL//\'/\'\'}'" 2>/dev/null || echo '__pgdown__')"
 if [[ "$ROL" == "__pgdown__" ]]; then
   (( DRY )) && { salida error "postgres no responde (dry-run)"; exit 0; }
-  registrar error "" "postgres no responde — no se pudo resolver el rol"; salida error "postgres no responde"; exit 1
+  # exit 0: el encabezado manda — "sale 0 si logró registrar", y la fila
+  # accion='error' SÍ se logró escribir en sqlite. exit ≠ 0 queda reservado
+  # para "ni registrar pude" (sqlite inaccesible, stdin vacío).
+  registrar error "" "postgres no responde — no se pudo resolver el rol"; salida error "postgres no responde"; exit 0
 fi
 
 case "$ROL" in
@@ -122,7 +142,15 @@ case "$ROL" in
       MID="$(printf '%s' "$RESP" | python3 -c 'import json,sys
 try: print(json.load(sys.stdin).get("meeting_id") or "")
 except Exception: print("")')"
-      [[ -n "$MID" ]] && psql_rw -c "UPDATE meetings SET ghl_calendar_id='${CAL//\'/\'\'}' WHERE id='${MID//\'/\'\'}' AND ghl_calendar_id IS NULL" >/dev/null 2>&1 || true
+      if [[ -n "$MID" ]]; then
+        psql_rw -c "UPDATE meetings SET ghl_calendar_id='${CAL//\'/\'\'}' WHERE id='${MID//\'/\'\'}' AND ghl_calendar_id IS NULL" >/dev/null 2>&1 || true
+      else
+        # No es un error del camino (la fila accion=meet_solicitado ya quedó
+        # con el body completo en `resultado`) pero sí una constancia que el
+        # log de pm2 debe mostrar: sin meeting_id no hay a qué sellarle el
+        # calendario de origen.
+        echo "2xx sin meeting_id — sin sellar" >&2
+      fi
       salida meet_solicitado ""
     else
       registrar error "$RESP" "Marketico HTTP $CODE"
