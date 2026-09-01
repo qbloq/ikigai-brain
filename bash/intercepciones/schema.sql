@@ -37,3 +37,20 @@ CREATE TABLE IF NOT EXISTS drift (
   detalle TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_drift_corrida ON drift(corrida_id);
+
+-- Los agendamientos ENTRANTES de GHL una vez el webhook de Marketico quedó en
+-- modo forward (2026-08-26): el Cerebro es quien decide qué se hace con cada
+-- uno. accion: registrada (entrada/confirmación, sin Meet) · meet_solicitado
+-- (venta → POST /crm/process-booking de Marketico) · ignorada (sin
+-- appointment_id) · desconocido (calendario sin rol — NO se procesa) · error.
+CREATE TABLE IF NOT EXISTS entrantes (
+  id INTEGER PRIMARY KEY,
+  recibido_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  appointment_id TEXT, calendar_id TEXT, rol TEXT, estado_cita TEXT,
+  contacto TEXT, email TEXT, start_time TEXT,
+  accion TEXT NOT NULL CHECK (accion IN ('registrada','meet_solicitado','ignorada','desconocido','error')),
+  resultado TEXT, error TEXT, duracion_ms INTEGER,
+  payload TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_entrantes_recibido ON entrantes(recibido_at);
+CREATE INDEX IF NOT EXISTS idx_entrantes_appt ON entrantes(appointment_id);
