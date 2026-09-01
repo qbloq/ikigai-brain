@@ -118,6 +118,13 @@ const server = http.createServer(async (req, res) => {
         const p = spawn("bash", [path.join(REPO_ROOT, "bash", "agenda", "entrante.sh")],
           { cwd: REPO_ROOT, detached: true, stdio: ["pipe", "ignore", "ignore"] });
         p.on("error", (e) => console.error(`[hooks] entrante.sh no arrancó: ${e.message}; payload: ${raw.slice(0, 2000)}`));
+        // Si entrante.sh sale sin leer stdin (p.ej. aborta al arrancar por
+        // env/psql), el EPIPE llega a este stream, no a `p` — sin este
+        // listener Node lo trata como excepción no atrapada y tumba TODO el
+        // proceso viz-hooks (se lleva /hooks/crm-resultado con él). El
+        // try/catch de abajo NO alcanza esto: solo cubre el spawn síncrono
+        // (opciones inválidas), el I/O con el hijo es async.
+        p.stdin.on("error", (e) => console.error(`[hooks] entrante.sh no leyó stdin: ${e.code}; payload: ${raw.slice(0, 2000)}`));
         p.stdin.write(raw); p.stdin.end(); p.unref();
       } catch (e) {
         console.error(`[hooks] entrante spawn falló (${e.message}); payload: ${raw.slice(0, 2000)}`);
