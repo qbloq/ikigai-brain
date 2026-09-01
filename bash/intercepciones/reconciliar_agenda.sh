@@ -230,10 +230,13 @@ for x in d["drift"]:
 (( DRY )) || ensure_schema
 
 # Los calendarios integrados activos: el universo de la reconciliación.
+# Los calendarios de rol 'entrada' (confirmación) se excluyen: sus citas por
+# diseño NO tienen fila en meetings, y compararlas gritaría falta_en_db
+# eterno (migración 008).
 CALS="$(psql_ro -t -A -F$'\t' -c "
   SELECT cc.ghl_calendar_id, cc.project_id, p.name
   FROM crm_calendars cc JOIN projects p ON p.id = cc.project_id
-  WHERE cc.is_active ORDER BY p.name;")"
+  WHERE cc.is_active AND (cc.rol IS NULL OR cc.rol = 'venta') ORDER BY p.name;")"
 [[ -z "$CALS" ]] && { echo "sin calendarios activos en crm_calendars" >&2; exit 0; }
 
 TRABAJO="$(mktemp -d)"

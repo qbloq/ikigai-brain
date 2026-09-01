@@ -41,7 +41,10 @@ done
 [[ "$FECHA" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "--fecha debe ser YYYY-MM-DD" >&2; exit 2; }
 
 WHERE="m.meeting_type='call'
-  AND (m.scheduled_start_time AT TIME ZONE 'UTC')::date = '$FECHA'::date"
+  AND (m.scheduled_start_time AT TIME ZONE 'UTC')::date = '$FECHA'::date
+  -- las confirmaciones (rol entrada, migración 008) no son llamadas del closer
+  AND NOT EXISTS (SELECT 1 FROM crm_calendars cc
+                  WHERE cc.ghl_calendar_id = m.ghl_calendar_id AND cc.rol = 'entrada')"
 [[ "$TODAS" == "0" ]] && WHERE="$WHERE AND m.status NOT IN ('cancelled')
   AND cl.etapa ILIKE 'llamada confirmada'"
 if [[ -n "$CLOSER" ]]; then
