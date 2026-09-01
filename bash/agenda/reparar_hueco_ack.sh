@@ -24,11 +24,28 @@
 # /users/{assignedUserId} (para booking.user — el invitado al Calendar). Una
 # cita ya no 'confirmed' en GHL (cancelada, reagendada, etc.) se OMITE
 # siempre — no hay reparación que valga para una cita que el lead ya canceló.
+# Sin closer resoluble (assignedUserId vacío o sin email en GHL) también se
+# OMITE y se cuenta aparte: un `user:{}` en el payload hace que
+# processBooking arme un invitado `{email: undefined}` y truene.
 #
-# uso: reparar_hueco_ack.sh [--project FRAG] [--ejecutar] [--json] <appointment-id>...
-#   --project FRAG   fragmento del nombre del proyecto GHL (default: "David Guerrero")
-#   --ejecutar       llama de verdad a entrante.sh, una cita a la vez (si se omite: dry-run)
-#   --json           salida = array JSON (uno por cita) en vez de texto
+# ⚠️ La lista de appointment-ids SIEMPRE hay que recalcularla justo antes de
+# correr con --ejecutar (`reconciliar_agenda.sh --dry-run`, Task 7) — una
+# lista vieja se quema en horas: una cita confirmada puede cancelarse o
+# reagendarse entre que se generó el reporte y que se ejecuta esto. Bajo
+# --ejecutar además se rechaza toda cita cuyo startTime (Bogotá) ya pasó
+# (repararla no tiene sentido si el lead nunca la va a tomar);
+# --incluir-pasadas es el escape consciente.
+#
+# La bitácora de cada corrida (dry-run o ejecutar) la deja `entrante.sh` en
+# la sqlite `intercepciones.db` de la MÁQUINA DONDE CORRE este script —
+# local-first, no Postgres. Para verla desde otra máquina hace falta el
+# fallback ssh de `bash/agenda/entrantes.sh`.
+#
+# uso: reparar_hueco_ack.sh [--project FRAG] [--ejecutar] [--incluir-pasadas] [--json] <appointment-id>...
+#   --project FRAG      fragmento del nombre del proyecto GHL (default: "David Guerrero")
+#   --ejecutar           llama de verdad a entrante.sh, una cita a la vez (si se omite: dry-run)
+#   --incluir-pasadas     permite reparar citas cuyo startTime ya pasó (solo aplica con --ejecutar)
+#   --json                salida = array JSON (uno por cita) en vez de texto
 #
 # Spec: docs/superpowers/plans/2026-08-26-flujo-agendamiento.md (Task 8a,
 # hallazgo operativo de la Task 7: 21 citas de venta sin meeting a la fecha
@@ -41,13 +58,14 @@ source bash/lib/common.sh
 # shellcheck disable=SC1091
 source bash/ghl/lib/common.sh
 
-PROJECT="David Guerrero"; EJECUTAR=0; JSON=0
-usage() { sed -n '2,31p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+PROJECT="David Guerrero"; EJECUTAR=0; JSON=0; INCLUIR_PASADAS=0
+usage() { sed -n '2,52p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 ARGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project) PROJECT="$2"; shift 2 ;;
     --ejecutar) EJECUTAR=1; shift ;;
+    --incluir-pasadas) INCLUIR_PASADAS=1; shift ;;
     --json) JSON=1; shift ;;
     -h|--help) usage ;;
     -*) echo "flag desconocido: $1" >&2; usage 1 ;;
@@ -83,7 +101,26 @@ ghl_api_retry() {
 # booking.sample.json de Marketico.
 PY_ARMAR='
 import json, sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+BOGOTA = ZoneInfo("America/Bogota")
+
+def bogota_wall(s):
+    # GHL GET devuelve startTime/endTime CON offset (p.ej. "...-05:00"); el
+    # webhook REAL de GHL los manda SIN offset, en reloj de pared Bogotá
+    # (verificado contra crm_webhook) — y meetings.scheduled_start_time
+    # depende de ese quirk (Bogotá-como-UTC). Reconstruir el payload con el
+    # valor CON offset tal cual lo da el GET desfasa la hora +5h. Convertir
+    # explícitamente a hora de pared Bogotá y emitir SIN offset imita el
+    # formato real del webhook.
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt.astimezone(BOGOTA).strftime("%Y-%m-%dT%H:%M:%S")
+    except Exception:
+        return None
 
 appt_f, contact_f, user_f, appt_id = sys.argv[1:5]
 
@@ -118,7 +155,6 @@ email = c.get("email") or fd.get("email") or ""
 phone = c.get("phone") or fd.get("phone") or ""
 
 start = a.get("startTime")
-BOG = timezone(timedelta(hours=-5))
 futura = None
 if start:
     try:
@@ -136,8 +172,8 @@ payload = {
     "calendar": {
         "title": a.get("title"),
         "appointmentId": a.get("id"),
-        "startTime": a.get("startTime"),
-        "endTime": a.get("endTime"),
+        "startTime": bogota_wall(a.get("startTime")),
+        "endTime": bogota_wall(a.get("endTime")),
         "appoinmentStatus": estado,
         "address": a.get("address") or "",
         "id": a.get("calendarId"),
@@ -197,6 +233,24 @@ for APPT_ID in "${ARGS[@]}"; do
     continue
   fi
 
+  # Sin closer resoluble (assignedUserId vacío, o el /users/{id} de GHL no
+  # trajo email): un `user:{}` en el payload hace que processBooking arme un
+  # invitado `{email: undefined}` y truene. Se omite y se cuenta APARTE
+  # (categoria=sin_closer) — no es lo mismo que una cita ya no confirmada.
+  CLOSER_EMAIL="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("closer_email") or "")' <<<"$ROW")"
+  if [[ -z "$CLOSER_EMAIL" ]]; then
+    ROW="$(python3 -c '
+import json, sys
+d = json.loads(sys.argv[1])
+d["ok"] = False
+d["categoria"] = "sin_closer"
+d["motivo"] = "sin closer resoluble — repararla a mano"
+print(json.dumps(d, ensure_ascii=False))' "$ROW")"
+    echo "$ROW" >>"$RESULTS_F"
+    echo "✗ $APPT_ID — sin closer resoluble — repararla a mano" >&2
+    continue
+  fi
+
   if (( ! EJECUTAR )); then
     # dry-run: mostrar el payload completo (email visible) y NO tocar entrante.sh.
     echo "$ROW" >>"$RESULTS_F"
@@ -211,6 +265,23 @@ for APPT_ID in "${ARGS[@]}"; do
   fi
 
   # --ejecutar: UNA cita a la vez, mostrando el resultado antes de seguir.
+  # Guarda de pasadas: reparar una cita cuyo startTime (Bogotá) ya pasó no
+  # tiene sentido — el lead nunca la va a tomar. --incluir-pasadas es el
+  # escape consciente (p.ej. reparar el Meet de una cita que sí ocurrió).
+  FUTURA_PY="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("futura"))' <<<"$ROW")"
+  if [[ "$FUTURA_PY" == "False" && "$INCLUIR_PASADAS" != "1" ]]; then
+    ROW="$(python3 -c '
+import json, sys
+d = json.loads(sys.argv[1])
+d["ok"] = False
+d["categoria"] = "pasada"
+d["motivo"] = "cita ya pasada — se omite bajo --ejecutar (usar --incluir-pasadas para forzar)"
+print(json.dumps(d, ensure_ascii=False))' "$ROW")"
+    echo "$ROW" >>"$RESULTS_F"
+    echo "✗ $APPT_ID — cita ya pasada, se omite bajo --ejecutar (usar --incluir-pasadas para forzar)" >&2
+    continue
+  fi
+
   PAYLOAD="$(python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin)["payload"], ensure_ascii=False))' <<<"$ROW")"
   RESP="$(printf '%s' "$PAYLOAD" | bash/agenda/entrante.sh)"
   MERGED="$(python3 -c '
@@ -229,5 +300,20 @@ if (( JSON )); then
 import json, sys
 rows = [json.loads(l) for l in open(sys.argv[1]) if l.strip()]
 print(json.dumps(rows, ensure_ascii=False))
+' "$RESULTS_F"
+else
+  # Resumen final: cuenta APARTE cada motivo de omisión (sin_closer/pasada
+  # no son lo mismo que "estado no confirmed") para que quede claro cuántas
+  # citas necesitan reparación manual en GHL antes de poder reintentar.
+  python3 -c '
+import json, sys
+rows = [json.loads(l) for l in open(sys.argv[1]) if l.strip()]
+ejecutadas = sum(1 for r in rows if r.get("ok") and "resultado_entrante" in r)
+dry = sum(1 for r in rows if r.get("ok") and "resultado_entrante" not in r)
+sin_closer = sum(1 for r in rows if r.get("categoria") == "sin_closer")
+pasadas = sum(1 for r in rows if r.get("categoria") == "pasada")
+otras = sum(1 for r in rows if not r.get("ok") and r.get("categoria") not in ("sin_closer", "pasada"))
+print(f"--- resumen: {len(rows)} citas · ejecutadas={ejecutadas} · dry-run={dry} · "
+      f"sin_closer={sin_closer} · pasadas={pasadas} · otras_omitidas={otras} ---")
 ' "$RESULTS_F"
 fi

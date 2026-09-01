@@ -17,7 +17,7 @@ while [[ $# -gt 0 ]]; do
     --solo-errores) SOLO_ERR=1; shift ;;
     --limit) LIMIT="$2"; shift 2 ;;
     --json) FORMAT=json; shift ;;
-    -h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "flag desconocido: $1" >&2; exit 1 ;;
   esac
 done

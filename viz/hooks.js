@@ -116,7 +116,7 @@ const server = http.createServer(async (req, res) => {
       try { JSON.parse(raw); } catch { return fin(400, "JSON inválido"); }
       try {
         const p = spawn("bash", [path.join(REPO_ROOT, "bash", "agenda", "entrante.sh")],
-          { cwd: REPO_ROOT, detached: true, stdio: ["pipe", "ignore", "ignore"] });
+          { cwd: REPO_ROOT, detached: true, stdio: ["pipe", "ignore", "inherit"] });
         p.on("error", (e) => console.error(`[hooks] entrante.sh no arrancó: ${e.message}; payload: ${raw.slice(0, 2000)}`));
         // Si entrante.sh sale sin leer stdin (p.ej. aborta al arrancar por
         // env/psql), el EPIPE llega a este stream, no a `p` — sin este

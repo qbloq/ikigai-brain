@@ -44,7 +44,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 esc() { printf '%s' "${1//\'/\'\'}"; }
-where="m.meeting_type='call'"
+# corte 2026-08-23: las citas de un calendario de ENTRADA posteriores al
+# cambio de proceso son confirmaciones de 20 min, no llamadas de venta — el
+# rol tipa el calendario HOY, no la cita de entonces, de ahí la fecha fija.
+where="m.meeting_type='call'
+  AND NOT EXISTS (SELECT 1 FROM crm_calendars cc
+                  WHERE cc.ghl_calendar_id = m.ghl_calendar_id AND cc.rol='entrada'
+                  AND m.scheduled_start_time >= '2026-08-23')"
 [[ -n "$status" ]]    && where="$where AND m.status = '$(esc "$status")'"
 [[ -n "$result" ]]    && where="$where AND r.report->'generalInformation'->>'callStatus' ILIKE '%$(esc "$result")%'"
 [[ -n "$program" ]]   && where="$where AND coalesce(r.report->'generalInformation'->>'program', split_part(m.name,' - ',2)) ILIKE '%$(esc "$program")%'"

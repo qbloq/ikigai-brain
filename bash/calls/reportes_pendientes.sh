@@ -47,7 +47,13 @@ done
 
 WHERE="m.meeting_type='call'
   AND length(t.transcript) >= $MIN
-  AND cr.meeting_id IS NULL"
+  AND cr.meeting_id IS NULL
+  -- corte 2026-08-23: las citas de un calendario de ENTRADA posteriores al
+  -- cambio de proceso son confirmaciones de 20 min, no llamadas de venta —
+  -- el rol tipa el calendario HOY, no la cita de entonces, de ahí la fecha.
+  AND NOT EXISTS (SELECT 1 FROM crm_calendars cc
+                  WHERE cc.ghl_calendar_id = m.ghl_calendar_id AND cc.rol='entrada'
+                  AND m.scheduled_start_time >= '2026-08-23')"
 [[ "$DESDE" != "0" ]] && WHERE="$WHERE AND t.created_at >= now() - interval '$DESDE days'"
 [[ "$CON_CLOSER" == "1" ]] && WHERE="$WHERE AND cl.closer IS NOT NULL"
 LIM=""; [[ "$LIMIT" != "0" ]] && LIM="LIMIT $LIMIT"
