@@ -34,9 +34,15 @@ while IFS=$'\t' read -r MID APPT; do
 try: print(json.load(sys.stdin)["appointment"].get("calendarId") or "")
 except Exception: print("")')" && [[ -n "$CAL" ]] && break
   done
-  if [[ -z "$CAL" ]]; then SINCAL=$((SINCAL+1)); echo "  $MID $APPT: sin calendario en GHL (borrado o error)" >&2; continue; fi
+  if [[ -z "$CAL" ]] || [[ ! "$CAL" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    SINCAL=$((SINCAL+1)); echo "  $MID $APPT: sin calendario en GHL (borrado o error)" >&2; continue
+  fi
   if (( DRY )); then echo "  [dry-run] $MID ← $CAL"; else
-    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "UPDATE ikigaigm.meetings SET ghl_calendar_id='$CAL' WHERE id='$MID' AND ghl_calendar_id IS NULL"
+    CAL_ESC="${CAL//\'/\'\'}"
+    # UPDATE con psql "$DATABASE_URL" directo (no psql_ro): este es un
+    # backfill [WRITE pg] declarado, el helper de solo-lectura no aplica —
+    # la convención de la casa para los scripts WRITE del repo.
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "UPDATE ikigaigm.meetings SET ghl_calendar_id='$CAL_ESC' WHERE id='$MID' AND ghl_calendar_id IS NULL"
   fi; OK=$((OK+1))
 done <<< "$FILAS"
 echo "{\"revisadas\": $N, \"selladas\": $OK, \"sin_calendario\": $SINCAL, \"dry_run\": $DRY}"
