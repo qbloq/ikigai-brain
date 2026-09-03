@@ -27,6 +27,9 @@ SIN_INSTRUMENTAR = [
 RE_PRES_VALIDADA = re.compile(r"al menos \$?\s*1[.,]?500", re.I)
 RE_PRES_VIGENTE = re.compile(r"situaci[oó]n financiera actual", re.I)
 RE_DISPOSICION = re.compile(r"situaci[oó]n te encuentras actualmente", re.I)
+# Campos de rastreo del form (utm, ids de Meta/VTurb/GA…): son atribución, no
+# respuestas del lead — la UI los separa del survey.
+RE_ATRIBUCION = re.compile(r"^(utm_|vtid$|fbclid|gclid|fbp$|fbc$|ga_|campaign|adset|ad_id|placement$|referrer|ip$|user.?agent|medium$|source$|session)", re.I)
 
 
 # --- reglas puras -----------------------------------------------------------
@@ -134,13 +137,15 @@ def _lead(ev, contacto, espejo, catalogo):
             continue
         v = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
         nom = (nombres.get(f.get("id")) or {}).get("name") or f.get("id")
-        survey.append({"campo": nom, "valor": v})
+        clave = None
         if RE_PRES_VALIDADA.search(nom):
-            pres_val = v
+            pres_val = v; clave = "presupuesto"
         elif RE_PRES_VIGENTE.search(nom):
-            pres_vig = v
+            pres_vig = v; clave = "presupuesto"
         elif RE_DISPOSICION.search(nom):
-            disp = v
+            disp = v; clave = "disposicion"
+        tipo = "atribucion" if (clave is None and RE_ATRIBUCION.search(nom.strip())) else "pregunta"
+        survey.append({"campo": nom, "valor": v, "tipo": tipo, "clave": clave})
     pres = pres_val or pres_vig
     return lead, survey, {"letra": banda(pres, disp), "presupuesto": pres, "disposicion": disp}
 

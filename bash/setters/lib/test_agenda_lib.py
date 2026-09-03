@@ -115,7 +115,7 @@ CTX = {
                "source": "Survey Mastermind", "tags": ["form mastermind"],
                "attributionSource": {"sessionSource": "Social media", "campaign": "Fly_test", "utmSource": "fb"},
                "customFields": [{"id": "F_PRES", "value": "$1.500"}, {"id": "F_DISP", "value": "Estoy listo para tomar acción e invertir"},
-                                {"id": "F_OTRO", "value": "Colombia"}]},
+                                {"id": "F_OTRO", "value": "Colombia"}, {"id": "F_UTM", "value": "FLY_TEST_50"}, {"id": "F_VTID", "value": "v3_abc"}]},
         "C2": None,
         "C3": {"id": "C3", "firstName": "Eva", "lastName": "Ruiz", "customFields": []},
         "C5": None,
@@ -123,7 +123,9 @@ CTX = {
     "db": {
         "catalogo": [{"ghl_field_id": "F_PRES", "name": "¿Tienes al menos $1.500 USD para invertir?", "position": 1},
                      {"ghl_field_id": "F_DISP", "name": "¿En qué situación te encuentras actualmente?", "position": 2},
-                     {"ghl_field_id": "F_OTRO", "name": "País", "position": 3}],
+                     {"ghl_field_id": "F_OTRO", "name": "País", "position": 3},
+                     {"ghl_field_id": "F_UTM", "name": "utm_campaign", "position": 4},
+                     {"ghl_field_id": "F_VTID", "name": "vtid", "position": 5}],
         "usuarios": [{"ghl_user_id": "CLO1", "user_id": "u-1", "nombre": "Carlos González"},
                      {"ghl_user_id": "SET1", "user_id": "u-2", "nombre": "Cristian Buelvas"},
                      {"ghl_user_id": "SET2", "user_id": "u-3", "nombre": "Anthony Velásquez"}],
@@ -156,7 +158,10 @@ class Armar(unittest.TestCase):
         self.assertEqual(c["lead"]["nombre"], "Ana Pérez"); self.assertEqual(c["lead"]["fuente"], "ghl")
         self.assertEqual(c["lead"]["campana"], "Fly_test"); self.assertEqual(c["lead"]["sesion"], "Social media")
         self.assertEqual(c["banda"], {"letra": "A", "presupuesto": "$1.500", "disposicion": "Estoy listo para tomar acción e invertir"})
-        self.assertEqual([s["campo"] for s in c["survey"]], ["¿Tienes al menos $1.500 USD para invertir?", "¿En qué situación te encuentras actualmente?", "País"])
+        self.assertEqual([s["campo"] for s in c["survey"] if s["tipo"] == "pregunta"],
+                         ["¿Tienes al menos $1.500 USD para invertir?", "¿En qué situación te encuentras actualmente?", "País"])
+        self.assertEqual([s["campo"] for s in c["survey"] if s["tipo"] == "atribucion"], ["utm_campaign", "vtid"])
+        self.assertEqual([s.get("clave") for s in c["survey"]][:2], ["presupuesto", "disposicion"])
         self.assertEqual(c["asignado"]["nombre"], "Cristian Buelvas"); self.assertFalse(c["sin_closer"]); self.assertFalse(c["sin_asignar"])
         self.assertEqual(c["cita_closer"], {"fecha": "2026-08-26", "hora": "16:00", "closer": "Carlos González"})
         self.assertEqual(c["etapa_crm"], "LLAMADA CONFIRMADA"); self.assertFalse(c["etapa_no_confirmada"])

@@ -22,7 +22,13 @@ const D = {
       pasada: false, estado: "proxima", lead: { nombre: "Ana Pérez", email: "ana@x.co", telefono: "+57 300", formulario: "Survey Mastermind", sesion: "Social media", campana: "Fly_test", tags: ["form mastermind"], fuente: "ghl" },
       asignado: { nombre: "Cristian Buelvas", user_id: "u-2", ghl_user_id: "SET1" }, sin_closer: false, sin_asignar: false, cita_closer: { fecha: "2026-08-26", hora: "16:00", closer: "Carlos González" }, meeting: null, sin_meet: true,
       etapa_crm: "LLAMADA CONFIRMADA", etapa_no_confirmada: false, banda: { letra: "A", presupuesto: "$1.500", disposicion: "Estoy listo para tomar acción e invertir" },
-      survey: [{ campo: "¿Tienes al menos $1.500 USD para invertir?", valor: "$1.500" }, { campo: "País", valor: "Colombia <b>x</b>" }],
+      survey: [
+        { campo: "¿Tienes al menos $1.500 USD para invertir?", valor: "$1.500", tipo: "pregunta", clave: "presupuesto" },
+        { campo: "Las expectativas son la base de una relación a largo plazo. Trabajamos con personas comprometidas. ¿En qué situación te encuentras actualmente con respecto a lograr la rentabilidad en el trading?", valor: "Estoy listo", tipo: "pregunta", clave: "disposicion" },
+        { campo: "País", valor: "Colombia <b>x</b>", tipo: "pregunta", clave: null },
+        { campo: "utm_campaign", valor: "AGOST_27_DC_TRAFICO_FRIO_OVERLAY - Copy", tipo: "atribucion", clave: null },
+        { campo: "vtid", valor: "v3_360d68e4-879d-4ed1-819e-2594a1f0988a_6a2c3398f35e2cfc30b65f36_635_s-1", tipo: "atribucion", clave: null },
+      ],
       historial: { llamadas_previas: 1, ultima: "2026-07-01", bant_previo: 55 }, ocurrio: { transcript: false, grabacion: false }, reporte: null, venta: null, anunciada: null },
     { appointment_id: "AP2", calendario: "funnel", contact_id: "C2", fecha: "2026-08-26", hora: "15:00", fin: "15:20", estado_ghl: "confirmed", titulo: "Luis Gil - PM", creada_por: "booking_widget",
       pasada: false, estado: "proxima", lead: { nombre: "Luis Gil", email: "luis@x.co", telefono: null, formulario: null, sesion: null, campana: null, tags: [], fuente: "espejo" },
@@ -69,6 +75,22 @@ test("aviso cuando GHL falla y agenda vacía", () => {
   const h = page.renderObjeto(UI, { ...D, fuente: { ghl: "error", detalle: "HTTP 500", db: "ok" }, citas: [], kpis: { closers: { ...D.kpis.closers, citas: 0 }, funnel: { ...D.kpis.funnel, citas: 0 } } });
   assert.ok(h.includes("GHL no respondió") && h.includes("HTTP 500"));
   assert.ok(!h.includes("Ana Pérez"));
+});
+
+test("detalle: survey curado, atribución aparte, pregunta acortada, cancelada única", () => {
+  const h = page.renderObjeto(UI, D);
+  const surveyIni = h.indexOf(">Survey<");
+  const atribIni = h.indexOf(">Atribución<");
+  assert.ok(surveyIni > -1 && atribIni > surveyIni);
+  const surveySec = h.slice(surveyIni, atribIni);
+  assert.ok(!surveySec.includes("utm_campaign") && !surveySec.includes("vtid"));       // rastreo fuera del survey
+  assert.ok(h.slice(atribIni).includes("utm_campaign"));                                // …y presente en Atribución
+  assert.ok(surveySec.includes("¿En qué situación te encuentras actualmente con respecto"));
+  assert.ok(!surveySec.includes("Las expectativas son la base>"));                      // el párrafo no va como label visible
+  assert.ok(surveySec.includes('title="Las expectativas son la base'));                 // …pero sí como tooltip
+  assert.ok(surveySec.includes("<b>$1.500</b>") && surveySec.includes(">banda<"));      // las claves resaltadas
+  const filaCancelada = h.slice(h.indexOf("AP3") - 400, h.indexOf("AP3") + 1200);
+  assert.ok(!/Cancelada<\/span>[^<]*<span[^>]*>Cancelada/.test(filaCancelada));         // un solo badge
 });
 
 test("Meet: alerta solo en el carril de closers", () => {

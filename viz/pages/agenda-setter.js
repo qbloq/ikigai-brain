@@ -65,12 +65,36 @@ function cruceCell(c) {
   return `<span style="color:${TONE.pos}">→ ${escape(x.fecha)} ${escape(x.hora)}${x.closer ? " · " + escape(x.closer) : ""}</span>`;
 }
 
+// Los nombres de campo del survey son la PREGUNTA COMPLETA (párrafos enteros
+// en el form nuevo). Para la tabla se recorta a su última «¿…?» — o a la
+// última frase — y el texto completo viaja en el tooltip.
+function preguntaCorta(campo) {
+  const t = (campo || "").trim();
+  if (t.length <= 70) return t;
+  const qs = t.match(/¿[^?]*\?/g);
+  let corta = qs ? qs[qs.length - 1] : (t.split(/\.\s+/).filter(Boolean).pop() || t);
+  corta = corta.trim();
+  return corta.length > 90 ? corta.slice(0, 89) + "…" : corta;
+}
+
 function detalle(c, sig, otras) {
-  const kv = (k, v) => `<div class="flex gap-2 text-sm"><span style="color:var(--text-3);min-width:9rem">${escape(k)}</span><span>${v}</span></div>`;
+  const kv = (k, v, kTitle) => `<div class="flex gap-2 text-sm"><span class="shrink-0" style="color:var(--text-3);width:9rem"${kTitle ? ` title="${escape(kTitle)}"` : ""}>${escape(k)}</span><span style="min-width:0;overflow-wrap:anywhere">${v}</span></div>`;
   const l = c.lead;
-  const survey = c.survey.length
-    ? c.survey.map((s) => kv(s.campo, escape(s.valor))).join("")
+  const preguntas = c.survey.filter((x) => x.tipo !== "atribucion");
+  const atribucion = c.survey.filter((x) => x.tipo === "atribucion");
+  const survey = preguntas.length
+    ? preguntas.map((x) => kv(
+        preguntaCorta(x.campo),
+        x.clave
+          ? `<b>${escape(x.valor)}</b> <span class="badge" style="color:${TONE.brand}" title="esta respuesta define la banda A/B/C">banda</span>`
+          : escape(x.valor),
+        x.campo,
+      )).join("")
     : `<p class="text-sm italic" style="color:var(--text-3)">Sin respuestas del survey.</p>`;
+  const atrib = atribucion.length
+    ? `<p class="text-xs font-bold uppercase mt-3 mb-1" style="color:var(--text-3)">Atribución</p>
+       <div class="text-xs" style="color:var(--text-3)">${atribucion.map((x) => `<div class="flex gap-2"><span class="shrink-0" style="width:9rem">${escape(x.campo)}</span><span style="min-width:0;overflow-wrap:anywhere">${escape(x.valor.length > 70 ? x.valor.slice(0, 69) + "…" : x.valor)}</span></div>`).join("")}</div>`
+    : "";
   const rep = c.reporte
     ? ["budget", "authority", "need", "timeline"].map((k) => kv(k, `<span class="tabular-nums">${c.reporte.bant[k] == null ? "—" : escape(String(c.reporte.bant[k]))}</span>${(c.reporte.baja_confianza || []).includes(k) ? " ⚠" : ""}`)).join("")
       + kv("arquetipo", escape(c.reporte.arquetipo || "—"))
@@ -85,13 +109,13 @@ function detalle(c, sig, otras) {
     : "";
   return `<tr data-show="$${sig}=='${escape(c.appointment_id)}'" style="display:none"><td colspan="10" style="background:var(--surface-2)">
     <div class="grid gap-6 p-3" style="grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))">
-      <div>${kv("correo", escape(l.email || "—"))}${kv("teléfono", escape(l.telefono || "—"))}${kv("formulario", escape(l.formulario || "—"))}
+      <div style="min-width:0">${kv("correo", escape(l.email || "—"))}${kv("teléfono", escape(l.telefono || "—"))}${kv("formulario", escape(l.formulario || "—"))}
            ${kv("origen", escape([l.sesion, l.campana].filter(Boolean).join(" · ") || "—"))}${kv("tags", escape((l.tags || []).join(", ") || "—"))}
            ${kv("datos del lead", escape(FUENTE_LEAD[l.fuente] || l.fuente || "—"))}
            ${kv("etapa CRM", escape(c.etapa_crm || "— (espejo)"))}
            ${hist}${dup}${kv("cita GHL", escape(c.appointment_id))}${c.meeting ? kv("llamada", escape(c.meeting.id8)) : ""}</div>
-      <div><p class="text-xs font-bold uppercase mb-1" style="color:var(--text-2)">Survey</p>${survey}</div>
-      <div><p class="text-xs font-bold uppercase mb-1" style="color:var(--text-2)">Reporte de la llamada</p>${rep}${venta}</div>
+      <div style="min-width:0"><p class="text-xs font-bold uppercase mb-1" style="color:var(--text-2)">Survey</p>${survey}${atrib}</div>
+      <div style="min-width:0"><p class="text-xs font-bold uppercase mb-1" style="color:var(--text-2)">Reporte de la llamada</p>${rep}${venta}</div>
     </div></td></tr>`;
 }
 
@@ -126,7 +150,7 @@ function fila(c, sig, esClosers, otras) {
     <td class="font-medium">${escape(c.lead.nombre || "—")}${dup}</td>
     <td>${quienCell}</td>
     <td>${meet}</td>
-    <td>${badge(ES_GHL[c.estado_ghl] || c.estado_ghl || "—", cancel ? "muted" : "brand")} ${badge(estTxt, estTone)}</td>
+    <td>${cancel ? badge("Cancelada", "muted") : `${badge(ES_GHL[c.estado_ghl] || c.estado_ghl || "—", "brand")} ${badge(estTxt, estTone)}`}</td>
     ${col6}
     ${ultimas}
   </tr>${detalle(c, sig, otras)}`;
