@@ -276,7 +276,7 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
     cuerpo = [...porDia.keys()].sort().map((f) => bloqueDia(porDia.get(f), sig, esClosers, true, opts)).join("");
   }
   return `${section(titulo, hint)}
-    ${kpisDefs.length ? cards(kpisDefs, k, { cols: kpisDefs.length }) : ""}
+    ${kpisDefs.length ? cards(kpisDefs, k, { cols: 8 }) : ""}
     ${cuerpo}`;
 }
 
