@@ -56,7 +56,7 @@ test("secciones, kpis y filas", () => {
   assert.ok(h.includes("Agenda de closers") && h.includes("Funnel"));
   assert.ok(h.includes("→ cita con closer: 2026-08-26 16:00 · Carlos González")); // el cruce vive en el slide-over
   assert.ok(!h.includes("Javier Gutierrez"));                     // solo_en_sistema ya no se pinta (2026-09-03)
-  assert.ok(h.includes("Cristian Buelvas, Anthony Velásquez"));  // miembros del funnel
+  assert.ok(!h.includes("Cristian Buelvas, Anthony Velásquez")); // la línea de calendarios ya no se pinta (2026-09-03)
   assert.ok(!h.includes("<b>x</b>") && h.includes("&lt;b&gt;x&lt;/b&gt;")); // escape del survey
   assert.ok(!/#[0-9a-f]{6}\b/i.test(h.replace(/#pane|#as-/g, "")), "sin hex en el markup");
 });

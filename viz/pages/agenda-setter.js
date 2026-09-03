@@ -42,11 +42,12 @@ function sumarDias(iso, n) {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
+// Los subtítulos (hint) no se pintan (pedido 2026-09-03) — el parámetro se
+// conserva en las llamadas como documentación de qué es cada sección.
 function section(title, hint, sub) {
   const tag = sub ? "h3" : "h2";
   return `<div class="flex items-baseline gap-3 ${sub ? "mt-5" : "mt-8"} mb-3 flex-wrap">
     <${tag} class="${sub ? "text-xs" : "text-sm"} font-bold uppercase tracking-wider" style="color:var(--text-2);letter-spacing:var(--tr-micro)">${escape(title)}</${tag}>
-    ${hint ? `<span class="text-xs" style="color:var(--text-3)">${escape(hint)}</span>` : ""}
   </div>`;
 }
 
@@ -291,9 +292,7 @@ function renderObjeto(ui, d) {
   if (d.fuente.webhook === "error") avisos.push(`<div class="alert alert-cau mt-3"><b>El agendamiento está reportando errores.</b> Citas de venta nuevas pueden quedar sin Meet — revisar los agendamientos entrantes con el Cerebro.</div>`);
   if (d.fuente.ghl !== "ok") avisos.push(`<div class="alert alert-neg mt-3">GHL no respondió — la agenda no se puede listar desde la base (GHL manda). ${escape(d.fuente.detalle || "")}</div>`);
   if (d.fuente.db === "error") avisos.push(`<div class="alert alert-cau mt-3">La base no respondió: las citas salen sin Meet, BANT ni plan.</div>`);
-  const cals = (d.calendarios || []).map((c) => `${c.tipo === "closers" ? "closers" : "funnel"}: ${escape(c.nombre || c.id)} (${escape((c.miembros || []).join(", ") || "—")})`).join(" · ");
-  const meta = `<p class="text-xs mt-2" style="color:var(--text-3)">${cals} · contactos en vivo ${d.fuente.contactos_en_vivo ?? 0} / espejo ${d.fuente.contactos_espejo ?? 0}</p>`;
-
+  // La línea de calendarios/contactos tampoco se pinta (subtítulos fuera, 2026-09-03).
   const closers = d.citas.filter((c) => c.calendario === "closers");
   const funnel = d.citas.filter((c) => c.calendario !== "closers");
   const hayClosers = (d.calendarios || []).some((c) => c.tipo === "closers");
@@ -319,7 +318,7 @@ function renderObjeto(ui, d) {
       <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
     </div>
     <div class="max-w-6xl mx-auto">
-      ${nav}${meta}
+      ${nav}
       ${avisos.join("")}
       ${carrilClosers}
       ${carril("Funnel — llamadas del setter", "el widget agenda aquí; las toma un setter", funnel, d.kpis.funnel, sig, false, semana, opts)}
