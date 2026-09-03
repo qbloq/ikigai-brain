@@ -325,6 +325,14 @@ const SOURCES = {
     emits: "object",
     args: { project: "--project", fecha: "--fecha", vista: "--vista", calendar_closers: "--calendar-closers" },
   },
+  // La matriz semanal de disponibilidad de closers — free-slots de GHL por
+  // closer sobre el calendario de venta. Vista operativa: sin caché.
+  disponibilidad_closers: {
+    label: "Disponibilidad de closers",
+    script: "bash/setters/disponibilidad.sh",
+    emits: "object",
+    args: { project: "--project", fecha: "--fecha", calendar: "--calendar" },
+  },
   // Objections flattened across call reports — the narrative feedback loop.
   call_objections: {
     label: "Objeciones (llamadas)",

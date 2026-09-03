@@ -1,0 +1,10 @@
+{
+  "id": "disponibilidad-closers",
+  "name": "Disponibilidad de closers",
+  "component": "disponibilidad-closers",
+  "source": "disponibilidad_closers",
+  "params": { "project": "David Guerrero" },
+  "scope": "role",
+  "role": "setter",
+  "created_at": "2026-09-03T00:00:00.000Z"
+}

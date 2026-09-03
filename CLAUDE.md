@@ -610,6 +610,15 @@ siguientes del calendario de closers solo para ese cruce). `anunciada` es
 `agenda-setter` (dos carriles + duplicados agrupados ×N; spec de rol
 `viz/specs/roles/setter/agenda-setter.json`, publicada por usuario a los
 setters y al DC). Spec: `docs/superpowers/specs/2026-08-26-agenda-setter-design.md`.
+`disponibilidad.sh [--project N] [--fecha D] [--calendar ID]` (2026-09-03) emite
+la **matriz semanal de disponibilidad de closers** (closers × días sobre el
+calendario de venta): los `libres` de cada celda son los huecos del endpoint
+free-slots de GHL **por closer** (su disponibilidad configurada menos sus citas
+— no se inventa horario laboral); estados `normal`/`lleno`/`sin_horario` (el
+closer no configuró disponibilidad)/`pasado` (GHL no da huecos hacia atrás).
+Read-only. Fuente viz `disponibilidad_closers` → page `disponibilidad-closers`
+(matriz con celdas de densidad + slide-over de horas al click, spec de rol
+`viz/specs/roles/setter/disponibilidad-closers.json`).
 
 ## ManyChat domain — Instagram DMs en la fuente ([bash/manychat/](bash/manychat/))
 

@@ -53,3 +53,4 @@ data/meeting-reports-gemini/
 
 # worktrees locales (superpowers)
 .worktrees/
+__pycache__/

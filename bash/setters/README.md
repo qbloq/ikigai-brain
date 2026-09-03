@@ -10,7 +10,8 @@ tocan el CRM. Spec: `docs/superpowers/specs/2026-08-26-agenda-setter-design.md`.
 | Script | Para qué |
 |--------|----------|
 | `agenda.sh [--project N] [--fecha D] [--vista dia\|semana] [--calendar-closers ID] [--json]` | La agenda del día o de la semana (lunes–domingo) como UN objeto, con los **dos calendarios oficiales**: el del **funnel** (el widget agenda ahí; la toma un setter) y el de **closers** («Aplicación…», la agenda que cuadra el setter — descubierto en vivo o fijado por flag). Cada cita con `calendario`, lead (contacto **en vivo**), asignado, link de Meet, **banda A/B/C** (entrantes), **estado por capas** (pasadas) y el cruce `cita_closer` (funnel→«ya agendó con closer», mirando 7 días adelante). Alertas: `sin_closer` (solo closers), `sin_asignar` (funnel), `sin_meet`, `solo_en_sistema` (drift). Read-only. Fuente viz `agenda_setter`. |
-| `test.sh` | Tests puros de `lib/agenda_lib.py` (bandas, montos, ventana, estado, ensamblado). |
+| `disponibilidad.sh [--project N] [--fecha D] [--calendar ID] [--json]` | La **matriz semanal de disponibilidad de closers** (closers × días, lunes–domingo) como UN objeto. La verdad es GHL: los `libres` de cada celda son los huecos que su endpoint free-slots calcula por closer sobre el calendario de **venta** (la disponibilidad que cada uno configuró menos sus citas) — no se inventa horario laboral. Estados de celda: `normal` · `lleno` (0 libres con citas) · `sin_horario` (0 y 0 en día futuro: el closer no configuró su disponibilidad) · `pasado` (GHL no da huecos hacia atrás; solo las citas que hubo). Citas asignadas a un no-miembro → `sin_closer`, declaradas. Read-only. Fuente viz `disponibilidad_closers`. |
+| `test.sh` | Tests puros de `lib/agenda_lib.py` + `lib/disponibilidad_lib.py` (bandas, montos, ventana, estado, ensamblado, matriz). |
 
 ## Reglas
 
