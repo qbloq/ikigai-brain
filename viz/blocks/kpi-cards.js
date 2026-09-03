@@ -51,7 +51,7 @@ function card(def, data) {
   const body = `<div class="kpi">
       <p class="kpi-label" style="color:${ink}">${escape(label)}</p>
       <p class="kpi-value" style="color:${ink}">${escape(fmtVal(raw, def.fmt))}</p>
-      ${def.foot ? `<p class="text-[11px] mt-1" style="color:var(--text-3)">${escape(def.foot)}</p>` : ""}
+      ${def.footHtml ? `<p class="text-[11px] mt-1" style="color:var(--text-3)">${def.footHtml}</p>` : def.foot ? `<p class="text-[11px] mt-1" style="color:var(--text-3)">${escape(def.foot)}</p>` : ""}
     </div>`;
   const tip = def.title ? ` title="${escape(def.title)}"` : "";
   const href = typeof def.href === "function" ? def.href(data) : def.href;

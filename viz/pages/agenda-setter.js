@@ -180,7 +180,7 @@ function fila(c, sig, esClosers, otras) {
     : `<td>${bandaCell}</td><td colspan="3"></td>`;
   const id = escape(c.appointment_id);
   const dup = otras && otras.length ? ` <span class="badge" style="color:${TONE.muted}" title="el mismo lead tiene ${otras.length + 1} citas — ver detalle">×${otras.length + 1}</span>` : "";
-  return `<tr${dim} class="cursor-pointer" data-on:click="$${sig} = $${sig}=='${id}' ? '' : '${id}'">
+  return `<tr${dim}${cancel ? ` data-show="$asCanc"` : ""} class="cursor-pointer" data-on:click="$${sig} = $${sig}=='${id}' ? '' : '${id}'">
     <td class="tabular-nums whitespace-nowrap">${escape(c.hora)}</td>
     <td class="font-medium">${escape(c.lead.nombre || "—")}${dup}</td>
     <td>${quienCell}</td>
@@ -201,7 +201,13 @@ function agrupar(citas) {
     if (!grupos.has(clave)) { grupos.set(clave, []); orden.push(clave); }
     grupos.get(clave).push(c);
   }
-  return orden.map((k) => { const g = grupos.get(k); return { rep: g[0], otras: g.slice(1) }; });
+  // El representante del grupo es la primera cita VIVA (si la hay): con las
+  // canceladas ocultas por defecto, un rep cancelado escondería sus re-agendas vivas.
+  return orden.map((k) => {
+    const g = grupos.get(k);
+    const rep = g.find((c) => c.estado_ghl !== "cancelled") || g[0];
+    return { rep, otras: g.filter((c) => c !== rep) };
+  });
 }
 
 function tabla(citas, sig, esClosers, pasadas, vacio, opts = {}) {
@@ -242,6 +248,8 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
       { key: "analizadas", label: "Analizadas", fmt: "int", tone: "pos", title: "pasadas con reporte BANT vigente" },
       { key: "ventas", label: "Ventas", fmt: "int", tone: "pos", title: "plan de pago activo creado desde la cita" },
       { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
+      { key: "canceladas", label: "Canceladas", fmt: "int", tone: "muted", title: "ocultas de la lista por defecto",
+        footHtml: k.canceladas ? `<span class="cursor-pointer underline" data-on:click="$asCanc = !$asCanc"><span data-show="!$asCanc">Ver</span><span data-show="$asCanc">Ocultar</span></span>` : "" },
       { label: "Anunciadas", fmt: "int", value: null, muted: true, title: "pendiente de conectar al grupo ONLY CLOSERS" },
     ]
     : [
@@ -250,7 +258,8 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
       { key: "banda_a", label: "Banda A", fmt: "int", tone: "pos", title: "declara ≥ $1.500 y está listo para tomar acción — se confirma primero" },
       { key: "agendo_closer", label: "Agendó closer", fmt: "int", tone: "pos", title: "leads del funnel que ya tienen cita en la agenda de closers" },
       { key: "sin_asignar", label: "Sin asignar", fmt: "int", tone: k.sin_asignar ? "cau" : "muted", title: "GHL no tiene a nadie asignado" },
-      { key: "canceladas", label: "Canceladas", fmt: "int", tone: "muted" },
+      { key: "canceladas", label: "Canceladas", fmt: "int", tone: "muted", title: "ocultas de la lista por defecto",
+        footHtml: k.canceladas ? `<span class="cursor-pointer underline" data-on:click="$asCanc = !$asCanc"><span data-show="!$asCanc">Ver</span><span data-show="$asCanc">Ocultar</span></span>` : "" },
       { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
       { key: "ventas", label: "Ventas", fmt: "int", tone: "pos" },
     ];
@@ -268,7 +277,7 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
     cuerpo = [...porDia.keys()].sort().map((f) => bloqueDia(porDia.get(f), sig, esClosers, true, opts)).join("");
   }
   return `${section(titulo, hint)}
-    ${cards(kpisDefs, k, { cols: 8 })}
+    ${cards(kpisDefs, k, { cols: kpisDefs.length })}
     ${cuerpo}`;
 }
 
@@ -305,7 +314,7 @@ function renderObjeto(ui, d) {
   // pintan (pedido 2026-09-03): el drift lo vigila la reconciliación, no el setter.
 
   // id="pane" NO es decorativo: el SSE parchea por id.
-  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:'${citaIni}'}">
+  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:'${citaIni}',asCanc:false}">
     <style>
       #as-loading{opacity:0;transition:opacity .2s ease}#as-loading.on{opacity:1}
       #as-panel{position:fixed;top:0;right:0;bottom:0;width:min(38rem,100vw);z-index:40;

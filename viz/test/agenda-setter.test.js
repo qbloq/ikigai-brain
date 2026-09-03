@@ -94,9 +94,9 @@ test("slide-over: panel con entradas por cita, abre por ?cita= y cierra con ✕"
   assert.ok(h.includes('id="as-panel"'));
   assert.ok(h.includes(`data-class:is-open="$asSel!=''"`));
   assert.ok((h.match(/data-show="\$asSel=='/g) || []).length === D.citas.length); // una entrada por cita
-  assert.ok(!/(<tr[^>]*data-show)/.test(h));                                       // ya no hay fila expandida
+  assert.ok(!/<tr[^>]*data-show="\$asSel/.test(h));                                // ya no hay fila expandida
   const conCita = page.renderObjeto({ ...UI, params: { ...UI.params, cita: "AP1" } }, D);
-  assert.ok(conCita.includes(`data-signals="{asSel:'AP1'}"`));
+  assert.ok(conCita.includes(`data-signals="{asSel:'AP1',asCanc:false}"`));
   assert.ok(page.manifest.overridable.includes("cita"));
 });
 
@@ -114,6 +114,18 @@ test("detalle: survey curado, atribución aparte, pregunta acortada, cancelada �
   assert.ok(surveySec.includes("<b>$1.500</b>") && surveySec.includes(">banda<"));      // las claves resaltadas
   const filaCancelada = h.slice(h.indexOf("AP3") - 400, h.indexOf("AP3") + 1200);
   assert.ok(!/Cancelada<\/span>[^<]*<span[^>]*>Cancelada/.test(filaCancelada));         // un solo badge
+});
+
+test("canceladas: fila oculta por defecto + toggle Ver en el card", () => {
+  const h = page.renderObjeto(UI, D);
+  // La fila cancelada (AP3) lleva el data-show del toggle global.
+  assert.ok(/<tr[^>]*data-show="\$asCanc"[^>]*data-on:click="\$asSel = \$asSel=='AP3'/.test(h));
+  // Con canceladas en el funnel, el card trae el link Ver/Ocultar.
+  const conCanc = page.renderObjeto(UI, { ...D, kpis: { ...D.kpis, funnel: { ...D.kpis.funnel, canceladas: 1 } } });
+  assert.ok(conCanc.includes("$asCanc = !$asCanc"));
+  // Sin canceladas, el card no finge tener nada que ver.
+  const funnelCard = h.slice(h.indexOf("Funnel"));
+  assert.ok(!funnelCard.includes("$asCanc = !$asCanc"));
 });
 
 test("Meet: columna y alerta solo en el carril de closers", () => {
