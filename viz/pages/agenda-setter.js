@@ -300,11 +300,8 @@ function renderObjeto(ui, d) {
     ? carril("Agenda de closers", "la que cuadra el setter — «Aplicación»", closers, d.kpis.closers, sig, true, semana, opts)
     : `${section("Agenda de closers", "")}<div class="alert alert-cau">No se encontró el calendario de closers («Aplicación…») en GHL.</div>`;
 
-  const solo = d.solo_en_sistema.length
-    ? `<div class="table-wrap"><div class="table-scroll"><table class="tbl"><thead><tr><th>Fecha</th><th>Hora</th><th>Lead</th><th>Closer</th><th>Llamada</th></tr></thead><tbody>
-        ${d.solo_en_sistema.map((s) => `<tr><td>${escape(s.fecha)}</td><td class="tabular-nums">${escape(s.hora)}</td><td>${escape(s.lead || "—")}</td><td>${escape(s.closer || "—")}</td><td class="text-xs">${escape(s.id8)}</td></tr>`).join("")}
-      </tbody></table></div></div>`
-    : `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">Ninguna — el sistema y GHL coinciden.</p>`;
+  // «solo_en_sistema» y «sin_instrumentar» viajan en el objeto pero no se
+  // pintan (pedido 2026-09-03): el drift lo vigila la reconciliación, no el setter.
 
   // id="pane" NO es decorativo: el SSE parchea por id.
   return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:'${citaIni}'}">
@@ -324,9 +321,6 @@ function renderObjeto(ui, d) {
       ${avisos.join("")}
       ${carrilClosers}
       ${carril("Funnel — llamadas del setter", "el widget agenda aquí; las toma un setter", funnel, d.kpis.funnel, sig, false, semana, opts)}
-      ${section("En el sistema, no en GHL", "llamadas agendadas en la base que los calendarios oficiales no tienen — para corregir la agenda")}
-      ${solo}
-      <ul class="text-xs mt-8 list-disc pl-5" style="color:var(--text-3)">${d.sin_instrumentar.map((s) => `<li>${escape(s)}</li>`).join("")}</ul>
     </div>
     ${panelDetalle(d.citas, sig)}
   </section>`;
