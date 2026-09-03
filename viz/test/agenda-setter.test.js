@@ -43,7 +43,19 @@ const UI = { id: "agenda-setter", source: "agenda_setter", params: { project: "D
 
 test("manifest", () => {
   assert.strictEqual(page.id, "agenda-setter");
-  assert.deepStrictEqual(page.manifest, { consumes: "object", overridable: ["fecha", "vista", "project", "cita"] });
+  assert.deepStrictEqual(page.manifest, { consumes: "object", overridable: ["fecha", "vista", "project", "cita", "carga"] });
+});
+
+test("primer load: cascarón con loader que pide la agenda por SSE", () => {
+  // Sin ?carga= el render NO consulta la fuente: devuelve el loader al instante.
+  const h = page.render({ id: "agenda-setter", params: { vista: "dia", fecha: "2026-08-26", cita: "AP1" } });
+  assert.ok(h.startsWith('<section id="pane"'));
+  assert.ok(h.includes("data-init"));
+  assert.ok(h.includes("/ui/agenda-setter?carga=1&amp;vista=dia&amp;fecha=2026-08-26&amp;cita=AP1"));
+  assert.ok(h.includes("Cargando la agenda"));
+  // Y el pane completo re-pide siempre con carga=1 (que no vuelva el cascarón).
+  const full = page.renderObjeto(UI, D);
+  assert.ok(full.includes("carga=1&vista="));
 });
 
 test("secciones, kpis y filas", () => {

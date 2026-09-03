@@ -279,7 +279,7 @@ function renderObjeto(ui, d) {
   const semana = v.vista === "semana";
   const paso = semana ? 7 : 1;
   const base = `/u/${escape(ui.id)}?vista=${escape(v.vista)}&fecha=`;
-  const reget = `@get('/ui/${escape(ui.id)}?vista='+$asVista+'&fecha='+$asFecha)`;
+  const reget = `@get('/ui/${escape(ui.id)}?carga=1&vista='+$asVista+'&fecha='+$asFecha)`;
   const nav = `<div class="flex flex-wrap items-center gap-3" data-signals="{asVista:'${escape(v.vista)}',asFecha:'${escape(v.fecha)}',loadingas:false}">
     <a class="btn" href="${base}${sumarDias(v.fecha, -paso)}">←</a>
     <input type="date" data-bind="asFecha" data-on:change="${reget}" data-indicator:loadingas class="input w-auto" />
@@ -327,8 +327,30 @@ function renderObjeto(ui, d) {
   </section>`;
 }
 
+// El cascarón instantáneo del primer load: la fuente consulta GHL + Postgres y
+// tarda varios segundos, así que /u/ responde esto al tiro y un data-init pide
+// la agenda completa por SSE (`?carga=1` — mismo patrón que informe `?vivo=`).
+function cascaron(ui, p) {
+  const qs = ["carga=1"];
+  for (const k of ["vista", "fecha", "cita", "project"]) {
+    if (p[k]) qs.push(`${k}=${encodeURIComponent(String(p[k]))}`);
+  }
+  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-init="@get('/ui/${escape(ui.id)}?${escape(qs.join("&"))}')">
+    <style>@keyframes as-barra{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}</style>
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col items-center justify-center pt-24 gap-4">
+        <div class="w-64 h-1.5 rounded-full overflow-hidden" style="background:var(--surface-3)">
+          <div class="h-full w-2/5 rounded-full" style="background:var(--brand-solid);animation:as-barra 1.2s ease-in-out infinite"></div>
+        </div>
+        <p class="text-sm" style="color:var(--text-3)">Cargando la agenda — GHL y la base en vivo, tarda unos segundos…</p>
+      </div>
+    </div>
+  </section>`;
+}
+
 function render(ui) {
   const p = Object.assign({}, ui.params || {});
+  if (!p.carga) return cascaron(ui, p);
   const params = { project: p.project, fecha: p.fecha, vista: p.vista, calendar_closers: p.calendar_closers };
   let d, err;
   try {
@@ -345,7 +367,7 @@ function render(ui) {
 module.exports = {
   id: "agenda-setter",
   // `cita` es presentación pura (preselecciona el slide-over; buildArgs la ignora)
-  manifest: { consumes: "object", overridable: ["fecha", "vista", "project", "cita"] },
+  manifest: { consumes: "object", overridable: ["fecha", "vista", "project", "cita", "carga"] },
   render,
   renderObjeto,
 };
