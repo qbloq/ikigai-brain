@@ -43,7 +43,7 @@ const UI = { id: "agenda-setter", source: "agenda_setter", params: { project: "D
 
 test("manifest", () => {
   assert.strictEqual(page.id, "agenda-setter");
-  assert.deepStrictEqual(page.manifest, { consumes: "object", overridable: ["fecha", "vista", "project", "cita", "carga"] });
+  assert.deepStrictEqual(page.manifest, { consumes: "object", overridable: ["fecha", "vista", "project", "cita", "carga", "disp"] });
 });
 
 test("primer load: cascarón con loader que pide la agenda por SSE", () => {
@@ -73,6 +73,38 @@ test("secciones, kpis y filas", () => {
   assert.ok(!/#[0-9a-f]{6}\b/i.test(h.replace(/#pane|#as-/g, "")), "sin hex en el markup");
 });
 
+test("disponibilidad en el medio: placeholder diferido entre los dos carriles", () => {
+  const h = page.renderObjeto(UI, D);
+  const i = h.indexOf('id="as-disp"');
+  assert.ok(i > -1);
+  assert.ok(h.indexOf("Agenda de closers") < i && i < h.indexOf("Funnel — llamadas del setter"));
+  const ph = h.slice(i, h.indexOf("Funnel — llamadas del setter"));
+  assert.ok(ph.includes("data-init"));
+  assert.ok(ph.includes("disp=1") && ph.includes("fecha=2026-08-26"));
+  assert.ok(h.includes("Disponibilidad de la semana"));
+});
+
+test("renderDisp: el fragmento puro de la matriz, morfable por id", () => {
+  const DISP = {
+    proyecto: "David Guerrero",
+    calendario: { id: "CAL2", nombre: "Aplicación a Premium Mastermind" },
+    semana: { fecha: "2026-08-26", desde: "2026-08-24", hasta: "2026-08-30", ahora: "2026-08-26T10:00",
+              dias: ["2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30"] },
+    fuente: { ghl: "ok", detalle: null, db: "ok" },
+    closers: [{ ghl_user_id: "CLO1", user_id: "u-1", nombre: "Carlos González", total_libres: 2, total_citas: 0,
+      dias: Object.fromEntries(["2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30"]
+        .map((d, i) => [d, i < 2 ? { libres: [], citas: [], estado: "pasado" }
+          : d === "2026-08-27" ? { libres: ["10:00", "11:00"], citas: [], estado: "normal" }
+          : { libres: [], citas: [], estado: "sin_horario" }])) }],
+    sin_closer: [],
+  };
+  const f = page.renderDisp(UI, DISP);
+  assert.ok(f.startsWith('<div id="as-disp"'));
+  assert.ok(!f.includes("data-init"));                      // el fragmento no se re-pide a sí mismo
+  assert.ok(f.includes("Carlos González") && f.includes("2 libres"));
+  assert.ok(f.includes("$dcSel"));                          // el slide-over de la matriz vive
+});
+
 test("banda solo en las por venir; BANT solo en las pasadas", () => {
   const h = page.renderObjeto(UI, D);
   const funnelIdx = h.indexOf("Funnel");
@@ -96,7 +128,7 @@ test("slide-over: panel con entradas por cita, abre por ?cita= y cierra con ✕"
   assert.ok((h.match(/data-show="\$asSel=='/g) || []).length === D.citas.length); // una entrada por cita
   assert.ok(!/<tr[^>]*data-show="\$asSel/.test(h));                                // ya no hay fila expandida
   const conCita = page.renderObjeto({ ...UI, params: { ...UI.params, cita: "AP1" } }, D);
-  assert.ok(conCita.includes(`data-signals="{asSel:'AP1',asCanc:false}"`));
+  assert.ok(conCita.includes(`data-signals="{asSel:'AP1',asCanc:false,dcSel:''}"`));
   assert.ok(page.manifest.overridable.includes("cita"));
 });
 

@@ -71,7 +71,6 @@ function panel(closers, sig) {
 function renderObjeto(ui, d) {
   const sig = "dcSel";
   const s = d.semana;
-  const hoy = s.ahora.slice(0, 10);
   const base = `/u/${escape(ui.id)}?fecha=`;
   const reget = `@get('/ui/${escape(ui.id)}?carga=1&fecha='+$dcFecha)`;
   const nav = `<div class="flex flex-wrap items-center gap-3" data-signals="{dcFecha:'${escape(s.fecha)}',loadingdc:false}">
@@ -81,6 +80,26 @@ function renderObjeto(ui, d) {
     <span class="text-sm" style="color:${TONE.muted}">${escape(d.proyecto || "")} · ${escape(diaLabel(s.desde))} → ${escape(diaLabel(s.hasta))}${(d.calendario || {}).nombre ? ` · ${escape(d.calendario.nombre)}` : ""}</span>
   </div>`;
 
+  // id="pane" NO es decorativo: el SSE parchea por id.
+  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:''}">
+    <style>#dc-loading{opacity:0;transition:opacity .2s ease}#dc-loading.on{opacity:1}</style>
+    <div id="dc-loading" data-class:on="$loadingdc" class="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-16 bg-white/50">
+      <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
+    </div>
+    <div class="max-w-6xl mx-auto">
+      ${nav}
+      ${bloque(d, sig)}
+    </div>
+  </section>`;
+}
+
+// El BLOQUE compartido — avisos + matriz + huérfanas + slide-over — sin nav ni
+// pane: lo usan esta página y agenda-setter (sección «Disponibilidad de la
+// semana», fragmento `?disp=1`). Lleva su propio <style> del panel para que el
+// fragmento funcione morfado dentro de cualquier pane.
+function bloque(d, sig) {
+  const s = d.semana;
+  const hoy = s.ahora.slice(0, 10);
   const avisos = [];
   if (d.fuente.ghl !== "ok") avisos.push(`<div class="alert alert-neg mt-3">GHL no respondió — la disponibilidad no se puede calcular desde la base (GHL manda). ${escape(d.fuente.detalle || "")}</div>`);
   if (d.fuente.db === "error") avisos.push(`<div class="alert alert-cau mt-3">La base no respondió: los closers salen sin nombre resuelto.</div>`);
@@ -105,27 +124,17 @@ function renderObjeto(ui, d) {
   const huerfanas = (d.sin_closer || []).length ? `<div class="alert alert-cau mt-4"><b>Citas del calendario sin closer resoluble</b> (asignadas a alguien que no es miembro, o a nadie):
       <ul class="mt-1 space-y-0.5">${d.sin_closer.map((c) => `<li class="text-sm">${escape(c.fecha)} ${escape(c.hora)} · ${escape(c.lead || "(sin nombre)")}</li>`).join("")}</ul></div>` : "";
 
-  // id="pane" NO es decorativo: el SSE parchea por id.
-  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:''}">
-    <style>
-      #dc-loading{opacity:0;transition:opacity .2s ease}#dc-loading.on{opacity:1}
+  return `<style>
       #dc-panel{position:fixed;top:0;right:0;bottom:0;width:min(26rem,100vw);z-index:40;
         background:var(--surface-1);border-left:1px solid var(--border-1);
         box-shadow:-8px 0 24px rgb(0 0 0 / .08);padding:1rem 1.25rem;overflow-y:auto;
         transform:translateX(105%);transition:transform .3s ease-in-out}
       #dc-panel.is-open{transform:translateX(0)}
     </style>
-    <div id="dc-loading" data-class:on="$loadingdc" class="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-16 bg-white/50">
-      <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
-    </div>
-    <div class="max-w-6xl mx-auto">
-      ${nav}
-      ${avisos.join("")}
-      ${matriz}
-      ${huerfanas}
-    </div>
-    ${panel(d.closers || [], sig)}
-  </section>`;
+    ${avisos.join("")}
+    ${matriz}
+    ${huerfanas}
+    ${panel(d.closers || [], sig)}`;
 }
 
 // El cascarón instantáneo del primer load (patrón agenda-setter `?carga=1`):
@@ -169,4 +178,5 @@ module.exports = {
   manifest: { consumes: "object", overridable: ["fecha", "project", "carga"] },
   render,
   renderObjeto,
+  bloque,
 };

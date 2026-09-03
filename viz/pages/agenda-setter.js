@@ -18,6 +18,7 @@
 const { fetchSource } = require("../lib/datasources");
 const { escape, selectCtl } = require("../lib/kit");
 const { cards } = require("../blocks/kpi-cards");
+const { bloque: bloqueDisp } = require("./disponibilidad-closers");
 
 const ES_GHL = { confirmed: "Confirmada", new: "Nueva", cancelled: "Cancelada", showed: "Asistió", noshow: "No asistió", invalid: "Inválida" };
 const ES_ESTADO = {
@@ -312,8 +313,20 @@ function renderObjeto(ui, d) {
   // «solo_en_sistema» y «sin_instrumentar» viajan en el objeto pero no se
   // pintan (pedido 2026-09-03): el drift lo vigila la reconciliación, no el setter.
 
+  // Disponibilidad EN EL MEDIO, diferida (pedido 2026-09-03): la agenda carga
+  // como siempre y este placeholder pide la matriz por SSE aparte (`?disp=1`)
+  // — sumar las llamadas free-slots al fetch principal la enlentecería. Al
+  // cambiar fecha/vista el pane se re-morfa con un placeholder fresco y su
+  // data-init recarga la matriz de la semana correspondiente.
+  const dispQs = ["disp=1", `fecha=${encodeURIComponent(v.fecha)}`];
+  if ((ui.params || {}).project) dispQs.push(`project=${encodeURIComponent(String(ui.params.project))}`);
+  const disp = `${section("Disponibilidad de la semana", "closers × días — huecos libres según GHL")}
+    <div id="as-disp" data-init="@get('/ui/${escape(ui.id)}?${escape(dispQs.join("&"))}')">
+      <div class="card card-pad text-sm" style="color:var(--text-3)"><span class="inline-block w-4 h-4 mr-2 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin align-middle"></span>Cargando la disponibilidad de la semana…</div>
+    </div>`;
+
   // id="pane" NO es decorativo: el SSE parchea por id.
-  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:'${citaIni}',asCanc:false}">
+  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:'${citaIni}',asCanc:false,dcSel:''}">
     <style>
       #as-loading{opacity:0;transition:opacity .2s ease}#as-loading.on{opacity:1}
       #as-panel{position:fixed;top:0;right:0;bottom:0;width:min(38rem,100vw);z-index:40;
@@ -329,6 +342,7 @@ function renderObjeto(ui, d) {
       ${nav}
       ${avisos.join("")}
       ${carrilClosers}
+      ${disp}
       ${carril("Funnel — llamadas del setter", "el widget agenda aquí; las toma un setter", funnel, d.kpis.funnel, sig, false, semana, opts)}
     </div>
     ${panelDetalle(d.citas, sig)}
@@ -356,8 +370,27 @@ function cascaron(ui, p) {
   </section>`;
 }
 
+// El fragmento puro de la matriz de disponibilidad: un solo elemento con id,
+// que el parche SSE morfa sobre el placeholder `#as-disp`. Sin data-init — el
+// fragmento no se re-pide a sí mismo.
+function renderDisp(ui, d) {
+  return `<div id="as-disp">${bloqueDisp(d, "dcSel")}</div>`;
+}
+
 function render(ui) {
   const p = Object.assign({}, ui.params || {});
+  if (p.disp) {
+    let d, err;
+    try {
+      d = fetchSource("disponibilidad_closers", { project: p.project, fecha: p.fecha }).rows[0];
+    } catch (e) {
+      err = e.message;
+    }
+    if (err || !d) {
+      return { fragment: `<div id="as-disp"><div class="alert alert-neg">No se pudo cargar la disponibilidad: ${escape(err || "sin datos")}</div></div>` };
+    }
+    return { fragment: renderDisp(ui, d) };
+  }
   if (!p.carga) return cascaron(ui, p);
   const params = { project: p.project, fecha: p.fecha, vista: p.vista, calendar_closers: p.calendar_closers };
   let d, err;
@@ -375,7 +408,8 @@ function render(ui) {
 module.exports = {
   id: "agenda-setter",
   // `cita` es presentación pura (preselecciona el slide-over; buildArgs la ignora)
-  manifest: { consumes: "object", overridable: ["fecha", "vista", "project", "cita", "carga"] },
+  manifest: { consumes: "object", overridable: ["fecha", "vista", "project", "cita", "carga", "disp"] },
   render,
   renderObjeto,
+  renderDisp,
 };
