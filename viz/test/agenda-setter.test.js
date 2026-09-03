@@ -43,7 +43,7 @@ const UI = { id: "agenda-setter", source: "agenda_setter", params: { project: "D
 
 test("manifest", () => {
   assert.strictEqual(page.id, "agenda-setter");
-  assert.deepStrictEqual(page.manifest, { consumes: "object", overridable: ["fecha", "vista", "project"] });
+  assert.deepStrictEqual(page.manifest, { consumes: "object", overridable: ["fecha", "vista", "project", "cita"] });
 });
 
 test("secciones, kpis y filas", () => {
@@ -75,6 +75,17 @@ test("aviso cuando GHL falla y agenda vacía", () => {
   const h = page.renderObjeto(UI, { ...D, fuente: { ghl: "error", detalle: "HTTP 500", db: "ok" }, citas: [], kpis: { closers: { ...D.kpis.closers, citas: 0 }, funnel: { ...D.kpis.funnel, citas: 0 } } });
   assert.ok(h.includes("GHL no respondió") && h.includes("HTTP 500"));
   assert.ok(!h.includes("Ana Pérez"));
+});
+
+test("slide-over: panel con entradas por cita, abre por ?cita= y cierra con ✕", () => {
+  const h = page.renderObjeto(UI, D);
+  assert.ok(h.includes('id="as-panel"'));
+  assert.ok(h.includes(`data-class:is-open="$asSel!=''"`));
+  assert.ok((h.match(/data-show="\$asSel=='/g) || []).length === D.citas.length); // una entrada por cita
+  assert.ok(!/(<tr[^>]*data-show)/.test(h));                                       // ya no hay fila expandida
+  const conCita = page.renderObjeto({ ...UI, params: { ...UI.params, cita: "AP1" } }, D);
+  assert.ok(conCita.includes(`data-signals="{asSel:'AP1'}"`));
+  assert.ok(page.manifest.overridable.includes("cita"));
 });
 
 test("detalle: survey curado, atribución aparte, pregunta acortada, cancelada única", () => {

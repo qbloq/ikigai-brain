@@ -77,8 +77,8 @@ function preguntaCorta(campo) {
   return corta.length > 90 ? corta.slice(0, 89) + "…" : corta;
 }
 
-function detalle(c, sig, otras) {
-  const kv = (k, v, kTitle) => `<div class="flex gap-2 text-sm"><span class="shrink-0" style="color:var(--text-3);width:9rem"${kTitle ? ` title="${escape(kTitle)}"` : ""}>${escape(k)}</span><span style="min-width:0;overflow-wrap:anywhere">${v}</span></div>`;
+function detalle(c, sig, otras, esClosers) {
+  const kv = (k, v, kTitle) => `<div class="flex gap-2 text-sm mb-1"><span class="shrink-0" style="color:var(--text-3);width:9rem"${kTitle ? ` title="${escape(kTitle)}"` : ""}>${escape(k)}</span><span style="min-width:0;overflow-wrap:anywhere">${v}</span></div>`;
   const l = c.lead;
   const preguntas = c.survey.filter((x) => x.tipo !== "atribucion");
   const atribucion = c.survey.filter((x) => x.tipo === "atribucion");
@@ -107,16 +107,48 @@ function detalle(c, sig, otras) {
   const dup = otras && otras.length
     ? kv("otras citas del lead", escape(otras.map((o) => `${o.fecha === c.fecha ? "" : o.fecha + " "}${o.hora} (${ES_GHL[o.estado_ghl] || o.estado_ghl})`).join(" · ")))
     : "";
-  return `<tr data-show="$${sig}=='${escape(c.appointment_id)}'" style="display:none"><td colspan="10" style="background:var(--surface-2)">
-    <div class="grid gap-6 p-3" style="grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))">
-      <div style="min-width:0">${kv("correo", escape(l.email || "—"))}${kv("teléfono", escape(l.telefono || "—"))}${kv("formulario", escape(l.formulario || "—"))}
-           ${kv("origen", escape([l.sesion, l.campana].filter(Boolean).join(" · ") || "—"))}${kv("tags", escape((l.tags || []).join(", ") || "—"))}
-           ${kv("datos del lead", escape(FUENTE_LEAD[l.fuente] || l.fuente || "—"))}
-           ${kv("etapa CRM", escape(c.etapa_crm || "— (espejo)"))}
-           ${hist}${dup}${kv("cita GHL", escape(c.appointment_id))}${c.meeting ? kv("llamada", escape(c.meeting.id8)) : ""}</div>
-      <div style="min-width:0"><p class="text-xs font-bold uppercase mb-1" style="color:var(--text-2)">Survey</p>${survey}${atrib}</div>
-      <div style="min-width:0"><p class="text-xs font-bold uppercase mb-1" style="color:var(--text-2)">Reporte de la llamada</p>${rep}${venta}</div>
-    </div></td></tr>`;
+  const [estTxt, estTone] = ES_ESTADO[c.estado] || [c.estado, "muted"];
+  const bandaHdr = !c.pasada && c.banda ? badge(c.banda.letra, BANDA_TONE[c.banda.letra], `${c.banda.presupuesto || "sin presupuesto"} · ${c.banda.disposicion || "sin disposición"}`) : "";
+  const seccion = (t) => `<p class="text-xs font-bold uppercase mt-4 mb-1" style="color:var(--text-2)">${escape(t)}</p>`;
+  return `<div data-show="$${sig}=='${escape(c.appointment_id)}'" style="display:none">
+    <div class="flex items-start justify-between gap-2 mb-1">
+      <div>
+        <p class="font-bold" style="color:var(--text-1)">${escape(c.lead.nombre || "—")}</p>
+        <p class="text-xs" style="color:var(--text-3)">${escape(c.fecha)} · ${escape(c.hora)}${c.fin ? "–" + escape(c.fin) : ""} · ${escape(esClosers ? "closer" : "setter")}: ${escape(c.asignado.nombre || "—")}</p>
+      </div>
+      <div class="flex items-center gap-1">${bandaHdr} ${c.estado_ghl === "cancelled" ? badge("Cancelada", "muted") : badge(estTxt, estTone)}</div>
+    </div>
+    ${c.calendario === "funnel" && c.cita_closer ? `<p class="text-xs mb-1" style="color:${TONE.pos}">→ cita con closer: ${escape(c.cita_closer.fecha)} ${escape(c.cita_closer.hora)}${c.cita_closer.closer ? " · " + escape(c.cita_closer.closer) : ""}</p>` : ""}
+    ${seccion("Survey")}${survey}${atrib}
+    ${seccion("Reporte de la llamada")}${rep}${venta}
+    ${seccion("Datos del lead")}
+    ${kv("correo", escape(l.email || "—"))}${kv("teléfono", escape(l.telefono || "—"))}${kv("formulario", escape(l.formulario || "—"))}
+    ${kv("origen", escape([l.sesion, l.campana].filter(Boolean).join(" · ") || "—"))}${kv("tags", escape((l.tags || []).join(", ") || "—"))}
+    ${kv("datos del lead", escape(FUENTE_LEAD[l.fuente] || l.fuente || "—"))}
+    ${kv("etapa CRM", escape(c.etapa_crm || "— (espejo)"))}
+    ${hist}${dup}${kv("cita GHL", escape(c.appointment_id))}${c.meeting ? kv("llamada", escape(c.meeting.id8)) : ""}
+  </div>`;
+}
+
+// El SLIDE-OVER (decisión 2026-09-03): el detalle no interrumpe la lista — se
+// desliza desde la derecha manteniendo la agenda visible (el idioma
+// master-detail de la casa, en versión autosuficiente: los datos van embebidos
+// porque el publicador v1 no monta /c/). Clic en otra fila = cambia el
+// contenido; ✕ o re-clic en la misma fila = cierra.
+function panelDetalle(citas, sig) {
+  const porLane = {};
+  for (const c of citas) {
+    const k = `${c.calendario}|${c.contact_id || c.appointment_id}`;
+    (porLane[k] = porLane[k] || []).push(c);
+  }
+  const entradas = citas.map((c) => {
+    const otras = (porLane[`${c.calendario}|${c.contact_id || c.appointment_id}`] || []).filter((o) => o.appointment_id !== c.appointment_id);
+    return detalle(c, sig, otras, c.calendario === "closers");
+  }).join("");
+  return `<aside id="as-panel" data-class:is-open="$${sig}!=''" aria-label="Detalle del lead">
+    <div class="flex justify-end"><button class="btn" data-on:click="$${sig}=''" title="cerrar">✕</button></div>
+    ${entradas}
+  </aside>`;
 }
 
 function fila(c, sig, esClosers, otras) {
@@ -153,7 +185,7 @@ function fila(c, sig, esClosers, otras) {
     <td>${cancel ? badge("Cancelada", "muted") : `${badge(ES_GHL[c.estado_ghl] || c.estado_ghl || "—", "brand")} ${badge(estTxt, estTone)}`}</td>
     ${col6}
     ${ultimas}
-  </tr>${detalle(c, sig, otras)}`;
+  </tr>`;
 }
 
 // Duplicados del mismo lead (funnel: el widget deja re-agendas): una fila por
@@ -236,6 +268,7 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
 function renderObjeto(ui, d) {
   const v = d.ventana;
   const sig = "asSel";
+  const citaIni = String((ui.params || {}).cita || "").replace(/[^A-Za-z0-9_-]/g, "");
   const semana = v.vista === "semana";
   const paso = semana ? 7 : 1;
   const base = `/u/${escape(ui.id)}?vista=${escape(v.vista)}&fecha=`;
@@ -270,8 +303,15 @@ function renderObjeto(ui, d) {
     : `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">Ninguna — el sistema y GHL coinciden.</p>`;
 
   // id="pane" NO es decorativo: el SSE parchea por id.
-  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:''}">
-    <style>#as-loading{opacity:0;transition:opacity .2s ease}#as-loading.on{opacity:1}</style>
+  return `<section id="pane" class="flex-1 relative overflow-auto p-6" data-signals="{${sig}:'${citaIni}'}">
+    <style>
+      #as-loading{opacity:0;transition:opacity .2s ease}#as-loading.on{opacity:1}
+      #as-panel{position:fixed;top:0;right:0;bottom:0;width:min(38rem,100vw);z-index:40;
+        background:var(--surface-1);border-left:1px solid var(--border-1);
+        box-shadow:-8px 0 24px rgb(0 0 0 / .08);padding:1rem 1.25rem;overflow-y:auto;
+        transform:translateX(105%);transition:transform .3s ease-in-out}
+      #as-panel.is-open{transform:translateX(0)}
+    </style>
     <div id="as-loading" data-class:on="$loadingas" class="pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-16 bg-white/50">
       <div class="w-7 h-7 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin"></div>
     </div>
@@ -284,6 +324,7 @@ function renderObjeto(ui, d) {
       ${solo}
       <ul class="text-xs mt-8 list-disc pl-5" style="color:var(--text-3)">${d.sin_instrumentar.map((s) => `<li>${escape(s)}</li>`).join("")}</ul>
     </div>
+    ${panelDetalle(d.citas, sig)}
   </section>`;
 }
 
@@ -304,7 +345,8 @@ function render(ui) {
 
 module.exports = {
   id: "agenda-setter",
-  manifest: { consumes: "object", overridable: ["fecha", "vista", "project"] },
+  // `cita` es presentación pura (preselecciona el slide-over; buildArgs la ignora)
+  manifest: { consumes: "object", overridable: ["fecha", "vista", "project", "cita"] },
   render,
   renderObjeto,
 };
