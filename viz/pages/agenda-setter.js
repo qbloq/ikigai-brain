@@ -82,14 +82,18 @@ function detalle(c, sig, otras, esClosers) {
   const l = c.lead;
   const preguntas = c.survey.filter((x) => x.tipo !== "atribucion");
   const atribucion = c.survey.filter((x) => x.tipo === "atribucion");
+  // Cada pregunta en su propia fila (fuente pequeña, gris) con la respuesta
+  // debajo — pedido de Santiago 2026-09-03: el par etiqueta-al-lado quedaba
+  // apretado con enunciados largos.
   const survey = preguntas.length
-    ? preguntas.map((x) => kv(
-        preguntaCorta(x.campo),
-        x.clave
-          ? `<b>${escape(x.valor)}</b> <span class="badge" style="color:${TONE.brand}" title="esta respuesta define la banda A/B/C">banda</span>`
-          : escape(x.valor),
-        x.campo,
-      )).join("")
+    ? preguntas.map((x) => `<div class="mb-2">
+        <p class="text-xs mb-0.5" style="color:var(--text-3)" title="${escape(x.campo)}">${escape(preguntaCorta(x.campo))}</p>
+        <p class="text-sm" style="min-width:0;overflow-wrap:anywhere;color:var(--text-1)">${
+          x.clave
+            ? `<b>${escape(x.valor)}</b> <span class="badge" style="color:${TONE.brand}" title="esta respuesta define la banda A/B/C">banda</span>`
+            : escape(x.valor)
+        }</p>
+      </div>`).join("")
     : `<p class="text-sm italic" style="color:var(--text-3)">Sin respuestas del survey.</p>`;
   const atrib = atribucion.length
     ? `<p class="text-xs font-bold uppercase mt-3 mb-1" style="color:var(--text-3)">Atribución</p>
