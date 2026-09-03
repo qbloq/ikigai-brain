@@ -59,12 +59,6 @@ function bantCell(r) {
     ${r.arquetipo ? `<span class="text-xs ml-1" style="color:var(--text-3)">${escape(r.arquetipo)}</span>` : ""}`;
 }
 
-function cruceCell(c) {
-  if (!c.cita_closer) return `<span style="color:var(--text-3)">—</span>`;
-  const x = c.cita_closer;
-  return `<span style="color:${TONE.pos}">→ ${escape(x.fecha)} ${escape(x.hora)}${x.closer ? " · " + escape(x.closer) : ""}</span>`;
-}
-
 // Los nombres de campo del survey son la PREGUNTA COMPLETA (párrafos enteros
 // en el form nuevo). Para la tabla se recorta a su última «¿…?» — o a la
 // última frase — y el texto completo viaja en el tooltip.
@@ -163,19 +157,23 @@ function fila(c, sig, esClosers, otras) {
     ? (c.sin_closer ? `${quien} ${badge("sin closer", "cau", "la cita quedó en manos de un setter o de nadie — asignar el closer en GHL")}` : quien)
     : (c.sin_asignar ? badge("sin asignar", "cau", "GHL no tiene a nadie asignado a esta cita") : quien);
   // Solo el calendario de VENTA lleva Meet (el Cerebro lo crea al agendar,
-  // bash/agenda/entrante.sh); la confirmación de entrada nunca — ahí no es alerta.
-  const meet = c.meeting && c.meeting.meet_url
-    ? `<a class="underline" href="${escape(c.meeting.meet_url)}" target="_blank" rel="noopener">Meet</a>`
-    : !c.sin_meet ? "—"
-    : esClosers ? badge("sin Meet", "neg", "el Cerebro crea el Meet al agendar; esta cita quedó sin él — el agendamiento falló para ella")
-    : `<span style="color:var(--text-3)" title="la confirmación de entrada no lleva Meet por diseño">—</span>`;
+  // bash/agenda/entrante.sh); en el funnel la columna ni existe (2026-09-03) —
+  // la confirmación de entrada no lleva Meet por diseño.
+  const meetCell = !esClosers ? "" : `<td>${
+    c.meeting && c.meeting.meet_url
+      ? `<a class="underline" href="${escape(c.meeting.meet_url)}" target="_blank" rel="noopener">Meet</a>`
+      : !c.sin_meet ? "—"
+      : badge("sin Meet", "neg", "el Cerebro crea el Meet al agendar; esta cita quedó sin él — el agendamiento falló para ella")
+  }</td>`;
   const [estTxt, estTone] = ES_ESTADO[c.estado] || [c.estado, "muted"];
   const ocurrio = c.pasada ? [c.ocurrio.transcript ? "transcript" : null, c.ocurrio.grabacion ? "grabación" : null].filter(Boolean).join(" · ") || "—" : "";
   const bandaCell = !c.pasada && c.banda ? badge(c.banda.letra, BANDA_TONE[c.banda.letra], `${c.banda.presupuesto || "sin presupuesto"} · ${c.banda.disposicion || "sin disposición"}`) : "";
   const anunciada = c.pasada ? `<span style="color:var(--text-3)" title="pendiente de conectar al grupo ONLY CLOSERS">—</span>` : "";
+  // «Cita closer» tampoco va en la tabla del funnel (2026-09-03): el cruce
+  // funnel→closers vive en el detalle del slide-over.
   const col6 = esClosers
     ? `<td class="text-xs">${c.etapa_crm ? escape(c.etapa_crm) : `<span style="color:var(--text-3)">— (espejo)</span>`}</td>`
-    : `<td class="text-xs">${cruceCell(c)}</td>`;
+    : "";
   const ultimas = c.pasada
     ? `<td>${escape(ocurrio)}</td><td>${bantCell(c.reporte)}</td><td>${c.venta ? badge("venta", "pos") : "—"}</td><td>${anunciada}</td>`
     : `<td>${bandaCell}</td><td colspan="3"></td>`;
@@ -185,7 +183,7 @@ function fila(c, sig, esClosers, otras) {
     <td class="tabular-nums whitespace-nowrap">${escape(c.hora)}</td>
     <td class="font-medium">${escape(c.lead.nombre || "—")}${dup}</td>
     <td>${quienCell}</td>
-    <td>${meet}</td>
+    ${meetCell}
     <td>${cancel ? badge("Cancelada", "muted") : `${badge(ES_GHL[c.estado_ghl] || c.estado_ghl || "—", "brand")} ${badge(estTxt, estTone)}`}</td>
     ${col6}
     ${ultimas}
@@ -207,11 +205,15 @@ function agrupar(citas) {
 
 function tabla(citas, sig, esClosers, pasadas, vacio, opts = {}) {
   if (!citas.length) return `<p class="text-sm italic px-1 py-2" style="color:var(--text-3)">${escape(vacio)}</p>`;
-  const col6 = esClosers ? "Etapa CRM" : "Cita closer";
-  const quien = esClosers ? "Closer" : "Setter";
-  const th = pasadas
-    ? ["Hora", "Lead", quien, "Meet", "Estado", col6, "Ocurrió", "BANT", "Venta", "Anunciada"]
-    : ["Hora", "Lead", quien, "Meet", "Estado", col6, "Banda", "", "", ""];
+  // El funnel va sin «Meet» ni «Cita closer» (2026-09-03): la entrada no lleva
+  // Meet por diseño y el cruce con el closer vive en el slide-over.
+  const th = esClosers
+    ? (pasadas
+        ? ["Hora", "Lead", "Closer", "Meet", "Estado", "Etapa CRM", "Ocurrió", "BANT", "Venta", "Anunciada"]
+        : ["Hora", "Lead", "Closer", "Meet", "Estado", "Etapa CRM", "Banda", "", "", ""])
+    : (pasadas
+        ? ["Hora", "Lead", "Setter", "Estado", "Ocurrió", "BANT", "Venta", "Anunciada"]
+        : ["Hora", "Lead", "Setter", "Estado", "Banda", "", "", ""]);
   const filas = agrupar(citas).map((g) => fila(g.rep, sig, esClosers, g.otras)).join("");
   return `<div class="table-wrap"><div class="table-scroll"><table class="tbl">
     <thead><tr>${th.map((h) => `<th>${escape(h)}</th>`).join("")}</tr></thead>

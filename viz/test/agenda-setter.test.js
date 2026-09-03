@@ -54,7 +54,7 @@ test("secciones, kpis y filas", () => {
   assert.ok(h.includes("https://meet.google.com/aaa"));
   assert.ok(h.includes("sin asignar"));
   assert.ok(h.includes("Agenda de closers") && h.includes("Funnel"));
-  assert.ok(h.includes("→ 2026-08-26 16:00 · Carlos González"));
+  assert.ok(h.includes("→ cita con closer: 2026-08-26 16:00 · Carlos González")); // el cruce vive en el slide-over
   assert.ok(!h.includes("Javier Gutierrez"));                     // solo_en_sistema ya no se pinta (2026-09-03)
   assert.ok(h.includes("Cristian Buelvas, Anthony Velásquez"));  // miembros del funnel
   assert.ok(!h.includes("<b>x</b>") && h.includes("&lt;b&gt;x&lt;/b&gt;")); // escape del survey
@@ -104,12 +104,13 @@ test("detalle: survey curado, atribución aparte, pregunta acortada, cancelada �
   assert.ok(!/Cancelada<\/span>[^<]*<span[^>]*>Cancelada/.test(filaCancelada));         // un solo badge
 });
 
-test("Meet: alerta solo en el carril de closers", () => {
-  // AP1/AP2 (funnel) van sin meeting y NO deben alertar — la entrada no lleva Meet.
+test("Meet: columna y alerta solo en el carril de closers", () => {
+  // El funnel no lleva columna Meet ni «Cita closer» (2026-09-03).
   const h = page.renderObjeto(UI, D);
   const funnelSec = h.slice(h.indexOf("Funnel"));
   assert.ok(!funnelSec.includes("sin Meet"));
-  assert.ok(funnelSec.includes("la confirmación de entrada no lleva Meet por diseño"));
+  assert.ok(!funnelSec.includes("<th>Meet</th>"));
+  assert.ok(!funnelSec.includes("Cita closer"));
   // una cita de VENTA sin meeting sí alerta
   const conFallo = { ...D, citas: D.citas.map((c) => c.appointment_id === "AP3" ? { ...c, meeting: null, sin_meet: true } : c) };
   const h2 = page.renderObjeto(UI, conFallo);
