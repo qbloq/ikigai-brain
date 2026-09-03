@@ -82,11 +82,21 @@ PY
 )
 
 # --- los dos calendarios ------------------------------------------------------
-# funnel: los activos del espejo crm_calendars (el oficial del widget).
+# funnel: los activos del espejo crm_calendars con rol de ENTRADA (migración
+# 008; rol NULL sigue contando como funnel para proyectos sin tipar). Antes el
+# filtro era solo is_active, y al registrarse «Aplicación» (rol venta) como
+# activo el 2026-09-01, sus citas caían al carril del funnel y el
+# descubrimiento de closers lo excluía por estar «en el funnel».
 CALS="$(psql_ro -t -A -F$'\t' -c "SELECT ghl_calendar_id, coalesce(nullif(custom_name,''), ghl_calendar_name, '')
-  FROM crm_calendars WHERE project_id='$PID_ESC' AND is_active ORDER BY created_at;")" || { DB_ESTADO=error; CALS=""; }
-[[ -z "$CALS" ]] && { GHL_ESTADO=error; GHL_DETALLE="el proyecto no tiene calendario activo en crm_calendars"; }
+  FROM crm_calendars WHERE project_id='$PID_ESC' AND is_active AND (rol = 'entrada' OR rol IS NULL) ORDER BY created_at;")" || { DB_ESTADO=error; CALS=""; }
+[[ -z "$CALS" ]] && { GHL_ESTADO=error; GHL_DETALLE="el proyecto no tiene calendario de entrada activo en crm_calendars"; }
 FUNNEL_IDS="$(cut -f1 <<<"$CALS" | paste -sd, -)"
+
+# closers: el calendario de rol VENTA del espejo manda; --calendar-closers lo
+# sobreescribe; sin ninguno de los dos, queda el descubrimiento en vivo.
+VENTA_LINEA="$(psql_ro -t -A -F$'\t' -c "SELECT ghl_calendar_id, coalesce(nullif(custom_name,''), ghl_calendar_name, '')
+  FROM crm_calendars WHERE project_id='$PID_ESC' AND is_active AND rol = 'venta' ORDER BY created_at LIMIT 1;")" || VENTA_LINEA=""
+[[ -z "$CAL_CLOSERS" && -n "$VENTA_LINEA" ]] && CAL_CLOSERS="${VENTA_LINEA%%$'\t'*}"
 
 # closers: --calendar-closers manda; si no, descubrimiento en vivo (activo,
 # nombre «aplicación…», no personal, distinto del funnel).
@@ -111,6 +121,8 @@ if elegido:
     print("%s\t%s" % (elegido["id"], elegido.get("name") or ""))
 PY
 )"
+# GHL caído o sin fila live: el nombre del espejo sostiene el carril declarado.
+[[ -z "$CLOSERS_LINEA" && -n "$VENTA_LINEA" && "$CAL_CLOSERS" == "${VENTA_LINEA%%$'\t'*}" ]] && CLOSERS_LINEA="$VENTA_LINEA"
 
 { while IFS=$'\t' read -r cid cnom; do [[ -n "$cid" ]] && printf '%s\t%s\t%s\n' "$cid" "$cnom" funnel; done <<<"$CALS"
   [[ -n "$CLOSERS_LINEA" ]] && printf '%s\t%s\n' "$CLOSERS_LINEA" closers; } >"$TMP/cals.tsv"
