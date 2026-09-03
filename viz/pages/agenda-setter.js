@@ -239,19 +239,18 @@ function bloqueDia(citas, sig, esClosers, conTitulo, opts = {}) {
 }
 
 function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
+  // En closers no van «Citas» ni «Confirmadas», y un card solo aparece si
+  // tiene valor (pedido 2026-09-03) — la fila señala, no inventaría ceros.
   const kpisDefs = esClosers
     ? [
-      { key: "citas", label: "Citas", fmt: "int", tone: "brand" },
-      { key: "confirmadas", label: "Confirmadas", fmt: "int", tone: "pos" },
-      { key: "sin_closer", label: "Sin closer", fmt: "int", tone: k.sin_closer ? "cau" : "muted", title: "en manos de un setter o de nadie — asignar el closer en GHL" },
-      { key: "sin_meet", label: "Sin Meet", fmt: "int", tone: k.sin_meet ? "neg" : "muted", title: "el Cerebro crea el Meet al agendar; una cita de venta sin Meet = el agendamiento falló para ella" },
+      { key: "sin_closer", label: "Sin closer", fmt: "int", tone: "cau", title: "en manos de un setter o de nadie — asignar el closer en GHL" },
+      { key: "sin_meet", label: "Sin Meet", fmt: "int", tone: "neg", title: "el Cerebro crea el Meet al agendar; una cita de venta sin Meet = el agendamiento falló para ella" },
       { key: "analizadas", label: "Analizadas", fmt: "int", tone: "pos", title: "pasadas con reporte BANT vigente" },
       { key: "ventas", label: "Ventas", fmt: "int", tone: "pos", title: "plan de pago activo creado desde la cita" },
-      { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
+      { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: "neg", title: "pasadas sin grabación, transcript ni plan" },
       { key: "canceladas", label: "Canceladas", fmt: "int", tone: "muted", title: "ocultas de la lista por defecto",
-        footHtml: k.canceladas ? `<span class="cursor-pointer underline" data-on:click="$asCanc = !$asCanc"><span data-show="!$asCanc">Ver</span><span data-show="$asCanc">Ocultar</span></span>` : "" },
-      { label: "Anunciadas", fmt: "int", value: null, muted: true, title: "pendiente de conectar al grupo ONLY CLOSERS" },
-    ]
+        footHtml: `<span class="cursor-pointer underline" data-on:click="$asCanc = !$asCanc"><span data-show="!$asCanc">Ver</span><span data-show="$asCanc">Ocultar</span></span>` },
+    ].filter((d) => k[d.key])
     : [
       { key: "citas", label: "Citas", fmt: "int", tone: "brand", title: "citas del widget, todos los estados (re-agendas incluidas)" },
       { key: "leads", label: "Leads", fmt: "int", tone: "brand", title: "personas distintas (las re-agendas se agrupan)" },
@@ -277,7 +276,7 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
     cuerpo = [...porDia.keys()].sort().map((f) => bloqueDia(porDia.get(f), sig, esClosers, true, opts)).join("");
   }
   return `${section(titulo, hint)}
-    ${cards(kpisDefs, k, { cols: kpisDefs.length })}
+    ${kpisDefs.length ? cards(kpisDefs, k, { cols: kpisDefs.length }) : ""}
     ${cuerpo}`;
 }
 

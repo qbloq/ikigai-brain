@@ -116,6 +116,16 @@ test("detalle: survey curado, atribución aparte, pregunta acortada, cancelada �
   assert.ok(!/Cancelada<\/span>[^<]*<span[^>]*>Cancelada/.test(filaCancelada));         // un solo badge
 });
 
+test("closers: sin Citas/Confirmadas y solo cards con valor", () => {
+  const h = page.renderObjeto(UI, D); // closers kpis: canceladas=1, el resto 0
+  const closersSec = h.slice(h.indexOf("Agenda de closers"), h.indexOf("Funnel"));
+  assert.ok(!closersSec.includes(">Citas<") && !closersSec.includes(">Confirmadas<"));
+  assert.ok(closersSec.includes(">Canceladas<"));
+  assert.ok(!closersSec.includes(">Sin Meet<") && !closersSec.includes(">Anunciadas<")); // valor 0 → no hay card
+  const conMeet = page.renderObjeto(UI, { ...D, kpis: { ...D.kpis, closers: { ...D.kpis.closers, sin_meet: 2 } } });
+  assert.ok(conMeet.slice(conMeet.indexOf("Agenda de closers"), conMeet.indexOf("Funnel")).includes(">Sin Meet<"));
+});
+
 test("canceladas: fila oculta por defecto + toggle Ver en el card", () => {
   const h = page.renderObjeto(UI, D);
   // La fila cancelada (AP3) lleva el data-show del toggle global.
