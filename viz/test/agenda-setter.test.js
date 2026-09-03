@@ -46,7 +46,7 @@ test("secciones, kpis y filas", () => {
   assert.ok(h.includes("Por venir") && h.includes("Ya pasaron"));
   assert.ok(h.includes("Ana Pérez") && h.includes("Luis Gil") && h.includes("Eva Ruiz"));
   assert.ok(h.includes("https://meet.google.com/aaa"));
-  assert.ok(h.includes("sin asignar") && h.includes("sin Meet"));
+  assert.ok(h.includes("sin asignar"));
   assert.ok(h.includes("Agenda de closers") && h.includes("Funnel"));
   assert.ok(h.includes("→ 2026-08-26 16:00 · Carlos González"));
   assert.ok(h.includes("Javier Gutierrez"));                      // solo en el sistema
@@ -71,14 +71,23 @@ test("aviso cuando GHL falla y agenda vacía", () => {
   assert.ok(!h.includes("Ana Pérez"));
 });
 
-test("webhook inhabilitado → banner de migración y «Meet pendiente»", () => {
-  const d = { ...D, fuente: { ...D.fuente, webhook: "inhabilitado" } };
-  const h = page.renderObjeto(UI, d);
-  assert.ok(h.includes("Agendamiento en migración"));
-  assert.ok(h.includes("Meet pendiente") && !h.includes(">sin Meet<"));
-  // sin la señal (fixture base) el badge sigue siendo la anomalía por cita
-  const h0 = page.renderObjeto(UI, D);
-  assert.ok(h0.includes("sin Meet") && !h0.includes("Agendamiento en migración"));
+test("Meet: alerta solo en el carril de closers", () => {
+  // AP1/AP2 (funnel) van sin meeting y NO deben alertar — la entrada no lleva Meet.
+  const h = page.renderObjeto(UI, D);
+  const funnelSec = h.slice(h.indexOf("Funnel"));
+  assert.ok(!funnelSec.includes("sin Meet"));
+  assert.ok(funnelSec.includes("la confirmación de entrada no lleva Meet por diseño"));
+  // una cita de VENTA sin meeting sí alerta
+  const conFallo = { ...D, citas: D.citas.map((c) => c.appointment_id === "AP3" ? { ...c, meeting: null, sin_meet: true } : c) };
+  const h2 = page.renderObjeto(UI, conFallo);
+  const closersSec = h2.slice(h2.indexOf("Agenda de closers"), h2.indexOf("Funnel"));
+  assert.ok(closersSec.includes("sin Meet"));
+});
+
+test("errores del agendamiento → aviso", () => {
+  const h = page.renderObjeto(UI, { ...D, fuente: { ...D.fuente, webhook: "error" } });
+  assert.ok(h.includes("El agendamiento está reportando errores"));
+  assert.ok(!page.renderObjeto(UI, D).includes("reportando errores"));
 });
 
 test("vista semana agrupa por día", () => {

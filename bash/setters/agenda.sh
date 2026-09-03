@@ -250,19 +250,19 @@ SELECT json_build_object(
 );" 2>"$TMP/dberr")" || { DB_ESTADO=error; DB_JSON="{}"; echo "agenda: la consulta de enriquecimiento falló: $(head -c 300 "$TMP/dberr")" >&2; }
 printf '%s' "$DB_JSON" >"$TMP/db.json"
 
-# --- ¿el webhook de agendamiento está creando Meets? -------------------------
-# Desde el 26-ago /webhooks/crm corre en modo ack (Marketico Port): acusa recibo
-# y NO crea Meet/meeting. El último reporte del log de intercepciones lo dice
-# (`resultado.detalle: inhabilitado`); con esa señal la página deja de pintar
-# «sin Meet» como anomalía por cita y lo declara como estado del sistema.
+# --- ¿el agendamiento (Meet a demanda) está sano? ----------------------------
+# Desde el 2026-09-01 el Cerebro procesa cada booking de GHL (bash/agenda/
+# entrante.sh) y lo registra en `entrantes`: esa es la señal viva. Errores
+# recientes → la página avisa que citas nuevas pueden quedar sin Meet.
 WEBHOOK_MODO="desconocido"
-if wout="$(timeout 20 "$HERE/../intercepciones/log.sh" --limit 1 --json 2>/dev/null)"; then
+if wout="$(timeout 20 "$HERE/../agenda/entrantes.sh" --limit 10 --json 2>/dev/null)"; then
   WEBHOOK_MODO="$(python3 -c '
 import json, sys
 try:
     rows = json.load(sys.stdin)
-    r = json.loads(rows[0].get("resultado") or "{}") if rows else {}
-    print("inhabilitado" if r.get("detalle") == "inhabilitado" else "activo" if rows else "desconocido")
+    if not rows: print("desconocido")
+    elif any((r.get("accion") == "error") for r in rows[:10]): print("error")
+    else: print("activo")
 except Exception:
     print("desconocido")' <<<"$wout")"
 fi

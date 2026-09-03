@@ -95,18 +95,20 @@ function detalle(c, sig, otras) {
     </div></td></tr>`;
 }
 
-function fila(c, sig, esClosers, otras, migracion) {
+function fila(c, sig, esClosers, otras) {
   const cancel = c.estado_ghl === "cancelled";
   const dim = cancel ? ` style="color:var(--text-3)"` : "";
   const quien = c.asignado.nombre ? escape(c.asignado.nombre) : "—";
   const quienCell = esClosers
     ? (c.sin_closer ? `${quien} ${badge("sin closer", "cau", "la cita quedó en manos de un setter o de nadie — asignar el closer en GHL")}` : quien)
     : (c.sin_asignar ? badge("sin asignar", "cau", "GHL no tiene a nadie asignado a esta cita") : quien);
+  // Solo el calendario de VENTA lleva Meet (el Cerebro lo crea al agendar,
+  // bash/agenda/entrante.sh); la confirmación de entrada nunca — ahí no es alerta.
   const meet = c.meeting && c.meeting.meet_url
     ? `<a class="underline" href="${escape(c.meeting.meet_url)}" target="_blank" rel="noopener">Meet</a>`
     : !c.sin_meet ? "—"
-    : migracion ? badge("Meet pendiente", "cau", "agendamiento en migración: desde el 26-ago Marketico no crea Meets; el Cerebro los pedirá a demanda")
-    : badge("sin Meet", "neg", "no pasó por el webhook: no habrá grabación ni análisis");
+    : esClosers ? badge("sin Meet", "neg", "el Cerebro crea el Meet al agendar; esta cita quedó sin él — el agendamiento falló para ella")
+    : `<span style="color:var(--text-3)" title="la confirmación de entrada no lleva Meet por diseño">—</span>`;
   const [estTxt, estTone] = ES_ESTADO[c.estado] || [c.estado, "muted"];
   const ocurrio = c.pasada ? [c.ocurrio.transcript ? "transcript" : null, c.ocurrio.grabacion ? "grabación" : null].filter(Boolean).join(" · ") || "—" : "";
   const bandaCell = !c.pasada && c.banda ? badge(c.banda.letra, BANDA_TONE[c.banda.letra], `${c.banda.presupuesto || "sin presupuesto"} · ${c.banda.disposicion || "sin disposición"}`) : "";
@@ -150,7 +152,7 @@ function tabla(citas, sig, esClosers, pasadas, vacio, opts = {}) {
   const th = pasadas
     ? ["Hora", "Lead", quien, "Meet", "Estado", col6, "Ocurrió", "BANT", "Venta", "Anunciada"]
     : ["Hora", "Lead", quien, "Meet", "Estado", col6, "Banda", "", "", ""];
-  const filas = agrupar(citas).map((g) => fila(g.rep, sig, esClosers, g.otras, opts.migracion)).join("");
+  const filas = agrupar(citas).map((g) => fila(g.rep, sig, esClosers, g.otras)).join("");
   return `<div class="table-wrap"><div class="table-scroll"><table class="tbl">
     <thead><tr>${th.map((h) => `<th>${escape(h)}</th>`).join("")}</tr></thead>
     <tbody>${filas}</tbody></table></div></div>`;
@@ -173,7 +175,7 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
       { key: "citas", label: "Citas", fmt: "int", tone: "brand" },
       { key: "confirmadas", label: "Confirmadas", fmt: "int", tone: "pos" },
       { key: "sin_closer", label: "Sin closer", fmt: "int", tone: k.sin_closer ? "cau" : "muted", title: "en manos de un setter o de nadie — asignar el closer en GHL" },
-      { key: "sin_meet", label: opts.migracion ? "Meet pendiente" : "Sin Meet", fmt: "int", tone: k.sin_meet ? (opts.migracion ? "cau" : "neg") : "muted", title: opts.migracion ? "agendamiento en migración: Marketico no crea Meets desde el 26-ago" : "no pasaron por el webhook: no habrá grabación ni análisis" },
+      { key: "sin_meet", label: "Sin Meet", fmt: "int", tone: k.sin_meet ? "neg" : "muted", title: "el Cerebro crea el Meet al agendar; una cita de venta sin Meet = el agendamiento falló para ella" },
       { key: "analizadas", label: "Analizadas", fmt: "int", tone: "pos", title: "pasadas con reporte BANT vigente" },
       { key: "ventas", label: "Ventas", fmt: "int", tone: "pos", title: "plan de pago activo creado desde la cita" },
       { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
@@ -185,7 +187,7 @@ function carril(titulo, hint, citas, k, sig, esClosers, semana, opts = {}) {
       { key: "banda_a", label: "Banda A", fmt: "int", tone: "pos", title: "declara ≥ $1.500 y está listo para tomar acción — se confirma primero" },
       { key: "agendo_closer", label: "Agendó closer", fmt: "int", tone: "pos", title: "leads del funnel que ya tienen cita en la agenda de closers" },
       { key: "sin_asignar", label: "Sin asignar", fmt: "int", tone: k.sin_asignar ? "cau" : "muted", title: "GHL no tiene a nadie asignado" },
-      { key: "sin_meet", label: opts.migracion ? "Meet pendiente" : "Sin Meet", fmt: "int", tone: k.sin_meet ? (opts.migracion ? "cau" : "neg") : "muted", title: opts.migracion ? "agendamiento en migración: Marketico no crea Meets desde el 26-ago" : "no pasaron por el webhook" },
+      { key: "canceladas", label: "Canceladas", fmt: "int", tone: "muted" },
       { key: "sin_rastro", label: "Sin rastro", fmt: "int", tone: k.sin_rastro ? "neg" : "muted", title: "pasadas sin grabación, transcript ni plan" },
       { key: "ventas", label: "Ventas", fmt: "int", tone: "pos" },
     ];
@@ -222,9 +224,8 @@ function renderObjeto(ui, d) {
     <span class="text-sm" style="color:var(--text-3)">${escape(d.proyecto || "")} · ${semana ? `${escape(diaLabel(v.desde))} → ${escape(diaLabel(v.hasta))}` : escape(diaLabel(v.fecha))} · ahora ${escape(v.ahora.slice(11))}</span>
   </div>`;
 
-  const migracion = d.fuente.webhook === "inhabilitado";
   const avisos = [];
-  if (migracion) avisos.push(`<div class="alert alert-cau mt-3"><b>Agendamiento en migración.</b> Desde el 26-ago Marketico no crea Meets (webhook en modo ack): las citas nuevas no tendrán Meet, grabación ni análisis hasta que el Cerebro los pida a demanda. El registro de lo que GHL dispara sigue completo en intercepciones.</div>`);
+  if (d.fuente.webhook === "error") avisos.push(`<div class="alert alert-cau mt-3"><b>El agendamiento está reportando errores.</b> Citas de venta nuevas pueden quedar sin Meet — revisar los agendamientos entrantes con el Cerebro.</div>`);
   if (d.fuente.ghl !== "ok") avisos.push(`<div class="alert alert-neg mt-3">GHL no respondió — la agenda no se puede listar desde la base (GHL manda). ${escape(d.fuente.detalle || "")}</div>`);
   if (d.fuente.db === "error") avisos.push(`<div class="alert alert-cau mt-3">La base no respondió: las citas salen sin Meet, BANT ni plan.</div>`);
   const cals = (d.calendarios || []).map((c) => `${c.tipo === "closers" ? "closers" : "funnel"}: ${escape(c.nombre || c.id)} (${escape((c.miembros || []).join(", ") || "—")})`).join(" · ");
@@ -233,7 +234,7 @@ function renderObjeto(ui, d) {
   const closers = d.citas.filter((c) => c.calendario === "closers");
   const funnel = d.citas.filter((c) => c.calendario !== "closers");
   const hayClosers = (d.calendarios || []).some((c) => c.tipo === "closers");
-  const opts = { migracion };
+  const opts = {};
   const carrilClosers = hayClosers
     ? carril("Agenda de closers", "la que cuadra el setter — «Aplicación»", closers, d.kpis.closers, sig, true, semana, opts)
     : `${section("Agenda de closers", "")}<div class="alert alert-cau">No se encontró el calendario de closers («Aplicación…») en GHL.</div>`;
