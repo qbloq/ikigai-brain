@@ -46,7 +46,7 @@ test("matriz: closers como filas, días como columnas, celdas por estado", () =>
   const h = page.renderObjeto(UI, D);
   assert.ok(h.startsWith('<section id="pane"'));
   assert.ok(h.includes("Carlos González") && h.includes("Diego Fernando Perdomo"));
-  assert.ok(h.includes("jueves 3") && h.includes("domingo 6"));   // encabezados de día
+  assert.ok(h.includes("jueves 3") && h.includes("sábado 5"));    // encabezados de día
   assert.ok(h.includes("3 libres"));                              // celda normal (solo huecos)
   assert.ok(h.includes("2 libres"));                              // celda normal con citas
   assert.ok(h.includes("sin horario"));                           // 0 libres 0 citas futuro
@@ -70,6 +70,19 @@ test("slide-over: click en celda abre el detalle con horas y citas", () => {
   assert.ok(panel.includes("Juan Pérez"));                        // la cita ocupada
   // una celda sin contenido (Diego domingo) no gana panel
   assert.ok(!panel.includes("U2|2026-09-06"));
+});
+
+test("domingo vacío en todos los closers: la columna no se muestra", () => {
+  // En la fixture D ningún closer tiene nada el domingo → fuera de la tabla
+  // (el rótulo de la semana en el nav sí sigue diciendo «→ domingo 6»).
+  const h = page.renderObjeto(UI, D);
+  assert.ok(!/<th[^>]*>domingo 6<\/th>/.test(h));
+  assert.ok(!h.includes("U1|2026-09-06"));
+  // Con una cita el domingo, la columna vuelve.
+  const conDomingo = JSON.parse(JSON.stringify(D));
+  conDomingo.closers[0].dias["2026-09-06"] = { libres: [], citas: [{ appointment_id: "APD", hora: "10:00", fin: "10:30", lead: "Sol Paz", estado_ghl: "confirmed" }], estado: "lleno" };
+  const h2 = page.renderObjeto(UI, conDomingo);
+  assert.ok(/<th[^>]*>domingo 6<\/th>/.test(h2) && h2.includes("Sol Paz"));
 });
 
 test("singular: «1 libre», nunca «1 libres»", () => {

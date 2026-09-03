@@ -100,12 +100,21 @@ function renderObjeto(ui, d) {
 function bloque(d, sig) {
   const s = d.semana;
   const hoy = s.ahora.slice(0, 10);
+  // El domingo sin nada en NINGÚN closer (ni huecos ni citas) no gana columna
+  // (pedido 2026-09-03); con cualquier contenido, vuelve.
+  let dias = s.dias;
+  const domingo = dias[6];
+  const domingoVacio = domingo && (d.closers || []).every((cl) => {
+    const c = cl.dias[domingo] || {};
+    return !(c.libres || []).length && !(c.citas || []).length;
+  });
+  if (dias.length === 7 && domingoVacio) dias = dias.slice(0, 6);
   const avisos = [];
   if (d.fuente.ghl !== "ok") avisos.push(`<div class="alert alert-neg mt-3">GHL no respondió — la disponibilidad no se puede calcular desde la base (GHL manda). ${escape(d.fuente.detalle || "")}</div>`);
   if (d.fuente.db === "error") avisos.push(`<div class="alert alert-cau mt-3">La base no respondió: los closers salen sin nombre resuelto.</div>`);
 
   const filas = (d.closers || []).map((cl) => {
-    const celdas = s.dias.map((dia) => {
+    const celdas = dias.map((dia) => {
       const cel = cl.dias[dia] || { libres: [], citas: [], estado: "sin_horario" };
       const key = `${cl.ghl_user_id}|${dia}`;
       const clickable = cel.libres.length || cel.citas.length;
@@ -118,8 +127,8 @@ function bloque(d, sig) {
   }).join("");
 
   const matriz = `<div class="card overflow-x-auto mt-4"><table class="tbl w-full"><thead><tr>
-      <th>Closer</th>${s.dias.map((dia) => `<th${dia === hoy ? ` style="color:${TONE.brand}"` : ""}>${escape(diaLabel(dia))}</th>`).join("")}<th title="huecos libres · citas, semana completa">Σ libres · citas</th>
-    </tr></thead><tbody>${filas || `<tr><td colspan="9" style="color:${TONE.muted}">Sin closers que listar.</td></tr>`}</tbody></table></div>`;
+      <th>Closer</th>${dias.map((dia) => `<th${dia === hoy ? ` style="color:${TONE.brand}"` : ""}>${escape(diaLabel(dia))}</th>`).join("")}<th title="huecos libres · citas, semana completa">Σ libres · citas</th>
+    </tr></thead><tbody>${filas || `<tr><td colspan="${dias.length + 2}" style="color:${TONE.muted}">Sin closers que listar.</td></tr>`}</tbody></table></div>`;
 
   const huerfanas = (d.sin_closer || []).length ? `<div class="alert alert-cau mt-4"><b>Citas del calendario sin closer resoluble</b> (asignadas a alguien que no es miembro, o a nadie):
       <ul class="mt-1 space-y-0.5">${d.sin_closer.map((c) => `<li class="text-sm">${escape(c.fecha)} ${escape(c.hora)} · ${escape(c.lead || "(sin nombre)")}</li>`).join("")}</ul></div>` : "";
